@@ -268,7 +268,7 @@ function Sn1per() {
 
 function dementor(){
   colorecho "[+] Installing dementor"
-  wget -O /opt/dementor.py https://gist.github.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc
+  wget -O /opt/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
 }
 
 function ntlmscanner(){
