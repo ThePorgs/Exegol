@@ -10,12 +10,13 @@ function colorecho() {
 
 function update() {
   colorecho "[+] Updating, upgrading, cleaning"
-  apt -y update && apt -y upgrade && apt -y install apt-utils && apt -y autoremove && apt clean
+  apt -y update && apt -y install apt-utils && apt -y upgrade && apt -y autoremove && apt clean
 }
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-impacket python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan sslstrip testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy impacket-scripts passing-the-hash powershell
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-impacket python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy impacket-scripts passing-the-hash powershell
+  #apt install -y sslstrip
 }
 
 function ohmyzsh() {
