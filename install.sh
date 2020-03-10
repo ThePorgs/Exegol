@@ -188,7 +188,7 @@ function sprayhound() {
   git -C /opt clone https://github.com/Hackndo/sprayhound
   cd /opt/sprayhound
   apt -y install libsasl2-dev libldap2-dev
-  #pip3 install "pyasn1<0.5.0,>=0.4.6"
+  pip3 install "pyasn1<0.5.0,>=0.4.6"
   python3 setup.py install
 }
 
