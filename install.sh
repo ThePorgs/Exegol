@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-impacket python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy impacket-scripts passing-the-hash powershell
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains
   #apt install -y sslstrip
 }
 
@@ -178,7 +178,9 @@ function CrackMapExec() {
 
 function lsassy() {
   colorecho "[+] Installing lsassy with pip, and cme module by reinstalling cme with lsassy in cmd/modules/"
-  python3.7 -m pip install --user lsassy
+  git -C /opt clone https://github.com/Hackndo/lsassy/
+  cd /opt/lsassy
+  python3 setup.py install
   wget -O /opt/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
   cd /opt/CrackMapExec
   python3 setup.py install
@@ -194,10 +196,10 @@ function sprayhound() {
 }
 
 function Impacket() {
-  colorecho "[+] Installing Impacket"
+  colorecho "[+] Installing Impacket scripts"
   git -C /opt clone https://github.com/SecureAuthCorp/impacket
   cd /opt/impacket/
-  pip install --force-reinstall .
+  pip3 install .
 }
 
 function BloodHound() {
@@ -313,6 +315,11 @@ function binaries() {
   echo 'export PATH=/opt/bin:$PATH' >> ~/.zshrc
   wget -O /opt/bin/findomain https://github.com/Edu4rdSHL/findomain/releases/latest/download/findomain-linux
   chmod +x /opt/bin/findomain
+}
+
+function proxychains(){
+  colorecho "[+] Editing /etc/proxychains.conf for ntlmrelayx.py"
+  sed -i 's/9050/1080/g' /etc/proxychains.conf
 }
 
 function end_message() {
