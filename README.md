@@ -1,8 +1,8 @@
 # Exegol
  Exegol is a kali light base with a few useful additional tools and some basic configuration. It can be used in pentest engagements and BugBounty. Exegol's first use was to be a ready-to-hack docker in case of emergencies during engagements.
- 
- ![Screenshot Empire/DeathStar/mitm6/Responder/ntlmrelayx](https://i.imgur.com/JMvtgYG.png)
- 
+
+ ![Screenshot Empire/DeathStar/mitm6/Responder/ntlmrelayx](https://i.imgur.com/PBThtlx.png)
+
 # Tools
  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works!
  Some of the tools:
@@ -50,7 +50,7 @@
 
 # Pre-requisites
  Docker is needed here if you want to run Exegol in a docker (intended). You can also use the `install.sh` in order to deploy Exegol elsewhere but I don't guarantee it'll work. (That being said I don't guarantee anything bro)
- 
+
  Need a quick install of docker & docker-compose ? (intended for kali users but I guess it could work on any other Debian based system)
  ```
  sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
@@ -73,17 +73,17 @@
  cd Exegol
  docker build --tag exegol .
  ```
- 
+
  For the run, I use the option `--network=host` in order to inherit and share the host's IPv4/6 config, `--volume` in order to share a folder with the host and `--name=exegol` in order to get a shell later with `docker exec -it exegol zsh`.
  ```
  docker run --interactive --tty --detach --network host --volume /mnt/exegol:/share --name exegol exegol
  ```
- 
+
  To get a shell (it is possible to pop multiple shells)
  ```
  docker exec -it exegol zsh
  ```
- 
+
  To stop
  ```
  docker stop exegol && docker rm exegol
@@ -97,7 +97,7 @@
   alias exegol-shell='docker exec -it exegol zsh'
   alias exegol-stop='docker stop exegol && docker rm exegol'
   ```
- 
+
  # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to my friends:
   - [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/)
