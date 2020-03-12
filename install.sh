@@ -66,6 +66,12 @@ function Responder() {
   colorecho "[+] Installing Responder"
   git -C /opt clone https://github.com/lgandx/Responder
   sed -i 's/ Random/ 1122334455667788/g' /opt/Responder/Responder.conf
+  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
+  sed -i 's/files\/BindShell.exe/\/opt\/Responder\/files\/BindShell.exe/g' /opt/Responder/Responder.conf
+  sed -i 's/certs\/responder.crt/\/opt\/Responder\/certs\/responder.crt/g' /opt/Responder/Responder.conf
+  sed -i 's/certs\/responder.key/\/opt\/Responder\/certs\/responder.key/g' /opt/Responder/Responder.conf
+  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
+  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
   echo "alias responder='/opt/Responder/Responder.py'" >> ~/.zshrc
 }
 
@@ -324,9 +330,18 @@ function proxychains(){
 
 function grc(){
   colorecho "[+] Installing and configuring grc"
-  echo "alias ntlmrelayx='echo \"[+] Running ntlmrelayx.py with grc\n\"; grc ntlmrelayx.py'"
+  echo "alias ntlmrelayx='grc ntlmrelayx.py'" >> ~/.zshrc
+  echo "alias secretsdump='grc secretsdump.py'" >> ~/.zshrc
+  echo "alias proxychains='proxychains '" >> ~/.zshrc
   wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/grc.conf
   wget -O /usr/share/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
+  wget -O /usr/share/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
+}
+
+function pykek(){
+  colorecho "[+] Installing Python Kernel Exploit Kit (pykek) for MS14-068"
+  git -C /opt clone https://github.com/preempt/pykek
+  echo "alias ms14-068.py=/opt/pykek/ms14-068.py" >> ~/.zshrc
 }
 
 function end_message() {
@@ -373,6 +388,9 @@ function main(){
   dementor
   ntlmscanner
   Impacket
+  proxychains
+  grc
+  pykek
   go_tools
   ruby_tools
   python_tools

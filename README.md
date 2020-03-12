@@ -47,6 +47,7 @@
  - findomain (https://github.com/Edu4rdSHL/findomain)
  - timing attack (https://github.com/ffleming/timing_attack)
  - updog (https://github.com/sc0tfree/updog)
+ - grc (https://github.com/garabik/grc)
 
 # Pre-requisites
  Docker is needed here if you want to run Exegol in a docker (intended). You can also use the `install.sh` in order to deploy Exegol elsewhere but I don't guarantee it'll work. (That being said I don't guarantee anything bro)
@@ -98,7 +99,13 @@
   alias exegol-stop='docker stop exegol && docker rm exegol'
   ```
 
- # Credits & thanks
+# To-Do List
+  Here are some things to add that I have in mind, I'll work on that asap
+  [x] Use [grc](https://github.com/garabik/grc) for colorized input : ~~ntlmrelayx.py~~, ~~secretsdump.py~~ (and others?)
+  [ ] Add some history in (/root/.zsh_history) for autocompletion of a few commands (ntlmrelayx.py, mitm6, secretsdump.py, masscan, nmap, lsassy, sprayhound...)
+  [ ] *any idea ?*
+
+# Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to my friends:
   - [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/)
   - [@HackAndDo](https://twitter.com/HackAndDo) for [lsassy](https://github.com/Hackndo/lsassy), [sprayhound](https://github.com/Hackndo/sprayhound) and for being one of the greatest coworker that I've ever had
