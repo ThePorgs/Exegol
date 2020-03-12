@@ -322,6 +322,13 @@ function proxychains(){
   sed -i 's/9050/1080/g' /etc/proxychains.conf
 }
 
+function grc(){
+  colorecho "[+] Installing and configuring grc"
+  echo "alias ntlmrelayx='echo \"[+] Running ntlmrelayx.py with grc\n\"; grc ntlmrelayx.py'"
+  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/grc.conf
+  wget -O /usr/share/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
+}
+
 function end_message() {
   colorecho "[+] Installation is done..."
   colorecho "You can use the following aliases on your host to build, run, open a shell, stop the container"
@@ -356,7 +363,6 @@ function main(){
   CrackMapExec
   lsassy
   sprayhound
-  Impacket
   BloodHound
   mitm6
   aclpwn
@@ -366,6 +372,7 @@ function main(){
   Sn1per
   dementor
   ntlmscanner
+  Impacket
   go_tools
   ruby_tools
   python_tools

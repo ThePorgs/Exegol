@@ -1,0 +1,20 @@
+# GENERAL INFO
+regexp=.*\[\*\].*
+colours=blue
+=======
+# GENERAL WARNING
+regexp=.*\[\!\].*
+colours=yellow
+=======
+# GENERAL DEFAULT
+regexp=.*\[\-\].*
+colours=yellow
+=======
+# SUCCESS hashes
+regexp=.{1,20}:\d{1,4}:[0-9a-fA-F]{32}:[0-9a-fA-F]{32}:::
+colours=bold green
+=======
+# SUCCESS Authentication success
+regexp=.*Authenticating.*SUCCEED.*
+colours=green
+=======
