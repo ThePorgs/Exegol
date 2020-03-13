@@ -1,0 +1,20 @@
+# CONNECTING
+regexp=.*\[\*\].*
+colours=blue
+=======
+# BOUND TO SPOOLSS
+regexp=.*\[\+\].*
+colours=green
+=======
+# STARTING
+regexp=.*starting smb server.*
+colours=blue
+=======
+# ACCESS DENIED
+regexp=.*denied.*
+colours=red
+=======
+# EXCEPTION
+regexp=.*exception.*
+colours=yellow
+=======

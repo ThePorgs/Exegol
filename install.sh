@@ -70,9 +70,11 @@ function Responder() {
   sed -i 's/files\/BindShell.exe/\/opt\/Responder\/files\/BindShell.exe/g' /opt/Responder/Responder.conf
   sed -i 's/certs\/responder.crt/\/opt\/Responder\/certs\/responder.crt/g' /opt/Responder/Responder.conf
   sed -i 's/certs\/responder.key/\/opt\/Responder\/certs\/responder.key/g' /opt/Responder/Responder.conf
-  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
-  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
   echo "alias responder='/opt/Responder/Responder.py'" >> ~/.zshrc
+  echo "alias responder-http-on=\"sed -i 's/HTTP = Off/HTTP = On/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'HTTP ='\"" >> ~/.zshrc
+  echo "alias responder-http-off=\"sed -i 's/HTTP = On/HTTP = Off/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'HTTP ='\"" >> ~/.zshrc
+  echo "alias responder-smb-on=\"sed -i 's/SMB = Off/SMB = On/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'SMB ='\"" >> ~/.zshrc
+  echo "alias responder-smb-off=\"sed -i 's/SMB = On/SMB = Off/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'SMB ='\"" >> ~/.zshrc
 }
 
 function Sublist3r() {
@@ -206,6 +208,10 @@ function Impacket() {
   git -C /opt clone https://github.com/SecureAuthCorp/impacket
   cd /opt/impacket/
   pip3 install .
+  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
+  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
+  echo "alias ntlmrelayx='grc ntlmrelayx.py'" >> ~/.zshrc
+  echo "alias secretsdump='grc secretsdump.py'" >> ~/.zshrc
 }
 
 function BloodHound() {
@@ -277,12 +283,17 @@ function Sn1per() {
 
 function dementor(){
   colorecho "[+] Installing dementor"
-  wget -O /opt/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
+  mkdir /opt/dementor
+  wget -O /opt/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
+  echo "alias dementor.py='python /opt/dementor/dementor.py'" >> ~/.zshrc
+  wget -O /usr/share/grc/conf.dementor https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.dementor
+  echo "alias dementor='grc dementor.py'" >> ~/.zshrc
 }
 
 function ntlmscanner(){
   colorecho "[+] Installing ntlm-scanner"
   git -C /opt clone https://github.com/preempt/ntlm-scanner
+  echo "alias ntlm-scanner.py='grc python /opt/ntlm-scanner/scan.py'" >> ~/.zshrc
 }
 
 function go_tools() {
@@ -326,16 +337,14 @@ function binaries() {
 function proxychains(){
   colorecho "[+] Editing /etc/proxychains.conf for ntlmrelayx.py"
   sed -i 's/9050/1080/g' /etc/proxychains.conf
+  echo "alias proxychains='proxychains '" >> ~/.zshrc
 }
 
 function grc(){
   colorecho "[+] Installing and configuring grc"
-  echo "alias ntlmrelayx='grc ntlmrelayx.py'" >> ~/.zshrc
-  echo "alias secretsdump='grc secretsdump.py'" >> ~/.zshrc
-  echo "alias proxychains='proxychains '" >> ~/.zshrc
+  apt -y install grc
   wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/grc.conf
-  wget -O /usr/share/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
-  wget -O /usr/share/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
+  echo "alias grc='grc '" >> ~/.zshrc
 }
 
 function pykek(){

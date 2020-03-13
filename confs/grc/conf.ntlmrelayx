@@ -22,3 +22,7 @@ colours=green
 regexp=.*TRUE.*
 colours=green
 =======
+# Adding new computer
+regexp=.*Adding new computer.*OK.*
+colours=green
+=======
