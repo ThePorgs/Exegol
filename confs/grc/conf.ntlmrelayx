@@ -26,3 +26,11 @@ colours=green
 regexp=.*Adding new computer.*OK.*
 colours=green
 =======
+# can impersonate success
+regexp=.*can now impersonate users on.*
+colours=green
+=======
+# delegate access success
+regexp=.*Delegation rights modified succesfully.*
+colours=green
+=======

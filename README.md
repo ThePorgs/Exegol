@@ -101,9 +101,10 @@
 
 # To-Do List
   Here are some things to add that I have in mind, I'll work on that asap
-  [x] Use [grc](https://github.com/garabik/grc) for colorized input : ~~ntlmrelayx.py~~, ~~secretsdump.py~~ (and others?)
-  [ ] Add some history in (/root/.zsh_history) for autocompletion of a few commands (ntlmrelayx.py, mitm6, secretsdump.py, masscan, nmap, lsassy, sprayhound...)
-  [ ] *any idea ?*
+  - Use [grc](https://github.com/garabik/grc) for colorized input : ~~ntlmrelayx.py~~, ~~secretsdump.py~~ (and others?)
+  - Add some history in (/root/.zsh_history) for autocompletion of a few commands (ntlmrelayx.py, mitm6, secretsdump.py, masscan, nmap, lsassy, sprayhound...)
+  - Add to dockerhub
+  - *any idea ?*
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to my friends:
