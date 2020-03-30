@@ -26,10 +26,7 @@ function ohmyzsh() {
   sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
   echo 'TIME_="%{$fg[white]%}[%{$fg[red]%}%D %T%{$fg[white]%}]%{$reset_color%}"' >> ~/.zshrc
   echo 'PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "' >> ~/.zshrc
-  for i in {01..$(wc -l zsh_history | cut -d ' ' -f 1)}; do echo "; 13371337$i:0;"; done > /tmp/prefixes
-  wget -O /tmp/history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
-  paste -d '' /tmp/prefixes /tmp/history | tee ~/.zsh_history
-  rm /tmp/prefixes /tmp/history
+  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
   echo 'source /opt/aliases' >> ~/.zshrc
 }
 
