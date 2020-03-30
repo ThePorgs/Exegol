@@ -26,6 +26,11 @@ function ohmyzsh() {
   sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
   echo 'TIME_="%{$fg[white]%}[%{$fg[red]%}%D %T%{$fg[white]%}]%{$reset_color%}"' >> ~/.zshrc
   echo 'PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "' >> ~/.zshrc
+  for i in {01..$(wc -l zsh_history | cut -d ' ' -f 1)}; do echo "; 13371337$i:0;"; done > /tmp/prefixes
+  wget -O /tmp/history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
+  paste -d '' /tmp/prefixes /tmp/history | tee ~/.zsh_history
+  rm /tmp/prefixes /tmp/history
+  echo 'source /opt/aliases' >> ~/.zshrc
 }
 
 function banners() {
@@ -44,15 +49,7 @@ function banners() {
 
 function aliases() {
   colorecho "[+] Adding aliases"
-  echo "alias l='ls -al'" >> ~/.zshrc
-  echo "alias ipa='ip --brief --color a'" >> ~/.zshrc
-  echo "alias cme='crackmapexec'" >> ~/.zshrc
-  echo "alias nse='ls /usr/share/nmap/scripts | grep '" >> ~/.zshrc
-  echo "alias scan-range='nmap -T5 -n -sn'" >> ~/.zshrc
-  echo "alias http-server='python3 -m http.server'" >> ~/.zshrc
-  echo "alias php-server='php -S 127.0.0.1:8080 -t .'" >> ~/.zshrc
-  echo "alias ftp-server='python -m pyftpdlib -u \"mario\" -P \"m4r10\" -p 2121'" >> ~/.zshrc
-  echo "alias powershell='pwsh'" >> ~/.zshrc
+  wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
 }
 
 function dependencies() {
@@ -70,39 +67,30 @@ function Responder() {
   sed -i 's/files\/BindShell.exe/\/opt\/Responder\/files\/BindShell.exe/g' /opt/Responder/Responder.conf
   sed -i 's/certs\/responder.crt/\/opt\/Responder\/certs\/responder.crt/g' /opt/Responder/Responder.conf
   sed -i 's/certs\/responder.key/\/opt\/Responder\/certs\/responder.key/g' /opt/Responder/Responder.conf
-  echo "alias responder='/opt/Responder/Responder.py'" >> ~/.zshrc
-  echo "alias responder-http-on=\"sed -i 's/HTTP = Off/HTTP = On/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'HTTP ='\"" >> ~/.zshrc
-  echo "alias responder-http-off=\"sed -i 's/HTTP = On/HTTP = Off/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'HTTP ='\"" >> ~/.zshrc
-  echo "alias responder-smb-on=\"sed -i 's/SMB = Off/SMB = On/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'SMB ='\"" >> ~/.zshrc
-  echo "alias responder-smb-off=\"sed -i 's/SMB = On/SMB = Off/g' /opt/Responder/Responder.conf && cat /opt/Responder/Responder.conf | grep --color=never 'SMB ='\"" >> ~/.zshrc
 }
 
 function Sublist3r() {
   colorecho "[+] Installing Sublist3r"
   git -C /opt clone https://github.com/aboul3la/Sublist3r.git
   pip3 install -r /opt/Sublist3r/requirements.txt
-  echo "alias sublist3r='/opt/Sublist3r/Sublist3r.py'" >> ~/.zshrc
 }
 
 function ReconDog() {
   colorecho "[+] Installing ReconDog"
   git -C /opt clone https://github.com/s0md3v/ReconDog
   pip3 install -r /opt/ReconDog/requirements.txt
-  echo "alias dog='python3 /opt/ReconDog/dog'" >> ~/.zshrc
 }
 
 function CloudFail() {
   colorecho "[+] Installing CloudFail"
   git -C /opt clone https://github.com/m0rtem/CloudFail
   pip3 install -r /opt/CloudFail/requirements.txt
-  echo "alias cloudfail='python3 /opt/CloudFail/cloudfail.py'" >> ~/.zshrc
 }
 
 function OneForAll() {
   colorecho "[+] Installing OneForAll"
   git -C /opt clone https://github.com/shmilylty/OneForAll.git
   pip3 install -r /opt/OneForAll/requirements.txt
-  echo "alias oneforall='python3 /opt/OneForAll/oneforall/oneforall.py'" >> ~/.zshrc
 }
 
 function EyeWitness() {
@@ -110,7 +98,6 @@ function EyeWitness() {
   git -C /opt clone https://github.com/FortyNorthSecurity/EyeWitness
   cd /opt/EyeWitness/setup
   ./setup.sh
-  echo "alias eyewitness='python3 /opt/EyeWitness/EyeWitness.py'" >> ~/.zshrc
 }
 
 function wafw00f() {
@@ -166,13 +153,11 @@ function Blazy() {
 function XSStrike() {
   colorecho "[+] Installing XSStrike"
   git -C /opt clone https://github.com/s0md3v/XSStrike.git
-  echo "alias XSStrike='python /opt/XSStrike/xsstrike.py'" >> ~/.zshrc
 }
 
 function Bolt() {
   colorecho "[+] Installing Bolt"
   git -C /opt clone https://github.com/s0md3v/Bolt.git
-  echo "alias bolt='python3 /opt/Bolt/bolt.py'" >> ~/.zshrc
 }
 
 function CrackMapExec() {
@@ -192,6 +177,7 @@ function lsassy() {
   wget -O /opt/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
   cd /opt/CrackMapExec
   python3 setup.py install
+  pip3 install 'asn1crypto>=1.3.0'
 }
 
 function sprayhound() {
@@ -210,8 +196,6 @@ function Impacket() {
   pip3 install .
   wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
   wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
-  echo "alias ntlmrelayx='grc ntlmrelayx.py'" >> ~/.zshrc
-  echo "alias secretsdump='grc secretsdump.py'" >> ~/.zshrc
 }
 
 function BloodHound() {
@@ -228,7 +212,6 @@ function mitm6_sources() {
   cd /opt/mitm6/
   pip3 install --user -r requirements.txt
   python3 setup.py install
-  echo "alias mitm6='python3 /opt/mitm6/mitm6/mitm6.py'" >> ~/.zshrc
 }
 
 function mitm6() {
@@ -285,15 +268,12 @@ function dementor(){
   colorecho "[+] Installing dementor"
   mkdir /opt/dementor
   wget -O /opt/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
-  echo "alias dementor.py='python /opt/dementor/dementor.py'" >> ~/.zshrc
   wget -O /usr/share/grc/conf.dementor https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.dementor
-  echo "alias dementor='grc dementor.py'" >> ~/.zshrc
 }
 
 function ntlmscanner(){
   colorecho "[+] Installing ntlm-scanner"
   git -C /opt clone https://github.com/preempt/ntlm-scanner
-  echo "alias ntlm-scanner.py='grc python /opt/ntlm-scanner/scan.py'" >> ~/.zshrc
 }
 
 function go_tools() {
@@ -321,8 +301,8 @@ function ruby_tools() {
   gem install timing_attack
 }
 
-function python_tools() {
-  colorecho "[+] Installing Python tools from pip"
+function updog() {
+  colorecho "[+] Installing updog"
   pip3 install updog
 }
 
@@ -337,20 +317,36 @@ function binaries() {
 function proxychains(){
   colorecho "[+] Editing /etc/proxychains.conf for ntlmrelayx.py"
   sed -i 's/9050/1080/g' /etc/proxychains.conf
-  echo "alias proxychains='proxychains '" >> ~/.zshrc
 }
 
 function grc(){
   colorecho "[+] Installing and configuring grc"
   apt -y install grc
   wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/grc.conf
-  echo "alias grc='grc '" >> ~/.zshrc
 }
 
 function pykek(){
   colorecho "[+] Installing Python Kernel Exploit Kit (pykek) for MS14-068"
   git -C /opt clone https://github.com/preempt/pykek
-  echo "alias ms14-068.py=/opt/pykek/ms14-068.py" >> ~/.zshrc
+}
+
+function autorecon(){
+  colorecho "[+] Installing autorecon"
+  git -C /opt clone https://github.com/Tib3rius/AutoRecon
+  cd /opt/AutoRecon/
+  pip3 install -r requirements.txt
+}
+
+function privexchange(){
+  colorecho "[+] Installing privexchange"
+  git -C /opt clone https://github.com/dirkjanm/PrivExchange
+}
+
+function LNKUp(){
+  colorecho "[+] Installing LNKUp"
+  git -C /opt clone https://github.com/Plazmaz/LNKUp
+  cd /opt/LNKUp
+  pip install -r requirements.txt
 }
 
 function end_message() {
@@ -388,6 +384,7 @@ function main(){
   lsassy
   sprayhound
   BloodHound
+  #mitm6_sources
   mitm6
   aclpwn
   IceBreaker
@@ -402,8 +399,10 @@ function main(){
   pykek
   go_tools
   ruby_tools
-  python_tools
+  updog
   binaries
+  autorecon
+  privexchange
   end_message
 }
 

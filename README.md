@@ -18,6 +18,7 @@
  - icebreaker (https://github.com/DanMcInerney/icebreaker)
  - Powershell Empire (https://github.com/BC-SECURITY/Empire)
  - DeathStar (https://github.com/byt3bl33d3r/DeathStar)
+ - AutoRecon (https://github.com/Tib3rius/AutoRecon)
  - Sn1per (https://github.com/1N3/Sn1per)
  - ntlm-scanner (https://github.com/preempt/ntlm-scanner)
  - Sublist3r (https://github.com/aboul3la/Sublist3r)
@@ -102,8 +103,10 @@
 # To-Do List
   Here are some things to add that I have in mind, I'll work on that asap
   - Use [grc](https://github.com/garabik/grc) for colorized input : ~~ntlmrelayx.py~~, ~~secretsdump.py~~ (and others?)
-  - Add some history in (/root/.zsh_history) for autocompletion of a few commands (ntlmrelayx.py, mitm6, secretsdump.py, masscan, nmap, lsassy, sprayhound...)
-  - Add to dockerhub
+  - Add some history in (/root/.zsh_history) for autocompletion of a few commands like ~~ntlmrelayx.py, mitm6, secretsdump.py, masscan, nmap, lsassy, sprayhound...~~ (and others?)
+  - Add to dockerhub?
+  - test ntlm-scanner, issue during last engagement
+  - install mdcat, bat
   - *any idea ?*
 
 # Credits & thanks

