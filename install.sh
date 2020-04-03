@@ -15,19 +15,25 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains
   #apt install -y sslstrip
 }
 
 function ohmyzsh() {
-  colorecho "[+] Installing oh-my-zsh, theme and plugins"
+  colorecho "[+] Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   sed -i 's/robbyrussell/gentoo/g' ~/.zshrc
   sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
   echo 'TIME_="%{$fg[white]%}[%{$fg[red]%}%D %T%{$fg[white]%}]%{$reset_color%}"' >> ~/.zshrc
   echo 'PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "' >> ~/.zshrc
+  echo 'export GOPATH=/root/go/bin' >> ~/.zshrc
+  echo 'export GO111MODULE=on' >> ~/.zshrc
+  echo 'export PATH=$GOPATH:$PATH' >> ~/.zshrc
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
   echo 'source /opt/aliases' >> ~/.zshrc
+  wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
+  mkdir -p /opt/bin
+  echo 'export PATH=/opt/bin:$PATH' >> ~/.zshrc
 }
 
 function banners() {
@@ -42,11 +48,6 @@ function banners() {
   echo '#echo ""' >> ~/.zshrc
   echo '#figlet -f Bloody "Exegol" -w 10000 | lolcat' >> ~/.zshrc
   echo '#echo ""' >> ~/.zshrc
-}
-
-function aliases() {
-  colorecho "[+] Adding aliases"
-  wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
 }
 
 function dependencies() {
@@ -273,28 +274,69 @@ function ntlmscanner(){
   git -C /opt clone https://github.com/preempt/ntlm-scanner
 }
 
-function go_tools() {
-  colorecho "[+] Installing go tools (subjack, assetfinder, subfinder, gobuster, amass, ffuf, gitrob, shhgit...)"
-  apt -y install golang
-  echo 'export GOPATH=/root/go/bin' >> ~/.zshrc
-  echo 'export GO111MODULE=on' >> ~/.zshrc
-  echo 'export PATH=$GOPATH:$PATH' >> ~/.zshrc
+function subjack(){
+  colorecho "[+] Installing subjack"
   go get -u -v github.com/haccer/subjack
+}
+
+function assetfinder(){
+  colorecho "[+] Installing assetfinder"
   go get -u -v github.com/tomnomnom/assetfinder
+}
+
+function subfinder(){
+  colorecho "[+] Installing subfinder"
   go get -u -v github.com/projectdiscovery/subfinder/cmd/subfinder
+}
+
+function gobuster(){
+  colorecho "[+] Installing gobuster"
   go get -u -v github.com/OJ/gobuster
+}
+
+function amass(){
+  colorecho "[+] Installing amass"
   go get -v -u github.com/OWASP/Amass/v3/...
+}
+
+function ffuf(){
+  colorecho "[+] Installing ffuf"
   go get -v -u github.com/ffuf/ffuf
+}
+
+function gitrob(){
+  colorecho "[+] Installing gitrob"
   go get -v -u github.com/michenriksen/gitrob
+}
+
+function shhgit(){
+  colorecho "[+] Installing shhgit"
   go get -v -u github.com/eth0izzle/shhgit
+}
+
+function waybackurls(){
+  colorecho "[+] Installing waybackurls"
   go get -v -u github.com/tomnomnom/waybackurls
+}
+
+function subover(){
+  colorecho "[+] Installing SubOver"
   go get -v -u github.com/Ice3man543/SubOver
+}
+
+function subzy(){
+  colorecho "[+] Installing subzy"
   go get -u -v github.com/lukasikic/subzy
   go install -v github.com/lukasikic/subzy
 }
 
-function ruby_tools() {
-  colorecho "[+] Installing ruby tools"
+function gron(){
+  colorecho "[+] Installing gron"
+  go get -u -v github.com/tomnomnom/gron
+}
+
+function timing_attack() {
+  colorecho "[+] Installing timing_attack"
   gem install timing_attack
 }
 
@@ -303,10 +345,8 @@ function updog() {
   pip3 install updog
 }
 
-function binaries() {
-  colorecho "[+] Installing binaries"
-  mkdir -p /opt/bin
-  echo 'export PATH=/opt/bin:$PATH' >> ~/.zshrc
+function findomain() {
+  colorecho "[+] Installing findomain"
   wget -O /opt/bin/findomain https://github.com/Edu4rdSHL/findomain/releases/latest/download/findomain-linux
   chmod +x /opt/bin/findomain
 }
@@ -394,10 +434,21 @@ function main(){
   proxychains
   grc
   pykek
-  go_tools
-  ruby_tools
+  subjack
+  assetfinder
+  subfinder
+  gobuster
+  amass
+  ffuf
+  gitrob
+  shhgit
+  waybackurls
+  subover
+  subzy
+  gron
+  timing_attack
   updog
-  binaries
+  findomain
   autorecon
   privexchange
   end_message
