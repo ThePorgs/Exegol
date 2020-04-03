@@ -1,5 +1,5 @@
 # Exegol
-  Exegol is a kali light base with a few useful additional tools and some basic configuration. It can be used in pentest engagements and BugBounty. Exegol's first use was to be a ready-to-hack docker in case of emergencies during engagements.
+  Exegol is a fully configured kali light base with a few useful additional tools (~50) and some configuration (ho-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements and BugBounty. Exegol's first use was to be a ready-to-hack docker in case of emergencies during engagements.
 
   ![Screenshot Empire/DeathStar/mitm6/Responder/ntlmrelayx](https://i.imgur.com/PBThtlx.png)
 
