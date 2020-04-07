@@ -110,19 +110,24 @@ Some of the tools:
 - updog (https://github.com/sc0tfree/updog)
 - grc (https://github.com/garabik/grc)
 - gron (https://github.com/tomnomnom/gron)
+- pwndbg (https://github.com/pwndbg/pwndbg)
+- darkarmour (https://github.com/bats3c/darkarmour)
 
 # To-Do List
+## Things to add
   Here are some things to add that I have in mind, I'll work on that asap
-  - test ntlm-scanner, issue during last engagement, false-negative again during testing
   - install mdcat, bat
-  - gdb, pwndbg, ~~pwntools~~, radare2 and other pwn tools
+  - ~~gdb, pwndbg, pwntools~~, radare2 and other pwn tools?
   - is it possible to use Wifi and Bluetooth??
+  - move all the tools to /opt/tools and create a /opt/resources with useful things like pre-compiled binaries for x64/x86 Windows (Rubeus, WinPEAS, mimikatz...) 
   - *any idea ?*
 
-# Small issues to correct
+## Small issues to correct
+  - test ntlm-scanner, issue during last engagement, false-negative again during testing
   - Check lsassy doesn't have anymore requirement issues
   - Check grc confs are downloaded
   - Issue with dementor and grc, output is not printed unless the process has ended...
+  - Check pwndbg(gdb) and darkarmour work flawlessly
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
