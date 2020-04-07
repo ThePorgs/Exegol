@@ -392,6 +392,15 @@ function pwntools(){
   pip3 install pwntools
 }
 
+function pwngdb(){
+  colorecho "[+] Installing pwndbg"
+  apt -y install python3.8 python3.8-dev
+  git -C /opt clone https://github.com/pwndbg/pwndbg
+  cd /opt/pwndbg
+  ./setup.sh
+  echo 'set disassembly-flavor intel' >> ~/.gdbinit
+}
+
 function end_message() {
   colorecho "[+] Installation is done..."
   colorecho "You can use the following aliases on your host to build, run, open a shell, stop the container"
