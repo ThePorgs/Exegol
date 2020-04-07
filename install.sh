@@ -386,6 +386,12 @@ function LNKUp(){
   pip install -r requirements.txt
 }
 
+function pwntools(){
+  colorecho "[+] Installing pwntools"
+  pip install pwntools
+  pip3 install pwntools
+}
+
 function end_message() {
   colorecho "[+] Installation is done..."
   colorecho "You can use the following aliases on your host to build, run, open a shell, stop the container"
@@ -402,6 +408,7 @@ function main(){
   banners
   aliases
   dependencies
+  grc
   Responder
   Sublist3r
   ReconDog
@@ -418,7 +425,6 @@ function main(){
   XSStrike
   Bolt
   CrackMapExec
-  lsassy
   sprayhound
   BloodHound
   #mitm6_sources
@@ -432,8 +438,8 @@ function main(){
   ntlmscanner
   Impacket
   proxychains
-  grc
   pykek
+  lsassy
   subjack
   assetfinder
   subfinder
@@ -451,6 +457,7 @@ function main(){
   findomain
   autorecon
   privexchange
+  pwntools
   end_message
 }
 
