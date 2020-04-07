@@ -113,11 +113,16 @@ Some of the tools:
 
 # To-Do List
   Here are some things to add that I have in mind, I'll work on that asap
-  - test ntlm-scanner, issue during last engagement
+  - test ntlm-scanner, issue during last engagement, false-negative again during testing
   - install mdcat, bat
-  - gdb, pwndbg, pwntools, radare2 and other pwn tools
+  - gdb, pwndbg, ~~pwntools~~, radare2 and other pwn tools
   - is it possible to use Wifi and Bluetooth??
   - *any idea ?*
+
+# Small issues to correct
+  - Check lsassy doesn't have anymore requirement issues
+  - Check grc confs are downloaded
+  - Issue with dementor and grc, output is not printed unless the process has ended...
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
