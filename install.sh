@@ -392,13 +392,20 @@ function pwntools(){
   pip3 install pwntools
 }
 
-function pwngdb(){
+function pwndbg(){
   colorecho "[+] Installing pwndbg"
   apt -y install python3.8 python3.8-dev
   git -C /opt clone https://github.com/pwndbg/pwndbg
   cd /opt/pwndbg
   ./setup.sh
   echo 'set disassembly-flavor intel' >> ~/.gdbinit
+}
+
+function darkarmour(){
+  colorecho "[+] Installing darkarmour"
+  git -C /opt clone https://github.com/bats3c/darkarmour
+  cd /opt/darkarmour
+  apt -y install mingw-w64-tools mingw-w64-common g++-mingw-w64 gcc-mingw-w64 upx-ucl osslsigncode
 }
 
 function end_message() {
@@ -467,6 +474,8 @@ function main(){
   autorecon
   privexchange
   pwntools
+  pwndbg
+  darkarmour
   end_message
 }
 
