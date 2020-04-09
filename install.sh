@@ -15,8 +15,12 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains
-  #apt install -y sslstrip
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2
+}
+
+function filesystem() {
+  colorecho "[+] Preparing filesystem"
+  mkdir -p /opt/tools/ /opt/bin/ /opt/resources/ /opt/resources/windows/ /opt/resources/linux/
 }
 
 function ohmyzsh() {
@@ -32,7 +36,6 @@ function ohmyzsh() {
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
   echo 'source /opt/aliases' >> ~/.zshrc
   wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
-  mkdir -p /opt/bin
   echo 'export PATH=/opt/bin:$PATH' >> ~/.zshrc
 }
 
@@ -59,129 +62,129 @@ function dependencies() {
 
 function Responder() {
   colorecho "[+] Installing Responder"
-  git -C /opt clone https://github.com/lgandx/Responder
-  sed -i 's/ Random/ 1122334455667788/g' /opt/Responder/Responder.conf
-  sed -i 's/files\/AccessDenied.html/\/opt\/Responder\/files\/AccessDenied.html/g' /opt/Responder/Responder.conf
-  sed -i 's/files\/BindShell.exe/\/opt\/Responder\/files\/BindShell.exe/g' /opt/Responder/Responder.conf
-  sed -i 's/certs\/responder.crt/\/opt\/Responder\/certs\/responder.crt/g' /opt/Responder/Responder.conf
-  sed -i 's/certs\/responder.key/\/opt\/Responder\/certs\/responder.key/g' /opt/Responder/Responder.conf
+  git -C /opt/tools/ clone https://github.com/lgandx/Responder
+  sed -i 's/ Random/ 1122334455667788/g' /opt/tools/Responder/Responder.conf
+  sed -i 's/files\/AccessDenied.html/\/opt\/tools\/Responder\/files\/AccessDenied.html/g' /opt/tools/Responder/Responder.conf
+  sed -i 's/files\/BindShell.exe/\/opt\/tools\/Responder\/files\/BindShell.exe/g' /opt/tools/Responder/Responder.conf
+  sed -i 's/certs\/responder.crt/\/opt\/tools\/Responder\/certs\/responder.crt/g' /opt/tools/Responder/Responder.conf
+  sed -i 's/certs\/responder.key/\/opt\/tools\/Responder\/certs\/responder.key/g' /opt/tools/Responder/Responder.conf
 }
 
 function Sublist3r() {
   colorecho "[+] Installing Sublist3r"
-  git -C /opt clone https://github.com/aboul3la/Sublist3r.git
-  pip3 install -r /opt/Sublist3r/requirements.txt
+  git -C /opt/tools/ clone https://github.com/aboul3la/Sublist3r.git
+  pip3 install -r /opt/tools/Sublist3r/requirements.txt
 }
 
 function ReconDog() {
   colorecho "[+] Installing ReconDog"
-  git -C /opt clone https://github.com/s0md3v/ReconDog
-  pip3 install -r /opt/ReconDog/requirements.txt
+  git -C /opt/tools/ clone https://github.com/s0md3v/ReconDog
+  pip3 install -r /opt/tools/ReconDog/requirements.txt
 }
 
 function CloudFail() {
   colorecho "[+] Installing CloudFail"
-  git -C /opt clone https://github.com/m0rtem/CloudFail
-  pip3 install -r /opt/CloudFail/requirements.txt
+  git -C /opt/tools/ clone https://github.com/m0rtem/CloudFail
+  pip3 install -r /opt/tools/CloudFail/requirements.txt
 }
 
 function OneForAll() {
   colorecho "[+] Installing OneForAll"
-  git -C /opt clone https://github.com/shmilylty/OneForAll.git
-  pip3 install -r /opt/OneForAll/requirements.txt
+  git -C /opt/tools/ clone https://github.com/shmilylty/OneForAll.git
+  pip3 install -r /opt/tools/OneForAll/requirements.txt
 }
 
 function EyeWitness() {
   colorecho "[+] Installing EyeWitness"
-  git -C /opt clone https://github.com/FortyNorthSecurity/EyeWitness
-  cd /opt/EyeWitness/setup
+  git -C /opt/tools/ clone https://github.com/FortyNorthSecurity/EyeWitness
+  cd /opt/tools/EyeWitness/setup
   ./setup.sh
 }
 
 function wafw00f() {
   colorecho "[+] Installing wafw00f"
-  git -C /opt clone https://github.com/EnableSecurity/wafw00f
-  cd /opt/wafw00f
+  git -C /opt/tools/ clone https://github.com/EnableSecurity/wafw00f
+  cd /opt/tools/wafw00f
   python setup.py install
 }
 
 function JSParser() {
   colorecho "[+] Installing JSParser"
-  git -C /opt clone https://github.com/nahamsec/JSParser
-  cd /opt/JSParser
+  git -C /opt/tools/ clone https://github.com/nahamsec/JSParser
+  cd /opt/tools/JSParser
   python setup.py install
 }
 
 function LinkFinder() {
   colorecho "[+] Installing LinkFinder"
-  git -C /opt clone https://github.com/GerbenJavado/LinkFinder.git
-  cd /opt/LinkFinder
+  git -C /opt/tools/ clone https://github.com/GerbenJavado/LinkFinder.git
+  cd /opt/tools/LinkFinder
   pip3 install -r requirements.txt
   python3 setup.py install
 }
 
 function SSRFmap() {
   colorecho "[+] Installing SSRFmap"
-  git -C /opt clone https://github.com/swisskyrepo/SSRFmap
-  cd /opt/SSRFmap
+  git -C /opt/tools/ clone https://github.com/swisskyrepo/SSRFmap
+  cd /opt/tools/SSRFmap
   pip3 install -r requirements.txt
 }
 
 function fuxploider() {
   colorecho "[+] Installing fuxploider"
-  git -C /opt clone https://github.com/almandin/fuxploider.git
-  cd /opt/fuxploider
+  git -C /opt/tools/ clone https://github.com/almandin/fuxploider.git
+  cd /opt/tools/fuxploider
   pip3 install -r requirements.txt
 }
 
 function CORScanner() {
   colorecho "[+] Installing CORScanner"
-  git -C /opt clone https://github.com/chenjj/CORScanner.git
-  cd /opt/CORScanner
+  git -C /opt/tools/ clone https://github.com/chenjj/CORScanner.git
+  cd /opt/tools/CORScanner
   pip install -r requirements.txt
 }
 
 function Blazy() {
   colorecho "[+] Installing Blazy"
-  git -C /opt clone https://github.com/UltimateHackers/Blazy
-  cd /opt/Blazy
+  git -C /opt/tools/ clone https://github.com/UltimateHackers/Blazy
+  cd /opt/tools/Blazy
   pip install -r requirements.txt
 }
 
 function XSStrike() {
   colorecho "[+] Installing XSStrike"
-  git -C /opt clone https://github.com/s0md3v/XSStrike.git
+  git -C /opt/tools/ clone https://github.com/s0md3v/XSStrike.git
 }
 
 function Bolt() {
   colorecho "[+] Installing Bolt"
-  git -C /opt clone https://github.com/s0md3v/Bolt.git
+  git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
 }
 
 function CrackMapExec() {
   colorecho "[+] Downloading CrackMapExec"
   apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm
-  git -C /opt clone --recursive https://github.com/mpgn/CrackMapExec
-  cd /opt/CrackMapExec
+  git -C /opt/tools/ clone --recursive https://github.com/mpgn/CrackMapExec
+  cd /opt/tools/CrackMapExec
   git submodule update --recursive
   python3 setup.py install
 }
 
 function lsassy() {
   colorecho "[+] Installing lsassy with pip, and cme module by reinstalling cme with lsassy in cmd/modules/"
-  git -C /opt clone https://github.com/Hackndo/lsassy/
-  cd /opt/lsassy
+  git -C /opt/tools/ clone https://github.com/Hackndo/lsassy/
+  cd /opt/tools/lsassy
   python3 setup.py install
-  wget -O /opt/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
-  cd /opt/CrackMapExec
+  wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
+  cd /opt/tools/CrackMapExec
   python3 setup.py install
   pip3 install 'asn1crypto>=1.3.0'
 }
 
 function sprayhound() {
   colorecho "[+] Installing sprayhound"
-  git -C /opt clone https://github.com/Hackndo/sprayhound
-  cd /opt/sprayhound
+  git -C /opt/tools/ clone https://github.com/Hackndo/sprayhound
+  cd /opt/tools/sprayhound
   apt -y install libsasl2-dev libldap2-dev
   pip3 install "pyasn1<0.5.0,>=0.4.6"
   python3 setup.py install
@@ -189,8 +192,8 @@ function sprayhound() {
 
 function Impacket() {
   colorecho "[+] Installing Impacket scripts"
-  git -C /opt clone https://github.com/SecureAuthCorp/impacket
-  cd /opt/impacket/
+  git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
+  cd /opt/tools/impacket/
   pip3 install .
   wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
   wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
@@ -198,16 +201,16 @@ function Impacket() {
 
 function BloodHound() {
   colorecho "[+] Installing neo4j and Python ingestor for BloodHound"
-  git -C /opt clone https://github.com/fox-it/BloodHound.py
-  cd /opt/BloodHound.py/
+  git -C /opt/tools/ clone https://github.com/fox-it/BloodHound.py
+  cd /opt/tools/BloodHound.py/
   python setup.py install
   apt -y install neo4j
 }
 
 function mitm6_sources() {
   colorecho "[+] Installing mitm6 from sources"
-  git -C /opt clone https://github.com/fox-it/mitm6
-  cd /opt/mitm6/
+  git -C /opt/tools/ clone https://github.com/fox-it/mitm6
+  cd /opt/tools/mitm6/
   pip3 install --user -r requirements.txt
   python3 setup.py install
 }
@@ -226,8 +229,8 @@ function IceBreaker() {
   colorecho "[+] Installing IceBreaker"
   apt -y install lsb-release python3-libtmux python3-libnmap python3-ipython
   pip install pipenva
-  git -C /opt clone https://github.com/DanMcInerney/icebreaker
-  cd /opt/icebreaker/
+  git -C /opt/tools/ clone https://github.com/DanMcInerney/icebreaker
+  cd /opt/tools/icebreaker/
   ./setup.sh
   pipenv --three install
 }
@@ -236,42 +239,42 @@ function Empire() {
   colorecho "[+] Installing Empire"
   export STAGING_KEY='123Soleil'
   pip install pefile
-  git -C /opt clone https://github.com/BC-SECURITY/Empire
-  cd /opt/Empire/setup
+  git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
+  cd /opt/tools/Empire/setup
   ./install.sh
 }
 
 function DeathStar() {
   colorecho "[+] Installing DeathStar"
-  git -C /opt clone https://github.com/byt3bl33d3r/DeathStar
-  cd /opt/DeathStar
+  git -C /opt/tools/ clone https://github.com/byt3bl33d3r/DeathStar
+  cd /opt/tools/DeathStar
   pip3 install -r requirements.txt
 }
 
 function Sn1per() {
   colorecho "[+] Installing Sn1per"
-  git -C /opt clone https://github.com/1N3/Sn1per
-  sed -i 's/read answer/echo no answer to give/' /opt/Sn1per/install.sh
-  sed -i 's/cp/cp -v/g' /opt/Sn1per/install.sh
-  sed -i 's/mkdir/mkdir -v/g' /opt/Sn1per/install.sh
-  sed -i 's/rm/rm -v/g' /opt/Sn1per/install.sh
-  sed -i 's/mv/mv -v/g' /opt/Sn1per/install.sh
-  sed -i 's/wget/wget -v/g' /opt/Sn1per/install.sh
-  sed -i 's/2> \/dev\/null//g' /opt/Sn1per/install.sh
-  cd /opt/Sn1per/
+  git -C /opt/tools/ clone https://github.com/1N3/Sn1per
+  sed -i 's/read answer/echo no answer to give/' /opt/tools/Sn1per/install.sh
+  sed -i 's/cp/cp -v/g' /opt/tools/Sn1per/install.sh
+  sed -i 's/mkdir/mkdir -v/g' /opt/tools/Sn1per/install.sh
+  sed -i 's/rm/rm -v/g' /opt/tools/Sn1per/install.sh
+  sed -i 's/mv/mv -v/g' /opt/tools/Sn1per/install.sh
+  sed -i 's/wget/wget -v/g' /opt/tools/Sn1per/install.sh
+  sed -i 's/2> \/dev\/null//g' /opt/tools/Sn1per/install.sh
+  cd /opt/tools/Sn1per/
   bash install.sh
 }
 
 function dementor(){
   colorecho "[+] Installing dementor"
-  mkdir /opt/dementor
-  wget -O /opt/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
+  mkdir /opt/tools/dementor
+  wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
   wget -O /usr/share/grc/conf.dementor https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.dementor
 }
 
 function ntlmscanner(){
   colorecho "[+] Installing ntlm-scanner"
-  git -C /opt clone https://github.com/preempt/ntlm-scanner
+  git -C /opt/tools/ clone https://github.com/preempt/ntlm-scanner
 }
 
 function subjack(){
@@ -364,25 +367,25 @@ function grc(){
 
 function pykek(){
   colorecho "[+] Installing Python Kernel Exploit Kit (pykek) for MS14-068"
-  git -C /opt clone https://github.com/preempt/pykek
+  git -C /opt/tools/ clone https://github.com/preempt/pykek
 }
 
 function autorecon(){
   colorecho "[+] Installing autorecon"
-  git -C /opt clone https://github.com/Tib3rius/AutoRecon
-  cd /opt/AutoRecon/
+  git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
+  cd /opt/tools/AutoRecon/
   pip3 install -r requirements.txt
 }
 
 function privexchange(){
   colorecho "[+] Installing privexchange"
-  git -C /opt clone https://github.com/dirkjanm/PrivExchange
+  git -C /opt/tools/ clone https://github.com/dirkjanm/PrivExchange
 }
 
 function LNKUp(){
   colorecho "[+] Installing LNKUp"
-  git -C /opt clone https://github.com/Plazmaz/LNKUp
-  cd /opt/LNKUp
+  git -C /opt/tools/ clone https://github.com/Plazmaz/LNKUp
+  cd /opt/tools/LNKUp
   pip install -r requirements.txt
 }
 
@@ -395,17 +398,50 @@ function pwntools(){
 function pwndbg(){
   colorecho "[+] Installing pwndbg"
   apt -y install python3.8 python3.8-dev
-  git -C /opt clone https://github.com/pwndbg/pwndbg
-  cd /opt/pwndbg
+  git -C /opt/tools/ clone https://github.com/pwndbg/pwndbg
+  cd /opt/tools/pwndbg
   ./setup.sh
   echo 'set disassembly-flavor intel' >> ~/.gdbinit
 }
 
 function darkarmour(){
   colorecho "[+] Installing darkarmour"
-  git -C /opt clone https://github.com/bats3c/darkarmour
-  cd /opt/darkarmour
+  git -C /opt/tools/ clone https://github.com/bats3c/darkarmour
+  cd /opt/tools/darkarmour
   apt -y install mingw-w64-tools mingw-w64-common g++-mingw-w64 gcc-mingw-w64 upx-ucl osslsigncode
+}
+
+function resources() {
+  colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
+  # SysInternals
+  wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
+  unzip -d /opt/resources/windows/sysinternals /opt/resources/windows/sysinternals.zip
+  rm /opt/resources/windows/sysinternals.zip
+  # WinEnum.bat
+  git -C /opt/resources/windows/ clone https://github.com/mattiareggiani/WinEnum
+  # pspy
+  mkdir -p /opt/resources/linux/pspy
+  wget -O /opt/resources/linux/pspy/pspy32 "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy32"
+  wget -O /opt/resources/linux/pspy/pspy64 "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64"
+  wget -O /opt/resources/linux/pspy/pspy32s "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy32s"
+  wget -O /opt/resources/linux/pspy/pspy64s "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64s"
+  # linPEAS, winPEAS
+  git -C /opt/resources/ clone https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite
+  mv /opt/resources/privilege-escalation-awesome-scripts-suite/linPEAS /opt/resources/linux
+  mv /opt/resources/privilege-escalation-awesome-scripts-suite/winPEAS /opt/resources/windows
+  rm -r /opt/resources/privilege-escalation-awesome-scripts-suite
+  # linux smart enumeration (lse.sh)
+  wget -O /opt/resources/linux/linux-smart-enumeration.sh "https://github.com/diego-treitos/linux-smart-enumeration/raw/master/lse.sh"
+  # LinEnum.sh
+  wget -O /opt/resources/linux/LinEnum.sh "https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh"
+  # linux exploit suggester (les.sh)
+  wget -O /opt/resources/linux/linux-exploit-suggester.sh "https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh"
+  # mimikatz
+  wget -O /opt/resources/windows/mimikatz.zip "https://github.com/gentilkiwi/mimikatz/releases/download/2.2.0-20200308/mimikatz_trunk.zip"
+  unzip -d /opt/resources/windows/mimikatz /opt/resources/windows/mimikatz.zip
+  rm /opt/resources/windows/mimikatz.zip
+  # PowerSploit
+  git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
 }
 
 function end_message() {
@@ -420,6 +456,7 @@ function end_message() {
 function main(){
   update
   apt_packages
+  filesystem
   ohmyzsh
   banners
   aliases
@@ -476,6 +513,7 @@ function main(){
   pwntools
   pwndbg
   darkarmour
+  resources
   end_message
 }
 

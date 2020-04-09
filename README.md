@@ -1,5 +1,5 @@
 # Exegol
-  Exegol is a fully configured kali light base with a few useful additional tools (~50) and some configuration (ho-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements and BugBounty. Exegol's first use was to be a ready-to-hack docker in case of emergencies during engagements.
+  Exegol is a fully configured kali light base with a few useful additional tools (~50), a few useful resources (for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements and BugBounty. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements. It is now an environnement my team and I use in day to day engagements.
 
   ![Screenshot Empire/DeathStar/mitm6/Responder/ntlmrelayx](https://i.imgur.com/PBThtlx.png)
 
@@ -64,7 +64,7 @@
   - Stop exegol : `exegol-stop`
 
 # Tools
-The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works!
+The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works! You will find most of the tools in `/opt/tools`.
 Some of the tools:
 - Responder (https://github.com/lgandx/Responder)
 - CrackMapExec (https://github.com/mpgn/CrackMapExec)
@@ -113,13 +113,25 @@ Some of the tools:
 - pwndbg (https://github.com/pwndbg/pwndbg)
 - darkarmour (https://github.com/bats3c/darkarmour)
 
+# Useful resources
+In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
+- LinEnum (https://github.com/rebootuser/LinEnum)
+- WinEnum (https://github.com/mattiareggiani/WinEnum)
+- Linux Smart Enumeration (https://github.com/diego-treitos/linux-smart-enumeration)
+- Linux Exploit Suggester (https://github.com/mzet-/linux-exploit-suggester)
+- mimikatz (https://github.com/gentilkiwi/mimikatz)
+- linPEAS & winPEAS (https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
+- pspy (https://github.com/DominicBreuker/pspy)
+- sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
+- PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
+
 # To-Do List
 ## Things to add
   Here are some things to add that I have in mind, I'll work on that asap
-  - install mdcat, bat
-  - ~~gdb, pwndbg, pwntools~~, radare2 and other pwn tools?
+  - add mdcat, bat
   - is it possible to use Wifi and Bluetooth??
-  - move all the tools to /opt/tools and create a /opt/resources with useful things like pre-compiled binaries for x64/x86 Windows (Rubeus, WinPEAS, mimikatz...) 
+  - add pre-compiled binaries for x64/x86 Windows (Rubeus, JuicyPotato...)
+  - add Inveigh and other Powershell script in resources
   - *any idea ?*
 
 ## Small issues to correct
@@ -128,6 +140,7 @@ Some of the tools:
   - Check grc confs are downloaded
   - Issue with dementor and grc, output is not printed unless the process has ended...
   - Check pwndbg(gdb) and darkarmour work flawlessly
+  - Check everything works fine with last commit `/opt/* --> /opt/tools`
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
