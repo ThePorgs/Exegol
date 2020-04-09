@@ -20,7 +20,7 @@ function apt_packages() {
 
 function filesystem() {
   colorecho "[+] Preparing filesystem"
-  mkdir -p /opt/tools/ /opt/bin/ /opt/resources/ /opt/resources/windows/ /opt/resources/linux/
+  mkdir -p /opt/tools/ /opt/tools/bin/ /opt/resources/ /opt/resources/windows/ /opt/resources/linux/
 }
 
 function ohmyzsh() {
@@ -36,7 +36,7 @@ function ohmyzsh() {
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
   echo 'source /opt/aliases' >> ~/.zshrc
   wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
-  echo 'export PATH=/opt/bin:$PATH' >> ~/.zshrc
+  echo 'export PATH=/opt/tools/bin:$PATH' >> ~/.zshrc
 }
 
 function banners() {
@@ -350,8 +350,8 @@ function updog() {
 
 function findomain() {
   colorecho "[+] Installing findomain"
-  wget -O /opt/bin/findomain https://github.com/Edu4rdSHL/findomain/releases/latest/download/findomain-linux
-  chmod +x /opt/bin/findomain
+  wget -O /opt/tools/bin/findomain https://github.com/Edu4rdSHL/findomain/releases/latest/download/findomain-linux
+  chmod +x /opt/tools/bin/findomain
 }
 
 function proxychains(){
