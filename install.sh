@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash powershell proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2
 }
 
 function filesystem() {
@@ -411,6 +411,14 @@ function darkarmour(){
   apt -y install mingw-w64-tools mingw-w64-common g++-mingw-w64 gcc-mingw-w64 upx-ucl osslsigncode
 }
 
+function powershell() {
+  colorecho "[+] Installing powershell"
+  apt -y install powershell
+  mv /opt/microsoft /opt/tools/microsoft
+  rm /usr/bin/pwsh
+  ln -s /opt/tools/microsoft/powershell/7/pwsh /usr/bin/pwsh
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
   # SysInternals
@@ -513,6 +521,7 @@ function main(){
   pwntools
   pwndbg
   darkarmour
+  powershell
   resources
   end_message
 }
