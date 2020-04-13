@@ -85,3 +85,19 @@ wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate 
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt
 smbserver.py SHUTDOWN .
 smbserver.py -smb2support SHUTDOWN .
+ffuf -c -w `fzf` -u http://192.168.10.10/FUZZ
+nmblookup -A 192.168.10.10
+enum4linux -n 192.168.10.10
+nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
+smbmap -H 192.168.10.10
+smbmap -H 192.168.10.10 -R test
+smbclient '\\192.168.10.10\test'
+smbclient -L '\\192.168.10.10' -N
+nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
+rpcclient -U '' -N 192.168.10.10
+smbclient '\\192.168.10.10\IPC$' -N
+enum -s 192.168.10.10
+enum -U 192.168.10.10
+enum -P 192.168.10.10
+enum4linux -a 192.168.10.10
+amap -d 192.168.10.10 4455

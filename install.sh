@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python-pip python2 python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python-dev python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap
 }
 
 function filesystem() {
@@ -421,6 +421,18 @@ function powershell() {
   ln -s /opt/tools/microsoft/powershell/7/pwsh /usr/bin/pwsh
 }
 
+function fzf() {
+  colorecho "[+] Installing fzf"
+  git -C /opt/tools/ clone --depth 1 https://github.com/junegunn/fzf.git
+  cd /opt/tools/fzf
+  ./install --all
+}
+
+function shellerator() {
+  colorecho "[+] Installing shellerator"
+  git -C /opt/tools clone https://github.com/ShutdownRepo/shellerator
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
   # SysInternals
@@ -452,6 +464,8 @@ function resources() {
   rm /opt/resources/windows/mimikatz.zip
   # PowerSploit
   git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
+  # PrivescCheck (Windows)
+  git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
 }
 
 function end_message() {
@@ -524,6 +538,8 @@ function main(){
   pwndbg
   darkarmour
   powershell
+  fzf
+  shellerator
   resources
   end_message
 }
