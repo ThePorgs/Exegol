@@ -15,7 +15,7 @@
   ```
   2. Then pull : `docker pull nwodtuhs/exegol`
   3. Then run the docker and get a shell : `exegol-run && exegol-shell`
-  4. Stop it when you're done : `exegol-update`
+  4. Stop it when you're done : `exegol-stop`
 
 # Pre-requisites
   Docker is needed here if you want to run Exegol in a docker (intended). You can also use the `install.sh` in order to deploy Exegol elsewhere but I don't guarantee it'll work. (That being said I don't guarantee anything bro)
@@ -124,6 +124,7 @@ In addition to the many tools pre-installed and configured for some, you will fi
 - pspy (https://github.com/DominicBreuker/pspy)
 - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
 - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
+- PrivescCheck (https://github.com/itm4n/PrivescCheck)
 
 # To-Do List
 ## Things to add
@@ -132,6 +133,7 @@ In addition to the many tools pre-installed and configured for some, you will fi
   - is it possible to use Wifi and Bluetooth??
   - add pre-compiled binaries for x64/x86 Windows (Rubeus, JuicyPotato...)
   - add Inveigh and other Powershell script in resources
+  - configure fzf path
   - *any idea ?*
 
 ## Small issues to correct
