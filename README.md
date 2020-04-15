@@ -112,6 +112,10 @@ Some of the tools:
 - gron (https://github.com/tomnomnom/gron)
 - pwndbg (https://github.com/pwndbg/pwndbg)
 - darkarmour (https://github.com/bats3c/darkarmour)
+- bat (https://github.com/sharkdp/bat)
+- shellerator (https://github.com/ShutdownRepo/shellerator)
+- mdcat (https://github.com/lunaryorn/mdcat)
+- kadimus (https://github.com/P0cL4bs/Kadimus)
 
 # Useful resources
 In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -129,11 +133,9 @@ In addition to the many tools pre-installed and configured for some, you will fi
 # To-Do List
 ## Things to add
   Here are some things to add that I have in mind, I'll work on that asap
-  - add mdcat, bat
   - is it possible to use Wifi and Bluetooth??
   - add pre-compiled binaries for x64/x86 Windows (Rubeus, JuicyPotato...)
   - add Inveigh and other Powershell script in resources
-  - configure fzf path
   - *any idea ?*
 
 ## Small issues to correct

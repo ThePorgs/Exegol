@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan testssl.sh theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn
 }
 
 function python-pip() {
@@ -438,6 +438,31 @@ function fzf() {
 function shellerator() {
   colorecho "[+] Installing shellerator"
   git -C /opt/tools clone https://github.com/ShutdownRepo/shellerator
+  cd /opt/tools/shellerator
+  pip3 install -r requirements.txt
+}
+
+function kadimus() {
+  colorecho "[+] Installing kadimus"
+  apt -y install libcurl4-openssl-dev libpcre3-dev libssh-dev
+  git -C /opt/tools/ clone https://github.com/P0cL4bs/Kadimus
+  cd /opt/tools/Kadimus
+  make
+}
+
+function bat() {
+  colorecho "[+] Installing bat"
+  wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
+  apt install -f bat_0.13.0_amd64.deb
+  rm bat_0.13.0_amd64.deb
+}
+
+function mdcat() {
+  colorecho "[+] Installing mdcat"
+  wget https://github.com/lunaryorn/mdcat/releases/download/mdcat-0.16.0/mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
+  tar xvfz mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
+  mv mdcat-0.16.0-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
+  rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
 }
 
 function resources() {
@@ -548,6 +573,9 @@ function main(){
   powershell
   fzf
   shellerator
+  kadimus
+  bat
+  mdcat
   resources
   end_message
 }

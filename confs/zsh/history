@@ -52,6 +52,7 @@ nmap -F -T3 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 enum4linux -u anonymous -p anonymous DC01.BREAKING.BAD
 gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.56.0:8000/
+gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
 cme smb 192.168.56.0/24 -u '' -p '' --shares
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
@@ -85,7 +86,7 @@ wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate 
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt
 smbserver.py SHUTDOWN .
 smbserver.py -smb2support SHUTDOWN .
-ffuf -c -w `fzf` -u http://192.168.10.10/FUZZ
+ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 nmblookup -A 192.168.10.10
 enum4linux -n 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
