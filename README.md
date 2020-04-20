@@ -136,15 +136,12 @@ In addition to the many tools pre-installed and configured for some, you will fi
   - is it possible to use Wifi and Bluetooth??
   - add pre-compiled binaries for x64/x86 Windows (Rubeus, JuicyPotato...)
   - add Inveigh and other Powershell script in resources
-  - *any idea ?*
 
 ## Small issues to correct
-  - test ntlm-scanner, issue during last engagement, false-negative again during testing
-  - Check lsassy doesn't have anymore requirement issues
-  - Check grc confs are downloaded
+  - Check lsassy, shellerator don't have anymore requirement issues
   - Issue with dementor and grc, output is not printed unless the process has ended...
-  - Check pwndbg(gdb) and darkarmour work flawlessly
-  - Check everything works fine with last commit `/opt/* --> /opt/tools`
+  - Check darkarmour work flawlessly
+  - SSRFMap includes ressources with relative path
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).

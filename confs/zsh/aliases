@@ -7,7 +7,7 @@ alias http-server='python3 -m http.server'
 alias php-server='php -S 127.0.0.1:8080 -t .'
 alias ftp-server='python -m pyftpdlib -u "mario" -P "m4r10" -p 2121'
 alias powershell='pwsh'
-alias responder='python3 /opt/tools/Responder/Responder.py'
+alias responder='/opt/tools/Responder/Responder.py'
 alias responder-http-on="sed -i 's/HTTP = Off/HTTP = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-http-off="sed -i 's/HTTP = On/HTTP = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-smb-on="sed -i 's/SMB = Off/SMB = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
