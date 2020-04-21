@@ -451,6 +451,13 @@ function testssl() {
   apt -y install testssl.sh bsdmainutils
 }
 
+function fimap() {
+  colorecho "[+] Installing fimap"
+  git -C /opt/tools/ clone https://tha-imax.de/git/root/fimap
+  cd /opt/tools/fimap
+  pip install httplib2
+}
+
 function bat() {
   colorecho "[+] Installing bat"
   wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
@@ -499,15 +506,14 @@ function resources() {
   git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
   # PrivescCheck (Windows)
   git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
-}
-
-function end_message() {
-  colorecho "[+] Installation is done..."
-  colorecho "You can use the following aliases on your host to build, run, open a shell, stop the container"
-  colorecho "\talias exegol-build='docker build --tag exegol /PATH/TO/Exegol/'"
-  colorecho "\talias exegol-run='docker run --interactive --tty --detach --network host --volume /PATH/TO/Exegol/shared-volume:/share --name exegol exegol'"
-  colorecho "\talias exegol-shell='docker exec -it exegol zsh'"
-  colorecho "\talias exegol-stop='docker stop exegol && docker rm exegol'"
+  # Pre-compiled Rubeus.exe
+  wget -O /opt/resources/windows/Rubeus.exe https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe
+  # Inveigh and Inveigh-Relay
+  git -C /opt/resources/windows https://github.com/Kevin-Robertson/Inveigh
+  # SharpHound
+  mkdir /opt/resources/windows/SharpHound
+  wget -O /opt/resources/windows/SharpHound/SharpHound.exe https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe
+  wget -O /opt/resources/windows/SharpHound/SharpHound.ps1 https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1
 }
 
 function main(){
@@ -575,10 +581,10 @@ function main(){
   shellerator
   kadimus
   testssl
+  fimap
   bat
   mdcat
   resources
-  end_message
 }
 
 if [[ $EUID -ne 0 ]]; then
