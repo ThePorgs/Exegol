@@ -80,7 +80,6 @@ Some of the tools:
 - DeathStar (https://github.com/byt3bl33d3r/DeathStar)
 - AutoRecon (https://github.com/Tib3rius/AutoRecon)
 - Sn1per (https://github.com/1N3/Sn1per)
-- ntlm-scanner (https://github.com/preempt/ntlm-scanner)
 - Sublist3r (https://github.com/aboul3la/Sublist3r)
 - ReconDog (https://github.com/s0md3v/ReconDog)
 - CloudFail (https://github.com/m0rtem/CloudFail)
@@ -116,6 +115,7 @@ Some of the tools:
 - shellerator (https://github.com/ShutdownRepo/shellerator)
 - mdcat (https://github.com/lunaryorn/mdcat)
 - kadimus (https://github.com/P0cL4bs/Kadimus)
+- XSRFProbe (https://github.com/0xInfection/XSRFProbe)
 
 # Useful resources
 In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -129,6 +129,8 @@ In addition to the many tools pre-installed and configured for some, you will fi
 - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
 - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
 - PrivescCheck (https://github.com/itm4n/PrivescCheck)
+- Inveigh (https://github.com/Kevin-Robertson/Inveigh)
+- Rubeus (https://github.com/GhostPack/Rubeus) ([pre-compiled binary](https://github.com/r3motecontrol/Ghostpack-CompiledBinaries))
 
 # To-Do List
 ## Things to add

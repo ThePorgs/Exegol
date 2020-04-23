@@ -278,6 +278,7 @@ function Sn1per() {
 function dementor(){
   colorecho "[+] Installing dementor"
   mkdir /opt/tools/dementor
+  pip install pycrypto
   wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
   wget -O /usr/share/grc/conf.dementor https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.dementor
 }
@@ -473,6 +474,13 @@ function mdcat() {
   rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
 }
 
+function xsrfprobe() {
+  colorecho "[+] Installing XSRFProbe"
+  git -C /opt/tools/ clone https://github.com/0xInfection/XSRFProbe
+  cd /opt/tools/XSRFProbe
+  python3 setup.py install
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
   # SysInternals
@@ -523,7 +531,6 @@ function main(){
   filesystem
   ohmyzsh
   banners
-  aliases
   dependencies
   grc
   Responder
