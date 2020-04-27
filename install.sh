@@ -137,6 +137,13 @@ function SSRFmap() {
   pip3 install -r requirements.txt
 }
 
+function NoSQLMap() {
+  colorecho "[+] Installing NoSQLMap"
+  git -C /opt/tools clone https://github.com/codingo/NoSQLMap.git
+  cd /opt/tools/NoSQLMap
+  python setup.py install
+}
+
 function fuxploider() {
   colorecho "[+] Installing fuxploider"
   git -C /opt/tools/ clone https://github.com/almandin/fuxploider.git
@@ -543,6 +550,7 @@ function main(){
   #JSParser
   LinkFinder
   SSRFmap
+  NoSQLMap
   fuxploider
   CORScanner
   Blazy
