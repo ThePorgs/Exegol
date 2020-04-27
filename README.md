@@ -116,6 +116,7 @@ Some of the tools:
 - mdcat (https://github.com/lunaryorn/mdcat)
 - kadimus (https://github.com/P0cL4bs/Kadimus)
 - XSRFProbe (https://github.com/0xInfection/XSRFProbe)
+- NoSQLMap (https://github.com/codingo/NoSQLMap)
 
 # Useful resources
 In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
