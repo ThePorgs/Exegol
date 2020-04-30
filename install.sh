@@ -488,6 +488,11 @@ function xsrfprobe() {
   python3 setup.py install
 }
 
+function krbrelayx() {
+  colorecho "[+] Installing krbrelayx"
+  git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
   # SysInternals
@@ -599,6 +604,8 @@ function main(){
   fimap
   bat
   mdcat
+  xsrfprobe
+  krbrelayx
   resources
 }
 

