@@ -139,12 +139,10 @@ In addition to the many tools pre-installed and configured for some, you will fi
   Here are some things to add that I have in mind, I'll work on that asap
   - is it possible to use Wifi and Bluetooth??
   - add pre-compiled (obfuscated too?) binaries for x64/x86 Windows (Rubeus, JuicyPotato...)
+  - new sysinternals (https://docs.microsoft.com/en-us/sysinternals/) (https://live.sysinternals.com/)
 
 ## Small issues to correct
-  - Check lsassy, shellerator don't have anymore requirement issues
   - Issue with dementor and grc, output is not printed unless the process has ended...
-  - Check darkarmour work flawlessly
-  - SSRFMap includes resources with relative path
 
 # Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
