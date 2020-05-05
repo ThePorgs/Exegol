@@ -77,6 +77,7 @@ dirb http://192.168.10.10 /usr/share/seclists/Discovery/Web-Content/big.txt
 gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.10.10/
 gobuster dir -w /usr/share/dirbuster/wordlists/directory-list-2.3-medium.txt -u http://192.168.10.10/
 gobuster dir -w /usr/share/seclists/Discovery/Web-Content/big.txt -t 20 -x php,txt,pl,sh,asp,aspx,html,json,py,cfm,rb,cgi -u http://192.168.10.10/
+gobuster dir -w /usr/share/seclists/Discovery/Web-Content/big.txt -t 20 -x txt,bak,tar.gz,tgz,zip -u http://192.168.10.10/
 smtp-user-enum -M RCPT -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
 smtp-user-enum -M VRFY -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
 smtp-user-enum -M EXPN -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10

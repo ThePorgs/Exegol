@@ -118,6 +118,9 @@ Some of the tools:
 - XSRFProbe (https://github.com/0xInfection/XSRFProbe)
 - NoSQLMap (https://github.com/codingo/NoSQLMap)
 - krbrelayx (https://github.com/dirkjanm/krbrelayx)
+- hakrawler (https://github.com/hakluke/hakrawler)
+- JWT tool (https://github.com/ticarpi/jwt_tool)
+- JWT cracker (https://github.com/lmammino/jwt-cracker)
 
 # Useful resources
 In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.

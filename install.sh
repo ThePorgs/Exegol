@@ -27,7 +27,7 @@ function python-pip() {
 
 function filesystem() {
   colorecho "[+] Preparing filesystem"
-  mkdir -p /opt/tools/ /opt/tools/bin/ /opt/resources/ /opt/resources/windows/ /opt/resources/linux/
+  mkdir -p /opt/tools/ /opt/tools/bin/
 }
 
 function ohmyzsh() {
@@ -493,8 +493,26 @@ function krbrelayx() {
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
 }
 
+function hakrawler() {
+  colorecho "[+] Installing hakrawler"
+  go get -u -v github.com/hakluke/hakrawler
+}
+
+function jwt_tool() {
+  colorecho "[+] Installing JWT tool"
+  git -C /opt/tools/ clone https://github.com/ticarpi/jwt_tool
+  pip3 install pycryptodomex
+}
+
+function jwt_cracker() {
+  colorecho "[+] Installing JWT cracker"
+  apt -y install npm
+  npm install --global jwt-cracker
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
+  mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP
   # SysInternals
   wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
   unzip -d /opt/resources/windows/sysinternals /opt/resources/windows/sysinternals.zip
@@ -534,6 +552,9 @@ function resources() {
   mkdir /opt/resources/windows/SharpHound
   wget -O /opt/resources/windows/SharpHound/SharpHound.exe https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe
   wget -O /opt/resources/windows/SharpHound/SharpHound.ps1 https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1
+  # Webshells
+  git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
+  git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
 }
 
 function main(){
@@ -606,6 +627,9 @@ function main(){
   mdcat
   xsrfprobe
   krbrelayx
+  hakrawler
+  jwt_tool
+  jwt_cracker
   resources
 }
 
