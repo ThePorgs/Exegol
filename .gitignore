@@ -1,0 +1,5 @@
+# Personal shared volume
+shared-volume/
+
+# Build logs for debugging
+build.log

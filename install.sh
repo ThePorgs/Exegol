@@ -27,7 +27,7 @@ function python-pip() {
 
 function filesystem() {
   colorecho "[+] Preparing filesystem"
-  mkdir -p /opt/tools/ /opt/tools/bin/
+  mkdir -p /opt/tools/ /opt/tools/bin/ /share/
 }
 
 function ohmyzsh() {
@@ -41,8 +41,8 @@ function ohmyzsh() {
   echo 'export GO111MODULE=on' >> ~/.zshrc
   echo 'export PATH=$GOPATH:$PATH' >> ~/.zshrc
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
-  echo 'source /opt/aliases' >> ~/.zshrc
-  wget -O /opt/aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
+  echo 'source /opt/.zsh_aliases' >> ~/.zshrc
+  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
   echo 'export PATH=/opt/tools/bin:$PATH' >> ~/.zshrc
 }
 
@@ -190,9 +190,9 @@ function lsassy() {
   git -C /opt/tools/ clone https://github.com/Hackndo/lsassy/
   cd /opt/tools/lsassy
   python3 setup.py install
-  wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
-  cd /opt/tools/CrackMapExec
-  python3 setup.py install
+  #wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
+  #cd /opt/tools/CrackMapExec
+  #python3 setup.py install
   pip3 install 'asn1crypto>=1.3.0'
 }
 
@@ -469,7 +469,7 @@ function fimap() {
 function bat() {
   colorecho "[+] Installing bat"
   wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
-  apt install -f bat_0.13.0_amd64.deb
+  apt install -f ./bat_0.13.0_amd64.deb
   rm bat_0.13.0_amd64.deb
 }
 
@@ -511,8 +511,8 @@ function jwt_cracker() {
 }
 
 function resources() {
-  colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus...)"
-  mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP
+  colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
+  mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
   # SysInternals
   wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
   unzip -d /opt/resources/windows/sysinternals /opt/resources/windows/sysinternals.zip
@@ -521,40 +521,42 @@ function resources() {
   git -C /opt/resources/windows/ clone https://github.com/mattiareggiani/WinEnum
   # pspy
   mkdir -p /opt/resources/linux/pspy
-  wget -O /opt/resources/linux/pspy/pspy32 "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy32"
-  wget -O /opt/resources/linux/pspy/pspy64 "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64"
-  wget -O /opt/resources/linux/pspy/pspy32s "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy32s"
-  wget -O /opt/resources/linux/pspy/pspy64s "https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64s"
+  wget -O /opt/resources/linux/pspy/pspy32 "$(curl -s https://github.com/DominicBreuker/pspy/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/pspy32"
+  wget -O /opt/resources/linux/pspy/pspy64 "$(curl -s https://github.com/DominicBreuker/pspy/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/pspy64"
+  wget -O /opt/resources/linux/pspy/pspy32s "$(curl -s https://github.com/DominicBreuker/pspy/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/pspy32s"
+  wget -O /opt/resources/linux/pspy/pspy64s "$(curl -s https://github.com/DominicBreuker/pspy/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/pspy64s"
   # linPEAS, winPEAS
   git -C /opt/resources/ clone https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite
   mv /opt/resources/privilege-escalation-awesome-scripts-suite/linPEAS /opt/resources/linux
   mv /opt/resources/privilege-escalation-awesome-scripts-suite/winPEAS /opt/resources/windows
   rm -r /opt/resources/privilege-escalation-awesome-scripts-suite
   # linux smart enumeration (lse.sh)
-  wget -O /opt/resources/linux/linux-smart-enumeration.sh "https://github.com/diego-treitos/linux-smart-enumeration/raw/master/lse.sh"
+  wget -O /opt/resources/linux/lse.sh "https://github.com/diego-treitos/linux-smart-enumeration/raw/master/lse.sh"
   # LinEnum.sh
   wget -O /opt/resources/linux/LinEnum.sh "https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh"
   # linux exploit suggester (les.sh)
-  wget -O /opt/resources/linux/linux-exploit-suggester.sh "https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh"
+  wget -O /opt/resources/linux/les.sh "https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh"
   # mimikatz
-  wget -O /opt/resources/windows/mimikatz.zip "https://github.com/gentilkiwi/mimikatz/releases/download/2.2.0-20200308/mimikatz_trunk.zip"
+  wget -O /opt/resources/windows/mimikatz.zip "$(curl -s https://github.com/gentilkiwi/mimikatz/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/mimikatz_trunk.zip"
   unzip -d /opt/resources/windows/mimikatz /opt/resources/windows/mimikatz.zip
-  rm /opt/resources/windows/mimikatz.zip
   # PowerSploit
   git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
   # PrivescCheck (Windows)
   git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
   # Pre-compiled Rubeus.exe
-  wget -O /opt/resources/windows/Rubeus.exe https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe
+  wget -O /opt/resources/windows/Rubeus.exe "https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe"
   # Inveigh and Inveigh-Relay
   git -C /opt/resources/windows https://github.com/Kevin-Robertson/Inveigh
   # SharpHound
   mkdir /opt/resources/windows/SharpHound
-  wget -O /opt/resources/windows/SharpHound/SharpHound.exe https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe
-  wget -O /opt/resources/windows/SharpHound/SharpHound.ps1 https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1
+  wget -O /opt/resources/windows/SharpHound/SharpHound.exe "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe"
+  wget -O /opt/resources/windows/SharpHound/SharpHound.ps1 "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1"
+  # JuicyPotato
+  wget -O /opt/resources/windows/JuicyPotato.exe "$(curl -s https://github.com/ohpe/juicy-potato/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/JuicyPotato.exe"
   # Webshells
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
+  wget -O /opt/resources/webshells/ASPX/webshell.aspx "https://raw.githubusercontent.com/xl7dev/WebShell/master/Aspx/ASPX%20Shell.aspx"
 }
 
 function main(){
