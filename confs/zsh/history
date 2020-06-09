@@ -113,9 +113,9 @@ smbclient -N '\\192.168.10.10\test'
 smbclient -L -N '\\192.168.10.10'
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
 rpcclient -U '' -N 192.168.10.10
-enum -s 192.168.10.10
-enum -U 192.168.10.10
-enum -P 192.168.10.10
+enum4linux -s 192.168.10.10
+enum4linux -U 192.168.10.10
+enum4linux -P 192.168.10.10
 enum4linux -a 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10

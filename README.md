@@ -127,6 +127,8 @@
   - hakrawler (https://github.com/hakluke/hakrawler)
   - JWT tool (https://github.com/ticarpi/jwt_tool)
   - JWT cracker (https://github.com/lmammino/jwt-cracker)
+  - gf (https://github.com/tomnomnom/gf)
+  - wuzz (https://github.com/asciimoo/wuzz)
 
 # Useful resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -142,6 +144,8 @@
   - PrivescCheck (https://github.com/itm4n/PrivescCheck)
   - Inveigh (https://github.com/Kevin-Robertson/Inveigh)
   - Rubeus (https://github.com/GhostPack/Rubeus) ([pre-compiled binary](https://github.com/r3motecontrol/Ghostpack-CompiledBinaries))
+  - LaZagne (https://github.com/AlessandroZ/LaZagne)
+  - SpoolSample (https://github.com/leechristensen/SpoolSample/)
 
 # To-Do List
 ## Things to add

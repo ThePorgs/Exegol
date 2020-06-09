@@ -35,15 +35,17 @@ function ohmyzsh() {
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   sed -i 's/robbyrussell/gentoo/g' ~/.zshrc
   sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
+  echo '' >> ~/.zshrc
   echo 'TIME_="%{$fg[white]%}[%{$fg[red]%}%D %T%{$fg[white]%}]%{$reset_color%}"' >> ~/.zshrc
   echo 'PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "' >> ~/.zshrc
-  echo 'export GOPATH=/root/go/bin' >> ~/.zshrc
+  echo '' >> ~/.zshrc
+  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
   echo 'export GO111MODULE=on' >> ~/.zshrc
-  echo 'export PATH=$GOPATH:$PATH' >> ~/.zshrc
+  echo 'export PATH=/opt/tools/bin:$GOPATH/bin:$PATH' >> ~/.zshrc
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
+  echo '' >> ~/.zshrc
   echo 'source /opt/.zsh_aliases' >> ~/.zshrc
   wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
-  echo 'export PATH=/opt/tools/bin:$PATH' >> ~/.zshrc
 }
 
 function banners() {
@@ -510,6 +512,20 @@ function jwt_cracker() {
   npm install --global jwt-cracker
 }
 
+function wuzz() {
+  colorecho "[+] Installing wuzz"
+  go get -u -v github.com/asciimoo/wuzz
+}
+
+function gf() {
+  colorecho "[+] Installing gf"
+  mkdir ~/.gf
+  go get -u -v github.com/tomnomnom/gf
+  echo 'source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh' >> ~/.zshrc
+  cp -rv ~/go/src/github.com/tomnomnom/gf/examples/* ~/.gf
+  gf -save redirect -HanrE 'url=|rt=|cgi-bin/redirect.cgi|continue=|dest=|destination=|go=|out=|redir=|redirect_uri=|redirect_url=|return=|return_path=|returnTo=|rurl=|target=|view=|from_url=|load_url=|file_url=|page_url=|file_name=|page=|folder=|folder_url=|login_url=|img_url=|return_url=|return_to=|next=|redirect=|redirect_to=|logout=|checkout=|checkout_url=|goto=|next_page=|file=|load_file='
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -543,20 +559,35 @@ function resources() {
   git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
   # PrivescCheck (Windows)
   git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
-  # Pre-compiled Rubeus.exe
-  wget -O /opt/resources/windows/Rubeus.exe "https://github.com/r3motecontrol/Ghostpack-CompiledBinaries/raw/master/Rubeus.exe"
+  # Rubeus
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/Rubeus_3.exe"
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/Rubeus_4.5.exe"
   # Inveigh and Inveigh-Relay
   git -C /opt/resources/windows https://github.com/Kevin-Robertson/Inveigh
   # SharpHound
   mkdir /opt/resources/windows/SharpHound
-  wget -O /opt/resources/windows/SharpHound/SharpHound.exe "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe"
-  wget -O /opt/resources/windows/SharpHound/SharpHound.ps1 "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1"
+  wget -P /opt/resources/windows/SharpHound/ "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe"
+  wget -P /opt/resources/windows/SharpHound/ "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1"
   # JuicyPotato
-  wget -O /opt/resources/windows/JuicyPotato.exe "$(curl -s https://github.com/ohpe/juicy-potato/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/JuicyPotato.exe"
+  wget -P /opt/resources/windows/ "$(curl -s https://github.com/ohpe/juicy-potato/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/JuicyPotato.exe"
+  # Impacket examples Windows
+  git -C /opt/resources/windows/ clone https://github.com/maaaaz/impacket-examples-windows
   # Webshells
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
   wget -O /opt/resources/webshells/ASPX/webshell.aspx "https://raw.githubusercontent.com/xl7dev/WebShell/master/Aspx/ASPX%20Shell.aspx"
+  # nc
+  cp /usr/bin/nc.traditional /opt/resources/linux/nc.traditional
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/nc.exe"
+  # SpoolSample
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/SpoolSample.exe"
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/SpoolSample_v4.5_x64..exe"
+  # Diaghub
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/diaghub.exe"
+  # LaZagne
+  wget -P /opt/resources/windows/ "$(curl -s https://github.com/AlessandroZ/LaZagne/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/lazagne.exe"
+  # sublinacl
+  wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/sublinacl.exe"
 }
 
 function main(){
@@ -632,6 +663,8 @@ function main(){
   hakrawler
   jwt_tool
   jwt_cracker
+  wuzz
+  gf
   resources
 }
 
