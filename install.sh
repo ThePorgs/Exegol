@@ -526,6 +526,11 @@ function gf() {
   gf -save redirect -HanrE 'url=|rt=|cgi-bin/redirect.cgi|continue=|dest=|destination=|go=|out=|redir=|redirect_uri=|redirect_url=|return=|return_path=|returnTo=|rurl=|target=|view=|from_url=|load_url=|file_url=|page_url=|file_name=|page=|folder=|folder_url=|login_url=|img_url=|return_url=|return_to=|next=|redirect=|redirect_to=|logout=|checkout=|checkout_url=|goto=|next_page=|file=|load_file='
 }
 
+function rockyou() {
+  colorecho "[+] Extracting /usr/share/wordlists/rockyou.txt.gz"
+  gunzip -d /usr/share/wordlists/rockyou.txt.gz
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -665,6 +670,7 @@ function main(){
   jwt_cracker
   wuzz
   gf
+  rockyou
   resources
 }
 
