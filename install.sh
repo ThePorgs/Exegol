@@ -517,7 +517,7 @@ function wuzz() {
   go get -u -v github.com/asciimoo/wuzz
 }
 
-function gf() {
+function gf_install() {
   colorecho "[+] Installing gf"
   mkdir ~/.gf
   go get -u -v github.com/tomnomnom/gf
@@ -676,7 +676,7 @@ function main(){
   jwt_tool
   jwt_cracker
   wuzz
-  gf
+  gf_install
   rockyou
   rbcd-attack
   resources
