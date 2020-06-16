@@ -598,6 +598,8 @@ function resources() {
   wget -P /opt/resources/windows/ "$(curl -s https://github.com/AlessandroZ/LaZagne/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/lazagne.exe"
   # sublinacl
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/sublinacl.exe"
+  # PowerSploit
+  git -C /opt/resources/windows/ clone https://github.com/PowerShellMafia/PowerSploit
 }
 
 function main(){

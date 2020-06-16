@@ -147,6 +147,7 @@
   - Rubeus (https://github.com/GhostPack/Rubeus) ([pre-compiled binary](https://github.com/r3motecontrol/Ghostpack-CompiledBinaries))
   - LaZagne (https://github.com/AlessandroZ/LaZagne)
   - SpoolSample (https://github.com/leechristensen/SpoolSample/)
+  - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
 
 # To-Do List
 ## Things to add
