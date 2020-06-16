@@ -129,6 +129,7 @@
   - JWT cracker (https://github.com/lmammino/jwt-cracker)
   - gf (https://github.com/tomnomnom/gf)
   - wuzz (https://github.com/asciimoo/wuzz)
+  - rbcd-attack (https://github.com/tothi/rbcd-attack)
 
 # Useful resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.

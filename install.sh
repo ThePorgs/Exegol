@@ -531,6 +531,11 @@ function rockyou() {
   gunzip -d /usr/share/wordlists/rockyou.txt.gz
 }
 
+function rbcd-attack() {
+  colorecho "[+] Installing rbcd-attack"
+  git -C /opt/tools/ clone https://github.com/tothi/rbcd-attack
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -671,6 +676,7 @@ function main(){
   wuzz
   gf
   rockyou
+  rbcd-attack
   resources
 }
 

