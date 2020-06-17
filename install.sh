@@ -188,7 +188,7 @@ function CrackMapExec() {
 }
 
 function lsassy() {
-  colorecho "[+] Installing lsassy with pip, and cme module by reinstalling cme with lsassy in cmd/modules/"
+  colorecho "[+] Installing lsassy"
   git -C /opt/tools/ clone https://github.com/Hackndo/lsassy/
   cd /opt/tools/lsassy
   python3 setup.py install

