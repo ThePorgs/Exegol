@@ -536,6 +536,11 @@ function rbcd-attack() {
   git -C /opt/tools/ clone https://github.com/tothi/rbcd-attack
 }
 
+function evilwinrm() {
+  colorecho "[+] Installing evil-winrm"
+  gem install evil-winrm
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -679,6 +684,7 @@ function main(){
   gf_install
   rockyou
   rbcd-attack
+  evilwinrm
   resources
 }
 

