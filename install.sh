@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils
 }
 
 function python-pip() {
@@ -541,9 +541,14 @@ function evilwinrm() {
   gem install evil-winrm
 }
 
+function pypykatz() {
+  colorecho "[+] Installing pypykatz"
+  pip3 install pypykatz
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
-  mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
+  mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
   # SysInternals
   wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
   unzip -d /opt/resources/windows/sysinternals /opt/resources/windows/sysinternals.zip
@@ -600,11 +605,20 @@ function resources() {
   # Diaghub
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/diaghub.exe"
   # LaZagne
-  wget -P /opt/resources/windows/ "$(curl -s https://github.com/AlessandroZ/LaZagne/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/lazagne.exe"
+  git -C /tmp/ clone https://github.com/AlessandroZ/LaZagne
+  mv /tmp/LaZagne/Linux /opt/resources/linux/LaZagne
+  mv /tmp/LaZagne/Mac /opt/resources/mac/LaZagne
+  mv /tmp/LaZagne/Windows /opt/resources/widnows/LaZagne
+  wget -P /opt/resources/windows/LaZagne/ "$(curl -s https://github.com/AlessandroZ/LaZagne/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/lazagne.exe"
+  rm -r /tmp/LaZagne
   # sublinacl
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/sublinacl.exe"
   # PowerSploit
   git -C /opt/resources/windows/ clone https://github.com/PowerShellMafia/PowerSploit
+  # mimipenguin
+  git -C /opt/resources/linux/ clone https://github.com/huntergregal/mimipenguin
+  # mimipy
+  git -C /opt/resources/linux/ clone https://github.com/n1nj4sec/mimipy
 }
 
 function main(){
@@ -685,6 +699,7 @@ function main(){
   #rockyou
   rbcd-attack
   evilwinrm
+  pypykatz
   resources
 }
 

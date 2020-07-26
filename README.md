@@ -131,6 +131,7 @@
   - wuzz (https://github.com/asciimoo/wuzz)
   - rbcd-attack (https://github.com/tothi/rbcd-attack)
   - evil-winrm (https://github.com/Hackplayers/evil-winrm)
+  - pypykatz (https://github.com/skelsec/pypykatz)
 
 # Useful resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -149,6 +150,8 @@
   - LaZagne (https://github.com/AlessandroZ/LaZagne)
   - SpoolSample (https://github.com/leechristensen/SpoolSample/)
   - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
+  - mimipenguin (https://github.com/huntergregal/mimipenguin)
+  - mimipy (https://github.com/n1nj4sec/mimipy)
 
 # To-Do List
 ## Things to add
@@ -157,6 +160,7 @@
   - add pre-compiled (obfuscated too?) binaries for x64/x86 Windows
   - add a history file that is saved in the shared folder so that history is saved after the docker is restarted
   - clean files left over after installs (/root, /tmp)
+  - history : ffuf with extensions
 
 ## Small issues to correct
   - Issue with dementor and grc, output is not printed unless the process has ended...
