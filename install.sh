@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git gobuster hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils mariadb-client
 }
 
 function python-pip() {
@@ -259,6 +259,10 @@ function Empire() {
   export STAGING_KEY='123Soleil'
   pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
+  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
+  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/agent.ps1
+  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' lib/common/*.py
+  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' data/agent/stagers/*.py
   cd /opt/tools/Empire/setup
   ./install.sh
 }
@@ -546,6 +550,11 @@ function pypykatz() {
   pip3 install pypykatz
 }
 
+function enyx() {
+  colorecho "[+] Installing enyx"
+  git -C /opt/tools/ clone https://github.com/trickster0/Enyx
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -700,6 +709,7 @@ function main(){
   rbcd-attack
   evilwinrm
   pypykatz
+  enyx
   resources
 }
 
