@@ -630,6 +630,12 @@ function resources() {
   git -C /opt/resources/linux/ clone https://github.com/n1nj4sec/mimipy
 }
 
+function cleaning() {
+  colorecho "[+] Cleaning..."
+  rm /tmp/gobuster.7z
+  rm -r /tmp/gobuster-linux-amd64
+}
+
 function main(){
   update
   apt_packages
@@ -711,6 +717,7 @@ function main(){
   pypykatz
   enyx
   resources
+  cleaning
 }
 
 if [[ $EUID -ne 0 ]]; then

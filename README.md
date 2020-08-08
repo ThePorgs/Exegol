@@ -1,16 +1,18 @@
 # Exegol
-  Exegol is a fully configured kali light base with a few useful additional tools (~50), a few useful resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements and BugBounty. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements. It is now an environnement my team and I use in day to day engagements.
+  Exegol is a fully configured kali light base with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements. It is now an environnement my team and I use in day to day engagements.
+
+  The biggest features of Exegol are:
+  - [Tools](#tools): many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with ultra-famous tools only. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Reponder, ...)
+  - [Resources](#resources): many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
+  - [History](#history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
+  - [Aliases](#aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
 
   ![Screenshot Empire/DeathStar/mitm6/Responder/ntlmrelayx](https://i.imgur.com/PBThtlx.png)
 
-# Use cases
-  Exegol is ready for the following use-cases
-  - Web applications pentest/bugbounty/CTF
-  - Active Directory and internal pentests
-  - OSCP lab and exam
-
-# Quick start
+# :fast_forward: Quick start
+  **:construction: Docker Hub builds are failing right now (see [issue #11](https://github.com/ShutdownRepo/Exegol/issues/11)). For now, ignore this part and refer to [installation from GitHub](#install-from-github) and [usage](#usage)**
   The project is on Docker Hub, you don't need to clone this git.
+  :warning: Don't run the `install.sh` script on your host. It is meant to run on the docker build.
   1. First set the following aliases in your bashrc/zshrc/whateverrc.
   ```
   alias exegol-update='docker pull nwodtuhs/exegol'
@@ -23,7 +25,7 @@
   3. Then run the docker and get a shell : `exegol-run && exegol-shell`
   4. Stop it when you're done : `exegol-stop`
 
-# Pre-requisites
+# :pushpin: Pre-requisites
   Docker is needed here if you want to run Exegol in a docker (intended). You can also use the `install.sh` in order to deploy Exegol elsewhere but I don't guarantee it'll work. (That being said I don't guarantee anything bro)
 
   Need a quick install of docker & docker-compose? Check this out (intended for kali users but I guess it could work on any other Debian based system)
@@ -41,21 +43,23 @@
   sudo usermod -aG docker $USER
   ```
 
-# Install (from Docker Hub)
+# :whale: Install (from Docker Hub)
+  **:construction: Docker Hub builds are failing right now (see [issue #11](/issues/11))**
   It can be long, pull exegol before needing it.
   ```
   docker pull nwodtuhs/exegol
   ```
 
-# Install (from GitHub)
+# :octocat: Install (from GitHub)
   The build can be long, build exegol before needing it.
+  :warning: Don't run the `install.sh` script on your host. It is meant to run on the docker build.
   ```
   git clone https://github.com/ShutdownRepo/Exegol
   cd Exegol
   docker build --tag exegol .
   ```
 
-# Usage
+# :mag_right: Usage
   I personnaly use these aliases to go fast ([very fast](https://www.youtube.com/watch?v=KsBjVvxBj84))
   ```
   alias exegol-update='docker pull nwodtuhs/exegol'
@@ -69,7 +73,7 @@
   - Get a shell when exegol is up and running (it is possible to pop multiple shells) : `exegol-shell`
   - Stop exegol : `exegol-stop`
 
-# Tools
+# :wrench: Tools
   The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works! You will find most of the tools in `/opt/tools`.
   Some of the tools:
   - Responder (https://github.com/lgandx/Responder)
@@ -134,7 +138,7 @@
   - pypykatz (https://github.com/skelsec/pypykatz)
   - enyx (https://github.com/trickster0/Enyx)
 
-# Useful resources
+# :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
   - LinEnum (https://github.com/rebootuser/LinEnum)
   - WinEnum (https://github.com/mattiareggiani/WinEnum)
@@ -154,18 +158,23 @@
   - mimipenguin (https://github.com/huntergregal/mimipenguin)
   - mimipy (https://github.com/n1nj4sec/mimipy)
 
-# To-Do List
-## Things to add
-  Here are some things to add that I have in mind, I'll work on that asap
+# :scroll: History
+  Another useful feature is the populated history. When I hack, I often rely on my history. I don't have to remember command line options, syntax and such. This history is filled with commands that I used in engagements, bugbounties, ctf, oscp and so on. Of course, the values are placeholders that need to be changed with the appropriate ones in your context.
+
+# :rocket: Aliases
+  Since many tools are manually installed in `/opt/tools/`, aliases could be heplful to use these without having to change directory manually.
+  Other aliases are set to save time while hacking (`http-server`, `php-server`, `urlencode`,`ipa`, ...).
+
+# :memo: To-Do List
+  Here are some things to add/correct that I have in mind, I'll work on that asap
   - is it possible to use Wifi and Bluetooth??
-  - add pre-compiled (obfuscated too?) binaries for x64/x86 Windows
-  - add a history file that is saved in the shared folder so that history is saved after the docker is restarted
-  - clean files left over after installs (/tmp)
   - history : ffuf with extensions
   - replace impacket install with original repo and manually add commit
-
-## Small issues to correct
   - Issue with dementor and grc, output is not printed unless the process has ended...
+  - create a wiki instead of this really long readme?
 
-# Credits & thanks
+# :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
+
+# :movie_camera: Introducing Exegol (in french w/ english subs)
+[![Introducing Exegol (french)](http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg)](http://www.youtube.com/watch?v=TA3vrNpWGvg "Introducing Exegol (french)")
