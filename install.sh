@@ -242,6 +242,7 @@ function mitm6() {
 function aclpwn() {
   colorecho "[+] Installing aclpwn with pip"
   pip3 install aclpwn
+  sed -i 's/neo4j.v1/neo4j/g' /usr/local/lib/python3.8/dist-packages/aclpwn/database.py
 }
 
 function IceBreaker() {

