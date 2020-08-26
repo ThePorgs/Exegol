@@ -556,6 +556,11 @@ function enyx() {
   git -C /opt/tools/ clone https://github.com/trickster0/Enyx
 }
 
+function enum4linux-ng() {
+  colorecho "[+] Installing enum4linux-ng"
+  git -C /opt/tools/ clone https://github.com/cddmp/enum4linux-ng
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -721,6 +726,7 @@ function main(){
   evilwinrm
   pypykatz
   enyx
+  enum4linux-ng
   resources
   cleaning
 }

@@ -57,3 +57,4 @@ alias urldecode='python -c "import sys, urllib as ul; print ul.unquote_plus(sys.
 alias enyx='python /opt/tools/enyx/enyx.py'
 alias starkiller='echo "Starkiller has a GUI, cant run on exegol: run empire-rest on exegol, then starkiller on host"'
 alias empire-rest='empire --rest --username admin --password admin'
+alias enum4linux-ng='/opt/tools/enum4linux-ng/enum4linux-ng.py'

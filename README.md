@@ -11,9 +11,9 @@
 
 # :fast_forward: Quick start
   **:construction: Docker Hub builds are failing right now (see [issue #11](https://github.com/ShutdownRepo/Exegol/issues/11)). For now, ignore this part and refer to [installation from GitHub](#install-from-github) and [usage](#usage)**
-  
+
   The project is on Docker Hub, you don't need to clone this git.
-  
+
   :warning: Don't run the `install.sh` script on your host. It is meant to run on the docker build.
   1. First set the following aliases in your bashrc/zshrc/whateverrc.
   ```
@@ -47,7 +47,7 @@
 
 # :whale: Install (from Docker Hub)
   **:construction: Docker Hub builds are failing right now (see [issue #11](/issues/11))**
-  
+
   It can be long, pull exegol before needing it.
   ```
   docker pull nwodtuhs/exegol
@@ -55,7 +55,7 @@
 
 # :octocat: Install (from GitHub)
   The build can be long, build exegol before needing it.
-  
+
   :warning: Don't run the `install.sh` script on your host. It is meant to run on the docker build.
   ```
   git clone https://github.com/ShutdownRepo/Exegol
@@ -172,10 +172,10 @@
 # :memo: To-Do List
   Here are some things to add/correct that I have in mind, I'll work on that asap
   - is it possible to use Wifi and Bluetooth??
-  - history : ffuf with extensions
   - replace impacket install with original repo and manually add commit
   - Issue with dementor and grc, output is not printed unless the process has ended...
   - create a wiki instead of this really long readme?
+  - issues when mounting stuff
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
