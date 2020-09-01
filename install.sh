@@ -561,6 +561,25 @@ function enum4linux-ng() {
   git -C /opt/tools/ clone https://github.com/cddmp/enum4linux-ng
 }
 
+function git-dumper() {
+  colorecho "[+] Installing git-dumper"
+  git -C /opt/tools/ clone https://github.com/arthaud/git-dumper
+  cd /opt/tools/git-dumper
+  pip3 install -r requirements.txt
+}
+
+function gopherus() {
+  colorecho "[+] Installing gopherus"
+  git -C /opt/tools/ clone https://github.com/tarunkant/Gopherus
+  cd /opt/tools/Gopherus
+  ./install.sh
+}
+
+function ysoserial() {
+  colorecho "[+] Installing ysoserial"
+  wget -O /opt/tools/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -613,7 +632,7 @@ function resources() {
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
   wget -O /opt/resources/webshells/ASPX/webshell.aspx "https://raw.githubusercontent.com/xl7dev/WebShell/master/Aspx/ASPX%20Shell.aspx"
   # nc
-  cp /usr/bin/nc.traditional /opt/resources/linux/nc.traditional
+  cp /usr/bin/nc.traditional /opt/resources/linux/nc
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/nc.exe"
   # SpoolSample
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/SpoolSample.exe"
@@ -638,6 +657,8 @@ function resources() {
   # plink
   wget -O /opt/resources/windows/plink32.exe "https://the.earth.li/~sgtatham/putty/latest/w32/plink.exe"
   wget -O /opt/resources/windows/plink64.exe "https://the.earth.li/~sgtatham/putty/latest/w64/plink.exe"
+  # deepce
+  wget -O /opt/resources/linux/deepce "https://github.com/stealthcopter/deepce/raw/master/deepce.sh"
 }
 
 function cleaning() {
@@ -727,6 +748,9 @@ function main(){
   pypykatz
   enyx
   enum4linux-ng
+  git-dumper
+  gopherus
+  ysoserial
   resources
   cleaning
 }

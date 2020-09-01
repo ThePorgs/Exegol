@@ -141,6 +141,9 @@
   - evil-winrm (https://github.com/Hackplayers/evil-winrm)
   - pypykatz (https://github.com/skelsec/pypykatz)
   - enyx (https://github.com/trickster0/Enyx)
+  - enum4linux-ng (https://github.com/cddmp/enum4linux-ng)
+  - git-dumper (https://github.com/arthaud/git-dumper)
+  - gopherus (https://github.com/tarunkant/Gopherus)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -161,6 +164,8 @@
   - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
   - mimipenguin (https://github.com/huntergregal/mimipenguin)
   - mimipy (https://github.com/n1nj4sec/mimipy)
+  - plink (https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
+  - deepce (https://github.com/stealthcopter/deepce)
 
 # :scroll: History
   Another useful feature is the populated history. When I hack, I often rely on my history. I don't have to remember command line options, syntax and such. This history is filled with commands that I used in engagements, bugbounties, ctf, oscp and so on. Of course, the values are placeholders that need to be changed with the appropriate ones in your context.
