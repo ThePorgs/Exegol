@@ -15,7 +15,7 @@ function update() {
 
 function apt_packages() {
   colorecho "[+] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git hashcat hping3 hydra john joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils mariadb-client fcrackzip
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git hashcat hping3 hydra joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils mariadb-client fcrackzip
 }
 
 function python-pip() {
@@ -41,7 +41,8 @@ function ohmyzsh() {
   echo '' >> ~/.zshrc
   echo 'export GOPATH=$HOME/go' >> ~/.zshrc
   echo 'export GO111MODULE=on' >> ~/.zshrc
-  echo 'export PATH=/opt/tools/bin:$GOPATH/bin:$PATH' >> ~/.zshrc
+  echo 'export JOHN=/opt/tools/john/run' >> ~/.zshrc
+  echo 'export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH' >> ~/.zshrc
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
   echo '' >> ~/.zshrc
   echo 'source /opt/.zsh_aliases' >> ~/.zshrc
@@ -580,6 +581,19 @@ function ysoserial() {
   wget -O /opt/tools/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
 }
 
+function john() {
+  colorecho "[+] Installing john the ripper"
+  apt install qtbase5-dev
+  git -C /opt/tools/ clone https://github.com/openwall/john
+  cd /opt/tools/john/src
+  ./configure --disable-openmp
+  make -s clean && make -sj4
+  mv ../run/john ../run/john-non-omp
+  ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
+  make -s clean && make -sj4
+  sudo make shell-completion
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -751,6 +765,7 @@ function main(){
   git-dumper
   gopherus
   ysoserial
+  john
   resources
   cleaning
 }
