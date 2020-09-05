@@ -594,6 +594,16 @@ function john() {
   sudo make shell-completion
 }
 
+function rockyou() {
+  colorecho "[+] Decompressing rockyou.txt"
+  gunzip -d /usr/share/wordlists/rockyou.txt.gz
+}
+
+function memcached-cli() {
+  colorecho "[+] Installing memcached-cli"
+  npm install -g memcached-cli
+}
+
 function resources() {
   colorecho "[+] Fetching useful resources (sysinternals, LinEnum, Rubeus, JuicyPotato...)"
   mkdir -p  /opt/resources/ /opt/resources/windows/ /opt/resources/linux/ /opt/resources/mac/ /opt/resources/webshells/ /opt/resources/webshells/PHP/ /opt/resources/webshells/ASPX/
@@ -643,6 +653,7 @@ function resources() {
   # Webshells
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
   sed -i 's/fa769dac7a0a94ee47d8ebe021eaba9e/5f4dcc3b5aa765d61d8327deb882cf99/g' /opt/resources/webshells/PHP/wso-webshell/wso.php
+  echo 'password' > /opt/resources/webshells/PHP/wso-webshell/password.txt
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
   wget -O /opt/resources/webshells/ASPX/webshell.aspx "https://raw.githubusercontent.com/xl7dev/WebShell/master/Aspx/ASPX%20Shell.aspx"
   # nc
@@ -766,6 +777,8 @@ function main(){
   gopherus
   ysoserial
   john
+  rockyou
+  memcached-cli
   resources
   cleaning
 }

