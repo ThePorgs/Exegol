@@ -570,7 +570,8 @@ function gopherus() {
 
 function ysoserial() {
   echo "[EXEGOL] Installing ysoserial"
-  wget -O /opt/tools/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
+  mkdir /opt/tools/ysoserial/
+  wget -O /opt/tools/ysoserial/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
 }
 
 function john() {
