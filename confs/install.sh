@@ -8,7 +8,7 @@ function update() {
 
 function apt_packages() {
   echo "[EXEGOL] Installing APT packages"
-  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git hashcat hping3 hydra joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils mariadb-client fcrackzip exiftool
+  apt install -y --no-install-recommends aircrack-ng crunch curl dirb dirbuster dnsenum dnsrecon dnsutils dos2unix enum4linux exploitdb ftp git hashcat hping3 hydra joomscan masscan metasploit-framework mimikatz nasm ncat netcat-traditional nikto nmap patator php powersploit proxychains python3 recon-ng samba samdump2 seclists smbclient smbmap snmp socat sqlmap sslscan theharvester tree vim nano weevely wfuzz wget whois wordlists seclists wpscan zsh golang ssh iproute2 iputils-ping python3-pip python3-dev sudo tcpdump gem tidy passing-the-hash proxychains ssh-audit whatweb smtp-user-enum onesixtyone cewl radare2 nbtscan amap python-dev python2 file dotdotpwn xsser rlwrap lsof bruteforce-luks less redis-tools telnet pst-utils mariadb-client fcrackzip
 }
 
 function python-pip() {
@@ -695,8 +695,8 @@ function cleaning() {
 }
 
 function main(){
-  update
-  apt_packages
+  update || exit
+  apt_packages || exit
   python-pip
   filesystem
   ohmyzsh
@@ -795,7 +795,11 @@ else
     NC='\033[0m'
     echo -e "${BG}"
     echo "This script is running in docker, as it should :)"
-    echo "If you see things in red, don't panic, it's not errors, it's just badly handled colors"
+    echo "If you see things in red, don't panic, it's usually not errors, just badly handled colors"
+    echo "---"
+    echo "A successful build whill output the following last two lines:"
+    echo "Successfully built d30d7f163c89"
+    echo "Successfully tagged nwodtuhs/exegol:latest"
     echo -e "${NC}"
     sleep 2
     main "$@"
