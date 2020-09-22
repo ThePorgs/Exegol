@@ -14,18 +14,18 @@ build: ## [Docker] build
 update: ## [Docker] update
 	sudo docker build --no-cache --pull -t exegol .
 
-start: ## [Docker] Start
-	sudo docker run -ti --network host --volume $(SHARE):/share --name exegol_container exegol
-
-startd: ## [Docker] Start detached
-	sudo docker run -ti -d --network host --volume $(SHARE):/share --name exegol_container exegol
+up: ## [Docker] create and start the container (detached)
+	sudo docker run -d -ti --network host -e DISPLAY=$$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name exegol_container exegol
 
 shell: ## [Docker] shell
 	sudo docker exec -ti exegol_container zsh
 
+start: ## [Docker] start
+	sudo docker start exegol_container
+
 stop: ## [Docker] stop
 	sudo docker stop exegol_container
 
-stopd: ## [Docker] stop and destroy container
+down: ## [Docker] stop and destroy container
 	sudo docker stop exegol_container && sudo docker rm exegol_container
 
