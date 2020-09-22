@@ -868,6 +868,11 @@ function deepce() {
   wget -O /opt/resources/linux/deepce "https://github.com/stealthcopter/deepce/raw/master/deepce.sh"
 }
 
+function arsenal() {
+  echo "[EXEGOL] Installing Arsenal"
+  git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal.git
+  echo 'alias a=/opt/tools/arsenal/run' >> ~/.zshrc
+}
 
 function install_base() {
   update || exit
@@ -959,6 +964,7 @@ function install_tools() {
   rockyou
   memcached-cli
   zerologon
+  arsenal
 }
 
 function install_resources() {
