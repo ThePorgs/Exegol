@@ -36,6 +36,9 @@ update-from-sources: ## [Docker] update exegol from the sources cloned from GitH
 start: ## [Docker] start exegol
 	docker run --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
 
+start-proxmark:
+	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
+
 start-gui: ## [in-dev][Docker] start exegol with display sharing
 	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
 
