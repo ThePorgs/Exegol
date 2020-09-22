@@ -15,17 +15,17 @@ update: ## [Docker] update
 	sudo docker build --no-cache --pull -t exegol .
 
 start: ## [Docker] Start
-	sudo docker run -ti --network host --volume $(SHARE):/share --name exegol_container exegol zsh
+	sudo docker run -ti --network host --volume $(SHARE):/share --name exegol_container exegol
 
 startd: ## [Docker] Start detached
-	sudo docker run -ti -d --network host --volume $(SHARE):/share --name exegol_container exegol zsh
+	sudo docker run -ti -d --network host --volume $(SHARE):/share --name exegol_container exegol
 
-bash: ## [Docker] bash
+shell: ## [Docker] shell
 	sudo docker exec -ti exegol_container zsh
 
 stop: ## [Docker] stop
 	sudo docker stop exegol_container
 
-destroy: ## [Docker] destroy container
+stopd: ## [Docker] stop and destroy container
 	sudo docker stop exegol_container && sudo docker rm exegol_container
 

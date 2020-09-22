@@ -14,3 +14,4 @@ RUN /root/install.sh install_clean
 RUN rm /root/install.sh
 
 WORKDIR /share
+CMD ["/bin/zsh"]
