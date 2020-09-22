@@ -65,6 +65,7 @@
   - enum4linux-ng (https://github.com/cddmp/enum4linux-ng)
   - git-dumper (https://github.com/arthaud/git-dumper)
   - gopherus (https://github.com/tarunkant/Gopherus)
+  - arsenal (https://github.com/Orange-Cyberdefense/arsenal)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
