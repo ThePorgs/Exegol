@@ -32,8 +32,7 @@
   - Stop exegol : `exegol-stop`
 
 # :wrench: Tools
-  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works! You will find most of the tools in `/opt/tools`.
-  Some of the tools:
+  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound.py (https://github.com/fox-it/BloodHound.py)
@@ -42,7 +41,7 @@
   - updog (https://github.com/sc0tfree/updog)
   - shellerator (https://github.com/ShutdownRepo/shellerator)
   - krbrelayx (https://github.com/dirkjanm/krbrelayx)
-  - and many others ([show me the whole list](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#wrench-tools))
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#wrench-tools)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -53,7 +52,7 @@
   - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
   - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
   - Rubeus (https://github.com/GhostPack/Rubeus) ([pre-compiled binary](https://github.com/r3motecontrol/Ghostpack-CompiledBinaries))
-  - and many others ([show me the whole list](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#bulb-resources))
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#bulb-resources)
 
 # :scroll: History
   When I hack, I often rely on my history. I don't have to remember command line options, syntax and such. This history is filled with commands that I used in engagements, bugbounties, ctf, oscp and so on. Of course, the values are placeholders that need to be changed with the appropriate ones in your context.
@@ -67,6 +66,9 @@
   - is it possible to use Wifi and Bluetooth??
   - issues when mounting stuff
   - redo the ZeroLogon install part once clean exploits are out
+  - rewrite apt_packages function
+  - make a GIF and/or some visuals to present this ?
+  - makefile for build, start, update etc. ?
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).

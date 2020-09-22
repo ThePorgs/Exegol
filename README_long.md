@@ -1,5 +1,5 @@
 # :wrench: Tools
-  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works! You will find most of the tools in `/opt/tools`.
+  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
   Some of the tools:
   - Responder (https://github.com/lgandx/Responder)
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
@@ -65,7 +65,6 @@
   - enum4linux-ng (https://github.com/cddmp/enum4linux-ng)
   - git-dumper (https://github.com/arthaud/git-dumper)
   - gopherus (https://github.com/tarunkant/Gopherus)
-  - ZeroLogon exploit ()
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
