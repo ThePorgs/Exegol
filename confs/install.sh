@@ -871,7 +871,6 @@ function deepce() {
 function arsenal() {
   echo "[EXEGOL] Installing Arsenal"
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal.git
-  echo 'alias a=/opt/tools/arsenal/run' >> ~/.zshrc
 }
 
 function install_base() {
@@ -1001,7 +1000,6 @@ function install_clean() {
   rm /tmp/gobuster.7z
   rm -r /tmp/gobuster-linux-amd64
 }
-
 
 if [[ $EUID -ne 0 ]]; then
   echo -e "${RED}"

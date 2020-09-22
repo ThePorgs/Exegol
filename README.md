@@ -66,9 +66,10 @@
   - is it possible to use Wifi and Bluetooth??
   - issues when mounting stuff
   - redo the ZeroLogon install part once clean exploits are out
-  - rewrite apt_packages function
   - make a GIF and/or some visuals to present this ?
-  - makefile for build, start, update etc. ?
+  - fix the time in the prompt
+  - rewrite the README with the Makefile and DockerHub
+  - install commands and outputs logging
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
