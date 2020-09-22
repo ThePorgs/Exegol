@@ -967,6 +967,7 @@ function install_tools() {
 }
 
 function install_resources() {
+  resources
   sysinternals
   winenum
   pspy
