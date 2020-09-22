@@ -110,6 +110,7 @@ function apt_packages() {
   fapt mariadb-client
   fapt fcrackzip
   fapt exiftool
+  fapt tmux
 }
 
 function python-pip() {
