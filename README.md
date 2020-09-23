@@ -70,6 +70,7 @@
   - fix the time in the prompt
   - rewrite the README with the Makefile and DockerHub
   - install commands and outputs logging
+  - test if the install.sh script can be added by dockerfile with a local path confs/install.sh
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
