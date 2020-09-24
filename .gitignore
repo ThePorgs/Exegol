@@ -2,4 +2,4 @@
 shared-volume/
 
 # Build logs for debugging
-build.log
+.build.log

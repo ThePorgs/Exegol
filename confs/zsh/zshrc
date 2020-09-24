@@ -1,0 +1,19 @@
+export ZSH="/root/.oh-my-zsh"
+ZSH_THEME="gentoo"
+
+plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux)
+
+source $ZSH/oh-my-zsh.sh
+
+TIME_="%{$fg[white]%}[%{$fg[red]%}%D{%b %d, %Y - %T (%Z)}%{$fg[white]%}]%{$reset_color%}"
+PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "
+
+export GOPATH=$HOME/go
+export GO111MODULE=on
+export JOHN=/opt/tools/john/run
+export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH
+
+source /opt/.zsh_aliases
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh

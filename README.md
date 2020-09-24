@@ -1,39 +1,33 @@
 # Exegol
-  Exegol is a fully configured kali light base with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colourized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements. It is now the environment my team and I use in day to day engagements.
+  Exegol is a fully configured docker with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colorized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements.
 
-  The biggest features of Exegol are:
+  The main features of Exegol are:
   - [Tools](#wrench-tools): many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with ultra-famous tools only. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Reponder, ...)
   - [Resources](#bulb-resources): many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
   - [History](#scroll-history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
   - [Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
 
+  **TL;DR** Exegol is a community-driven environment that can be used in day to day engagements.
+
 # :fast_forward: Install
   The install process takes time. Install it before needing it.
-  1. Clone : `git clone https://github.com/ShutdownRepo/Exegol`
-  2. Build : `cd Exegol && docker build --tag exegol .`
-  3. Set the following aliases in your bashrc/zshrc/whateverrc.
-  ```
-  alias exegol-update='docker pull nwodtuhs/exegol'
-  alias exegol-build='docker build --tag nwodtuhs/exegol /PATH/TO/Exegol/'
-  alias exegol-run='docker run --interactive --tty --detach --network host --volume /PATH/TO/Exegol/shared-volume:/share --name exegol nwodtuhs/exegol'
-  alias exegol-shell='docker exec -it exegol zsh'
-  alias exegol-stop='docker stop exegol && docker rm exegol'
-  ```
-  4. Run the docker and get a shell : `exegol-run && exegol-shell`
-  5. Stop it when you're done : `exegol-stop`
-
-# :pushpin: Pre-requisites
-  You need docker :whale:
+  1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /PATH/TO/Exegol/'`
+  2. Install : `exegol install`
+  3. Update : `èxegol update`
 
 # :mag_right: Usage
-  - Update the docker : `exegol-update`
-  - Run the docker : `exegol-run`
-  - Get a shell when exegol is up and running (it is possible to have multiple shells) : `exegol-shell`
-  - Stop exegol : `exegol-stop`
+  1. Start : `exegol start`
+  2. Get a shell : `exegol shell`
+  3. Stop in a saved state : `exegol pause`
+  4. Resume from the saved state : `exegol resume`
+  5. Kill/reset the docker state : `exegol kill`
+  6. Get help on advanced usage : `exegol help`
+
+# :pushpin: Pre-requisites
+  You need docker :whale:, make, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
 
 # :wrench: Tools
-  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some of the tools can be found in a complete kali install though. Some installs are made with go, pip, apt, gem etc. The installs are not perfect but hey, it works! You will find most of the tools in `/opt/tools`.
-  Some of the tools:
+  The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound.py (https://github.com/fox-it/BloodHound.py)
@@ -42,7 +36,7 @@
   - updog (https://github.com/sc0tfree/updog)
   - shellerator (https://github.com/ShutdownRepo/shellerator)
   - krbrelayx (https://github.com/dirkjanm/krbrelayx)
-  - and many others ([show me the whole list](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#wrench-tools))
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#wrench-tools)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -53,7 +47,7 @@
   - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
   - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
   - Rubeus (https://github.com/GhostPack/Rubeus) ([pre-compiled binary](https://github.com/r3motecontrol/Ghostpack-CompiledBinaries))
-  - and many others ([show me the whole list](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#bulb-resources))
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#bulb-resources)
 
 # :scroll: History
   When I hack, I often rely on my history. I don't have to remember command line options, syntax and such. This history is filled with commands that I used in engagements, bugbounties, ctf, oscp and so on. Of course, the values are placeholders that need to be changed with the appropriate ones in your context.
@@ -67,6 +61,9 @@
   - is it possible to use Wifi and Bluetooth??
   - issues when mounting stuff
   - redo the ZeroLogon install part once clean exploits are out
+  - make a GIF and/or some visuals to present this ?
+  - find a way to log commands and outputs for engagements
+  - add an option in the Makefile to deploy multiple versions of Exegol, on for each engagement
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
