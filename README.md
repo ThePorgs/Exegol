@@ -62,8 +62,8 @@
   - issues when mounting stuff
   - redo the ZeroLogon install part once clean exploits are out
   - make a GIF and/or some visuals to present this ?
-  - rewrite the README with the Makefile and DockerHub
   - find a way to log commands and outputs for engagements
+  - add an option in the Makefile to deploy multiple versions of Exegol, on for each engagement
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).

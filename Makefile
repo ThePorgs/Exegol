@@ -31,7 +31,7 @@ install-from-sources: ## [Docker] build exegol from the sources cloned from GitH
 
 update-from-sources: ## [Docker] update exegol from the sources cloned from GitHub
 	git -C $(EXEGOL_PATH) pull origin $(BRANCH)
-	docker build --no-cache --pull --tag $(NAME):$(TAG) $(EXEGOL_PATH)
+	docker build --no-cache --pull --tag $(NAME):$(TAG) $(EXEGOL_PATH) | tee $(EXEGOL_PATH)/.build.log
 
 start: ## [Docker] start exegol
 	docker run --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)

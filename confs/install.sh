@@ -125,34 +125,24 @@ function python-pip() {
 
 function filesystem() {
   colorecho "[EXEGOL] Preparing filesystem"
-  mkdir -p /opt/tools/ /opt/tools/bin/ /share/
+  mkdir -p /opt/tools/
+  mkdir -p /opt/tools/bin/
+  mkdir -p /share/
+  mkdir -p /opt/resources/
+  mkdir -p /opt/resources/windows/
+  mkdir -p /opt/resources/linux/
+  mkdir -p /opt/resources/mac/
 }
 
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/$BRANCH/tools/install.sh)"
-  sed -i 's/robbyrussell/gentoo/g' ~/.zshrc
-  sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/history
   wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/aliases
   wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/zshrc
   git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
   git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
   git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/custom/plugins/zsh-completions
-}
-
-function banners() {
-  colorecho "[EXEGOL] Installing lolcat and figlet (it is essential here)"
-  wget https://github.com/busyloop/lolcat/archive/master.zip
-  unzip master.zip
-  cd lolcat-master/bin
-  gem install lolcat
-  cd ../../ && rm -r lolcat-master master.zip
-  apt -y install figlet
-  wget -O /usr/share/figlet/Bloody.flf https://raw.githubusercontent.com/xero/figlet-fonts/master/Bloody.flf
-  echo '#echo ""' >> ~/.zshrc
-  echo '#figlet -f Bloody "Exegol" -w 10000 | lolcat' >> ~/.zshrc
-  echo '#echo ""' >> ~/.zshrc
 }
 
 function dependencies() {
@@ -709,14 +699,6 @@ function proxmark3() {
   make install PLATFORM=PM3OTHER
 }
 
-function resources() {
-  colorecho "[EXEGOL] Preparing resources directories"
-  mkdir -p /opt/resources/
-  mkdir -p /opt/resources/windows/
-  mkdir -p /opt/resources/linux/
-  mkdir -p /opt/resources/mac/
-}
-
 function sysinternals() {
   colorecho "[EXEGOL] Downloading SysinternalsSuite"
   wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
@@ -885,13 +867,12 @@ function arsenal() {
 function install_base() {
   update || exit
   apt_packages || exit
-}
-
-function install_tools() {
   python-pip
   filesystem
   ohmyzsh
-  banners
+}
+
+function install_tools() {
   dependencies
   grc
   Responder
@@ -977,7 +958,6 @@ function install_tools() {
 }
 
 function install_resources() {
-  resources
   sysinternals
   winenum
   pspy
