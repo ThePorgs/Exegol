@@ -67,6 +67,7 @@
   - gopherus (https://github.com/tarunkant/Gopherus)
   - arsenal (https://github.com/Orange-Cyberdefense/arsenal)
   - proxmark3 (https://github.com/RfidResearchGroup/proxmark3.git)
+  - bloodhound (https://github.com/BloodHoundAD/BloodHound)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.

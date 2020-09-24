@@ -864,6 +864,13 @@ function arsenal() {
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
+function bloodhound(){
+  echo "[EXEGOL] Installing Bloodhound from latest release"
+  curl -s https://github.com/BloodHoundAD/BloodHound/releases/ |grep 'BloodHound-linux-x64.zip'| cut -d '"' -f 2 | head -n 1 | xargs -I {} wget https://github.com{} -P /tmp/ && \
+  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/BloodHound && \
+  rm /tmp/BloodHound-linux-x64.zip
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -955,6 +962,7 @@ function install_tools() {
   zerologon
   arsenal
   proxmark3
+  bloodhound
 }
 
 function install_resources() {

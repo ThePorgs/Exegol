@@ -64,3 +64,4 @@ alias john='/opt/tools/john/run/john'
 alias zerologon-exploit='python3 /opt/tools/zerologon-exploit/cve-2020-1472-exploit.py'
 alias zerologon-scan='python3 /opt/tools/zerologon-scan/zerologon_tester.py'
 alias a='/opt/tools/arsenal/run'
+alias bloodhound="/opt/tools/BloodHound/BloodHound.bin --no-sandbox"
