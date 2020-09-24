@@ -7,16 +7,19 @@
   - [History](#scroll-history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
   - [Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
 
-  TL;DR Exegol is the environment many use in day to day pentest engagements.
+  **TL;DR** Exegol is a community-driven environment that can be used in day to day engagements.
 
-# :fast_forward: Install & usage
+# :fast_forward: Install
   The install process takes time. Install it before needing it.
   1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /opt/projects/Exegol/'`
   2. Install : `exegol install`
-  3. Start : `exegol start`
-  4. Get a shell : `exegol shell`
-  5. Stop in a saved state : `exegol pause`
-  6. Resume from the saved state : `exegol resume`
+  3. Update : `èxegol update`
+
+# :mag_right: Usage
+  1. Start : `exegol start`
+  2. Get a shell : `exegol shell`
+  3. Stop in a saved state : `exegol pause`
+  4. Resume from the saved state : `exegol resume`
   5. Kill/reset the docker state : `exegol kill`
   6. Get help on advanced usage : `exegol help`
 
