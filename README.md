@@ -11,7 +11,7 @@
 
 # :fast_forward: Install
   The install process takes time. Install it before needing it.
-  1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /opt/projects/Exegol/'`
+  1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /PATH/TO/Exegol/'`
   2. Install : `exegol install`
   3. Update : `èxegol update`
 
