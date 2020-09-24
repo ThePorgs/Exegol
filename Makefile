@@ -27,20 +27,20 @@ update: ## [Docker] update exegol from DockerHub
 	docker pull $(NAME):$(TAG)
 
 install-from-sources: ## [Docker] build exegol from the sources cloned from GitHub
-	docker build --tag $(NAME) $(EXEGOL_PATH)
+	docker build --tag $(NAME):$(TAG) $(EXEGOL_PATH)
 
 update-from-sources: ## [Docker] update exegol from the sources cloned from GitHub
 	git -C $(EXEGOL_PATH) pull origin $(BRANCH)
-	docker build --no-cache --pull --tag $(NAME) $(EXEGOL_PATH)
+	docker build --no-cache --pull --tag $(NAME):$(TAG) $(EXEGOL_PATH)
 
 start: ## [Docker] start exegol
-	docker run --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
+	docker run --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 start-proxmark:
-	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
+	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 start-gui: ## [in-dev][Docker] start exegol with display sharing
-	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME)
+	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 shell: ## [Docker] get a shell (exegol needs to be started first)
 	docker exec -ti $(CONTAINER_NAME) zsh
