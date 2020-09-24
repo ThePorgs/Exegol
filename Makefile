@@ -4,8 +4,6 @@ TARGETS := $(MAKEFILE_LIST)
 
 # Image name
 NAME = nwodtuhs/exegol
-# Name given to the container, useful for docker run/start/stop/rm
-CONTAINER_NAME = exegol
 # Name given to the docker hostname
 HOSTNAME = exegol
 # GitHub branch to pull sources from
@@ -16,6 +14,8 @@ TAG = dev
 EXEGOL_PATH = $(shell pwd)
 # Path to the shared-volume
 SHARE = $(EXEGOL_PATH)/shared-volume
+# Name given to the container, useful for docker run/start/stop/rm
+CONTAINER_NAME = exegol-$(TAG)
 
 help: ## [Help] This help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(TARGETS) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
