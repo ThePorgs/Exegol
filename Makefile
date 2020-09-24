@@ -1,4 +1,4 @@
-.PHONY: help install update install-from-sources update-from-sources start start-proxmark start-gui shell resume pause kill
+.PHONY: help install update install-from-sources update-from-sources start start-proxmark start-gui shell resume pause kill status
 
 TARGETS := $(MAKEFILE_LIST)
 
@@ -40,7 +40,8 @@ start-proxmark: ## [Docker] start exegol with device sharing (/dev/ttyACM0) to u
 	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 start-gui: ## [dev][Docker] start exegol with display sharing
-	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
+	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1" --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG) &&\
+	xhost +local:`docker inspect --format='{{ .Config.Hostname }}' $(CONTAINER_NAME)`
 
 shell: ## [Docker] get a shell (exegol needs to be started first)
 	docker exec -ti $(CONTAINER_NAME) zsh
@@ -54,3 +55,6 @@ pause: ## [Docker] pause exegol in a saved state
 kill: ## [Docker] reset exegol
 	docker stop $(CONTAINER_NAME)
 	docker rm $(CONTAINER_NAME)
+
+status: ## [Docker] status
+	docker ps -a |grep $(CONTAINER_NAME) 
