@@ -9,9 +9,9 @@ CONTAINER_NAME = exegol
 # Name given to the docker hostname
 HOSTNAME = exegol
 # GitHub branch to pull sources from
-BRANCH = dev
+BRANCH = master
 # Image tag for install/update
-TAG = dev
+TAG = latest
 # Absolute path to the Makefile
 EXEGOL_PATH = $(shell pwd)
 # Path to the shared-volume
@@ -38,9 +38,6 @@ start: ## [Docker] start exegol
 
 start-proxmark: ## [Docker] start exegol with device sharing (/dev/ttyACM0) to use proxmark
 	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
-
-start-gui: ## [dev][Docker] start exegol with display sharing
-	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 shell: ## [Docker] get a shell (exegol needs to be started first)
 	docker exec -ti $(CONTAINER_NAME) zsh
