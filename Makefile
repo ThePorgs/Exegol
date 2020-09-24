@@ -1,4 +1,4 @@
-.PHONY: help install importdb clean-cache rebuild start stop logs ps bash
+.PHONY: help install update install-from-sources update-from-sources start start-proxmark start-gui shell resume pause kill
 
 TARGETS := $(MAKEFILE_LIST)
 
@@ -20,10 +20,10 @@ SHARE = $(EXEGOL_PATH)/shared-volume
 help: ## [Help] This help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(TARGETS) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-install: ## [Docker] pull exegol from DockerHub
+install: ## [Docker] pull exegol from the latest automatic build on DockerHub
 	docker pull $(NAME):$(TAG)
 
-update: ## [Docker] update exegol from DockerHub
+update: ## [Docker] update exegol from the latest automatic build on DockerHub
 	docker pull $(NAME):$(TAG)
 
 install-from-sources: ## [Docker] build exegol from the sources cloned from GitHub
@@ -36,10 +36,10 @@ update-from-sources: ## [Docker] update exegol from the sources cloned from GitH
 start: ## [Docker] start exegol
 	docker run --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
-start-proxmark:
+start-proxmark: ## [Docker] start exegol with device sharing (/dev/ttyACM0) to use proxmark
 	docker run --device /dev/ttyACM0 --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
-start-gui: ## [in-dev][Docker] start exegol with display sharing
+start-gui: ## [dev][Docker] start exegol with display sharing
 	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --volume $$XAUTH:/root/.Xauthority --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
 
 shell: ## [Docker] get a shell (exegol needs to be started first)

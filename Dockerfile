@@ -2,7 +2,6 @@
 
 FROM kalilinux/kali-rolling
 
-#ADD https://raw.githubusercontent.com/ShutdownRepo/Exegol/dev/confs/install.sh /root/install.sh
 ADD confs/install.sh /root/install.sh
 RUN chmod +x /root/install.sh
 

@@ -1,6 +1,8 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
+BRANCH='dev'
+
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -111,6 +113,7 @@ function apt_packages() {
   fapt fcrackzip
   fapt exiftool
   fapt tmux
+  fapt man
 }
 
 function python-pip() {
@@ -127,21 +130,15 @@ function filesystem() {
 
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
-  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+  sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/$BRANCH/tools/install.sh)"
   sed -i 's/robbyrussell/gentoo/g' ~/.zshrc
   sed -i 's/plugins=(git)/plugins=(git sudo docker docker-compose)/g' ~/.zshrc
-  echo '' >> ~/.zshrc
-  echo 'TIME_="%{$fg[white]%}[%{$fg[red]%}%D %T%{$fg[white]%}]%{$reset_color%}"' >> ~/.zshrc
-  echo 'PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "' >> ~/.zshrc
-  echo '' >> ~/.zshrc
-  echo 'export GOPATH=$HOME/go' >> ~/.zshrc
-  echo 'export GO111MODULE=on' >> ~/.zshrc
-  echo 'export JOHN=/opt/tools/john/run' >> ~/.zshrc
-  echo 'export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH' >> ~/.zshrc
-  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/history
-  echo '' >> ~/.zshrc
-  echo 'source /opt/.zsh_aliases' >> ~/.zshrc
-  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/zsh/aliases
+  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/history
+  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/aliases
+  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/zshrc
+  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+  git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/custom/plugins/zsh-completions
 }
 
 function banners() {
@@ -307,11 +304,11 @@ function Impacket() {
   colorecho "[EXEGOL] Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
   git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   pip3 install .
-  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.ntlmrelayx
-  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/conf.secretsdump
+  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.ntlmrelayx
+  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.secretsdump
 }
 
 function BloodHound() {
@@ -477,7 +474,7 @@ function proxychains() {
 function grc() {
   colorecho "[EXEGOL] Installing and configuring grc"
   apt -y install grc
-  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/master/confs/grc/grc.conf
+  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/grc.conf
 }
 
 function pykek() {
@@ -882,7 +879,7 @@ function deepce() {
 
 function arsenal() {
   echo "[EXEGOL] Installing Arsenal"
-  git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal.git
+  git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
 function install_base() {
