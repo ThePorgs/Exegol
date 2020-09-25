@@ -43,6 +43,9 @@ start-gui: ## [dev][Docker] start exegol with display sharing
 	docker run --interactive --tty --detach --network host --env DISPLAY=$$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1" --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG) &&\
 	xhost +local:`docker inspect --format='{{ .Config.Hostname }}' $(CONTAINER_NAME)`
 
+start-privileged: ## [dev][Docker] start exegol with device sharing (full access to host devices)
+	docker run --privileged --interactive --tty --detach --network host --volume $(SHARE):/share --name $(CONTAINER_NAME) --hostname $(HOSTNAME) $(NAME):$(TAG)
+
 shell: ## [Docker] get a shell (exegol needs to be started first)
 	docker exec -ti $(CONTAINER_NAME) zsh
 
