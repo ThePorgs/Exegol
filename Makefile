@@ -50,7 +50,8 @@ resume: ## [Docker] resume after a pause from the saved state
 	docker start $(CONTAINER_NAME)
 
 resume-gui: ## [dev][Docker] resume after a pause from the saved state after docker was started with display sharing
-	echo 'TODO: add the xhost command'
+	docker start $(CONTAINER_NAME) &&\
+	xhost +local:`docker inspect --format='{{ .Config.Hostname }}' $(CONTAINER_NAME)`
 
 pause: ## [Docker] pause exegol in a saved state
 	docker stop $(CONTAINER_NAME)

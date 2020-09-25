@@ -261,13 +261,12 @@ function Bolt() {
   git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
 }
 
-function CrackMapExec() {
-  colorecho "[EXEGOL] Downloading CrackMapExec"
-  apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm
-  git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
-  cd /opt/tools/CrackMapExec
-  git submodule update --recursive
-  python3 setup.py install
+function CrackMapExec_pip() {
+  colorecho "[EXEGOL] Installing CrackMapExec"
+  apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
+  python3 -m pip install pipx
+  pipx ensurepath
+  pipx install crackmapexec
 }
 
 function lsassy() {
@@ -875,6 +874,7 @@ function bloodhound(){
   rm /tmp/BloodHound-linux-x64.zip
   mkdir -p ~/.config/bloodhound
   wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/bloodhound/config.json
+  wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/bloodhound/customqueries.json
 }
 
 function install_base() {
@@ -904,7 +904,7 @@ function install_tools() {
   Blazy
   XSStrike
   Bolt
-  CrackMapExec
+  CrackMapExec_pip
   sprayhound
   bloodhound.py
   neo4j

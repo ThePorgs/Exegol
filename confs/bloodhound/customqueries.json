@@ -1,0 +1,389 @@
+{
+    "queries": [{
+            "name": "List all owned users",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (m:User) WHERE m.owned=TRUE RETURN m"
+            }]
+        },
+        {
+            "name": "List all owned computers",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (m:Computer) WHERE m.owned=TRUE RETURN m"
+            }]
+        },
+        {
+            "name": "List all owned groups",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (m:User) WHERE m.owned=TRUE RETURN m"
+            }]
+        },
+        {
+            "name": "List the groups of all owned users",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (m:User) WHERE m.owned=TRUE WITH m MATCH p=(m)-[:MemberOf*1..]->(n:Group) RETURN p"
+            }]
+        },
+        {
+            "name": "Show owned Nodes with Groups",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User {owned:true}), (g:Group), p=(u)-[:MemberOf]->(g) RETURN p",
+                "props": {},
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Find logged in Admins",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(a:Computer)-[r:HasSession]->(b:User) WITH a,b,r MATCH p=shortestPath((b)-[:AdminTo|MemberOf*1..]->(a)) RETURN p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Top Ten Users with Most Sessions",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User),(m:Computer), (n)<-[r:HasSession]-(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH n, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)-[r:HasSession]->(n) RETURN p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Top Ten Computers with Most Sessions",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User),(m:Computer), (n)<-[r:HasSession]-(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH m, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)-[r:HasSession]->(n) RETURN n,r,m",
+                "allowCollapse": true
+            }]
+        },
+        {
+
+            "name": "Find all Kerberoastable Users",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User)WHERE n.hasspn=true RETURN n",
+                "allowCollapse": false
+            }]
+        },
+        {
+            "name": "Find All Users with an SPN/Find all Kerberoastable Users with passwords last set less than 5 years ago",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User) WHERE u.hasspn=true AND u.pwdlastset < (datetime().epochseconds - (1825 * 86400)) AND NOT u.pwdlastset IN [-1.0, 0.0] RETURN u.name, u.pwdlastset order by u.pwdlastset "
+            }]
+        },
+        {
+            "name": "Find Kerberoastable Users with a path to DA",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User {hasspn:true}) MATCH (g:Group) WHERE g.objectid ENDS WITH '-512' MATCH p = shortestPath( (u)-[*1..]->(g) ) RETURN p"
+            }]
+        },
+        {
+            "name": "Find Kerberoastable Users with a path to High Value",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User {hasspn:true}),(n {highvalue:true}),p = shortestPath( (u)-[*1..]->(n) ) RETURN p"
+            }]
+        },
+        {
+            "name": "Find machines Domain Users can RDP into",
+            "queryList": [{
+                "final": true,
+                "query": "match p=(g:Group)-[:CanRDP]->(c:Computer) where g.objectid ENDS WITH '-513' return p"
+            }]
+        },
+        {
+            "name": "Find Servers Domain Users can RDP To",
+            "queryList": [{
+                "final": true,
+                "query": "match p=(g:Group)-[:CanRDP]->(c:Computer) where g.name STARTS WITH 'DOMAIN USERS' AND c.operatingsystem CONTAINS 'Server' return p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Find what groups can RDP",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(m:Group)-[r:CanRDP]->(n:Computer) RETURN p"
+            }]
+        },
+        {
+            "name": "Non Admin Groups with High Value Privileges",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(g:Group)-[r:Owns|:WriteDacl|:GenericAll|:WriteOwner|:ExecuteDCOM|:GenericWrite|:AllowedToDelegate|:ForceChangePassword]->(n:Computer) WHERE NOT g.name CONTAINS 'ADMIN' RETURN p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Find groups that can reset passwords (Warning: Heavy)",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(m:Group)-[r:ForceChangePassword]->(n:User) RETURN p"
+            }]
+        },
+        {
+            "name": "Groups with Computer and User Objects",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer)-[r:MemberOf*1..]->(groupsWithComps:Group) WITH groupsWithComps MATCH (u:User)-[r:MemberOf*1..]->(groupsWithComps) RETURN DISTINCT(groupsWithComps) as groupsWithCompsAndUsers",
+                "allowCollapse": true,
+                "endNode": "{}"
+            }]
+        },
+        {
+            "name": "Find groups that have local admin rights (Warning: Heavy)",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(m:Group)-[r:AdminTo]->(n:Computer) RETURN p"
+            }]
+        },
+        {
+            "name": "Find all users that have local admin rights",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(m:User)-[r:AdminTo]->(n:Computer) RETURN p"
+            }]
+        },
+        {
+            "name": "Top Ten Users with Most Local Admin Rights",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User),(m:Computer), (n)-[r:AdminTo]->(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH n, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)<-[r:AdminTo]-(n) RETURN p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Top Ten Computers with Most Admins",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User),(m:Computer), (n)-[r:AdminTo]->(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH m, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)<-[r:AdminTo]-(n) RETURN p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Find all active Domain Admin sessions",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User)-[:MemberOf]->(g:Group) WHERE g.objectid ENDS WITH '-512' MATCH p = (c:Computer)-[:HasSession]->(n) return p"
+            }]
+        },
+        {
+            "name": "Can a user from domain ‘A ‘ do anything to any computer in domain ‘B’ (Warning: VERY Heavy)",
+            "queryList": [{
+                    "final": false,
+                    "title": "Select source domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": false,
+                    "title": "Select destination domain...",
+                    "query": "MATCH (n:Domain) RETURN n.name ORDER BY n.name DESC"
+                },
+                {
+                    "final": true,
+                    "query": "MATCH (n:User {domain: {result}}) MATCH (m:Computer {domain: {}}) MATCH p=allShortestPaths((n)-[r:MemberOf|HasSession|AdminTo|AllExtendedRights|AddMember|ForceChangePassword|GenericAll|GenericWrite|Owns|WriteDacl|WriteOwner|CanRDP|ExecuteDCOM|AllowedToDelegate|ReadLAPSPassword|Contains|GpLink|AddAllowedToAct|AllowedToAct|SQLAdmin*1..]->(m)) RETURN p",
+                    "startNode": "{}",
+                    "allowCollapse": false
+                }
+            ]
+        },
+        {
+            "name": "Find all computers with Unconstrained Delegation",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer {unconstraineddelegation:true}) return c"
+            }]
+        },
+        {
+            "name": "Find all computers with unsupported operating systems",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (H:Computer) WHERE H.operatingsystem =~ '.*(2000|2003|2008|xp|vista|7|me)*.' RETURN H"
+            }]
+        },
+        {
+            "name": "Find users that logged in within the last 90 days",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User) WHERE u.lastlogon < (datetime().epochseconds - (90 * 86400)) and NOT u.lastlogon IN [-1.0, 0.0] RETURN u"
+            }]
+        },
+        {
+            "name": "Find users with passwords last set within the last 90 days",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User) WHERE u.pwdlastset < (datetime().epochseconds - (90 * 86400)) and NOT u.pwdlastset IN [-1.0, 0.0] RETURN u"
+            }]
+        },
+        {
+            "name": "Find constrained delegation",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(u:User)-[:AllowedToDelegate]->(c:Computer) RETURN p"
+            }]
+        },
+        {
+            "name": "Find computers that allow unconstrained delegation that AREN’T domain controllers.",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c1:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectid ENDS WITH '-516' WITH COLLECT(c1.name) AS domainControllers MATCH (c2:Computer {unconstraineddelegation:true}) WHERE NOT c2.name IN domainControllers RETURN c2"
+            }]
+        },
+        {
+            "name": " Return the name of every computer in the database where at least one SPN for the computer contains the string 'MSSQL'",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE ANY (x IN c.serviceprincipalnames WHERE toUpper(x) CONTAINS 'MSSQL') RETURN c"
+            }]
+        },
+        {
+            "name": "View all GPOs",
+            "queryList": [{
+                "final": true,
+                "query": "Match (n:GPO) RETURN n"
+            }]
+        },
+        {
+            "name": "View all groups that contain the word 'admin'",
+            "queryList": [{
+                "final": true,
+                "query": "Match (n:Group) WHERE n.name CONTAINS 'ADMIN' RETURN n"
+            }]
+        },
+        {
+            "name": "Find users that can be AS-REP roasted",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User {dontreqpreauth: true}) RETURN u"
+            }]
+        },
+        {
+            "name": "Find All Users with an SPN/Find all Kerberoastable Users with passwords last set > 5 years ago",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User) WHERE n.hasspn=true AND WHERE u.pwdlastset < (datetime().epochseconds - (1825 * 86400)) and NOT u.pwdlastset IN [-1.0, 0.0] RETURN u"
+            }]
+        },
+        {
+            "name": "Show all high value target's groups",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(n:User)-[r:MemberOf*1..]->(m:Group {highvalue:true}) RETURN p"
+            }]
+        },
+        {
+            "name": "Find groups that contain both users and computers",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer)-[r:MemberOf*1..]->(groupsWithComps:Group) WITH groupsWithComps MATCH (u:User)-[r:MemberOf*1..]->(groupsWithComps) RETURN DISTINCT(groupsWithComps) as groupsWithCompsAndUsers"
+            }]
+        },
+        {
+            "name": "Shortest Path from Domain Users to High Value Targets",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (g:Group),(n {highvalue:true}),p=shortestPath((g)-[r*1..]->(n)) WHERE g.name STARTS WITH 'DOMAIN USERS' return p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "ALL Path from Domain Users to High Value Targets",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (g:Group) WHERE g.name STARTS WITH 'DOMAIN USERS'  MATCH (n {highvalue:true}),p=shortestPath((g)-[r*1..]->(n)) return p",
+                "allowCollapse": true
+            }]
+        },
+        {
+            "name": "Find Kerberoastable users who are members of high value groups",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u:User)-[r:MemberOf*1..]->(g:Group) WHERE g.highvalue=true AND u.hasspn=true RETURN u"
+            }]
+        },
+        {
+            "name": "Find Kerberoastable users and where they are AdminTo",
+            "queryList": [{
+                "final": true,
+                "query": "OPTIONAL MATCH (u1:User) WHERE u1.hasspn=true OPTIONAL MATCH (u1)-[r:AdminTo]->(c:Computer) RETURN u"
+            }]
+        },
+        {
+            "name": "Find computers with constrained delegation permissions and the corresponding targets where they allowed to delegate",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE c.allowedtodelegate IS NOT NULL RETURN c"
+            }]
+        },
+        {
+            "name": "Find if any domain user has interesting permissions against a GPO (Warning: Heavy)",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(u:User)-[r:AllExtendedRights|GenericAll|GenericWrite|Owns|WriteDacl|WriteOwner|GpLink*1..]->(g:GPO) RETURN p"
+            }]
+        },
+        {
+            "name": "Find if unprivileged users have rights to add members into groups",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User {admincount:False}) MATCH p=allShortestPaths((n)-[r:AddMember*1..]->(m:Group)) RETURN p"
+            }]
+        },
+        {
+            "name": "Find all users a part of the VPN group",
+            "queryList": [{
+                "final": true,
+                "query": "Match p=(u:User)-[:MemberOf]->(g:Group) WHERE toUPPER (g.name) CONTAINS 'VPN' return p"
+            }]
+        },
+        {
+            "name": "Paths from DU to DA without RDP",
+            "queryList": [{
+                    "final": false,
+                    "title": "Select a Domain Admin group...",
+                    "query": "MATCH (n:Group) WHERE n.objectsid =~ {name} RETURN n.name ORDER BY n.name DESC",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    }
+                },
+                {
+                    "final": true,
+                    "query": "MATCH (n:User),(m:Group {name:{result}}),p=shortestPath((n)-[r:MemberOf|HasSession|AdminTo|AllExtendedRights|AddMember|ForceChangePassword|GenericAll|GenericWrite|Owns|WriteDacl|WriteOwner|ExecuteDCOM|AllowedToDelegate|ReadLAPSPassword|Contains|GpLink|AddAllowedToAct|AllowedToAct|SQLAdmin*1..]->(m)) RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "Most Exploitable Paths to DA",
+            "queryList": [{
+                    "final": false,
+                    "title": "Select a Domain Admin group...",
+                    "query": "MATCH (n:Group) WHERE n.objectsid =~ {name} RETURN n.name ORDER BY n.name DESC",
+                    "props": {
+                        "name": "(?i)S-1-5-.*-512"
+                    }
+                },
+                {
+                    "final": true,
+                    "query": "MATCH (n:User),(m:Group {name:{result}}),p=shortestPath((n)-[r:MemberOf|AdminTo|AllExtendedRights|AddMember|ForceChangePassword|GenericAll|GenericWrite|Owns|WriteDacl|WriteOwner|ExecuteDCOM|AllowedToDelegate|ReadLAPSPassword|Contains|GpLink|AddAllowedToAct|AllowedToAct|SQLAdmin*1..]->(m)) RETURN p",
+                    "allowCollapse": true,
+                    "endNode": "{}"
+                }
+            ]
+        },
+        {
+            "name": "Find users that have never logged on and account is still active",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n:User) WHERE n.lastlogontimestamp=-1.0 AND n.enabled=TRUE RETURN n "
+            }]
+        }
+    ]
+}

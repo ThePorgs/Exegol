@@ -1,6 +1,8 @@
 export ZSH="/root/.oh-my-zsh"
 ZSH_THEME="gentoo"
 
+export FZF_BASE=/opt/tools/fzf
+
 plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux fzf)
 
 source $ZSH/oh-my-zsh.sh

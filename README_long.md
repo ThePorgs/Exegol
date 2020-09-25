@@ -7,6 +7,7 @@
   - sprayhound (https://github.com/Hackndo/sprayhound)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound.py (https://github.com/fox-it/BloodHound.py)
+  - BloodHound (https://github.com/BloodHoundAD/BloodHound)
   - mitm6 (https://github.com/fox-it/mitm6)
   - dementor (https://gist.github.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc)
   - aclwpn (https://github.com/fox-it/aclpwn.py)
