@@ -301,12 +301,19 @@ function Impacket() {
   wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.secretsdump
 }
 
-function BloodHound() {
-  colorecho "[EXEGOL] Installing neo4j and Python ingestor for BloodHound"
+function bloodhound.py() {
+  colorecho "[EXEGOL] Installing and Python ingestor for BloodHound"
   git -C /opt/tools/ clone https://github.com/fox-it/BloodHound.py
   cd /opt/tools/BloodHound.py/
   python setup.py install
+}
+
+function neo4j() {
+  colorecho "[EXEGOL] Installing neo4j"
   apt -y install neo4j
+  /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
+  mkdir -p /usr/share/neo4j/logs/
+  touch /usr/share/neo4j/logs/neo4j.log
 }
 
 function mitm6_sources() {
@@ -317,7 +324,7 @@ function mitm6_sources() {
   python3 setup.py install
 }
 
-function mitm6() {
+function mitm6_pip() {
   colorecho "[EXEGOL] Installing mitm6 with pip"
   pip3 install mitm6
 }
@@ -607,7 +614,7 @@ function gf_install() {
 }
 
 function rockyou() {
-  colorecho "[EXEGOL] Extracting /usr/share/wordlists/rockyou.txt.gz"
+  colorecho "[EXEGOL] Decompressing rockyou.txt"
   gunzip -d /usr/share/wordlists/rockyou.txt.gz
 }
 
@@ -667,11 +674,6 @@ function john() {
   ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
   make -s clean && make -sj4
   sudo make shell-completion
-}
-
-function rockyou() {
-  colorecho "[EXEGOL] Decompressing rockyou.txt"
-  gunzip -d /usr/share/wordlists/rockyou.txt.gz
 }
 
 function memcached-cli() {
@@ -795,6 +797,7 @@ function webshells() {
   mkdir -p /opt/resources/webshells/PHP/
   mkdir -p /opt/resources/webshells/ASPX/
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
+  # Setting password to exegol4thewin
   sed -i 's/fa769dac7a0a94ee47d8ebe021eaba9e/0fc3bcf177377d328c77b2b51b7f3c9b/g' /opt/resources/webshells/PHP/wso-webshell/wso.php
   echo 'exegol4thewin' > /opt/resources/webshells/PHP/wso-webshell/password.txt
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
@@ -866,9 +869,12 @@ function arsenal() {
 
 function bloodhound(){
   echo "[EXEGOL] Installing Bloodhound from latest release"
-  curl -s https://github.com/BloodHoundAD/BloodHound/releases/ |grep 'BloodHound-linux-x64.zip'| cut -d '"' -f 2 | head -n 1 | xargs -I {} wget https://github.com{} -P /tmp/ && \
-  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/BloodHound && \
+  wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
+  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
   rm /tmp/BloodHound-linux-x64.zip
+  mkdir -p ~/.config/bloodhound
+  wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/bloodhound/config.json
 }
 
 function install_base() {
@@ -900,9 +906,10 @@ function install_tools() {
   Bolt
   CrackMapExec
   sprayhound
-  BloodHound
+  bloodhound.py
+  neo4j
   #mitm6_sources
-  mitm6
+  mitm6_pip
   aclpwn
   IceBreaker
   Empire
@@ -947,7 +954,6 @@ function install_tools() {
   jwt_cracker
   wuzz
   gf_install
-  #rockyou
   rbcd-attack
   evilwinrm
   pypykatz
@@ -957,11 +963,13 @@ function install_tools() {
   gopherus
   ysoserial
   john
-  rockyou
   memcached-cli
   zerologon
   arsenal
   proxmark3
+}
+
+function install_tools_gui() {
   bloodhound
 }
 
@@ -991,6 +999,7 @@ function install_resources() {
   mimipy
   plink
   deepce
+  rockyou
   webshells
 }
 
@@ -1026,6 +1035,7 @@ else
       sleep 30
       install_base
       install_tools
+      install_tools_gui
       install_resources
       install_clean
     fi

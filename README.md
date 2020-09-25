@@ -23,6 +23,13 @@
   5. Kill/reset the docker state : `exegol kill`
   6. Get help on advanced usage : `exegol help`
 
+# :closed_lock_with_key: Credentials
+  Some tools are pre-configured with the following info
+  | Element | User | Password |
+  | ------- | ---- | -------- |
+  | wso-webshell (PHP) | | exegol4thewin |
+  | neo4j database | neo4j | exegol4thewin |
+
 # :pushpin: Pre-requisites
   You need docker :whale:, make, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
 

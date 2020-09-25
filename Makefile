@@ -1,11 +1,11 @@
-.PHONY: help install update install-from-sources update-from-sources start start-proxmark start-gui shell resume pause kill status
+.PHONY: help install update install-from-sources update-from-sources start start-proxmark start-gui shell resume pause kill status stop
 
 TARGETS := $(MAKEFILE_LIST)
 
 # Image name
 NAME = nwodtuhs/exegol
 # Name given to the docker hostname
-HOSTNAME = exegol
+HOSTNAME = Exegol-dev
 # GitHub branch to pull sources from
 BRANCH = dev
 # Image tag for install/update
@@ -49,12 +49,15 @@ shell: ## [Docker] get a shell (exegol needs to be started first)
 resume: ## [Docker] resume after a pause from the saved state
 	docker start $(CONTAINER_NAME)
 
+resume-gui: ## [dev][Docker] resume after a pause from the saved state after docker was started with display sharing
+	echo 'TODO: add the xhost command'
+
 pause: ## [Docker] pause exegol in a saved state
 	docker stop $(CONTAINER_NAME)
 
-kill: ## [Docker] reset exegol
+kill stop: ## [Docker] reset exegol
 	docker stop $(CONTAINER_NAME)
 	docker rm $(CONTAINER_NAME)
 
 status: ## [Docker] status
-	docker ps -a |grep $(CONTAINER_NAME) 
+	docker ps -a |grep $(CONTAINER_NAME)
