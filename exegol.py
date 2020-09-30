@@ -44,8 +44,8 @@ def get_options():
     privileged = start.add_argument('--privileged', dest='privileged', action='store_true', default=False, help='help')
     options = parser.parse_args()
     # Update and install do the same thing
-    if options.mode == 'update':
-        options.mode == 'install'
+    if options.action == 'update':
+        options.action = 'install'
     return options
 
 def container_is_running():
