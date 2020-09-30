@@ -12,7 +12,7 @@ alias responder-http-on="sed -i 's/HTTP = Off/HTTP = On/g' /opt/tools/Responder/
 alias responder-http-off="sed -i 's/HTTP = On/HTTP = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-smb-on="sed -i 's/SMB = Off/SMB = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
 alias responder-smb-off="sed -i 's/SMB = On/SMB = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
-alias sublist3r='python3 /opt/tools/Sublist3r/Sublist3r.py'
+alias sublist3r='python3 /opt/tools/Sublist3r/sublist3r.py'
 alias dog='python3 /opt/tools/ReconDog/dog'
 alias cloudfail='python3 /opt/tools/CloudFail/cloudfail.py'
 alias oneforall='python3 /opt/tools/OneForAll/oneforall/oneforall.py'
