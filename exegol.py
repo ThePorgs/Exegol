@@ -38,6 +38,13 @@ def reset():
         docker_rm()
 '''
 
+'''
+Include a status positionnal arg : status / version or info ??
+- get the current status of exegol (running, with gui or not, ...)
+- ask if exegol is up to date (compare the hashes of the image from local build and dockerhub ?)
+- get info like the size of it and so on
+'''
+
 def get_options():
     parser = argparse.ArgumentParser(description='Exegol wrapper', formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--no-default', dest='detached', action='store_true', default=True, help='help')
