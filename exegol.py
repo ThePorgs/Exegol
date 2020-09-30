@@ -1,10 +1,14 @@
 import argparse
-import subprocess
+import docker
 
 BRANCH = 'dev'
+
 IMAGE_TAG = 'dev' if BRANCH == 'dev' else 'latest'
 IMAGE_NAME = 'nwodtuhs/exegol'
-HOSTNAME = 'Exegol-' + TAG
+HOSTNAME = 'Exegol-' + IMAGE_TAG
+CONTAINER_NAME = 'exegol-' + IMAGE_TAG
+
+client = docker.from_env()
 
 '''
 def start():
@@ -50,15 +54,42 @@ def get_options():
     return options
 
 def is_running():
-    if IMAGE_NAME + ':' + IMAGE_TAG in subprocess.check_output(['docker', 'ps']).decode():
+    if client.containers.list(filters={'name': CONTAINER_NAME}):
+        return True
+    else:
+        False
+
+def image_exists():
+    if client.images.list(IMAGE_NAME + ':' + IMAGE_TAG):
         return True
     else:
         return False
 
+def was_running_with_gui():
+    container_info = client.api.inspect_container(CONTAINER_NAME)
+    for var in container_info['Config']['Env']:
+        if 'DISPLAY' in var:
+            return True
+    return False
+
 def start(options):
-    if is_running():
-        print('is_running')
-        #TODO
+    if not is_running():
+        print('[+] Exegol is not running')
+        if image_exists():
+            print('[+] Exegol exists')
+            if was_running_with_gui():
+                print('[+] Exegol was running with GUI')
+                #TODO
+    else:
+        print('[+] Exegol is running')
+        containers = client.containers.list(filters={'name': CONTAINER_NAME})
+        if len(containers) != 1:
+            print('There are multiple instances of ' + CONTAINER_NAME + ' running, I dont know what to do')
+        else:
+            container = client.containers.list(filters={'name': CONTAINER_NAME})[0]
+            out = container.exec_run('zsh -c echo hi', tty=True)
+            print(out.output.decode())
+            # Can't make an interactive shell right now, I don't know what to do
 
 def stop(options):
     print('stop')
@@ -78,5 +109,6 @@ def reset(options):
 
 if __name__ == '__main__':
     options = get_options()
+    print('[+] Printing options: ', end='')
     print(options)
     globals()[options.action](options)
