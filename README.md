@@ -2,30 +2,28 @@
   Exegol is a fully configured docker with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colorized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements.
 
   The main features of Exegol are:
-  - [Tools](#wrench-tools): many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with ultra-famous tools only. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Reponder, ...)
+  - [Tools](#wrench-tools): many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with only ultra-famous tools, you will find ones that the community loves to use, even if it's in dev/new/not famous. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Responder, custom queries in BloodHound, ...)
   - [Resources](#bulb-resources): many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
   - [History](#scroll-history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
   - [Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
+  - [Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles operations of `docker pull`, `docker build`, `docker run`, `docker start`, `docker ps`, `docker inspect` and so on).
 
-  **TL;DR** Exegol is a community-driven environment that can be used in day to day engagements.
+  :bulb: **TL;DR** Exegol is a community-driven environment, powerful and yet simple enough to be used in day to day engagements by anyone.
 
 # :fast_forward: Install
   The install process takes time. Install it before needing it.
-  0. Install the python requirements to use the wrapper : `pip install -r requirements.txt`
-  1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /PATH/TO/Exegol/'`
-  2. Install : `exegol install`
-  3. Update : `èxegol update`
+  1. Install the python requirements to use the wrapper : `pip install -r requirements.txt`
+  2. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
+  3. Install : `exegol install`
 
 # :mag_right: Usage
   1. Start : `exegol start`
-  2. Get a shell : `exegol shell`
-  3. Stop in a saved state : `exegol pause`
-  4. Resume from the saved state : `exegol resume`
-  5. Kill/reset the docker state : `exegol kill`
-  6. Get help on advanced usage : `exegol help`
+  2. Stop : `exegol stop`
+  3. Reset the container state : `exegol reset`
+  4. Get help on advanced usage : `exegol --help`
 
 # :closed_lock_with_key: Credentials
-  Some tools are pre-configured with the following info
+  Some tools are pre-configured with the following credentials
   | Element | User | Password |
   | ------- | ---- | -------- |
   | wso-webshell (PHP) | | exegol4thewin |
