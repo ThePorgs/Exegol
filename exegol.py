@@ -16,10 +16,6 @@ BRANCH = 'dev'
 - add to the 'info' positionnal arg
     - get info like the size of it and so on
 - find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
-
-
-FIX  echo "ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#626262'" >> $ZSH_CUSTOM/my_patches.zsh
-
 '''
 
 class Logger:
