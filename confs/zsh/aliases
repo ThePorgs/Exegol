@@ -1,5 +1,5 @@
 #alias mitm6='python3 /opt/tools/mitm6/mitm6/mitm6.py'
-alias l='ls -al'
+alias l='ls -alh'
 alias ipa='ip --brief --color a'
 alias nse='ls /usr/share/nmap/scripts | grep '
 alias scan-range='nmap -T5 -n -sn'

@@ -114,6 +114,7 @@ function apt_packages() {
   fapt exiftool
   fapt tmux
   fapt man
+  fapt x11-apps
 }
 
 function python-pip() {

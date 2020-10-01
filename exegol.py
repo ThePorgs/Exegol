@@ -16,6 +16,10 @@ BRANCH = 'dev'
 - add to the 'info' positionnal arg
     - get info like the size of it and so on
 - find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
+
+
+FIX  echo "ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#626262'" >> $ZSH_CUSTOM/my_patches.zsh
+
 '''
 
 class Logger:
@@ -164,7 +168,7 @@ def start():
             cmd_options = ''
             if options.X11:
                 logger.info('Enabling display sharing')
-                cmd_options += ' --env DISPLAY=$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1"'
+                cmd_options += ' --env DISPLAY={} --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1"'.format(os.getenv('DISPLAY'))
             if options.privileged:
                 logger.warning('Enabling extended privileges')
                 cmd_options += ' --privileged'
