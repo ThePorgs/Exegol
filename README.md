@@ -11,6 +11,7 @@
 
 # :fast_forward: Install
   The install process takes time. Install it before needing it.
+  0. Install the python requirements to use the wrapper : `pip install -r requirements.txt`
   1. (optional) Set the following alias in you zshrc/bashrc/whateverrc : `alias exegol='make -s -C /PATH/TO/Exegol/'`
   2. Install : `exegol install`
   3. Update : `èxegol update`

@@ -66,3 +66,4 @@ alias zerologon-restore='python3 /opt/tools/zerologon-exploit/restorepassword.py
 alias a='/opt/tools/arsenal/run'
 alias bloodhound="/opt/tools/BloodHound/BloodHound --no-sandbox"
 alias rickroll='curl tiredand.gay/rick'
+alias gitdumper.sh='/opt/tools/GitTools/Dumper/gitdumper.sh'

@@ -651,6 +651,11 @@ function git-dumper() {
   pip3 install -r requirements.txt
 }
 
+function gittools(){
+  colorecho "[EXEGOL] Installing GitTools"
+  git -C /opt/tools/ clone https://github.com/internetwache/GitTools.git
+}
+
 function gopherus() {
   colorecho "[EXEGOL] Installing gopherus"
   git -C /opt/tools/ clone https://github.com/tarunkant/Gopherus
@@ -962,6 +967,7 @@ function install_tools() {
   enyx
   enum4linux-ng
   git-dumper
+  gittools
   gopherus
   ysoserial
   john
