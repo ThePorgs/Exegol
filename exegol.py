@@ -131,14 +131,15 @@ def was_running_with_device():
     return False
 
 def exec_popen(command):
-    logger.debug('Running on host with subprocess.Popen(): {}'.format(command))
-    #os.system(command)
-    output = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    logger.debug('Running on host with subprocess.Popen(): {}'.format(str(command.replace('  ', ' ').split(' '))))
+    output = subprocess.Popen(command.replace('  ', ' ').split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = output.communicate()
-    if not stdout == None:
-        logger.debug('Command STDOUT: {}'.format(stdout.decode().strip()))
-    if not stderr == None:
-        logger.error('Command STDERR: {}'.format(stderr.decode().strip()))
+    if not stdout == None and not stdout == b'':
+        for line in stdout.decode().strip().split('\n'):
+            logger.debug('(cmd stdout)\t{}'.format(line))
+    if not stderr == None and not stderr == b'':
+        for line in stderr.decode().strip().split('\n'):
+            logger.error('(cmd stderr)\t{}'.format(logger.BOLD_RED + line + logger.END))
 
 def exec_system(command):
     logger.debug('Running on host with os.system(): {}'.format(command))
@@ -161,7 +162,7 @@ def start():
                 logger.info('Exegol container was created with display sharing')
                 exec_popen('docker start {}'.format(CONTAINER_NAME))
                 logger.info('Running xhost command to enable display sharing')
-                exec_popen('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
+                exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
             else:
                 exec_popen('docker start {}'.format(CONTAINER_NAME))
             if container_is_running():
@@ -173,7 +174,7 @@ def start():
             logger.warning('Exegol container does not exist')
             logger.info('Creating and starting a container')
             cmd_options = ''
-            if options.x11:
+            if options.X11:
                 logger.info('Enabling display sharing')
                 cmd_options += ' --env DISPLAY=$DISPLAY --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1"'
             if options.privileged:
@@ -183,9 +184,9 @@ def start():
                 logger.debug('Enabling host device ({}) sharing'.format(options.device))
                 cmd_options += ' --device {}'.format(options.device)
             exec_popen('docker run {} --interactive --tty --detach --network host --volume {}:/share --name {} --hostname "{}" {}:{}'.format(cmd_options, SHARE, CONTAINER_NAME, HOSTNAME, IMAGE_NAME, IMAGE_TAG))
-            if options.x11:
+            if options.X11:
                 logger.info('Running xhost command to enable display sharing')
-                exec_popen('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
+                exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
         else:
             logger.warning('Exegol image does not exist, you must install it first')
     else:
@@ -197,7 +198,7 @@ def stop():
     if container_is_running():
         logger.info('Exegol container is up')
         logger.info('Stopping Exegol container')
-        exec_popen('docker stop {}'.format(CONTAINER_NAME))
+        exec_popen('docker stop --time 1 {}'.format(CONTAINER_NAME))
         if container_is_running():
             logger.error('Exegol container is up, something went wrong...')
         else:
@@ -272,8 +273,8 @@ if __name__ == '__main__':
     IMAGE_NAME = 'nwodtuhs/exegol'
     HOSTNAME = 'Exegol-dev' if BRANCH == 'dev' else 'Exegol'
     CONTAINER_NAME = 'exegol-' + IMAGE_TAG
-    EXEGOL_PATH = os.getcwd()
-    SHARE = EXEGOL_PATH + 'shared-volume'
+    EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
+    SHARE = EXEGOL_PATH + '/shared-volume'
 
     client = docker.from_env()
     options = get_options()
