@@ -5,6 +5,7 @@ import argparse
 import docker
 import os
 import requests
+import subprocess
 
 # BRANCH is either 'dev'  or 'master'
 BRANCH = 'dev'
@@ -129,8 +130,18 @@ def was_running_with_device():
     ## TODO:
     return False
 
-def host_exec(command):
-    logger.debug('Running on host: {}'.format(command))
+def exec_popen(command):
+    logger.debug('Running on host with subprocess.Popen(): {}'.format(command))
+    #os.system(command)
+    output = subprocess.Popen(command.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, stderr = output.communicate()
+    if not stdout == None:
+        logger.debug('Command STDOUT: {}'.format(stdout.decode().strip()))
+    if not stderr == None:
+        logger.error('Command STDERR: {}'.format(stderr.decode().strip()))
+
+def exec_system(command):
+    logger.debug('Running on host with os.system(): {}'.format(command))
     os.system(command)
 
 
@@ -148,11 +159,11 @@ def start():
                 logger.warning('Exegol container was given extended privileges')
             if was_running_with_gui():
                 logger.info('Exegol container was created with display sharing')
-                host_exec('docker start {}'.format(CONTAINER_NAME))
+                exec_popen('docker start {}'.format(CONTAINER_NAME))
                 logger.info('Running xhost command to enable display sharing')
-                host_exec('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
+                exec_popen('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
             else:
-                host_exec('docker start {}'.format(CONTAINER_NAME))
+                exec_popen('docker start {}'.format(CONTAINER_NAME))
             if container_is_running():
                 logger.success('Exegol container is up again')
             else:
@@ -171,22 +182,22 @@ def start():
             if options.device:
                 logger.debug('Enabling host device ({}) sharing'.format(options.device))
                 cmd_options += ' --device {}'.format(options.device)
-            host_exec('docker run {} --interactive --tty --detach --network host --volume {}:/share --name {} --hostname "{}" {}:{}'.format(cmd_options, SHARE, CONTAINER_NAME, HOSTNAME, IMAGE_NAME, IMAGE_TAG))
+            exec_popen('docker run {} --interactive --tty --detach --network host --volume {}:/share --name {} --hostname "{}" {}:{}'.format(cmd_options, SHARE, CONTAINER_NAME, HOSTNAME, IMAGE_NAME, IMAGE_TAG))
             if options.x11:
                 logger.info('Running xhost command to enable display sharing')
-                host_exec('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
+                exec_popen('''xhost +local:`docker inspect --format='{}' {}`'''.format('{{ .Config.Hostname }}', CONTAINER_NAME))
         else:
             logger.warning('Exegol image does not exist, you must install it first')
     else:
         logger.success('Exegol container is up')
     logger.info('Entering Exegol')
-    host_exec('docker exec -ti {} zsh'.format(CONTAINER_NAME))
+    exec_system('docker exec -ti {} zsh'.format(CONTAINER_NAME))
 
 def stop():
     if container_is_running():
         logger.info('Exegol container is up')
         logger.info('Stopping Exegol container')
-        host_exec('docker stop {}'.format(CONTAINER_NAME))
+        exec_popen('docker stop {}'.format(CONTAINER_NAME))
         if container_is_running():
             logger.error('Exegol container is up, something went wrong...')
         else:
@@ -199,7 +210,7 @@ def reset():
         logger.info('Exegol container exists')
         stop()
         logger.info('Deleting Exegol container')
-        host_exec('docker rm {}'.format(CONTAINER_NAME))
+        exec_popen('docker rm {}'.format(CONTAINER_NAME))
         if container_exists():
             logger.error('Something went wrong...')
         else:
@@ -210,12 +221,12 @@ def reset():
 def install():
     if options.mode == 'dockerhub':
         logger.info('Pulling Exegol image from DockerHub')
-        host_exec('docker pull {}:{}'.format(IMAGE_NAME, IMAGE_TAG))
+        exec_system('docker pull {}:{}'.format(IMAGE_NAME, IMAGE_TAG))
     elif options.mode == 'github':
         logger.info('Pulling sources from GitHub')
-        host_exec('git -C {} pull origin {}'.format(EXEGOL_PATH, BRANCH))
+        exec_system('git -C {} pull origin {}'.format(EXEGOL_PATH, BRANCH))
         logger.info('Building Exegol image from sources')
-        host_exec('docker build --no-cache --tag {}:{} {} | tee {}/.build.log'.format(IMAGE_NAME, IMAGE_TAG, EXEGOL_PATH,EXEGOL_PATH))
+        exec_system('docker build --no-cache --tag {}:{} {} | tee {}/.build.log'.format(IMAGE_NAME, IMAGE_TAG, EXEGOL_PATH,EXEGOL_PATH))
 
 def uninstall():
     logger.error('Not coded yet')
