@@ -11,27 +11,11 @@ import subprocess
 BRANCH = 'dev'
 
 '''
-TODO:
+## TODO LIST
 - add descriptiong/epilog with argparse
 - add to the 'info' positionnal arg
     - get info like the size of it and so on
-- add the 'purge' or 'uninstall' positionnal argument to completely remove exegol (ask for confirmation)
-- find out why 'stop' is so long, it wasn't before the big update
-- manage the --no-default option, or find something else, to disabled default arguments (like display sharing).
-However, this option has to NOT override other options so that we can do something like
-$ python3 exegol.py --no-defaults --x11
-
----
-OLD TRY for start() - docker exec zsh
-containers = client.containers.list(filters={'name': CONTAINER_NAME})
-if len(containers) != 1:
-    print('There are multiple instances of ' + CONTAINER_NAME + ' running, I dont know what to do')
-else:
-    container = client.containers.list(filters={'name': CONTAINER_NAME})[0]
-    out = container.exec_run('zsh -c echo hi', tty=True)
-    print(out.output.decode())
-    # Can't make an interactive shell right now, I don't know what to do
----
+- find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
 '''
 
 class Logger:
@@ -79,7 +63,7 @@ def get_options():
     'install': 'build or pull Exegol depending on the chosen install mode',
     'update': 'rebuild or pull Exegol depending on the chosen update mode',
     'info': 'print info on Exegol container and image and tell if the image is up to date',
-    'uninstall': '[TODO] (danger) removes Exegol docker image'
+    'remove': '[TODO] (danger) removes Exegol docker image'
     }
 
     actions_help = ''
@@ -93,11 +77,13 @@ def get_options():
     install_update = parser.add_argument_group('Install/update options')
     mode = install_update.add_argument('-m', '--mode', dest='mode', action='store', choices=['dockerhub', 'github'], default='dockerhub', help='select from where to install/update Exegol')
     start = parser.add_argument_group('Start options')
-    nodefault = start.add_argument('--no-default', dest='detached', action='store_true', default=True, help='[TODO] This is not coded yet, it should be used to remove default options')
-    gui = start.add_argument('-X', '--X11', dest='X11', action='store_true', default=True, help='enable display sharing to run GUI-based applications (Default: True)')
+    nodefault = start.add_argument('--no-default', dest='nodefault', action='store_true', default=False, help='Removes default options (e.g. -X/--X11)')
+    gui = start.add_argument('-X', '--X11', dest='X11', action='store_true', help='enable display sharing to run GUI-based applications (Default: True)')
     privileged = start.add_argument('-p', '--privileged', dest='privileged', action='store_true', default=False, help='give extended privileges to this container')
     device = start.add_argument('-d', '--device', dest='device', action='store', help='add a host device to the container')
     options = parser.parse_args()
+    if not options.nodefault:
+        options.X11 = True
     if options.action == 'update':
         options.action = 'install'
     return options
@@ -123,12 +109,14 @@ def was_running_with_gui():
     return False
 
 def was_running_with_privileged():
-    ## TODO:
-    return False
+    return client.api.inspect_container(CONTAINER_NAME)['HostConfig']['Privileged']
 
 def was_running_with_device():
-    ## TODO:
-    return False
+    ## TODO: what happens if there are multiple devices
+    if client.api.inspect_container(CONTAINER_NAME)['HostConfig']['Devices']:
+        return client.api.inspect_container(CONTAINER_NAME)['HostConfig']['Devices'][0]['PathOnHost']
+    else:
+        return False
 
 def exec_popen(command):
     logger.debug('Running on host with subprocess.Popen(): {}'.format(str(command.replace('  ', ' ').split(' '))))
@@ -154,8 +142,7 @@ def start():
             logger.info('Restarting the container')
             ## TODO: tell when last session was, this can be done with docker ps
             if was_running_with_device():
-                ## TODO: tell which host device was shared
-                logger.debug('Exegol container was created with host device (INDICATE WHICH) sharing')
+                logger.warning('Exegol container was created with host device ({}) sharing'.format(was_running_with_device()))
             if was_running_with_privileged ():
                 logger.warning('Exegol container was given extended privileges')
             if was_running_with_gui():
@@ -172,6 +159,7 @@ def start():
                 logger.error('Something went wrong...')
         elif image_exists():
             logger.warning('Exegol container does not exist')
+            logger.info('Exegol image exists')
             logger.info('Creating and starting a container')
             cmd_options = ''
             if options.X11:
@@ -189,10 +177,21 @@ def start():
                 exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
         else:
             logger.warning('Exegol image does not exist, you must install it first')
+            pass
     else:
         logger.success('Exegol container is up')
-    logger.info('Entering Exegol')
-    exec_system('docker exec -ti {} zsh'.format(CONTAINER_NAME))
+        if options.privileged and not was_running_with_privileged():
+            logger.warning('Exegol container was not given extended privileges at its creation, you need to reset it and start it with the -p/--privileged option for it to be taken into account')
+        if options.X11 and not was_running_with_gui():
+            logger.warning('Exegol container was not created with display sharing, you need to reset it and start it with the -X/--X11 option for it to be taken into account')
+        if options.device and not was_running_with_device():
+            logger.warning('Exegol container was created with no device sharing, you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account')
+        if options.device and was_running_with_device() and option.device != was_running_with_device():
+            logger.warning('Exegol container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account'.format(was_running_with_device()))
+            print('error')
+    if container_is_running():
+        logger.info('Entering Exegol')
+        exec_system('docker exec -ti {} zsh'.format(CONTAINER_NAME))
 
 def stop():
     if container_is_running():
@@ -229,9 +228,22 @@ def install():
         logger.info('Building Exegol image from sources')
         exec_system('docker build --no-cache --tag {}:{} {} | tee {}/.build.log'.format(IMAGE_NAME, IMAGE_TAG, EXEGOL_PATH,EXEGOL_PATH))
 
-def uninstall():
-    logger.error('Not coded yet')
-    ## TODO:
+def remove():
+    if image_exists():
+        logger.info('Exegol image exists')
+        logger.warning('About to remove docker Image {}'.format(IMAGE_NAME + ':' + IMAGE_TAG))
+        confirmation = input('{}[?]{} Are you sure you want to do this? [y/N] '.format(logger.BOLD_ORANGE, logger.END))
+        if confirmation == 'y' or confirmation == 'yes' or confirmation == 'Y':
+            logger.info('Deletion confirmed, removing {}'.format(IMAGE_NAME + ':' + IMAGE_TAG))
+            exec_popen('docker image rm {}'.format(IMAGE_NAME + ':' + IMAGE_TAG))
+            if image_exists():
+                logger.error('Exegol image is still here, something is wrong...')
+            else:
+                logger.success('Exegol image has been successfully removed')
+        else:
+            logger.info('Canceled')
+    else:
+        logger.success('Exegol image does not exist')
 
 def info():
     if image_exists():
@@ -245,8 +257,8 @@ def info():
         else:
             logger.info('Exegol container is running ? {}'.format(logger.BOLD_ORANGE + 'KO' + logger.END))
         logger.debug('Fetching local image digest')
-        container_info = client.api.inspect_container(CONTAINER_NAME)
-        local_image_hash = container_info['Image']
+        local_image_hash = client.images.list(IMAGE_NAME + ':' + IMAGE_TAG)[0].attrs['Id']
+        ## TODO: Handle multiple images ?
         logger.debug('Local image digest: {}...'.format(local_image_hash[:32]))
         logger.debug('Fetching remote image digest')
         logger.debug('Fetching docker token first')
@@ -261,11 +273,18 @@ def info():
         if local_image_hash == remote_image_hash:
             logger.info('Exegol image is up to date ? {}'.format(logger.BOLD_GREEN + 'OK' + logger.END))
         else:
-            logger.info('Exegol image is up to date ? {}'.format(logger.BOLD_RED + 'KO' + logger.END))
+            logger.info('Exegol image is up to date ? {}'.format(logger.BOLD_ORANGE + 'KO' + logger.END))
             logger.warning('Exegol image is not up to date, you should update it')
-            ## TODO: add info to the user to tell what command to run and such
     else:
-        logger.info('Exegol image exists ? {}'.format(logger.BOLD_RED + 'KO' + logger.END))
+        logger.info('Exegol image exists ? {}'.format(logger.BOLD_ORANGE + 'KO' + logger.END))
+        if container_exists():
+            logger.info('Exegol container exists ? {}'.format(logger.BOLD_GREEN + 'OK' + logger.END))
+        else:
+            logger.info('Exegol container exists ? {}'.format(logger.BOLD_ORANGE + 'KO' + logger.END))
+        if container_is_running():
+            logger.info('Exegol container is running ? {}'.format(logger.BOLD_GREEN + 'OK' + logger.END))
+        else:
+            logger.info('Exegol container is running ? {}'.format(logger.BOLD_ORANGE + 'KO' + logger.END))
         logger.warning('Exegol image does not exist, you should install it')
 
 if __name__ == '__main__':
