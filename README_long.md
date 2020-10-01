@@ -65,6 +65,7 @@
   - enyx (https://github.com/trickster0/Enyx)
   - enum4linux-ng (https://github.com/cddmp/enum4linux-ng)
   - git-dumper (https://github.com/arthaud/git-dumper)
+  - GitTools (https://github.com/internetwache/GitTools)
   - gopherus (https://github.com/tarunkant/Gopherus)
   - arsenal (https://github.com/Orange-Cyberdefense/arsenal)
   - proxmark3 (https://github.com/RfidResearchGroup/proxmark3.git)
