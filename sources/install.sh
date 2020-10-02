@@ -115,6 +115,16 @@ function apt_packages() {
   fapt tmux
   fapt man
   fapt x11-apps
+  fapt hostapd-wpe
+  fapt iproute2
+  fapt tshark
+  fapt reaver
+  fapt bully
+  fapt cowpatty
+  fapt wireshark
+  fapt macchanger
+  fapt imagemagick
+  fapt xsel
 }
 
 function python-pip() {
@@ -138,9 +148,9 @@ function filesystem() {
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/history
-  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/aliases
-  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/zshrc
+  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/history
+  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/aliases
+  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/zshrc
   git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
   git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
   git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/custom/plugins/zsh-completions
@@ -294,11 +304,11 @@ function Impacket() {
   colorecho "[EXEGOL] Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
   git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   pip3 install .
-  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.ntlmrelayx
-  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.secretsdump
+  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.ntlmrelayx
+  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.secretsdump
 }
 
 function bloodhound.py() {
@@ -471,7 +481,7 @@ function proxychains() {
 function grc() {
   colorecho "[EXEGOL] Installing and configuring grc"
   apt -y install grc
-  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/grc.conf
+  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/grc.conf
 }
 
 function pykek() {
@@ -879,8 +889,57 @@ function bloodhound(){
   mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
   rm /tmp/BloodHound-linux-x64.zip
   mkdir -p ~/.config/bloodhound
-  wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/bloodhound/config.json
-  wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/bloodhound/customqueries.json
+  wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/config.json
+  wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/customqueries.json
+}
+
+function bettercap(){
+  colorecho "[EXEGOL] Installing Bettercap"
+  apt -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
+  go get -u -v github.com/bettercap/bettercap
+  bettercap -eval "caplets.update; ui.update; q"
+  sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
+  sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/http-ui.cap
+  sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/https-ui.cap
+  sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/https-ui.cap
+}
+
+function hcxtools() {
+  colorecho "[EXEGOL] Installing hcxtools"
+  git -C /opt/tools/ clone https://github.com/ZerBea/hcxtools
+  cd /opt/tools/hcxtools/
+  make
+  make install
+}
+
+function hcxdumptool() {
+  colorecho "[EXEGOL] Installing hcxdumptool"
+  apt -y install libcurl4-openssl-dev libssl-dev
+  git -C /opt/tools/ clone https://github.com/ZerBea/hcxdumptool
+  cd /opt/tools/hcxdumptool
+  make
+  make install
+  ln -s /usr/local/bin/hcxpcapngtool /usr/local/bin/hcxpcaptool
+}
+
+function pyrit() {
+  colorecho "[EXEGOL] Installing pyrit"
+  git -C /opt/tools clone https://github.com/JPaulMora/Pyrit
+  cd /opt/tools/Pyrit
+  pip install psycopg2-binary scapy
+  #https://github.com/JPaulMora/Pyrit/issues/591
+  wget -O undefined-symbol-aesni-key.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/undefined-symbol-aesni-key.patch
+  git apply undefined-symbol-aesni-key.patch
+  python setup.py clean
+  python setup.py build
+  python setup.py install
+}
+
+function wifite2() {
+  colorecho "[EXEGOL] Installing wifite2"
+  git -C /opt/tools/ clone https://github.com/derv82/wifite2.git
+  cd /opt/tools/wifite2/
+  python3 setup.py install
 }
 
 function install_base() {
@@ -974,6 +1033,11 @@ function install_tools() {
   zerologon
   arsenal
   proxmark3
+  bettercap
+  hcxtools
+  hcxdumptool
+  pyrit
+  wifite2
 }
 
 function install_tools_gui() {

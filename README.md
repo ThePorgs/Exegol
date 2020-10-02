@@ -28,6 +28,7 @@
   | ------- | ---- | -------- |
   | wso-webshell (PHP) | | exegol4thewin |
   | neo4j database | neo4j | exegol4thewin |
+  | bettercap ui | bettercap | exegol4thewin |
 
 # :pushpin: Pre-requisites
   You need docker :whale:, make, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
@@ -65,13 +66,11 @@
 
 # :memo: To-Do List
   Here are some things to add/correct that I have in mind, I'll work on that asap
-  - is it possible to use Wifi and Bluetooth??
-  - issues when mounting stuff
   - redo the ZeroLogon install part once clean exploits are out
   - make a GIF and/or some visuals to present this ?
   - find a way to log commands and outputs for engagements
-  - add an option in the Makefile to deploy multiple versions of Exegol, on for each engagement?
-  - Tools to install: bettercap, hostapd-wpe, iproute2, wifite,  arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida
+  - Check if the following tools work: bettercap, hostapd-wpe, iproute2, wifite2
+  - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida
   - share the /opt/resources folder to let the host easily access it
   - manual install of msf to move it to /opt/tools/
 

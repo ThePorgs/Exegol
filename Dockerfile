@@ -2,7 +2,7 @@
 
 FROM kalilinux/kali-rolling
 
-ADD confs/install.sh /root/install.sh
+ADD sources/install.sh /root/install.sh
 RUN chmod +x /root/install.sh
 
 RUN /root/install.sh install_base

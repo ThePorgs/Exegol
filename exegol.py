@@ -77,12 +77,13 @@ def get_options():
     install_update = parser.add_argument_group('Install/update options')
     mode = install_update.add_argument('-m', '--mode', dest='mode', action='store', choices=['dockerhub', 'github'], default='dockerhub', help='select from where to install/update Exegol')
     start = parser.add_argument_group('Start options')
-    nodefault = start.add_argument('--no-default', dest='nodefault', action='store_true', default=False, help='Removes default options (e.g. -X/--X11)')
+    no_default = start.add_argument('--no-default', dest='no_default', action='store_true', default=False, help='Removes default options (e.g. -X/--X11)')
     gui = start.add_argument('-X', '--X11', dest='X11', action='store_true', help='enable display sharing to run GUI-based applications (Default: True)')
-    privileged = start.add_argument('-p', '--privileged', dest='privileged', action='store_true', default=False, help='give extended privileges to this container')
+    privileged = start.add_argument('-p', '--privileged', dest='privileged', action='store_true', default=False, help='(Dangerous option) give extended privileges to this container (e.g. needed to mount things)')
     device = start.add_argument('-d', '--device', dest='device', action='store', help='add a host device to the container')
+    custom_options = start.add_argument('--custom-options', dest='custom_options', action='store', default='', help='specify custom options for the container creation (docker run)')
     options = parser.parse_args()
-    if not options.nodefault:
+    if not options.no_default:
         options.X11 = True
     if options.action == 'update':
         options.action = 'install'
@@ -161,17 +162,29 @@ def start():
             logger.warning('Exegol container does not exist')
             logger.info('Exegol image exists')
             logger.info('Creating and starting a container')
-            cmd_options = ''
+            advanced_options = ''
             if options.X11:
                 logger.info('Enabling display sharing')
-                cmd_options += ' --env DISPLAY={} --volume /tmp/.X11-unix:/tmp/.X11-unix --env="QT_X11_NO_MITSHM=1"'.format(os.getenv('DISPLAY'))
+                advanced_options += ' --env DISPLAY={}'.format(os.getenv('DISPLAY'))
+                advanced_options += ' --volume /tmp/.X11-unix:/tmp/.X11-unix'
+                advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
             if options.privileged:
                 logger.warning('Enabling extended privileges')
-                cmd_options += ' --privileged'
+                advanced_options += ' --privileged'
             if options.device:
                 logger.debug('Enabling host device ({}) sharing'.format(options.device))
-                cmd_options += ' --device {}'.format(options.device)
-            exec_popen('docker run {} --interactive --tty --detach --network host --volume {}:/share --name {} --hostname "{}" {}:{}'.format(cmd_options, SHARE, CONTAINER_NAME, HOSTNAME, IMAGE_NAME, IMAGE_TAG))
+                advanced_options += ' --device {}'.format(options.device)
+            if options.custom_options:
+                logger.debug('Specifying custom options: {}'.format(options.custom_options))
+                advanced_options += ' ' + options.custom_options
+            base_options  = ' --interactive'
+            base_options += ' --tty'
+            base_options += ' --detach'
+            base_options += ' --network host'
+            base_options += ' --volume {}:/share'.format(SHARE_PATH)
+            base_options += ' --name {}'.format(CONTAINER_NAME)
+            base_options += ' --hostname "{}"'.format(HOSTNAME)
+            exec_popen('docker run {} {} {}:{}'.format(base_options, advanced_options, IMAGE_NAME, IMAGE_TAG))
             if options.X11:
                 logger.info('Running xhost command to enable display sharing')
                 exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
@@ -293,7 +306,8 @@ if __name__ == '__main__':
     HOSTNAME = 'Exegol-dev' if BRANCH == 'dev' else 'Exegol'
     CONTAINER_NAME = 'exegol-' + IMAGE_TAG
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
-    SHARE = EXEGOL_PATH + '/shared-volume'
+    SHARE_PATH = EXEGOL_PATH + '/shared-volume'
+    RESOURCES_PATH = EXEGOL_PATH + '/resources-volume'
 
     client = docker.from_env()
     options = get_options()

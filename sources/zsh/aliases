@@ -67,3 +67,7 @@ alias a='/opt/tools/arsenal/run'
 alias bloodhound="/opt/tools/BloodHound/BloodHound --no-sandbox"
 alias rickroll='curl tiredand.gay/rick'
 alias gitdumper='/opt/tools/GitTools/Dumper/gitdumper.sh'
+alias bettercap-ui='bettercap -caplet http-ui'
+alias xcopy='xsel --clipboard <'
+alias xpaste='xsel --clipboard >'
+alias xshow='xsel --clipboard'
