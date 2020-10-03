@@ -69,10 +69,11 @@
   - redo the ZeroLogon install part once clean exploits are out
   - make a GIF and/or some visuals to present this ?
   - find a way to log commands and outputs for engagements
-  - Check if the following tools work: bettercap, hostapd-wpe, iproute2, wifite2
+  - Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
   - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida
-  - share the /opt/resources folder to let the host easily access it
-  - manual install of msf to move it to /opt/tools/
+  - share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
+  - manual install of msf to move it to /opt/tools/ : I think it was Sn1per install, I commented out this tool for now, it's heavy and I don't use it, I may enable it again if people want me to
+  - move the long readme to a wiki and document some things
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).

