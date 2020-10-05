@@ -893,7 +893,7 @@ function bloodhound(){
   wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/customqueries.json
 }
 
-function bettercap(){
+function bettercap_install(){
   colorecho "[EXEGOL] Installing Bettercap"
   apt -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
   go get -u -v github.com/bettercap/bettercap
@@ -1033,7 +1033,7 @@ function install_tools() {
   zerologon
   arsenal
   proxmark3
-  bettercap
+  bettercap_install
   hcxtools
   hcxdumptool
   pyrit

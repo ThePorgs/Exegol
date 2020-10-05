@@ -17,6 +17,7 @@ BRANCH = 'dev'
     - get info like the size of it and so on
     - get info when container is up/running
 - find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
+- details on the 'mode option'
 '''
 
 class Logger:
