@@ -13,9 +13,9 @@ BRANCH = 'dev'
 '''
 ## TODO LIST
 - add descriptiong/epilog with argparse
-- add a default option for --network host, so that users can disable it since it can be dangerous
 - add to the 'info' positionnal arg
     - get info like the size of it and so on
+    - get info when container is up/running
 - find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
 '''
 

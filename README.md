@@ -1,4 +1,11 @@
 # Exegol
+
+  ![last commit on master](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol master?label=latest%20release) ![last commit on dev](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=last%20commit%20%28dev%29)
+
+  ![Python](https://img.shields.io/badge/Python-3-success) ![DockerHub build type](https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol) ![DockerHub build state](https://img.shields.io/docker/cloud/build/nwodtuhs/exegol) ![image size](https://img.shields.io/docker/image-size/nwodtuhs/exegol/latest)
+
+  [![Twitter](https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social)](https://twitter.com/intent/follow?screen_name=_nwodtuhs)
+
   Exegol is a fully configured docker with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colorized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements.
 
   The main features of Exegol are:
@@ -70,7 +77,7 @@
   - make a GIF and/or some visuals to present this ?
   - find a way to log commands and outputs for engagements
   - Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
-  - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida
+  - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb
   - share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
   - manual install of msf to move it to /opt/tools/ : I think it was Sn1per install, I commented out this tool for now, it's heavy and I don't use it, I may enable it again if people want me to
   - move the long readme to a wiki and document some things
