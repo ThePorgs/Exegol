@@ -117,12 +117,12 @@ function apt_packages() {
   fapt x11-apps
   fapt hostapd-wpe
   fapt iproute2
-  DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt reaver
   fapt bully
   fapt cowpatty
-  fapt wireshark
   DEBIAN_FRONTEND=noninteractive fapt macchanger
+  DEBIAN_FRONTEND=noninteractive fapt wireshark
+  DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt imagemagick
   fapt xsel
 }
@@ -942,6 +942,18 @@ function wifite2() {
   python3 setup.py install
 }
 
+function wireshark_sources() {
+  colorecho "[EXEGOL] Installing tshark, wireshark"
+  apt -y install cmake libgcrypt20-dev libglib2.0-dev libpcap-dev qtbase5-dev libssh-dev libsystemd-dev qtmultimedia5-dev libqt5svg5-dev qttools5-dev libc-ares-dev flex bison byacc
+  wget -O /tmp/wireshark.tar.xz https://www.wireshark.org/download/src/wireshark-latest.tar.xz
+  cd /tmp/
+  tar -xvf /tmp/wireshark.tar.xz
+  cd $(find . -maxdepth 1 -type d -name 'wireshark*')
+  cmake .
+  make
+  make install
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1033,6 +1045,7 @@ function install_tools() {
   zerologon
   arsenal
   proxmark3
+  wireshark_sources
   bettercap_install
   hcxtools
   hcxdumptool
@@ -1076,8 +1089,8 @@ function install_resources() {
 
 function install_clean() {
   colorecho "[EXEGOL] Cleaning..."
-  rm /tmp/gobuster.7z
-  rm -r /tmp/gobuster-linux-amd64
+  #rm /tmp/gobuster.7z
+  #rm -r /tmp/gobuster-linux-amd64
 }
 
 if [[ $EUID -ne 0 ]]; then

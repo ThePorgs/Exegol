@@ -1,6 +1,6 @@
 # Exegol
 
-  ![last commit on master](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release) ![last commit on dev](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=last%20commit%20%28dev%29)
+  ![latest commit on master](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release) ![latest commit on dev](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29)
 
   ![Python](https://img.shields.io/badge/Python-3-success) ![DockerHub build type](https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol) ![DockerHub build state](https://img.shields.io/docker/cloud/build/nwodtuhs/exegol) ![image size](https://img.shields.io/docker/image-size/nwodtuhs/exegol/latest)
 
