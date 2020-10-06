@@ -568,7 +568,7 @@ function testssl() {
 function bat() {
   colorecho "[EXEGOL] Installing bat"
   wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
-  apt install -f ./bat_0.13.0_amd64.deb
+  fapt -f ./bat_0.13.0_amd64.deb
   rm bat_0.13.0_amd64.deb
 }
 
@@ -680,7 +680,7 @@ function ysoserial() {
 
 function john() {
   colorecho "[EXEGOL] Installing john the ripper"
-  apt install qtbase5-dev
+  fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
   cd /opt/tools/john/src
   ./configure --disable-openmp
@@ -884,6 +884,7 @@ function arsenal() {
 
 function bloodhound(){
   echo "[EXEGOL] Installing Bloodhound from latest release"
+  fapt libxss1
   wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
   mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
@@ -952,6 +953,9 @@ function wireshark_sources() {
   cmake .
   make
   make install
+  cd /tmp/
+  rm -r $(find . -maxdepth 1 -type d -name 'wireshark*')
+  wireshark.tar.xz
 }
 
 function install_base() {
@@ -1045,7 +1049,7 @@ function install_tools() {
   zerologon
   arsenal
   proxmark3
-  wireshark_sources
+  #wireshark_sources
   bettercap_install
   hcxtools
   hcxdumptool

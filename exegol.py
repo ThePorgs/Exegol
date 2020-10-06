@@ -50,8 +50,20 @@ class Logger:
             print('{}[!]{} {}'.format(BOLD_RED, END, message))
 
 def get_options():
-    description = 'Exegol wrapper'
-    epilog = 'Exegol epilog'
+    print('hello')
+
+    description = ''
+
+    examples = {
+        'quick start\t': 'exegol start',
+        'use wifi/bluetooth': 'exegol --privileged start',
+        'interact with proxmark': 'exegol --device /dev/ttyACM0 start',
+        'check image updates': 'exegol info'
+    }
+
+    epilog = 'Examples:\n'
+    for example in examples.keys():
+        epilog += '\t{}\t{}\n'.format(example, examples[example])
 
     actions = {
         'start': 'start and/or enter Exegol',
@@ -292,10 +304,10 @@ def reset():
         logger.success('Exegol container does not exist')
 
 def install():
-    if options.mode == 'pull':
+    if options.mode == 'release':
         logger.info('Pulling Exegol image from DockerHub')
         exec_system('docker pull {}:{}'.format(IMAGE_NAME, IMAGE_TAG))
-    elif options.mode == 'build':
+    elif options.mode == 'sources':
         logger.info('Pulling sources from GitHub')
         exec_system('git -C {} pull origin {}'.format(EXEGOL_PATH, BRANCH))
         logger.info('Building Exegol image from sources')

@@ -77,9 +77,8 @@
   - make a GIF and/or some visuals to present this ?
   - find a way to log commands and outputs for engagements
   - Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
-  - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb
+  - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb, dns2tcp, revsocks, chisel, ssf, darkarmor,amber, tikitorch, rpc2socks
   - share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
-  - manual install of msf to move it to /opt/tools/ : I think it was Sn1per install, I commented out this tool for now, it's heavy and I don't use it, I may enable it again if people want me to
   - move the long readme to a wiki and document some things
 
 # :loudspeaker: Credits & thanks
@@ -87,3 +86,8 @@
 
 # :movie_camera: Introducing Exegol (in french w/ english subs)
 [![Introducing Exegol (french)](http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg)](http://www.youtube.com/watch?v=TA3vrNpWGvg "Introducing Exegol (french)")
+
+# :snowboarder: Freestyle section
+[Do not click here](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
+
+![better than kali linux](https://img.shields.io/badge/better%20than-Kali%20Linux-blue) ![approved by palpatine](https://img.shields.io/badge/approved%20by-palpatine-success) ![powered by a flying monkey](https://img.shields.io/badge/powered%20by-a%20flying%20monkey-yellow)
