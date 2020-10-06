@@ -11,17 +11,14 @@ import subprocess
 BRANCH = 'dev'
 
 '''
-## TODO LIST
-- add descriptiong/epilog with argparse
-- add to the 'info' positionnal arg
-    - get info like the size of it and so on
-    - get info when container is up/running
-- find out if CMD in dockerfile is why 'stop' is so long, it wasn't before the big update
-- details on the 'mode option'
-- install_clean : à faire
-- add info on running containers
-- -h/--help affiche l'aide de base (required args, optional args), -hh/--hhelp afficherait de l'aide avancée (le reste) ?
-- change pull/build to release/sources ? or something else ?
+## DETAILED TODO LIST
+- enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
+- make a GIF and/or some visuals to present this ?
+- find a way to log commands and outputs for engagements
+- Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
+- Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb, dns2tcp, revsocks, chisel, ssf, darkarmor,amber, tikitorch, rpc2socks
+- share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
+- move the long readme to a wiki and document some things
 '''
 
 class Logger:
@@ -35,7 +32,7 @@ class Logger:
 
     def debug(self, message):
         if self.verbose:
-            print('{}[#]{} {}'.format(BOLD_WHITE, END, message))
+            print('{}[.]{} {}'.format(BOLD_WHITE, END, message))
 
     def info(self, message):
         if not self.quiet:
@@ -50,29 +47,29 @@ class Logger:
             print('{}[!]{} {}'.format(BOLD_RED, END, message))
 
 def get_options():
-    print('hello')
 
-    description = ''
+    description = 'This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.'
 
     examples = {
-        'quick start\t': 'exegol start',
-        'use wifi/bluetooth': 'exegol --privileged start',
-        'interact with proxmark': 'exegol --device /dev/ttyACM0 start',
-        'check image updates': 'exegol info'
+        'install (↓ ~6GB):': 'exegol install',
+        'get a shell:\t': 'exegol start',
+        'use wifi/bluetooth:': 'exegol --privileged start',
+        'use a proxmark:': 'exegol --device /dev/ttyACM0 start',
+        'check image updates:': 'exegol info'
     }
 
-    epilog = 'Examples:\n'
+    epilog = '{}Examples:{}\n'.format(GREEN, END)
     for example in examples.keys():
-        epilog += '\t{}\t{}\n'.format(example, examples[example])
+        epilog += '  {}\t{}\n'.format(example, examples[example])
 
     actions = {
-        'start': 'start and/or enter Exegol',
+        'start': 'automatically start, resume, or enter Exegol',
         'stop': 'stop Exegol in a saved state',
-        'reset': 'remove the saved state, clean slate',
-        'install': 'build or pull Exegol depending on the chosen install mode',
-        'update': 'rebuild or pull Exegol depending on the chosen update mode',
-        'info': 'print info on Exegol container and image and tell if the image is up to date',
-        'remove': 'remove Exegol docker image'
+        'reset': 'remove the saved state, clean slate (removes the container, not the image)',
+        'install': 'install Exegol image (build or pull depending on the chosen install --mode)',
+        'update': 'update Exegol image (build or pull depending on the chosen update --mode)',
+        'info': 'print info on Exegol container/image (up to date, size, state, ...)',
+        'remove': 'remove Exegol image'
     }
 
     modes = {
@@ -89,7 +86,7 @@ def get_options():
         modes_help += '{}\t\t{}\n'.format(mode, modes[mode])
 
     parser = argparse.ArgumentParser(description=description, epilog=epilog, formatter_class=argparse.RawTextHelpFormatter)
-    parser._positionals.title = "{}Required arguments{}".format(BOLD_BLUE, END)
+    parser._positionals.title = "{}Required arguments{}".format(BOLD_GREEN, END)
     parser.add_argument('action', choices=actions.keys(), help=actions_help)
     # Optional arguments
     parser._optionals.title = "{}Optional arguments{}".format(BLUE, END)
@@ -282,7 +279,7 @@ def stop():
     if container_is_running():
         logger.info('Exegol container is up')
         logger.info('Stopping Exegol container')
-        exec_popen('docker stop --time 1 {}'.format(CONTAINER_NAME))
+        exec_popen('docker stop --time 3 {}'.format(CONTAINER_NAME))
         if container_is_running():
             logger.error('Exegol container is up, something went wrong...')
         else:
@@ -368,6 +365,7 @@ if __name__ == '__main__':
     BOLD_ORANGE = '\033[1;93m'
     END = '\033[0m'
     BLUE='\033[0;34m'
+    GREEN = '\033[0;32m'
 
     OK = BOLD_GREEN + 'OK' + END
     KO = BOLD_ORANGE + 'KO' + END
