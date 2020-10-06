@@ -80,7 +80,7 @@
 # :movie_camera: Introducing Exegol (in french w/ english subs)
 [![Introducing Exegol (french)](http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg)](http://www.youtube.com/watch?v=TA3vrNpWGvg "Introducing Exegol (french)")
 
-# :trollface: Freestyle section
+# :snowboarder: Freestyle section
 [Do not click here](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
 
 ![better than kali linux](https://img.shields.io/badge/better%20than-Kali%20Linux-blue) ![approved by palpatine](https://img.shields.io/badge/approved%20by-palpatine-success) ![powered by a flying monkey](https://img.shields.io/badge/powered%20by-a%20flying%20monkey-yellow)

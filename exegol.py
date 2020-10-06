@@ -7,11 +7,14 @@ import os
 import requests
 import subprocess
 
-# BRANCH is either 'dev'  or 'master'
+# BRANCH is either 'dev' or 'master'
 BRANCH = 'dev'
 
 '''
 ## DETAILED TODO LIST
+- improve the logger.debug messages to give some contexte to the values that are printed (usually for values obtained from docker-py calls)
+- check if some docker calls can be done with with docker-py
+- refactor the code to make it more "best-practice", "pretty" ?
 - enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
 - make a GIF and/or some visuals to present this ?
 - find a way to log commands and outputs for engagements
@@ -22,21 +25,26 @@ BRANCH = 'dev'
 '''
 
 class Logger:
-    def __init__(self, verbose=False, quiet=False):
-        self.verbose = verbose
+    def __init__(self, verbosity=0, quiet=False):
+        self.verbosity = verbosity
         self.quiet = quiet
 
-    def success(self, message):
-        if not self.quiet:
-            print('{}[+]{} {}'.format(BOLD_GREEN, END, message))
 
     def debug(self, message):
-        if self.verbose:
-            print('{}[.]{} {}'.format(BOLD_WHITE, END, message))
+        if self.verbosity == 2:
+            print('{}[DEBUG]{} {}'.format(YELLOW, END, message))
+
+    def verbose(self, message):
+        if self.verbosity >= 1:
+            print('{}[VERBOSE]{} {}'.format(BLUE, END, message))
 
     def info(self, message):
         if not self.quiet:
             print('{}[*]{} {}'.format(BOLD_BLUE, END, message))
+
+    def success(self, message):
+        if not self.quiet:
+            print('{}[+]{} {}'.format(BOLD_GREEN, END, message))
 
     def warning(self, message):
         if not self.quiet:
@@ -91,7 +99,7 @@ def get_options():
     # Optional arguments
     parser._optionals.title = "{}Optional arguments{}".format(BLUE, END)
     logging = parser.add_mutually_exclusive_group()
-    logging.add_argument('-v', '--verbose', dest='verbose', action='store_true', default=False, help='show debug information')
+    logging.add_argument('-v', '--verbose', dest='verbosity', action='count', default=0, help='verbosity level (-v for verbose, -vv for debug)')
     logging.add_argument('-q', '--quiet', dest='quiet', action='store_true', default=False, help='show no information at all')
     # Install/update options
     install_update = parser.add_argument_group('{}Install/update options{}'.format(BLUE, END))
@@ -147,16 +155,67 @@ def was_created_with_device():
 def was_created_with_host_networking():
     return 'host' in client.api.inspect_container(CONTAINER_NAME)['NetworkSettings']['Networks']
 
+def container_analysis():
+    if was_created_with_device():
+        logger.verbose('Exegol container was created with host device ({}) sharing'.format(was_created_with_device()))
+    if was_created_with_privileged():
+        logger.warning('Exegol container was given extended privileges at its creation')
+    if was_created_with_host_networking():
+        logger.verbose('Exegol container was created with host networking')
+    if was_created_with_gui():
+        logger.verbose('Exegol container was created with display sharing')
+
+    if options.privileged and not was_created_with_privileged():
+        logger.warning('Exegol container was not given extended privileges at its creation, you need to reset it and start it with the -p/--privileged option for it to be taken into account')
+    if options.X11 and not was_created_with_gui():
+        logger.warning('Exegol container was not created with display sharing, you need to reset it and start it with the -x/--X11 option (or without --no-default) for it to be taken into account')
+    if options.host_network and not was_created_with_host_networking():
+        logger.warning('Exegol container was not created with host networking, you need to reset it and start it with the --host-network (or without --no-default) option for it to be taken into account')
+    if options.device and not was_created_with_device():
+        logger.warning('Exegol container was created with no device sharing, you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account')
+    if options.device and was_created_with_device() and options.device != was_created_with_device():
+        logger.warning('Exegol container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account'.format(was_created_with_device()))
+    pass
+
+def container_creation_options():
+    base_options = ''
+    advanced_options = ''
+    if options.X11:
+        logger.verbose('Enabling display sharing')
+        advanced_options += ' --env DISPLAY={}'.format(os.getenv('DISPLAY'))
+        advanced_options += ' --volume /tmp/.X11-unix:/tmp/.X11-unix'
+        advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
+    if options.host_network:
+        logger.verbose('Enabling host networking')
+        advanced_options += ' --network host'
+    if options.privileged:
+        logger.warning('Enabling extended privileges')
+        advanced_options += ' --privileged'
+    if options.device:
+        logger.verbose('Enabling host device ({}) sharing'.format(options.device))
+        advanced_options += ' --device {}'.format(options.device)
+    if options.custom_options:
+        logger.verbose('Specifying custom options: {}'.format(options.custom_options))
+        advanced_options += ' ' + options.custom_options
+    base_options += ' --interactive'
+    base_options += ' --tty'
+    #base_options += ' --detach'
+    base_options += ' --volume {}:/share'.format(SHARE_PATH)
+    base_options += ' --name {}'.format(CONTAINER_NAME)
+    base_options += ' --hostname {}'.format(HOSTNAME)
+    return base_options, advanced_options
+
 def exec_popen(command):
-    logger.debug('Running on host with subprocess.Popen(): {}'.format(str(command.replace('  ', ' ').split(' '))))
-    output = subprocess.Popen(command.replace('  ', ' ').split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = command.replace('  ', ' ').split(' ')
+    logger.debug('Running command on host with subprocess.Popen(): {}'.format(str(cmd)))
+    output = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = output.communicate()
     if not stdout == None and not stdout == b'':
         for line in stdout.decode().strip().split('\n'):
-            logger.debug('(cmd stdout)\t{}'.format(line))
+            logger.debug('{}(cmd stdout){}\t{}'.format(BLUE, END, line))
     if not stderr == None and not stderr == b'':
         for line in stderr.decode().strip().split('\n'):
-            logger.error('(cmd stderr)\t{}'.format(BOLD_RED + line + END))
+            logger.error('{}(cmd stderr){}\t{}'.format(RED, END, line))
 
 def exec_system(command):
     logger.debug('Running on host with os.system(): {}'.format(command))
@@ -199,81 +258,42 @@ def readable_size(size,precision=1):
 
 
 def start():
-    if not container_is_running():
-        logger.warning('Exegol container is down')
-        if container_exists():
-            logger.success('Exegol container exists')
-            logger.info('Restarting the container')
-            ## TODO: tell when last session was, this can be done with docker ps
-            if was_created_with_device():
-                logger.warning('Exegol container was created with host device ({}) sharing'.format(was_created_with_device()))
-            if was_created_with_privileged():
-                logger.warning('Exegol container was given extended privileges at its creation')
-            if was_created_with_host_networking():
-                logger.info('Exegol container was created with host networking')
-            if was_created_with_gui():
-                logger.info('Exegol container was created with display sharing')
-                exec_popen('docker start {}'.format(CONTAINER_NAME))
-                logger.info('Running xhost command for display sharing')
-                exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
+    global LOOP_PREVENTION
+    if not LOOP_PREVENTION > 3:
+        if image_exists():
+            if container_exists():
+                if container_is_running():
+                    logger.success('Exegol container is up')
+                    container_analysis()
+                    if was_created_with_gui():
+                        logger.info('Running xhost command for display sharing')
+                        exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
+                    logger.info('Entering Exegol')
+                    exec_system('docker exec -ti {} zsh'.format(CONTAINER_NAME))
+                else:
+                    logger.warning('Exegol container is down')
+                    logger.info('Restarting the container')
+                    exec_popen('docker start {}'.format(CONTAINER_NAME))
+                    LOOP_PREVENTION += 1
+                    start()
             else:
-                exec_popen('docker start {}'.format(CONTAINER_NAME))
-            if container_is_running():
-                logger.success('Exegol container is up again')
-            else:
-                logger.warning('Exegol container is down')
-                logger.error('Something went wrong...')
-        elif image_exists():
-            logger.warning('Exegol container does not exist')
-            logger.info('Exegol image exists')
-            logger.info('Creating and starting a container')
-            advanced_options = ''
-            base_options = ''
-            if options.X11:
-                logger.info('Enabling display sharing')
-                advanced_options += ' --env DISPLAY={}'.format(os.getenv('DISPLAY'))
-                advanced_options += ' --volume /tmp/.X11-unix:/tmp/.X11-unix'
-                advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
-            if options.host_network:
-                logger.info('Enabling host networking')
-                advanced_options += ' --network host'
-            if options.privileged:
-                logger.warning('Enabling extended privileges')
-                advanced_options += ' --privileged'
-            if options.device:
-                logger.debug('Enabling host device ({}) sharing'.format(options.device))
-                advanced_options += ' --device {}'.format(options.device)
-            if options.custom_options:
-                logger.debug('Specifying custom options: {}'.format(options.custom_options))
-                advanced_options += ' ' + options.custom_options
-            base_options += ' --interactive'
-            base_options += ' --tty'
-            base_options += ' --detach'
-            base_options += ' --volume {}:/share'.format(SHARE_PATH)
-            base_options += ' --name {}'.format(CONTAINER_NAME)
-            base_options += ' --hostname {}'.format(HOSTNAME)
-            exec_popen('docker run {} {} {}:{}'.format(base_options, advanced_options, IMAGE_NAME, IMAGE_TAG))
-            if options.X11:
-                logger.info('Running xhost command for display sharing')
-                exec_popen('xhost +local:{}'.format(client.api.inspect_container(CONTAINER_NAME)['Config']['Hostname']))
+                logger.warning('Exegol container does not exist')
+                logger.info('Creating the container')
+                base_options, advanced_options = container_creation_options()
+                exec_popen('docker create {} {} {}:{}'.format(base_options, advanced_options, IMAGE_NAME, IMAGE_TAG))
+                LOOP_PREVENTION += 1
+                start()
         else:
             logger.warning('Exegol image does not exist, you must install it first')
-            pass
+            confirmation = input('{}[?]{} Do you wish to install it now ? [y/N] '.format(BOLD_ORANGE, END))
+            if confirmation == 'y' or confirmation == 'yes' or confirmation == 'Y':
+                logger.success('Installation confirmed, proceeding {}'.format(IMAGE_NAME + ':' + IMAGE_TAG))
+                install()
+                LOOP_PREVENTION += 1
+                start()
     else:
-        logger.success('Exegol container is up')
-        if options.privileged and not was_created_with_privileged():
-            logger.warning('Exegol container was not given extended privileges at its creation, you need to reset it and start it with the -p/--privileged option for it to be taken into account')
-        if options.X11 and not was_created_with_gui():
-            logger.warning('Exegol container was not created with display sharing, you need to reset it and start it with the -x/--X11 option (or without --no-default) for it to be taken into account')
-        if options.host_network and not was_created_with_host_networking():
-            logger.warning('Exegol container was not created with host networking, you need to reset it and start it with the --host-network (or without --no-default) option for it to be taken into account')
-        if options.device and not was_created_with_device():
-            logger.warning('Exegol container was created with no device sharing, you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account')
-        if options.device and was_created_with_device() and options.device != was_created_with_device():
-            logger.warning('Exegol container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account'.format(was_created_with_device()))
-    if container_is_running():
-        logger.info('Entering Exegol')
-        exec_system('docker exec -ti {} zsh'.format(CONTAINER_NAME))
+        logger.error('Loop prevention triggered. Something went wrong...')
+        exit(0)
 
 def stop():
     if container_is_running():
@@ -323,7 +343,7 @@ def remove():
             else:
                 logger.success('Exegol image has been successfully removed')
         else:
-            logger.info('Canceled')
+            logger.info('Deletion canceled')
     else:
         logger.success('Exegol image does not exist')
 
@@ -357,6 +377,7 @@ def info():
         info_container()
         logger.warning('Exegol image does not exist, you should install it')
 
+
 if __name__ == '__main__':
     BOLD_GREEN = '\033[1;32m'
     BOLD_BLUE='\033[1;34m'
@@ -366,6 +387,8 @@ if __name__ == '__main__':
     END = '\033[0m'
     BLUE='\033[0;34m'
     GREEN = '\033[0;32m'
+    YELLOW = '\033[0;33m'
+    BOLD_RED='\033[0;31m'
 
     OK = BOLD_GREEN + 'OK' + END
     KO = BOLD_ORANGE + 'KO' + END
@@ -378,8 +401,10 @@ if __name__ == '__main__':
     SHARE_PATH = EXEGOL_PATH + '/shared-volume'
     RESOURCES_PATH = EXEGOL_PATH + '/resources-volume'
 
+    LOOP_PREVENTION = 0
+
     client = docker.from_env()
     options = get_options()
-    logger = Logger(options.verbose, options.quiet)
+    logger = Logger(options.verbosity, options.quiet)
 
     globals()[options.action]()
