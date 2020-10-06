@@ -151,9 +151,10 @@ function ohmyzsh() {
   wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/history
   wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/aliases
   wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/zshrc
-  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
-  git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/custom/plugins/zsh-completions
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-autosuggestions
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
 }
 
 function dependencies() {
@@ -336,6 +337,7 @@ function mitm6_sources() {
 
 function mitm6_pip() {
   colorecho "[EXEGOL] Installing mitm6 with pip"
+  pip3 install service_identity
   pip3 install mitm6
 }
 
