@@ -8,7 +8,7 @@ import requests
 import subprocess
 
 # BRANCH is either 'dev' or 'master'
-BRANCH = "dev"
+BRANCH = "master"
 
 """
 ## DETAILED TODO LIST
