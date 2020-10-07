@@ -1,0 +1,155 @@
+diff --git a/cpyrit/_cpyrit_cpu.c b/cpyrit/_cpyrit_cpu.c
+index 137d87d..f4f8e67 100644
+--- a/cpyrit/_cpyrit_cpu.c
++++ b/cpyrit/_cpyrit_cpu.c
+@@ -1077,70 +1077,70 @@ ccmp_encrypt_openssl(const unsigned char *A0, const unsigned char *S0, const uns
+     return -1;
+ }
+
+-#ifdef COMPILE_AESNI
+-    inline __m128i
+-    aesni_key(__m128i a, __m128i b)
+-    {
+-        __m128i t;
+-
+-        b = _mm_shuffle_epi32(b, 255);
+-        t = _mm_slli_si128(a, 4);
+-        a = _mm_xor_si128(a, t);
+-        t = _mm_slli_si128(t, 4);
+-        a = _mm_xor_si128(a, t);
+-        t = _mm_slli_si128(t, 4);
+-        a = _mm_xor_si128(a, t);
+-        a = _mm_xor_si128(a, b);
+-
+-        return a;
+-    }
+-
+-    static Py_ssize_t
+-    ccmp_encrypt_aesni(const unsigned char *A0, const unsigned char *S0, const unsigned char *tkbuffer, Py_ssize_t keycount)
+-    {
+-        __m128i roundkey, state;
+-        Py_ssize_t i;
+-        unsigned char crib[16];
+-
+-        for (i = 0; i < keycount; i++)
+-        {
+-            /* Setup round key from main key */
+-            roundkey = _mm_loadu_si128((__m128i*)&tkbuffer[i * 16]);
+-
+-             /* Get plaintext and XOR it with key to get AES-state */
+-            state = _mm_loadu_si128((__m128i*)A0);
+-            state = _mm_xor_si128(state, roundkey);
+-
+-            /* Perform 10 AES-rounds on the state using the derived round keys */
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 1));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 2));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 4));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 8));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 16));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 32));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 64));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 128));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 27));
+-            state = _mm_aesenc_si128(state, roundkey);
+-            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 54));
+-            state = _mm_aesenclast_si128 (state, roundkey);
+-
+-            _mm_storeu_si128 (&((__m128i*)crib)[0], state);
+-            if (memcmp(crib, S0, 6) == 0)
+-                return i;
+-        }
+-
+-        return -1;
+-    }
+-#endif /* COMPILE_AESNI */
++//#ifdef COMPILE_AESNI
++//    inline __m128i
++//    aesni_key(__m128i a, __m128i b)
++//    {
++//        __m128i t;
++//
++//        b = _mm_shuffle_epi32(b, 255);
++//        t = _mm_slli_si128(a, 4);
++//        a = _mm_xor_si128(a, t);
++//        t = _mm_slli_si128(t, 4);
++//        a = _mm_xor_si128(a, t);
++//        t = _mm_slli_si128(t, 4);
++//        a = _mm_xor_si128(a, t);
++//        a = _mm_xor_si128(a, b);
++//
++//        return a;
++//    }
++//
++//    static Py_ssize_t
++//    ccmp_encrypt_aesni(const unsigned char *A0, const unsigned char *S0, const unsigned char *tkbuffer, Py_ssize_t keycount)
++//    {
++//        __m128i roundkey, state;
++//        Py_ssize_t i;
++//        unsigned char crib[16];
++//
++//        for (i = 0; i < keycount; i++)
++//        {
++//            /* Setup round key from main key */
++//            roundkey = _mm_loadu_si128((__m128i*)&tkbuffer[i * 16]);
++//
++//             /* Get plaintext and XOR it with key to get AES-state */
++//            state = _mm_loadu_si128((__m128i*)A0);
++//            state = _mm_xor_si128(state, roundkey);
++//
++//            /* Perform 10 AES-rounds on the state using the derived round keys */
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 1));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 2));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 4));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 8));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 16));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 32));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 64));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 128));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 27));
++//            state = _mm_aesenc_si128(state, roundkey);
++//            roundkey = aesni_key(roundkey, _mm_aeskeygenassist_si128(roundkey, 54));
++//            state = _mm_aesenclast_si128 (state, roundkey);
++//
++//            _mm_storeu_si128 (&((__m128i*)crib)[0], state);
++//            if (memcmp(crib, S0, 6) == 0)
++//                return i;
++//        }
++//
++//        return -1;
++//    }
++//#endif /* COMPILE_AESNI */
+ 
+ PyDoc_STRVAR(CCMPCracker_solve__doc__,
+              "solve(object) -> solution or None\n\n"
+diff --git a/cpyrit/cpufeatures.h b/cpyrit/cpufeatures.h
+index 6f93d60..dfc1096 100644
+--- a/cpyrit/cpufeatures.h
++++ b/cpyrit/cpufeatures.h
+@@ -33,8 +33,8 @@
+     }
+ #endif
+
+-#if (defined(__AES__) && defined(__PCLMUL__))
+-    #define COMPILE_AESNI
+-#endif
++//#if (defined(__AES__) && defined(__PCLMUL__))
++//    #define COMPILE_AESNI
++//#endif
+
+ #endif /* CPUFEATURES */

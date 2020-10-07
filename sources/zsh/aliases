@@ -1,7 +1,6 @@
 #alias mitm6='python3 /opt/tools/mitm6/mitm6/mitm6.py'
-alias l='ls -al'
+alias l='ls -alh'
 alias ipa='ip --brief --color a'
-alias cme='crackmapexec'
 alias nse='ls /usr/share/nmap/scripts | grep '
 alias scan-range='nmap -T5 -n -sn'
 alias http-server='python3 -m http.server'
@@ -13,7 +12,7 @@ alias responder-http-on="sed -i 's/HTTP = Off/HTTP = On/g' /opt/tools/Responder/
 alias responder-http-off="sed -i 's/HTTP = On/HTTP = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-smb-on="sed -i 's/SMB = Off/SMB = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
 alias responder-smb-off="sed -i 's/SMB = On/SMB = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
-alias sublist3r='python3 /opt/tools/Sublist3r/Sublist3r.py'
+alias sublist3r='python3 /opt/tools/Sublist3r/sublist3r.py'
 alias dog='python3 /opt/tools/ReconDog/dog'
 alias cloudfail='python3 /opt/tools/CloudFail/cloudfail.py'
 alias oneforall='python3 /opt/tools/OneForAll/oneforall/oneforall.py'
@@ -63,4 +62,12 @@ alias ysoserial='java -jar /opt/tools/ysoserial/ysoserial.jar'
 alias john='/opt/tools/john/run/john'
 alias zerologon-exploit='python3 /opt/tools/zerologon-exploit/cve-2020-1472-exploit.py'
 alias zerologon-scan='python3 /opt/tools/zerologon-scan/zerologon_tester.py'
+alias zerologon-restore='python3 /opt/tools/zerologon-exploit/restorepassword.py'
 alias a='/opt/tools/arsenal/run'
+alias bloodhound="/opt/tools/BloodHound/BloodHound --no-sandbox"
+alias rickroll='curl tiredand.gay/rick'
+alias gitdumper='/opt/tools/GitTools/Dumper/gitdumper.sh'
+alias bettercap-ui='bettercap -caplet http-ui'
+alias xcopy='xsel --clipboard <'
+alias xpaste='xsel --clipboard >'
+alias xshow='xsel --clipboard'

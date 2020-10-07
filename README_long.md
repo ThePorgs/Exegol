@@ -7,6 +7,7 @@
   - sprayhound (https://github.com/Hackndo/sprayhound)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound.py (https://github.com/fox-it/BloodHound.py)
+  - BloodHound (https://github.com/BloodHoundAD/BloodHound)
   - mitm6 (https://github.com/fox-it/mitm6)
   - dementor (https://gist.github.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc)
   - aclwpn (https://github.com/fox-it/aclpwn.py)
@@ -64,9 +65,12 @@
   - enyx (https://github.com/trickster0/Enyx)
   - enum4linux-ng (https://github.com/cddmp/enum4linux-ng)
   - git-dumper (https://github.com/arthaud/git-dumper)
+  - GitTools (https://github.com/internetwache/GitTools)
   - gopherus (https://github.com/tarunkant/Gopherus)
   - arsenal (https://github.com/Orange-Cyberdefense/arsenal)
   - proxmark3 (https://github.com/RfidResearchGroup/proxmark3.git)
+  - bettercap (https://github.com/bettercap/bettercap)
+  - wifite2 (https://github.com/derv82/wifite2)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.

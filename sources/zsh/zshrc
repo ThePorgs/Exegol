@@ -1,12 +1,14 @@
 export ZSH="/root/.oh-my-zsh"
 ZSH_THEME="gentoo"
 
-plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux)
+export FZF_BASE=/opt/tools/fzf
+
+plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux fzf zsh-z)
 
 source $ZSH/oh-my-zsh.sh
 
 TIME_="%{$fg[white]%}[%{$fg[red]%}%D{%b %d, %Y - %T (%Z)}%{$fg[white]%}]%{$reset_color%}"
-PROMPT="$TIME_%{$FX[bold]$FG[013]%} Exegol %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "
+PROMPT="$TIME_%{$FX[bold]$FG[013]%} %m %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "
 
 export GOPATH=$HOME/go
 export GO111MODULE=on
@@ -17,3 +19,6 @@ source /opt/.zsh_aliases
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh
+
+# Color correction for zsh-syntax-highlighting
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#626262'

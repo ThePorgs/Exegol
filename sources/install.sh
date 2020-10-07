@@ -114,6 +114,17 @@ function apt_packages() {
   fapt exiftool
   fapt tmux
   fapt man
+  fapt x11-apps
+  fapt hostapd-wpe
+  fapt iproute2
+  fapt reaver
+  fapt bully
+  fapt cowpatty
+  DEBIAN_FRONTEND=noninteractive fapt macchanger
+  DEBIAN_FRONTEND=noninteractive fapt wireshark
+  DEBIAN_FRONTEND=noninteractive fapt tshark
+  fapt imagemagick
+  fapt xsel
 }
 
 function python-pip() {
@@ -137,12 +148,13 @@ function filesystem() {
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/history
-  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/aliases
-  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/zsh/zshrc
-  git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
-  git clone https://github.com/zsh-users/zsh-syntax-highlighting ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
-  git clone https://github.com/zsh-users/zsh-completions ~/.oh-my-zsh/custom/plugins/zsh-completions
+  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/history
+  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/aliases
+  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/zshrc
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-autosuggestions
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
 }
 
 function dependencies() {
@@ -261,13 +273,12 @@ function Bolt() {
   git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
 }
 
-function CrackMapExec() {
-  colorecho "[EXEGOL] Downloading CrackMapExec"
-  apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm
-  git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
-  cd /opt/tools/CrackMapExec
-  git submodule update --recursive
-  python3 setup.py install
+function CrackMapExec_pip() {
+  colorecho "[EXEGOL] Installing CrackMapExec"
+  apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
+  python3 -m pip install pipx
+  pipx ensurepath
+  pipx install crackmapexec
 }
 
 function lsassy() {
@@ -294,19 +305,26 @@ function Impacket() {
   colorecho "[EXEGOL] Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
   git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   pip3 install .
-  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.ntlmrelayx
-  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/conf.secretsdump
+  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.ntlmrelayx
+  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.secretsdump
 }
 
-function BloodHound() {
-  colorecho "[EXEGOL] Installing neo4j and Python ingestor for BloodHound"
+function bloodhound.py() {
+  colorecho "[EXEGOL] Installing and Python ingestor for BloodHound"
   git -C /opt/tools/ clone https://github.com/fox-it/BloodHound.py
   cd /opt/tools/BloodHound.py/
   python setup.py install
+}
+
+function neo4j() {
+  colorecho "[EXEGOL] Installing neo4j"
   apt -y install neo4j
+  /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
+  mkdir -p /usr/share/neo4j/logs/
+  touch /usr/share/neo4j/logs/neo4j.log
 }
 
 function mitm6_sources() {
@@ -317,8 +335,9 @@ function mitm6_sources() {
   python3 setup.py install
 }
 
-function mitm6() {
+function mitm6_pip() {
   colorecho "[EXEGOL] Installing mitm6 with pip"
+  pip3 install service_identity
   pip3 install mitm6
 }
 
@@ -340,7 +359,7 @@ function IceBreaker() {
 
 function Empire() {
   colorecho "[EXEGOL] Installing Empire"
-  export STAGING_KEY='123Soleil'
+  export STAGING_KEY='exegol4thewin'
   pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
@@ -464,7 +483,7 @@ function proxychains() {
 function grc() {
   colorecho "[EXEGOL] Installing and configuring grc"
   apt -y install grc
-  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/confs/grc/grc.conf
+  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/grc.conf
 }
 
 function pykek() {
@@ -551,7 +570,7 @@ function testssl() {
 function bat() {
   colorecho "[EXEGOL] Installing bat"
   wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
-  apt install -f ./bat_0.13.0_amd64.deb
+  fapt -f ./bat_0.13.0_amd64.deb
   rm bat_0.13.0_amd64.deb
 }
 
@@ -607,7 +626,7 @@ function gf_install() {
 }
 
 function rockyou() {
-  colorecho "[EXEGOL] Extracting /usr/share/wordlists/rockyou.txt.gz"
+  colorecho "[EXEGOL] Decompressing rockyou.txt"
   gunzip -d /usr/share/wordlists/rockyou.txt.gz
 }
 
@@ -643,6 +662,11 @@ function git-dumper() {
   pip3 install -r requirements.txt
 }
 
+function gittools(){
+  colorecho "[EXEGOL] Installing GitTools"
+  git -C /opt/tools/ clone https://github.com/internetwache/GitTools.git
+}
+
 function gopherus() {
   colorecho "[EXEGOL] Installing gopherus"
   git -C /opt/tools/ clone https://github.com/tarunkant/Gopherus
@@ -658,7 +682,7 @@ function ysoserial() {
 
 function john() {
   colorecho "[EXEGOL] Installing john the ripper"
-  apt install qtbase5-dev
+  fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
   cd /opt/tools/john/src
   ./configure --disable-openmp
@@ -667,11 +691,6 @@ function john() {
   ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
   make -s clean && make -sj4
   sudo make shell-completion
-}
-
-function rockyou() {
-  colorecho "[EXEGOL] Decompressing rockyou.txt"
-  gunzip -d /usr/share/wordlists/rockyou.txt.gz
 }
 
 function memcached-cli() {
@@ -795,6 +814,7 @@ function webshells() {
   mkdir -p /opt/resources/webshells/PHP/
   mkdir -p /opt/resources/webshells/ASPX/
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
+  # Setting password to exegol4thewin
   sed -i 's/fa769dac7a0a94ee47d8ebe021eaba9e/0fc3bcf177377d328c77b2b51b7f3c9b/g' /opt/resources/webshells/PHP/wso-webshell/wso.php
   echo 'exegol4thewin' > /opt/resources/webshells/PHP/wso-webshell/password.txt
   git -C /opt/resources/webshells/PHP/ clone https://github.com/flozz/p0wny-shell
@@ -864,6 +884,82 @@ function arsenal() {
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
+function bloodhound(){
+  echo "[EXEGOL] Installing Bloodhound from latest release"
+  fapt libxss1
+  wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
+  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
+  rm /tmp/BloodHound-linux-x64.zip
+  mkdir -p ~/.config/bloodhound
+  wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/config.json
+  wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/customqueries.json
+}
+
+function bettercap_install(){
+  colorecho "[EXEGOL] Installing Bettercap"
+  apt -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
+  go get -u -v github.com/bettercap/bettercap
+  bettercap -eval "caplets.update; ui.update; q"
+  sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
+  sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/http-ui.cap
+  sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/https-ui.cap
+  sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/https-ui.cap
+}
+
+function hcxtools() {
+  colorecho "[EXEGOL] Installing hcxtools"
+  git -C /opt/tools/ clone https://github.com/ZerBea/hcxtools
+  cd /opt/tools/hcxtools/
+  make
+  make install
+}
+
+function hcxdumptool() {
+  colorecho "[EXEGOL] Installing hcxdumptool"
+  apt -y install libcurl4-openssl-dev libssl-dev
+  git -C /opt/tools/ clone https://github.com/ZerBea/hcxdumptool
+  cd /opt/tools/hcxdumptool
+  make
+  make install
+  ln -s /usr/local/bin/hcxpcapngtool /usr/local/bin/hcxpcaptool
+}
+
+function pyrit() {
+  colorecho "[EXEGOL] Installing pyrit"
+  git -C /opt/tools clone https://github.com/JPaulMora/Pyrit
+  cd /opt/tools/Pyrit
+  pip install psycopg2-binary scapy
+  #https://github.com/JPaulMora/Pyrit/issues/591
+  wget -O undefined-symbol-aesni-key.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/undefined-symbol-aesni-key.patch
+  git apply undefined-symbol-aesni-key.patch
+  python setup.py clean
+  python setup.py build
+  python setup.py install
+}
+
+function wifite2() {
+  colorecho "[EXEGOL] Installing wifite2"
+  git -C /opt/tools/ clone https://github.com/derv82/wifite2.git
+  cd /opt/tools/wifite2/
+  python3 setup.py install
+}
+
+function wireshark_sources() {
+  colorecho "[EXEGOL] Installing tshark, wireshark"
+  apt -y install cmake libgcrypt20-dev libglib2.0-dev libpcap-dev qtbase5-dev libssh-dev libsystemd-dev qtmultimedia5-dev libqt5svg5-dev qttools5-dev libc-ares-dev flex bison byacc
+  wget -O /tmp/wireshark.tar.xz https://www.wireshark.org/download/src/wireshark-latest.tar.xz
+  cd /tmp/
+  tar -xvf /tmp/wireshark.tar.xz
+  cd $(find . -maxdepth 1 -type d -name 'wireshark*')
+  cmake .
+  make
+  make install
+  cd /tmp/
+  rm -r $(find . -maxdepth 1 -type d -name 'wireshark*')
+  wireshark.tar.xz
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -891,16 +987,17 @@ function install_tools() {
   Blazy
   XSStrike
   Bolt
-  CrackMapExec
+  CrackMapExec_pip
   sprayhound
-  BloodHound
+  bloodhound.py
+  neo4j
   #mitm6_sources
-  mitm6
+  mitm6_pip
   aclpwn
-  IceBreaker
+  #IceBreaker
   Empire
   DeathStar
-  Sn1per
+  #Sn1per
   dementor
   Impacket
   proxychains
@@ -940,21 +1037,30 @@ function install_tools() {
   jwt_cracker
   wuzz
   gf_install
-  #rockyou
   rbcd-attack
   evilwinrm
   pypykatz
   enyx
   enum4linux-ng
   git-dumper
+  gittools
   gopherus
   ysoserial
   john
-  rockyou
   memcached-cli
   zerologon
   arsenal
   proxmark3
+  #wireshark_sources
+  bettercap_install
+  hcxtools
+  hcxdumptool
+  pyrit
+  wifite2
+}
+
+function install_tools_gui() {
+  bloodhound
 }
 
 function install_resources() {
@@ -983,13 +1089,14 @@ function install_resources() {
   mimipy
   plink
   deepce
+  rockyou
   webshells
 }
 
 function install_clean() {
   colorecho "[EXEGOL] Cleaning..."
-  rm /tmp/gobuster.7z
-  rm -r /tmp/gobuster-linux-amd64
+  #rm /tmp/gobuster.7z
+  #rm -r /tmp/gobuster-linux-amd64
 }
 
 if [[ $EUID -ne 0 ]]; then
@@ -1018,6 +1125,7 @@ else
       sleep 30
       install_base
       install_tools
+      install_tools_gui
       install_resources
       install_clean
     fi
