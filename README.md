@@ -1,10 +1,20 @@
 # Exegol
 
-  ![latest commit on master](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release) ![latest commit on dev](https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29)
-
-  ![Python](https://img.shields.io/badge/Python-3-success) ![DockerHub build type](https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol) ![DockerHub build state](https://img.shields.io/docker/cloud/build/nwodtuhs/exegol) ![image size](https://img.shields.io/docker/image-size/nwodtuhs/exegol/latest)
-
-  [![Twitter](https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social)](https://twitter.com/intent/follow?screen_name=_nwodtuhs)
+  <p align="center">
+    <img src="https://i.imgur.com/oQBRVk7.png">
+    <br></br>
+    <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
+    <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
+    <img alt="image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/latest">
+    <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/ShutdownRepo/Exegol">
+    <img alt="Python" src="https://img.shields.io/badge/Python-3-success">
+    <br>
+    <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
+    <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29">
+    <br></br>
+    <a target="_blank" href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
+    <br><br>
+  </p>
 
   **:bulb: TL;DR: Exegol is a community-driven environment, powerful and yet simple enough to be used by anyone in day to day engagements.**
 
@@ -17,10 +27,18 @@
   - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
   - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
 
+# :fast_forward: Quick start
+  Bear in mind that the install process can be long as it downloads a ~6GB image.
+  ```
+  git clone https://github.com/ShutdownRepo/Exegol && cd Exegol
+  python3 -m pip install -r requirements.txt
+  python3 exegol.py start
+  ```
+
 # :inbox_tray: Install
   The install process takes time. Install it before needing it.
   1. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
-  2. Install the python requirements to use the wrapper: `pip install -r requirements.txt`
+  2. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
   3. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
   4. Install : `exegol install`
 
@@ -39,7 +57,7 @@
   | bettercap ui | bettercap | exegol4thewin |
 
 # :pushpin: Pre-requisites
-  You need git, docker :whale:, make, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
+  You need python3, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
 
 # :wrench: Tools
   The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
@@ -80,7 +98,6 @@
 # :movie_camera: Introducing Exegol (in french w/ english subs)
 [![Introducing Exegol (french)](http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg)](http://www.youtube.com/watch?v=TA3vrNpWGvg "Introducing Exegol (french)")
 
-# :snowboarder: Freestyle section
-[Do not click here](https://www.youtube.com/watch?v=dQw4w9WgXcQ)
-
-![better than kali linux](https://img.shields.io/badge/better%20than-Kali%20Linux-blue) ![approved by palpatine](https://img.shields.io/badge/approved%20by-palpatine-success) ![powered by a flying monkey](https://img.shields.io/badge/powered%20by-a%20flying%20monkey-yellow)
+  <p align="center">
+    <a target="_blank" href="ttp://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
+  </p>

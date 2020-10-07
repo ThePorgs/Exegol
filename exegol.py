@@ -12,16 +12,13 @@ BRANCH = "dev"
 
 """
 ## DETAILED TODO LIST
-- improve the logger.debug messages to give some contexte to the values that are printed (usually for values obtained from docker-py calls)
 - check if some docker calls can be done with with docker-py
-- refactor the code to make it more "best-practice", "pretty" ?
 - enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
-- make a GIF and/or some visuals to present this ?
-- find a way to log commands and outputs for engagements
+- find a way to log commands and outputs for engagements: inspiration from https://github.com/TH3xACE/SCREEN_KILLER ?
 - Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
 - Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb, dns2tcp, revsocks, chisel, ssf, darkarmor,amber, tikitorch, rpc2socks
 - share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
-- move the long readme to a wiki and document some things
+- write a wiki, with videos/GIFs ?
 """
 
 
@@ -101,8 +98,11 @@ def get_options():
         epilog=epilog,
         formatter_class=argparse.RawTextHelpFormatter,
     )
+
+    # Required arguments
     parser._positionals.title = "{}Required arguments{}".format(BOLD_GREEN, END)
     parser.add_argument("action", choices=actions.keys(), help=actions_help)
+
     # Optional arguments
     parser._optionals.title = "{}Optional arguments{}".format(BLUE, END)
     logging = parser.add_mutually_exclusive_group()
@@ -122,6 +122,7 @@ def get_options():
         default=False,
         help="show no information at all",
     )
+
     # Install/update options
     install_update = parser.add_argument_group(
         "{}Install/update options{}".format(BLUE, END)
@@ -135,6 +136,7 @@ def get_options():
         default="release",
         help=modes_help,
     )
+
     # Default start options
     default_start = parser.add_argument_group(
         "{}Default start options{}".format(BLUE, END),
@@ -153,6 +155,7 @@ def get_options():
         action="store_true",
         help="let the container share the host's networking namespace (the container shares the same interfaces and has the same adresses, needed for mitm6)",
     )
+
     # Advanced start options
     advanced_start = parser.add_argument_group(
         "{}Advanced start options{}".format(BLUE, END)
@@ -186,7 +189,9 @@ def get_options():
         default="",
         help="specify custom options for the container creation (docker run)",
     )
+
     options = parser.parse_args()
+
     if not options.no_default:
         options.X11 = True
         options.host_network = True
@@ -195,22 +200,23 @@ def get_options():
     return options
 
 
+def image_exists():
+    logger.debug("Images with name {}: {}".format(IMAGE_NAME + ":" + IMAGE_TAG, str(client.images.list(IMAGE_NAME + ":" + IMAGE_TAG))))
+    return bool(client.images.list(IMAGE_NAME + ":" + IMAGE_TAG))
+
+
 def container_is_running():
-    logger.debug(client.containers.list(filters={"name": CONTAINER_NAME}))
+    logger.debug("Running containers with name {}: {}".format(CONTAINER_NAME, str(client.containers.list(filters={"name": CONTAINER_NAME}))))
     return bool(client.containers.list(filters={"name": CONTAINER_NAME}))
 
 
 def container_exists():
-    logger.debug(client.containers.list(all=True, filters={"name": CONTAINER_NAME}))
+    logger.debug("Containers with name {}: {}".format(CONTAINER_NAME, str(client.containers.list(all=True, filters={"name": CONTAINER_NAME}))))
     return bool(client.containers.list(all=True, filters={"name": CONTAINER_NAME}))
 
 
-def image_exists():
-    logger.debug(client.images.list(IMAGE_NAME + ":" + IMAGE_TAG))
-    return bool(client.images.list(IMAGE_NAME + ":" + IMAGE_TAG))
-
-
 def was_created_with_gui():
+    logger.debug("Looking for the {} in the container {}".format("DISPLAY environment variable", CONTAINER_NAME))
     container_info = client.api.inspect_container(CONTAINER_NAME)
     for var in container_info["Config"]["Env"]:
         if "DISPLAY" in var:
@@ -219,67 +225,54 @@ def was_created_with_gui():
 
 
 def was_created_with_privileged():
+    logger.debug("Looking for the {} in the container {}".format("Privileged attribute", CONTAINER_NAME))
     return client.api.inspect_container(CONTAINER_NAME)["HostConfig"]["Privileged"]
 
 
 def was_created_with_device():
-    ## TODO: what happens if there are multiple devices
+    logger.debug("Looking for the {} in the container {}".format("Devices attribute", CONTAINER_NAME))
     if client.api.inspect_container(CONTAINER_NAME)["HostConfig"]["Devices"]:
-        return client.api.inspect_container(CONTAINER_NAME)["HostConfig"]["Devices"][0][
-            "PathOnHost"
-        ]
+        return client.api.inspect_container(CONTAINER_NAME)["HostConfig"]["Devices"][0]["PathOnHost"]
     else:
         return False
 
 
 def was_created_with_host_networking():
-    return (
-        "host"
-        in client.api.inspect_container(CONTAINER_NAME)["NetworkSettings"]["Networks"]
-    )
+    logger.debug("Looking for the {} in the container {}".format("'host' value in the Networks attribute", CONTAINER_NAME))
+    return ("host" in client.api.inspect_container(CONTAINER_NAME)["NetworkSettings"]["Networks"])
 
 
 def container_analysis():
     if was_created_with_device():
-        logger.verbose(
-            "Exegol container was created with host device ({}) sharing".format(
-                was_created_with_device()
-            )
-        )
-    if was_created_with_privileged():
-        logger.warning("Exegol container was given extended privileges at its creation")
-    if was_created_with_host_networking():
-        logger.verbose("Exegol container was created with host networking")
-    if was_created_with_gui():
-        logger.verbose("Exegol container was created with display sharing")
-
-    if options.privileged and not was_created_with_privileged():
-        logger.warning(
-            "Exegol container was not given extended privileges at its creation, you need to reset it and start it with the -p/--privileged option for it to be taken into account"
-        )
-    if options.X11 and not was_created_with_gui():
-        logger.warning(
-            "Exegol container was not created with display sharing, you need to reset it and start it with the -x/--X11 option (or without --no-default) for it to be taken into account"
-        )
-    if options.host_network and not was_created_with_host_networking():
-        logger.warning(
-            "Exegol container was not created with host networking, you need to reset it and start it with the --host-network (or without --no-default) option for it to be taken into account"
-        )
-    if options.device and not was_created_with_device():
+        if options.device and options.device != was_created_with_device():
+            logger.warning("Exegol container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account".format(was_created_with_device()))
+        else:
+            logger.verbose("Exegol container was created with host device ({}) sharing".format(was_created_with_device()))
+    elif options.device:
         logger.warning(
             "Exegol container was created with no device sharing, you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account"
         )
-    if (
-        options.device
-        and was_created_with_device()
-        and options.device != was_created_with_device()
-    ):
+
+    if was_created_with_privileged():
+        logger.warning("Exegol container was given extended privileges at its creation")
+    elif options.privileged:
         logger.warning(
-            "Exegol container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account".format(
-                was_created_with_device()
-            )
+            "Exegol container was not given extended privileges at its creation, you need to reset it and start it with the -p/--privileged option for it to be taken into account"
         )
-    pass
+
+    if was_created_with_host_networking():
+        logger.verbose("Exegol container was created with host networking")
+    elif options.host_network:
+        logger.warning(
+            "Exegol container was not created with host networking, you need to reset it and start it with the --host-network (or without --no-default) option for it to be taken into account"
+        )
+
+    if was_created_with_gui():
+        logger.verbose("Exegol container was created with display sharing")
+    elif options.X11:
+        logger.warning(
+            "Exegol container was not created with display sharing, you need to reset it and start it with the -x/--X11 option (or without --no-default) for it to be taken into account"
+        )
 
 
 def container_creation_options():
@@ -368,10 +361,16 @@ def readable_size(size, precision=1):
 
 def start():
     global LOOP_PREVENTION
-    if not LOOP_PREVENTION > 3:
-        if image_exists():
-            if container_exists():
-                if container_is_running():
+    if image_exists():
+        if LOOP_PREVENTION == "":
+            logger.success("Exegol image exists")
+        if container_exists():
+            if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
+                logger.success("Exegol container exists")
+            if container_is_running():
+                if LOOP_PREVENTION == "exec":
+                    logger.error("Loop prevention triggered. Something went wrong...")
+                else:
                     logger.success("Exegol container is up")
                     container_analysis()
                     if was_created_with_gui():
@@ -385,12 +384,19 @@ def start():
                         )
                     logger.info("Entering Exegol")
                     exec_system("docker exec -ti {} zsh".format(CONTAINER_NAME))
+                    LOOP_PREVENTION = "exec"
+            else:
+                if LOOP_PREVENTION == "start":
+                    logger.error("Loop prevention triggered. Something went wrong...")
                 else:
                     logger.warning("Exegol container is down")
-                    logger.info("Restarting the container")
+                    logger.info("Starting the container")
                     exec_popen("docker start {}".format(CONTAINER_NAME))
-                    LOOP_PREVENTION += 1
+                    LOOP_PREVENTION = "start"
                     start()
+        else:
+            if LOOP_PREVENTION == "create":
+                logger.error("Loop prevention triggered. Something went wrong...")
             else:
                 logger.warning("Exegol container does not exist")
                 logger.info("Creating the container")
@@ -400,27 +406,25 @@ def start():
                         base_options, advanced_options, IMAGE_NAME, IMAGE_TAG
                     )
                 )
-                LOOP_PREVENTION += 1
+                LOOP_PREVENTION = "create"
                 start()
+    else:
+        if LOOP_PREVENTION == "install":
+            logger.error("Loop prevention triggered. Something went wrong...")
         else:
             logger.warning("Exegol image does not exist, you must install it first")
             confirmation = input(
-                "{}[?]{} Do you wish to install it now ? [y/N] ".format(
+                "{}[?]{} Do you wish to install it now (↓ ~6GB)? [y/N] ".format(
                     BOLD_ORANGE, END
                 )
             )
             if confirmation == "y" or confirmation == "yes" or confirmation == "Y":
                 logger.success(
-                    "Installation confirmed, proceeding {}".format(
-                        IMAGE_NAME + ":" + IMAGE_TAG
-                    )
+                    "Installation confirmed, proceeding"
                 )
                 install()
-                LOOP_PREVENTION += 1
+                LOOP_PREVENTION = "install"
                 start()
-    else:
-        logger.error("Loop prevention triggered. Something went wrong...")
-        exit(0)
 
 
 def stop():
@@ -478,6 +482,8 @@ def remove():
             logger.info(
                 "Deletion confirmed, removing {}".format(IMAGE_NAME + ":" + IMAGE_TAG)
             )
+            reset()
+            logger.info("Removing image {}".format(IMAGE_NAME + ":" + IMAGE_TAG))
             exec_popen("docker image rm {}".format(IMAGE_NAME + ":" + IMAGE_TAG))
             if image_exists():
                 logger.error("Exegol image is still here, something is wrong...")
@@ -546,7 +552,7 @@ if __name__ == "__main__":
     BLUE = "\033[0;34m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[0;33m"
-    BOLD_RED = "\033[0;31m"
+    RED = "\033[0;31m"
 
     OK = BOLD_GREEN + "OK" + END
     KO = BOLD_ORANGE + "KO" + END
@@ -559,7 +565,7 @@ if __name__ == "__main__":
     SHARE_PATH = EXEGOL_PATH + "/shared-volume"
     RESOURCES_PATH = EXEGOL_PATH + "/resources-volume"
 
-    LOOP_PREVENTION = 0
+    LOOP_PREVENTION = ""
 
     client = docker.from_env()
     options = get_options()
