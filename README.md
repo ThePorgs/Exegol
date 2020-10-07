@@ -16,7 +16,7 @@
     <br><br>
   </p>
 
-  **:bulb: TL;DR: Exegol is a community-driven environment, powerful and yet simple enough to be used by anyone in day to day engagements.**
+  **:bulb: TL;DR: Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements.**
 
   Exegol is a fully configured docker with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colorized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements.
 
