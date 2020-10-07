@@ -103,7 +103,7 @@ def get_options():
     logging.add_argument('-q', '--quiet', dest='quiet', action='store_true', default=False, help='show no information at all')
     # Install/update options
     install_update = parser.add_argument_group('{}Install/update options{}'.format(BLUE, END))
-    install_update.add_argument('-m', '--mode', dest='mode', action='store', choices=modes.keys(), default='pull', help=modes_help)
+    install_update.add_argument('-m', '--mode', dest='mode', action='store', choices=modes.keys(), default='release', help=modes_help)
     # Default start options
     default_start = parser.add_argument_group('{}Default start options{}'.format(BLUE, END), description='The following options are enabled by default. They can all be disabled with the advanced option "--no-default". They can then be enabled back separately, for example "exegol --no-default --X11 start"')
     default_start.add_argument('-x', '--X11', dest='X11', action='store_true', help='enable display sharing to run GUI-based applications')
