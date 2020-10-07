@@ -480,10 +480,10 @@ def remove():
         )
         if confirmation == "y" or confirmation == "yes" or confirmation == "Y":
             logger.info(
-                "Deletion confirmed, removing {}".format(IMAGE_NAME + ":" + IMAGE_TAG)
+                "Deletion confirmed, proceeding {}".format(IMAGE_NAME + ":" + IMAGE_TAG)
             )
             reset()
-            logger.info("Removing image {}".format(IMAGE_NAME + ":" + IMAGE_TAG))
+            logger.info("Deleting image {}".format(IMAGE_NAME + ":" + IMAGE_TAG))
             exec_popen("docker image rm {}".format(IMAGE_NAME + ":" + IMAGE_TAG))
             if image_exists():
                 logger.error("Exegol image is still here, something is wrong...")
