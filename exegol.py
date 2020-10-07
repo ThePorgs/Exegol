@@ -132,7 +132,7 @@ def get_options():
         dest="mode",
         action="store",
         choices=modes.keys(),
-        default="pull",
+        default="release",
         help=modes_help,
     )
     # Default start options
