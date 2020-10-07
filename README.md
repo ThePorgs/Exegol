@@ -96,8 +96,6 @@
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
 
 # :movie_camera: Introducing Exegol (in french w/ english subs)
-[![Introducing Exegol (french)](http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg)](http://www.youtube.com/watch?v=TA3vrNpWGvg "Introducing Exegol (french)")
-
   <p align="center">
     <a target="_blank" href="ttp://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
   </p>

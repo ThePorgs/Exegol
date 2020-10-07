@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-BRANCH='master'
+BRANCH='dev'
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
