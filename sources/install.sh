@@ -125,6 +125,8 @@ function apt_packages() {
   DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt imagemagick
   fapt xsel
+  fapt rpcbind
+  fapt nfs-common
 }
 
 function python-pip() {
