@@ -126,6 +126,8 @@ function apt_packages() {
   fapt imagemagick
   fapt mlocate
   fapt xsel
+  fapt rpcbind
+  fapt nfs-common
   fapt automake
   fapt autoconf
   fapt libtool
