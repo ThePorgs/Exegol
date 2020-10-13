@@ -71,6 +71,11 @@
   - proxmark3 (https://github.com/RfidResearchGroup/proxmark3.git)
   - bettercap (https://github.com/bettercap/bettercap)
   - wifite2 (https://github.com/derv82/wifite2)
+  - infoga (https://github.com/m4ll0k/Infoga)
+  - oaburl.py (https://gist.github.com/snovvcrash/4e76aaf2a8750922f546eed81aa51438)
+  - libmspack (https://github.com/kyz/libmspack)
+  - peas-offensive (https://github.com/snovvcrash/peas)
+  - ruler (https://github.com/sensepost/ruler)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -92,3 +97,5 @@
   - mimipy (https://github.com/n1nj4sec/mimipy)
   - plink (https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
   - deepce (https://github.com/stealthcopter/deepce)
+  - MailSniper (https://github.com/dafthack/MailSniper)
+  - ysoserial.net (https://github.com/pwntester/ysoserial.net)
