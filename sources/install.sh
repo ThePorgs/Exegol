@@ -157,6 +157,11 @@ function ohmyzsh() {
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
 }
 
+function tmux() {
+  wget -O ~/.tmux.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/tmux/.tmux.conf
+  touch ~/.hushlogin
+}
+
 function dependencies() {
   colorecho "[EXEGOL] Installing most required dependencies"
   apt -y install python-setuptools python3-setuptools
@@ -966,6 +971,7 @@ function install_base() {
   python-pip
   filesystem
   ohmyzsh
+  tmux
 }
 
 function install_tools() {
