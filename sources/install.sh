@@ -52,7 +52,7 @@ function apt_packages() {
   fapt nmap
   fapt patator
   fapt php
-  fapt powersploit
+  #fapt powersploit
   fapt proxychains
   fapt python3
   fapt recon-ng
@@ -131,6 +131,7 @@ function apt_packages() {
   fapt automake
   fapt autoconf
   fapt libtool
+  fapt net-tools
 }
 
 function python-pip() {
@@ -735,6 +736,11 @@ function proxmark3() {
   make install PLATFORM=PM3OTHER
 }
 
+function checksec_py() {
+  colorecho "[EXEGOL] Installing checksec.py"
+  python3 -m pip install checksec.py
+}
+
 function sysinternals() {
   colorecho "[EXEGOL] Downloading SysinternalsSuite"
   wget -O /opt/resources/windows/sysinternals.zip "https://download.sysinternals.com/files/SysinternalsSuite.zip"
@@ -1025,6 +1031,14 @@ function ruler() {
   wget -O /opt/tools/ruler/templates/img1.bin "https://github.com/sensepost/ruler/raw/master/templates/img1.bin"
 }
 
+function ghidra() {
+  colorecho "[EXEGOL] Installing Ghidra"
+  apt install openjdk-14-jdk
+  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
+  unzip /tmp/ghidra_9.1.2_PUBLIC_20200212.zip -d /opt/tools
+  rm /tmp/ghidra_9.1.2_PUBLIC_20200212.zip
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1127,6 +1141,8 @@ function install_tools() {
   libmspack
   peas_offensive
   ruler
+  checksec_py
+  ghidra
 }
 
 function install_tools_gui() {
