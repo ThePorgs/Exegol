@@ -67,7 +67,7 @@
   - Powershell Empire (https://github.com/BC-SECURITY/Empire)
   - ffuf (https://github.com/ffuf/ffuf)
   - shellerator (https://github.com/ShutdownRepo/shellerator)
-  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#wrench-tools)
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/wiki/Tools)
 
 # :bulb: Resources
   In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
@@ -76,7 +76,7 @@
   - linPEAS & winPEAS (https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
   - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
   - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
-  - [and many others...](https://github.com/ShutdownRepo/Exegol/blob/master/README_long.md#bulb-resources)
+  - [and many others...](https://github.com/ShutdownRepo/Exegol/wiki/Resources)
 
 # :scroll: History
   When I hack, I often rely on my history. I don't have to remember command line options, syntax and such. This history is filled with commands that I used in engagements, bugbounties, ctf, oscp and so on. Of course, the values are placeholders that need to be changed with the appropriate ones in your context.
@@ -85,12 +85,6 @@
 # :rocket: Aliases
   Since many tools are manually installed in `/opt/tools/`, aliases could be heplful to use these without having to change directory manually.
   Other aliases are set to save time while hacking (`http-server`, `php-server`, `urlencode`,`ipa`, ...).
-
-# :memo: To-Do List
-  Here are some things to do that I have in mind, I'll work on that asap. You can help if you feel like it!
-  - enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
-  - make a wiki
-  - install tools for mobile applications pentest
 
 # :loudspeaker: Credits & thanks
   Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
