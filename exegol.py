@@ -50,6 +50,7 @@ def get_options():
     examples = {
         "install (↓ ~6GB):": "exegol install",
         "get a shell:\t": "exegol start",
+        "get a tmux shell:": "exegol start -s tmux",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
         "check image updates:": "exegol info",
@@ -145,6 +146,14 @@ def get_options():
         dest="host_network",
         action="store_true",
         help="let the container share the host's networking namespace (the container shares the same interfaces and has the same adresses, needed for mitm6)",
+    )
+    default_start.add_argument(
+        "--shell",
+        "-s",
+        dest="shell",
+        action="store",
+        default="zsh",
+        help="select shell command (default zsh)",
     )
     default_start.add_argument(
         "--bind-resources",
@@ -394,7 +403,7 @@ def start():
                             )
                         )
                     logger.info("Entering Exegol")
-                    exec_system("docker exec -ti {} zsh".format(CONTAINER_NAME))
+                    exec_system("docker exec -ti {} {}".format(CONTAINER_NAME, options.shell))
                     LOOP_PREVENTION = "exec"
             else:
                 if LOOP_PREVENTION == "start":
