@@ -164,6 +164,12 @@ function ohmyzsh() {
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
 }
 
+function locales() {
+  colorecho "[EXEGOL] Configuring locales"
+  apt -y install locales
+  sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+}
+
 function tmux() {
   wget -O ~/.tmux.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/tmux/.tmux.conf
   touch ~/.hushlogin
@@ -917,16 +923,24 @@ function arsenal() {
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
-function bloodhound(){
+function bloodhound3() {
   echo "[EXEGOL] Installing Bloodhound from latest release"
   fapt libxss1
   wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
-  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound3
   rm /tmp/BloodHound-linux-x64.zip
   mkdir -p ~/.config/bloodhound
   wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/config.json
   wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/customqueries.json
+}
+
+function bloodhound2() {
+  echo "[EXEGOL] Installing BloodHound v2 (for older databases/collections)"
+  wget -P /tmp/ https://github.com/BloodHoundAD/BloodHound/releases/download/2.2.1/BloodHound-linux-x64.zip
+  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound2
+  rm /tmp/BloodHound-linux-x64.zip
 }
 
 function bettercap_install(){
@@ -1049,6 +1063,7 @@ function install_base() {
   apt_packages || exit
   python-pip
   filesystem
+  locales
   ohmyzsh
   tmux
 }
@@ -1152,7 +1167,8 @@ function install_tools() {
 }
 
 function install_tools_gui() {
-  bloodhound
+  bloodhound3
+  bloodhound2
 }
 
 function install_resources() {
