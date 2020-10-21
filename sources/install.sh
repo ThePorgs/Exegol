@@ -934,7 +934,7 @@ function arsenal() {
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
-function bloodhound3() {
+function bloodhound() {
   echo "[EXEGOL] Installing Bloodhound from latest release"
   fapt libxss1
   wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
@@ -946,7 +946,7 @@ function bloodhound3() {
   cp /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
 }
 
-function bloodhound2() {
+function bloodhound_old_v2() {
   echo "[EXEGOL] Installing BloodHound v2 (for older databases/collections)"
   wget -P /tmp/ https://github.com/BloodHoundAD/BloodHound/releases/download/2.2.1/BloodHound-linux-x64.zip
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
@@ -1202,8 +1202,8 @@ function install_tools() {
 }
 
 function install_tools_gui() {
-  bloodhound3
-  bloodhound2
+  bloodhound
+  #bloodhound_old_v2
   fapt freerdp2-x11
   ghidra
 }
@@ -1243,6 +1243,8 @@ function install_resources() {
 
 function install_clean() {
   colorecho "[EXEGOL] Cleaning..."
+  # I don't want this, I don't know yet what tools installs it, this should be a temporary fix
+  rm /usr/local/bin/bloodhound-python
   #rm /tmp/gobuster.7z
   #rm -r /tmp/gobuster-linux-amd64
 }
