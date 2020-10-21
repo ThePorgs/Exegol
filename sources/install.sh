@@ -132,6 +132,7 @@ function apt_packages() {
   fapt autoconf
   fapt libtool
   fapt net-tools
+  fapt python3-pyftpdlib
 }
 
 function python-pip() {

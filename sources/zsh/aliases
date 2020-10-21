@@ -5,7 +5,7 @@ alias nse='ls /usr/share/nmap/scripts | grep '
 alias scan-range='nmap -T5 -n -sn'
 alias http-server='python3 -m http.server'
 alias php-server='php -S 127.0.0.1:8080 -t .'
-alias ftp-server='python -m pyftpdlib -u "mario" -P "m4r10" -p 2121'
+alias ftp-server='python3 -m pyftpdlib -u "mario" -P "m4r10" -p 2121'
 alias powershell='pwsh'
 alias responder='/opt/tools/Responder/Responder.py'
 alias responder-http-on="sed -i 's/HTTP = Off/HTTP = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
