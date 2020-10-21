@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-BRANCH='master'
+BRANCH='dev'
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -52,7 +52,7 @@ function apt_packages() {
   fapt nmap
   fapt patator
   fapt php
-  fapt powersploit
+  #fapt powersploit
   fapt proxychains
   fapt python3
   fapt recon-ng
@@ -124,7 +124,14 @@ function apt_packages() {
   DEBIAN_FRONTEND=noninteractive fapt wireshark
   DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt imagemagick
+  fapt mlocate
   fapt xsel
+  fapt rpcbind
+  fapt nfs-common
+  fapt automake
+  fapt autoconf
+  fapt libtool
+  fapt net-tools
 }
 
 function python-pip() {
@@ -686,6 +693,17 @@ function ysoserial() {
   wget -O /opt/tools/ysoserial/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
 }
 
+function ysoserial_net() {
+  colorecho "[EXEGOL] Downloading ysoserial"
+  url=$(curl -s https://github.com/pwntester/ysoserial.net/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
+  tag=${url##*/}
+  prefix=${tag:1}
+  mkdir /opt/resources/windows/ysoserial.net
+  wget -O /opt/resources/windows/ysoserial.net/ysoserial.zip "$url/ysoserial-$prefix.zip"
+  unzip -d /opt/resources/windows/ysoserial.net /opt/tools/ysoserial.net/ysoserial.zip
+  rm /opt/resources/windows/ysoserial.net/ysoserial.zip
+}
+
 function john() {
   colorecho "[EXEGOL] Installing john the ripper"
   fapt qtbase5-dev
@@ -722,6 +740,11 @@ function proxmark3() {
   make clean
   make all PLATFORM=PM3OTHER
   make install PLATFORM=PM3OTHER
+}
+
+function checksec_py() {
+  colorecho "[EXEGOL] Installing checksec.py"
+  python3 -m pip install checksec.py
 }
 
 function sysinternals() {
@@ -776,14 +799,19 @@ function mimikatz() {
   unzip -d /opt/resources/windows/mimikatz /opt/resources/windows/mimikatz.zip
 }
 
+function mailsniper() {
+  colorecho "[EXEGOL] Downloading MailSniper"
+  git -C /opt/resources/windows/ clone https://github.com/dafthack/MailSniper
+}
+
 function powersploit() {
   colorecho "[EXEGOL] Downloading PowerSploit"
-  git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
+  git -C /opt/resources/windows/ clone https://github.com/PowerShellMafia/PowerSploit
 }
 
 function privesccheck() {
   colorecho "[EXEGOL] Downloading PrivescCheck"
-  git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
+  git -C /opt/resources/windows/ clone https://github.com/itm4n/PrivescCheck
 }
 
 function rubeus() {
@@ -966,6 +994,57 @@ function wireshark_sources() {
   wireshark.tar.xz
 }
 
+function infoga() {
+  colorecho "[EXEGOL] Installing infoga"
+  git -C /opt/tools/ clone https://github.com/m4ll0k/Infoga.git
+  find /opt/tools/Infoga/ -type f -print0 | xargs -0 dos2unix
+  cd /opt/tools/Infoga
+  python setup.py install
+}
+
+function oaburl_py() {
+  colorecho "[EXEGOL] Downloading oaburl.py"
+  mkdir /opt/tools/OABUrl
+  wget -O /opt/tools/OABUrl/oaburl.py "https://gist.githubusercontent.com/snovvcrash/4e76aaf2a8750922f546eed81aa51438/raw/96ec2f68a905eed4d519d9734e62edba96fd15ff/oaburl.py"
+  chmod +x /opt/tools/OABUrl/oaburl.py
+}
+
+function libmspack() {
+  colorecho "[EXEGOL] Installing libmspack"
+  git -C /opt/tools/ clone https://github.com/kyz/libmspack.git
+  cd /opt/tools/libmspack/libmspack
+  ./rebuild.sh
+  ./configure
+  make
+}
+
+function peas_offensive() {
+  colorecho "[EXEGOL] Installing PEAS-Offensive"
+  git -C /opt/tools/ clone https://github.com/snovvcrash/peas.git peas-offensive
+  python3 -m pip install pipenv
+  cd /opt/tools/peas-offensive
+  pipenv --python 2.7 install -r requirements.txt
+}
+
+function ruler() {
+  colorecho "[EXEGOL] Downloading ruler and form templates"
+  mkdir -p /opt/tools/ruler/templates
+  wget -O /opt/tools/ruler/ruler "$(curl -s https://github.com/sensepost/ruler/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/ruler-linux64"
+  chmod +x /opt/tools/ruler/ruler
+  wget -O /opt/tools/ruler/templates/formdeletetemplate.bin "https://github.com/sensepost/ruler/raw/master/templates/formdeletetemplate.bin"
+  wget -O /opt/tools/ruler/templates/formtemplate.bin "https://github.com/sensepost/ruler/raw/master/templates/formtemplate.bin"
+  wget -O /opt/tools/ruler/templates/img0.bin "https://github.com/sensepost/ruler/raw/master/templates/img0.bin"
+  wget -O /opt/tools/ruler/templates/img1.bin "https://github.com/sensepost/ruler/raw/master/templates/img1.bin"
+}
+
+function ghidra() {
+  colorecho "[EXEGOL] Installing Ghidra"
+  apt install openjdk-14-jdk
+  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
+  unzip /tmp/ghidra_9.1.2_PUBLIC_20200212.zip -d /opt/tools
+  rm /tmp/ghidra_9.1.2_PUBLIC_20200212.zip
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1064,6 +1143,13 @@ function install_tools() {
   hcxdumptool
   pyrit
   wifite2
+  infoga
+  oaburl_py
+  libmspack
+  peas_offensive
+  ruler
+  checksec_py
+  ghidra
 }
 
 function install_tools_gui() {
@@ -1091,13 +1177,14 @@ function install_resources() {
   diaghub
   lazagne
   sublinacl
-  powersploit
   mimipenguin
   mimipy
   plink
   deepce
   rockyou
   webshells
+  mailsniper
+  ysoserial_net
 }
 
 function install_clean() {

@@ -6,20 +6,11 @@ import docker
 import os
 import requests
 import subprocess
+import shutil
+
 
 # BRANCH is either 'dev' or 'master'
-BRANCH = "master"
-
-"""
-## DETAILED TODO LIST
-- check if some docker calls can be done with with docker-py
-- enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
-- find a way to log commands and outputs for engagements: inspiration from https://github.com/TH3xACE/SCREEN_KILLER ?
-- Check if the following freshly installed tools work nicely: bettercap, hostapd-wpe, iproute2, wifite2
-- Tools to install: arjun, apksign, cfr, dex2jar, drozer, jre8-openjdk, jtool, p7zip, ripgrep, smali, zipalign, frida, adb, dns2tcp, revsocks, chisel, ssf, darkarmor,amber, tikitorch, rpc2socks
-- share the /opt/resources folder to let the host easily access it : it seems to be impossible, see [this](https://github.com/moby/moby/issues/4361)
-- write a wiki, with videos/GIFs ?
-"""
+BRANCH = "dev"
 
 
 class Logger:
@@ -164,7 +155,12 @@ def get_options():
         default="zsh",
         help="select shell command (default zsh)",
     )
-
+    default_start.add_argument(
+        "--bind-resources",
+        dest="bind_resources",
+        action="store_true",
+        help="mount the /opt/resources of the container on the host\'s {} directory".format(SHARED_RESOURCES_PATH)
+    )
 
     # Advanced start options
     advanced_start = parser.add_argument_group(
@@ -197,7 +193,7 @@ def get_options():
         dest="custom_options",
         action="store",
         default="",
-        help="specify custom options for the container creation (docker run)",
+        help="specify custom options for the container creation",
     )
 
     options = parser.parse_args()
@@ -205,6 +201,7 @@ def get_options():
     if not options.no_default:
         options.X11 = True
         options.host_network = True
+        options.bind_resources = True
     if options.action == "update":
         options.action = "install"
     return options
@@ -296,6 +293,18 @@ def container_creation_options():
     if options.host_network:
         logger.verbose("Enabling host networking")
         advanced_options += " --network host"
+    if options.bind_resources:
+        logger.verbose("Sharing /opt/resources (container) ↔ {} (host)".format(SHARED_RESOURCES_PATH))
+        if not os.path.isdir(SHARED_RESOURCES_PATH):
+            logger.debug("Host directory {} doesn\'t exist. Creating it...".format(SHARED_RESOURCES_PATH))
+            os.mkdir(SHARED_RESOURCES_PATH )
+        advanced_options += ' --mount '
+        advanced_options += 'type=volume,'
+        advanced_options += 'dst=/opt/resources,'
+        advanced_options += 'volume-driver=local,'
+        advanced_options += 'volume-opt=type=none,'
+        advanced_options += 'volume-opt=o=bind,'
+        advanced_options += 'volume-opt=device={}'.format(SHARED_RESOURCES_PATH)
     if options.privileged:
         logger.warning("Enabling extended privileges")
         advanced_options += " --privileged"
@@ -308,7 +317,7 @@ def container_creation_options():
     base_options += " --interactive"
     base_options += " --tty"
     # base_options += ' --detach'
-    base_options += " --volume {}:/share".format(SHARE_PATH)
+    base_options += " --volume {}:/share".format(SHARED_DATA_PATH)
     base_options += " --name {}".format(CONTAINER_NAME)
     base_options += " --hostname {}".format(HOSTNAME)
     return base_options, advanced_options
@@ -379,7 +388,8 @@ def start():
                 logger.success("Exegol container exists")
             if container_is_running():
                 if LOOP_PREVENTION == "exec":
-                    logger.error("Loop prevention triggered. Something went wrong...")
+                    logger.debug("Loop prevention triggered")
+                    logger.error("Something went wrong...")
                 else:
                     logger.success("Exegol container is up")
                     container_analysis()
@@ -397,7 +407,8 @@ def start():
                     LOOP_PREVENTION = "exec"
             else:
                 if LOOP_PREVENTION == "start":
-                    logger.error("Loop prevention triggered. Something went wrong...")
+                    logger.debug("Loop prevention triggered")
+                    logger.error("Something went wrong...")
                 else:
                     logger.warning("Exegol container is down")
                     logger.info("Starting the container")
@@ -406,7 +417,8 @@ def start():
                     start()
         else:
             if LOOP_PREVENTION == "create":
-                logger.error("Loop prevention triggered. Something went wrong...")
+                logger.debug("Loop prevention triggered")
+                logger.error("Something went wrong...")
             else:
                 logger.warning("Exegol container does not exist")
                 logger.info("Creating the container")
@@ -420,7 +432,8 @@ def start():
                 start()
     else:
         if LOOP_PREVENTION == "install":
-            logger.error("Loop prevention triggered. Something went wrong...")
+            logger.debug("Loop prevention triggered")
+            logger.error("Something went wrong...")
         else:
             logger.warning("Exegol image does not exist, you must install it first")
             confirmation = input(
@@ -462,6 +475,9 @@ def reset():
             logger.success("Exegol container does not exist anymore")
     else:
         logger.success("Exegol container does not exist")
+    if os.path.isdir(SHARED_RESOURCES_PATH):
+        logger.debug("Host directory {} exists. Removing it...".format(SHARED_RESOURCES_PATH))
+        shutil.rmtree(SHARED_RESOURCES_PATH, ignore_errors=True)
 
 
 def install():
@@ -572,8 +588,8 @@ if __name__ == "__main__":
     HOSTNAME = "Exegol-dev" if BRANCH == "dev" else "Exegol"
     CONTAINER_NAME = "exegol-" + IMAGE_TAG
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
-    SHARE_PATH = EXEGOL_PATH + "/shared-volume"
-    RESOURCES_PATH = EXEGOL_PATH + "/resources-volume"
+    SHARED_DATA_PATH = EXEGOL_PATH + "/shared-data"
+    SHARED_RESOURCES_PATH = EXEGOL_PATH + "/shared-resources"
 
     LOOP_PREVENTION = ""
 
