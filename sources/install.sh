@@ -367,6 +367,7 @@ function Empire() {
   export STAGING_KEY='exegol4thewin'
   pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
+  cd /opt/tools/Empire
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/agent.ps1
   sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' lib/common/*.py
