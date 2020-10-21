@@ -339,10 +339,18 @@ function bloodhound.py() {
 
 function neo4j() {
   colorecho "[EXEGOL] Installing neo4j"
+  wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add -
+  echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list
+  apt update
   apt -y install neo4j
   /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
   mkdir -p /usr/share/neo4j/logs/
   touch /usr/share/neo4j/logs/neo4j.log
+}
+
+function cypheroth() {
+  coloecho "[EXEGOL] Installing cypheroth"
+  git -C /opt/tools/ clone https://github.com/seajaysec/cypheroth/
 }
 
 function mitm6_sources() {
@@ -380,6 +388,7 @@ function Empire() {
   export STAGING_KEY='exegol4thewin'
   pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
+  cd /opt/tools/Empire
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
   sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/agent.ps1
   sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' lib/common/*.py
@@ -1091,6 +1100,7 @@ function install_tools() {
   sprayhound
   bloodhound.py
   neo4j
+  cypheroth
   #mitm6_sources
   mitm6_pip
   aclpwn
@@ -1169,6 +1179,7 @@ function install_tools() {
 function install_tools_gui() {
   bloodhound3
   bloodhound2
+  fapt freerdp2-x11
 }
 
 function install_resources() {

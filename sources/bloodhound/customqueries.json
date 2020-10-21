@@ -201,10 +201,45 @@
             }]
         },
         {
-            "name": "Find all computers with unsupported operating systems",
+            "name": "Find all computers running with Windows XP",
             "queryList": [{
                 "final": true,
-                "query": "MATCH (H:Computer) WHERE H.operatingsystem =~ '.*(2000|2003|2008|xp|vista|7|me)*.' RETURN H"
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS 'XP' RETURN c"
+            }]
+        },
+        {
+            "name": "Find all computers running with Windows 2000",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS '2000' RETURN c"
+            }]
+        },
+        {
+            "name": "Find all computers running with Windows 2003",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS '2003' RETURN c"
+            }]
+        },
+        {
+            "name": "Find all computers running with Windows 2008",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS '2008' RETURN c"
+            }]
+        },
+        {
+            "name": "Find all computers running with Windows Vista",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS 'VISTA' RETURN c"
+            }]
+        },
+        {
+            "name": "Find all computers running with Windows 7",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (c:Computer) WHERE toUpper(c.operatingsystem) CONTAINS '7' RETURN c"
             }]
         },
         {
