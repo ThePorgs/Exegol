@@ -1,7 +1,7 @@
 # Exegol
 
   <p align="center">
-    <img src="https://i.imgur.com/oQBRVk7.png">
+    <img width="1200" src="https://i.imgur.com/OTshUlh.png">
     <br></br>
     <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
     <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">

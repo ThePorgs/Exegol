@@ -50,7 +50,7 @@ def get_options():
     examples = {
         "install (↓ ~6GB):": "exegol install",
         "get a shell:\t": "exegol start",
-        "get a tmux shell:": "exegol start -s tmux",
+        "get a tmux shell:": "exegol -s tmux start",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
         "check image updates:": "exegol info",
@@ -148,18 +148,19 @@ def get_options():
         help="let the container share the host's networking namespace (the container shares the same interfaces and has the same adresses, needed for mitm6)",
     )
     default_start.add_argument(
-        "--shell",
-        "-s",
-        dest="shell",
-        action="store",
-        default="zsh",
-        help="select shell command (default zsh)",
-    )
-    default_start.add_argument(
         "--bind-resources",
         dest="bind_resources",
         action="store_true",
         help="mount the /opt/resources of the container on the host\'s {} directory".format(SHARED_RESOURCES_PATH)
+    )
+    default_start.add_argument(
+        "--shell",
+        "-s",
+        dest="shell",
+        action="store",
+        choices={"zsh", "bash", "tmux"},
+        default="zsh",
+        help="select shell to start when entering Exegol (Default: zsh)",
     )
 
     # Advanced start options
