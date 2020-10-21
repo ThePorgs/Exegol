@@ -9,11 +9,8 @@
   - exegol.py : check the docker service is running
   - exegol.py : check the running user is in the docker group, if not, ask the run with privileges (sudo)
   - install https://github.com/aircrack-ng/rtl8814au
-  - install https://github.com/megadose/holehe
   - install https://github.com/lexfo/rpc2socks
   - install ngrok
-  - add resource : https://github.com/kkamagui/bitleaker
-  - install https://github.com/sherlock-project/sherlock
   - install https://github.com/ambionics/symfony-exploits
   - install https://github.com/ambionics/phpggc
 
