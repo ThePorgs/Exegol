@@ -14,7 +14,7 @@ function colorecho () {
 
 function update() {
   colorecho "[EXEGOL] Updating, upgrading, cleaning"
-  apt-get -y update && apt-get -y install apt-utils && apt-get -y upgrade && apt-get -y autoremove && apt-get clean
+  apt-get -y update && apt-get -y install apt-utils lsb-release && apt-get -y upgrade && apt-get -y autoremove && apt-get clean
 }
 
 function fapt() {
@@ -390,14 +390,9 @@ function IceBreaker() {
 
 function Empire() {
   colorecho "[EXEGOL] Installing Empire"
-  export STAGING_KEY='exegol4thewin'
+  export STAGING_KEY=$(echo exegol4thewin | md5sum | cut -d ' ' -f1)
   python -m pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
-  cd /opt/tools/Empire
-  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
-  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/agent.ps1
-  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' lib/common/*.py
-  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' data/agent/stagers/*.py
   cd /opt/tools/Empire/setup
   ./install.sh
 }
