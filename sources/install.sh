@@ -960,6 +960,16 @@ function wireshark_sources() {
   wireshark.tar.xz
 }
 
+function trilium() {
+  colorecho "[EXEGOL] Installing trilium"
+  wget https://github.com/zadam/trilium/releases/download/v0.43.1/trilium-linux-x64-server-0.43.1.tar.xz
+  tar xfv trilium-linux-x64-server-0.43.1.tar.xz -C /opt/tools/ && rm trilium-linux-x64-server-0.43.1.tar.xz
+  rm /opt/tools/trilium-linux-x64-server/trilium.sh
+  touch /opt/tools/trilium-linux-x64-server/trilium.sh && echo '#!/bin/sh
+  /opt/tools/trilium-linux-x64-server/node/bin/node /opt/tools/trilium-linux-x64-server/src/www' > /opt/tools/trilium-linux-x64-server/trilium.sh
+}
+
+
 function install_base() {
   update || exit
   apt_packages || exit
