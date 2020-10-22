@@ -13,6 +13,15 @@
   - install ngrok
   - install https://github.com/ambionics/symfony-exploits
   - install https://github.com/ambionics/phpggc
+  - install Trilium for local note taking
+  - Add pygpoabuse and sharpgpoabuse
+  - neo4j password change is not taken into account since I switched neo4j from official repos
+
+# Split install
+  split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal
+  we can also work with docker image? Dunno, gonna have to work on this.
+  we can also do things like add layers to the existing image/container like the following : exegol update osint,web
+  have DockerHub build different images per metapackage, we can then docker squash or have a dockerfile build the thing nicely
 
 # :rocket: Things to finish
   - the wiki, with videos/GIFs (https://github.com/phw/peek) ?
