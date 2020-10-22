@@ -13,12 +13,7 @@
   - install ngrok
   - install https://github.com/ambionics/symfony-exploits
   - install https://github.com/ambionics/phpggc
-<<<<<<< HEAD
   - clean /tmp folder where lots of pip files are are not removed. What are they doing here ?
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 1de1b0461ee1852aa98b64ac86e8a35d77b15bf0
   - install Trilium for local note taking
   - Add pygpoabuse and sharpgpoabuse
   - neo4j password change is not taken into account since I switched neo4j from official repos
@@ -28,10 +23,6 @@
   we can also work with docker image? Dunno, gonna have to work on this.
   we can also do things like add layers to the existing image/container like the following : exegol update osint,web
   have DockerHub build different images per metapackage, we can then docker squash or have a dockerfile build the thing nicely
-<<<<<<< HEAD
-=======
->>>>>>> 53e4f5e53f46068e5c843c8dcb7a90f52388d23b
->>>>>>> 1de1b0461ee1852aa98b64ac86e8a35d77b15bf0
 
 # :rocket: Things to finish
   - the wiki, with videos/GIFs (https://github.com/phw/peek) ?
