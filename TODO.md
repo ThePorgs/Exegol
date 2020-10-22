@@ -13,6 +13,7 @@
   - install ngrok
   - install https://github.com/ambionics/symfony-exploits
   - install https://github.com/ambionics/phpggc
+  - clean /tmp folder where lots of pip files are are not removed. What are they doing here ?
 
 # :rocket: Things to finish
   - the wiki, with videos/GIFs (https://github.com/phw/peek) ?
