@@ -280,7 +280,7 @@ def container_creation_options():
     advanced_options = ""
     if options.X11:
         logger.verbose("Enabling display sharing")
-        advanced_options += " --env DISPLAY={}".format(os.getenv("DISPLAY"))
+        advanced_options += " --env DISPLAY=unix{}".format(os.getenv("DISPLAY"))
         advanced_options += " --volume /tmp/.X11-unix:/tmp/.X11-unix"
         advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
     if options.host_network:
