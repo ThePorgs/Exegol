@@ -37,6 +37,7 @@
 
 # :inbox_tray: Install
   The install process takes time. Install it before needing it.
+  0. Install per-requisites: python3, python3-pip, git, docker 
   1. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
   2. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
   3. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
@@ -57,7 +58,7 @@
   | bettercap ui | bettercap | exegol4thewin |
 
 # :pushpin: Pre-requisites
-  You need python3, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
+  You need python3, python3-pip, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
 
 # :wrench: Tools
   The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.

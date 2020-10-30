@@ -17,6 +17,10 @@
   - install Trilium for local note taking
   - Add pygpoabuse and sharpgpoabuse
   - neo4j password change is not taken into account since I switched neo4j from official repos
+  - add Ghunt
+  - when creating containers, create them with a name like "exegol-tag__name__" for instance. So that users can create and start another instance of exegol for temporary usage (like when wanting --privileged for example). Edit a few things in the info() function so that the wrapper looks for all instances like "exegol-tag__something__"
+  - dockerize jackit/mousejacker
+  - add chisel https://github.com/jpillora/chisel
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

@@ -88,10 +88,9 @@ smbmap -H 192.168.10.10
 smbmap -u guest -H 192.168.10.10
 smbmap -H 192.168.10.10 -R
 smbmap -H 192.168.10.10 -R test
-smbclient -L 192.168.10.10
-smbclient //192.168.56.101/SYSVOL -U BREAKING/Administrator
-smbclient -N //192.168.10.10/test
-smbclient -N -L 192.168.10.10
+smbclient --list 192.168.10.10
+smbclient --no-pass --user '' //192.168.10.10/SYSVOL
+smbclient --no-pass --user '' --list 192.168.10.10
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10
