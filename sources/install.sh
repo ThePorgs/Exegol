@@ -86,7 +86,6 @@ function apt_packages() {
   fapt gem
   fapt tidy
   fapt passing-the-hash
-  fapt proxychains
   fapt ssh-audit
   fapt whatweb
   fapt smtp-user-enum
@@ -503,6 +502,7 @@ function findomain() {
 function proxychains() {
   colorecho "[EXEGOL] Editing /etc/proxychains.conf for ntlmrelayx.py"
   sed -i 's/9050/1080/g' /etc/proxychains.conf
+  echo 'socks5 	127.0.0.1 1090' >> /etc/proxychains.conf
 }
 
 function grc() {
