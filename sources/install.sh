@@ -131,6 +131,7 @@ function apt_packages() {
   fapt libtool
   fapt net-tools
   fapt python3-pyftpdlib
+  fapt gpp-decrypt
 }
 
 function python-pip() {
@@ -340,12 +341,14 @@ function bloodhound.py() {
   python setup.py install
 }
 
-function neo4j() {
+function neo4j_install() {
   colorecho "[EXEGOL] Installing neo4j"
   wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add -
   echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list
   apt-get update
+  apt-get -y install --no-install-recommends gnupg libgtk2.0-bin libcanberra-gtk-module libx11-xcb1 libva-glx2 libgl1-mesa-glx libgl1-mesa-dri libgconf-2-4 libasound2 libxss1
   apt-get -y install neo4j
+  mkdir /usr/share/neo4j/conf
   /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
   mkdir -p /usr/share/neo4j/logs/
   touch /usr/share/neo4j/logs/neo4j.log
@@ -1116,7 +1119,7 @@ function install_tools() {
   CrackMapExec_pip
   sprayhound
   bloodhound.py
-  neo4j
+  neo4j_install
   cypheroth
   #mitm6_sources
   mitm6_pip
