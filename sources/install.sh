@@ -300,6 +300,7 @@ function CrackMapExec_pip() {
   python3 -m pip install pipx
   pipx ensurepath
   pipx install crackmapexec
+  crackmapexec
 }
 
 function lsassy() {
@@ -347,8 +348,8 @@ function neo4j_install() {
   apt-get update
   apt-get -y install --no-install-recommends gnupg libgtk2.0-bin libcanberra-gtk-module libx11-xcb1 libva-glx2 libgl1-mesa-glx libgl1-mesa-dri libgconf-2-4 libasound2 libxss1
   apt-get -y install neo4j
-  mkdir /usr/share/neo4j/conf
-  /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
+  #mkdir /usr/share/neo4j/conf
+  neo4j-admin set-initial-password exegol4thewin
   mkdir -p /usr/share/neo4j/logs/
   touch /usr/share/neo4j/logs/neo4j.log
 }
@@ -608,6 +609,7 @@ function mdcat() {
   tar xvfz mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
   mv mdcat-0.16.0-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
   rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
+  chown root:root /opt/tools/bin/mdcat
 }
 
 function xsrfprobe() {
@@ -1087,6 +1089,12 @@ function holehe() {
   python3 -m pip install holehe
 }
 
+function windapsearch-go() {
+  colorecho "[EXEGOL] Installing Go windapsearch"
+  wget -O /opt/tools/bin/windapsearch "$(curl -s https://github.com/ropnop/go-windapsearch/releases/latest/ | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/windapsearch-linux-amd64"
+  chmod +x /opt/tools/bin/windapsearch
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1195,6 +1203,7 @@ function install_tools() {
   checksec_py
   sherlock
   holehe
+  windapsearch-go
 }
 
 function install_tools_gui() {
