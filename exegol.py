@@ -10,7 +10,7 @@ import shutil
 
 
 # BRANCH is either 'dev' or 'master'
-BRANCH = "dev"
+BRANCH = "master"
 
 
 class Logger:
