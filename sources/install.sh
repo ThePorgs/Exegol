@@ -144,7 +144,7 @@ function filesystem() {
   colorecho "[EXEGOL] Preparing filesystem"
   mkdir -p /opt/tools/
   mkdir -p /opt/tools/bin/
-  mkdir -p /share/
+  mkdir -p /data/
   mkdir -p /opt/resources/
   mkdir -p /opt/resources/windows/
   mkdir -p /opt/resources/linux/

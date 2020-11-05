@@ -318,7 +318,7 @@ def container_creation_options():
     base_options += " --interactive"
     base_options += " --tty"
     # base_options += ' --detach'
-    base_options += " --volume {}:/share".format(SHARED_DATA_PATH)
+    base_options += " --volume {}:/data".format(SHARED_DATA_PATH)
     base_options += " --name {}".format(CONTAINER_NAME)
     base_options += " --hostname {}".format(HOSTNAME)
     return base_options, advanced_options
