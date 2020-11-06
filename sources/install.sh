@@ -300,7 +300,6 @@ function CrackMapExec_pip() {
   python3 -m pip install pipx
   pipx ensurepath
   pipx install crackmapexec
-  crackmapexec
 }
 
 function lsassy() {

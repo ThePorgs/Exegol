@@ -5,7 +5,13 @@ responder-http-on
 responder-smb-off
 responder-smb-on
 bloodhound.py -c All -d breaking.bad -u anonymous -p anonymous -dc DC01.BREAKING.BAD
-nslookup -type=SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
+dig -t SRV _ldap._tcp.BREAKING.BAD
+dig -t SRV _kerberos._tcp.BREAKING.BAD
+dig -t SRV _gc._tcp.BREAKING.BAD
+dig -t SRV _kpasswd._tcp.BREAKING.BAD
+dig -t SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
+nbtscan -r 192.168.56.0/24
+nmap --script dns-srv-enum --script-args dns-srv-enum.domain=BREAKING.BAD
 mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
 rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
 rpcdump.py DC02.BREAKING.BAD | grep -A 6 MS-RPRN
@@ -182,5 +188,6 @@ ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.
 oaburl.py MEGACORP/j.doe:'Passw0rd!'@mx.example.com -e existent.email@example.com
 cypheroth -u neo4j -p exegol4thewin -d BREAKING.BAD
 nmap -sS -n --open -p 88 192.168.56.0/24
-windapsearch --dc 10.10.10.161 --module metadata
-windapsearch --dc 10.10.10.161 --module users
+windapsearch --dc 192.168.56.101 --module metadata
+windapsearch --dc 192.168.56.101 --module users
+nmap --script broadcast-dhcp-discover
