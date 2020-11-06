@@ -9,10 +9,6 @@ import subprocess
 import shutil
 
 
-# BRANCH is either 'dev' or 'master'
-BRANCH = "dev"
-
-
 class Logger:
     def __init__(self, verbosity=0, quiet=False):
         self.verbosity = verbosity
@@ -583,6 +579,12 @@ if __name__ == "__main__":
 
     OK = BOLD_GREEN + "OK" + END
     KO = BOLD_ORANGE + "KO" + END
+    
+    EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
+    # BRANCH is either 'dev' or 'master'
+    BRANCH = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
+    if BRANCH == "":
+        BRANCH = "master"
 
     IMAGE_TAG = "dev" if BRANCH == "dev" else "latest"
     IMAGE_NAME = "nwodtuhs/exegol"
