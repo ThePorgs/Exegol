@@ -131,6 +131,7 @@ function apt_packages() {
   fapt net-tools
   fapt python3-pyftpdlib
   fapt gpp-decrypt
+  fapt gifsicle
 }
 
 function python-pip() {
@@ -152,6 +153,7 @@ function filesystem() {
   mkdir -p /opt/resources/webshells
   mkdir -p /opt/resources/webshells/PHP/
   mkdir -p /opt/resources/webshells/ASPX/
+  mkdir -p /opt/resources/webshells/JSP/
   mkdir -p "/opt/resources/encrypted disks/"
 }
 
@@ -875,6 +877,11 @@ function nc() {
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/nc.exe"
 }
 
+function http-put-server() {
+  colorecho "[EXEGOL] Downloading http-put-server for Python3"
+  wget -O /opt/resources/linux/http-put-server.py https://gist.githubusercontent.com/mildred/67d22d7289ae8f16cae7/raw/214c213c9415da18a471d1ed04660022cce059ef/server.py
+}
+
 function spoolsample() {
   colorecho "[EXEGOL] Downloading SpoolSample"
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/SpoolSample.exe"
@@ -1095,6 +1102,13 @@ function windapsearch-go() {
   chmod +x /opt/tools/bin/windapsearch
 }
 
+function icmptools() {
+  colorecho "[EXEGOL] Installing icmptools"
+  git -C /opt/tools/ clone https://github.com/krabelize/icmpdoor
+  mkdir /opt/resources/windows/icmptools/ && cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/windows/icmptools/
+  mkdir /opt/resources/linux/icmptools/ && cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1244,6 +1258,7 @@ function install_resources() {
   ysoserial_net
   bitleaker
   napper
+  http-put-server
 }
 
 function install_clean() {

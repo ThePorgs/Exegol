@@ -23,6 +23,9 @@
   - improve proxychains conf
   - fix ysoserial_net install
   - add static nmap binary install for resources
+  - configure proxychains
+  - add JSP webshell (test all https://github.com/tennc/webshell/tree/master/jsp)
+  - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

@@ -160,6 +160,13 @@
             }]
         },
         {
+            "name": "Shortest paths from owned principals to unconstrained delegation systems",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (n {owned:true}) MATCH p=shortestPath((n)-[:MemberOf|HasSession|AdminTo|AllExtendedRights|AddMember|ForceChangePassword|GenericAll|GenericWrite|Owns|WriteDacl|WriteOwner|ExecuteDCOM|AllowedToDelegate|ReadLAPSPassword|Contains|GpLink|AddAllowedToAct|AllowedToAct|SQLAdmin|ReadGMSAPassword|HasSIDHistory|CanPSRemote*1..]->(m:Computer {unconstraineddelegation: true})) WHERE NOT n=m RETURN p"
+            }]
+        },
+        {
             "name": "Find constrained delegation",
             "queryList": [{
                 "final": true,

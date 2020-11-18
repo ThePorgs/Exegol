@@ -1,7 +1,7 @@
 # Exegol
 
   <p align="center">
-    <img width="1200" src="https://i.imgur.com/auHlh70.png">
+    <img width="1200" src="https://repository-images.githubusercontent.com/246120835/336bee80-2986-11eb-9bb1-6ddf03e4e882">
     <br></br>
     <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
     <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
@@ -37,7 +37,7 @@
 
 # :inbox_tray: Install
   The install process takes time. Install it before needing it.
-  0. Install per-requisites: python3, python3-pip, git, docker 
+  0. Install per-requisites: python3, python3-pip, git, docker
   1. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
   2. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
   3. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
