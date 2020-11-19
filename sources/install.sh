@@ -962,11 +962,9 @@ function wireshark_sources() {
 
 function trilium() {
   colorecho "[EXEGOL] Installing trilium"
-  wget https://github.com/zadam/trilium/releases/download/v0.43.1/trilium-linux-x64-server-0.43.1.tar.xz
-  tar xfv trilium-linux-x64-server-0.43.1.tar.xz -C /opt/tools/ && rm trilium-linux-x64-server-0.43.1.tar.xz
+  version="$(curl -s https://github.com/zadam/trilium/releases/latest | grep -o '"[^"]*"' | tr -d '"' | cut -d "/" -f8-8 | cut -c2-)" && wget "$(curl -s https://github.com/zadam/trilium/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/trilium-linux-x64-server-${version}.tar.xz" ; tar xfv trilium-linux-x64-server-$version.tar.xz -C /opt/tools/ ; rm trilium-linux-x64-server-$version.tar.xz
   rm /opt/tools/trilium-linux-x64-server/trilium.sh
-  touch /opt/tools/trilium-linux-x64-server/trilium.sh && echo '#!/bin/sh
-  /opt/tools/trilium-linux-x64-server/node/bin/node /opt/tools/trilium-linux-x64-server/src/www' > /opt/tools/trilium-linux-x64-server/trilium.sh
+  touch /opt/tools/trilium-linux-x64-server/trilium.sh && echo '#!/bin/sh\n/opt/tools/trilium-linux-x64-server/node/bin/node /opt/tools/trilium-linux-x64-server/src/www' > /opt/tools/trilium-linux-x64-server/trilium.sh
 }
 
 
@@ -1067,6 +1065,7 @@ function install_tools() {
   hcxdumptool
   pyrit
   wifite2
+  trilium
 }
 
 function install_tools_gui() {
