@@ -2,9 +2,9 @@
 	"performance": {
 		"edge": 5,
 		"lowGraphics": false,
-		"nodeLabels": 0,
-		"edgeLabels": 0,
-		"darkMode": false
+		"nodeLabels": 1,
+		"edgeLabels": 1,
+		"darkMode": true
 	},
 	"edgeincluded": {
 		"MemberOf": true,

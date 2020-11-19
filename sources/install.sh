@@ -1,8 +1,6 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-BRANCH='master'
-
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -14,12 +12,12 @@ function colorecho () {
 
 function update() {
   colorecho "[EXEGOL] Updating, upgrading, cleaning"
-  apt -y update && apt -y install apt-utils && apt -y upgrade && apt -y autoremove && apt clean
+  apt-get -y update && apt-get -y install apt-utils lsb-release && apt-get -y upgrade && apt-get -y autoremove && apt-get clean
 }
 
 function fapt() {
   colorecho "[EXEGOL] Installing APT package: $@"
-  apt install -y --no-install-recommends $@ || exit
+  apt-get install -y --no-install-recommends $@ || exit
 }
 
 function apt_packages() {
@@ -52,7 +50,7 @@ function apt_packages() {
   fapt nmap
   fapt patator
   fapt php
-  fapt powersploit
+  #fapt powersploit
   fapt proxychains
   fapt python3
   fapt recon-ng
@@ -88,7 +86,6 @@ function apt_packages() {
   fapt gem
   fapt tidy
   fapt passing-the-hash
-  fapt proxychains
   fapt ssh-audit
   fapt whatweb
   fapt smtp-user-enum
@@ -124,7 +121,16 @@ function apt_packages() {
   DEBIAN_FRONTEND=noninteractive fapt wireshark
   DEBIAN_FRONTEND=noninteractive fapt tshark
   fapt imagemagick
+  fapt mlocate
   fapt xsel
+  fapt rpcbind
+  fapt nfs-common
+  fapt automake
+  fapt autoconf
+  fapt libtool
+  fapt net-tools
+  fapt python3-pyftpdlib
+  fapt gpp-decrypt
 }
 
 function python-pip() {
@@ -138,30 +144,45 @@ function filesystem() {
   colorecho "[EXEGOL] Preparing filesystem"
   mkdir -p /opt/tools/
   mkdir -p /opt/tools/bin/
-  mkdir -p /share/
+  mkdir -p /data/
   mkdir -p /opt/resources/
   mkdir -p /opt/resources/windows/
   mkdir -p /opt/resources/linux/
   mkdir -p /opt/resources/mac/
+  mkdir -p /opt/resources/webshells
+  mkdir -p /opt/resources/webshells/PHP/
+  mkdir -p /opt/resources/webshells/ASPX/
+  mkdir -p "/opt/resources/encrypted disks/"
 }
 
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-  wget -O ~/.zsh_history https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/history
-  wget -O /opt/.zsh_aliases https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/aliases
-  wget -O ~/.zshrc https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/zsh/zshrc
+  cp /root/sources/zsh/history ~/.zsh_history
+  cp /root/sources/zsh/aliases /opt/.zsh_aliases
+  cp /root/sources/zsh/zshrc ~/.zshrc
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-autosuggestions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
 }
 
+function locales() {
+  colorecho "[EXEGOL] Configuring locales"
+  apt-get -y install locales
+  sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+}
+
+function tmux() {
+  cp /root/sources/tmux/tmux.conf ~/.tmux.conf
+  touch ~/.hushlogin
+}
+
 function dependencies() {
   colorecho "[EXEGOL] Installing most required dependencies"
-  apt -y install python-setuptools python3-setuptools
-  pip3 install wheel
-  pip install wheel
+  apt-get -y install python-setuptools python3-setuptools
+  python3 -m pip install wheel
+  python -m pip install wheel
 }
 
 function Responder() {
@@ -177,25 +198,25 @@ function Responder() {
 function Sublist3r() {
   colorecho "[EXEGOL] Installing Sublist3r"
   git -C /opt/tools/ clone https://github.com/aboul3la/Sublist3r.git
-  pip3 install -r /opt/tools/Sublist3r/requirements.txt
+  python3 -m pip install -r /opt/tools/Sublist3r/requirements.txt
 }
 
 function ReconDog() {
   colorecho "[EXEGOL] Installing ReconDog"
   git -C /opt/tools/ clone https://github.com/s0md3v/ReconDog
-  pip3 install -r /opt/tools/ReconDog/requirements.txt
+  python3 -m pip install -r /opt/tools/ReconDog/requirements.txt
 }
 
 function CloudFail() {
   colorecho "[EXEGOL] Installing CloudFail"
   git -C /opt/tools/ clone https://github.com/m0rtem/CloudFail
-  pip3 install -r /opt/tools/CloudFail/requirements.txt
+  python3 -m pip install -r /opt/tools/CloudFail/requirements.txt
 }
 
 function OneForAll() {
   colorecho "[EXEGOL] Installing OneForAll"
   git -C /opt/tools/ clone https://github.com/shmilylty/OneForAll.git
-  pip3 install -r /opt/tools/OneForAll/requirements.txt
+  python3 -m pip install -r /opt/tools/OneForAll/requirements.txt
 }
 
 function EyeWitness() {
@@ -223,7 +244,7 @@ function LinkFinder() {
   colorecho "[EXEGOL] Installing LinkFinder"
   git -C /opt/tools/ clone https://github.com/GerbenJavado/LinkFinder.git
   cd /opt/tools/LinkFinder
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
   python3 setup.py install
 }
 
@@ -231,7 +252,7 @@ function SSRFmap() {
   colorecho "[EXEGOL] Installing SSRFmap"
   git -C /opt/tools/ clone https://github.com/swisskyrepo/SSRFmap
   cd /opt/tools/SSRFmap
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function NoSQLMap() {
@@ -245,27 +266,27 @@ function fuxploider() {
   colorecho "[EXEGOL] Installing fuxploider"
   git -C /opt/tools/ clone https://github.com/almandin/fuxploider.git
   cd /opt/tools/fuxploider
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function CORScanner() {
   colorecho "[EXEGOL] Installing CORScanner"
   git -C /opt/tools/ clone https://github.com/chenjj/CORScanner.git
   cd /opt/tools/CORScanner
-  pip install -r requirements.txt
+  python -m pip install -r requirements.txt
 }
 
 function Blazy() {
   colorecho "[EXEGOL] Installing Blazy"
   git -C /opt/tools/ clone https://github.com/UltimateHackers/Blazy
   cd /opt/tools/Blazy
-  pip install -r requirements.txt
+  python -m pip install -r requirements.txt
 }
 
 function XSStrike() {
   colorecho "[EXEGOL] Installing XSStrike"
   git -C /opt/tools/ clone https://github.com/s0md3v/XSStrike.git
-  pip3 install fuzzywuzzy
+  python3 -m pip install fuzzywuzzy
 }
 
 function Bolt() {
@@ -275,10 +296,11 @@ function Bolt() {
 
 function CrackMapExec_pip() {
   colorecho "[EXEGOL] Installing CrackMapExec"
-  apt -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
+  apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
   python3 -m pip install pipx
   pipx ensurepath
   pipx install crackmapexec
+  crackmapexec
 }
 
 function lsassy() {
@@ -289,15 +311,15 @@ function lsassy() {
   #wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
   #cd /opt/tools/CrackMapExec
   #python3 setup.py install
-  pip3 install 'asn1crypto>=1.3.0'
+  python3 -m pip install 'asn1crypto>=1.3.0'
 }
 
 function sprayhound() {
   colorecho "[EXEGOL] Installing sprayhound"
   git -C /opt/tools/ clone https://github.com/Hackndo/sprayhound
   cd /opt/tools/sprayhound
-  apt -y install libsasl2-dev libldap2-dev
-  pip3 install "pyasn1<0.5.0,>=0.4.6"
+  apt-get -y install libsasl2-dev libldap2-dev
+  python3 -m pip install "pyasn1<0.5.0,>=0.4.6"
   python3 setup.py install
 }
 
@@ -305,11 +327,11 @@ function Impacket() {
   colorecho "[EXEGOL] Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  wget -O 0001-User-defined-password-for-LDAP-attack-addComputer.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  cp /root/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
-  pip3 install .
-  wget -O /usr/share/grc/conf.ntlmrelayx https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.ntlmrelayx
-  wget -O /usr/share/grc/conf.secretsdump https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/conf.secretsdump
+  python3 -m pip install .
+  cp /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
+  cp /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
 }
 
 function bloodhound.py() {
@@ -319,38 +341,48 @@ function bloodhound.py() {
   python setup.py install
 }
 
-function neo4j() {
+function neo4j_install() {
   colorecho "[EXEGOL] Installing neo4j"
-  apt -y install neo4j
-  /usr/share/neo4j/bin/neo4j-admin set-initial-password exegol4thewin
+  wget -O - https://debian.neo4j.com/neotechnology.gpg.key | apt-key add -
+  echo 'deb https://debian.neo4j.com stable latest' | tee /etc/apt/sources.list.d/neo4j.list
+  apt-get update
+  apt-get -y install --no-install-recommends gnupg libgtk2.0-bin libcanberra-gtk-module libx11-xcb1 libva-glx2 libgl1-mesa-glx libgl1-mesa-dri libgconf-2-4 libasound2 libxss1
+  apt-get -y install neo4j
+  #mkdir /usr/share/neo4j/conf
+  neo4j-admin set-initial-password exegol4thewin
   mkdir -p /usr/share/neo4j/logs/
   touch /usr/share/neo4j/logs/neo4j.log
+}
+
+function cypheroth() {
+  coloecho "[EXEGOL] Installing cypheroth"
+  git -C /opt/tools/ clone https://github.com/seajaysec/cypheroth/
 }
 
 function mitm6_sources() {
   colorecho "[EXEGOL] Installing mitm6 from sources"
   git -C /opt/tools/ clone https://github.com/fox-it/mitm6
   cd /opt/tools/mitm6/
-  pip3 install --user -r requirements.txt
+  python3 -m pip install -r requirements.txt
   python3 setup.py install
 }
 
 function mitm6_pip() {
   colorecho "[EXEGOL] Installing mitm6 with pip"
-  pip3 install service_identity
-  pip3 install mitm6
+  python3 -m pip install service_identity
+  python3 -m pip install mitm6
 }
 
 function aclpwn() {
   colorecho "[EXEGOL] Installing aclpwn with pip"
-  pip3 install aclpwn
+  python3 -m pip install aclpwn
   sed -i 's/neo4j.v1/neo4j/g' /usr/local/lib/python3.8/dist-packages/aclpwn/database.py
 }
 
 function IceBreaker() {
   colorecho "[EXEGOL] Installing IceBreaker"
-  apt -y install lsb-release python3-libtmux python3-libnmap python3-ipython
-  pip install pipenva
+  apt-get -y install lsb-release python3-libtmux python3-libnmap python3-ipython
+  python -m pip install pipenva
   git -C /opt/tools/ clone https://github.com/DanMcInerney/icebreaker
   cd /opt/tools/icebreaker/
   ./setup.sh
@@ -359,13 +391,9 @@ function IceBreaker() {
 
 function Empire() {
   colorecho "[EXEGOL] Installing Empire"
-  export STAGING_KEY='exegol4thewin'
-  pip install pefile
+  export STAGING_KEY=$(echo exegol4thewin | md5sum | cut -d ' ' -f1)
+  python -m pip install pefile
   git -C /opt/tools/ clone https://github.com/BC-SECURITY/Empire
-  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/stagers/*.ps1
-  sed -i.bak 's/System.Security.Cryptography.HMACSHA256/System.Security.Cryptography.HMACSHA1/g' data/agent/agent.ps1
-  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' lib/common/*.py
-  sed -i.bak 's/hashlib.sha256/hashlib.sha1/g' data/agent/stagers/*.py
   cd /opt/tools/Empire/setup
   ./install.sh
 }
@@ -374,7 +402,7 @@ function DeathStar() {
   colorecho "[EXEGOL] Installing DeathStar"
   git -C /opt/tools/ clone https://github.com/byt3bl33d3r/DeathStar
   cd /opt/tools/DeathStar
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function Sn1per() {
@@ -394,7 +422,7 @@ function Sn1per() {
 function dementor() {
   colorecho "[EXEGOL] Installing dementor"
   mkdir /opt/tools/dementor
-  pip install pycrypto
+  python -m pip install pycrypto
   wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
 }
 
@@ -466,7 +494,7 @@ function timing_attack() {
 
 function updog() {
   colorecho "[EXEGOL] Installing updog"
-  pip3 install updog
+  python3 -m pip install updog
 }
 
 function findomain() {
@@ -478,12 +506,13 @@ function findomain() {
 function proxychains() {
   colorecho "[EXEGOL] Editing /etc/proxychains.conf for ntlmrelayx.py"
   sed -i 's/9050/1080/g' /etc/proxychains.conf
+  echo 'socks5 	127.0.0.1 1090' >> /etc/proxychains.conf
 }
 
 function grc() {
   colorecho "[EXEGOL] Installing and configuring grc"
-  apt -y install grc
-  wget -O /etc/grc.conf https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/grc/grc.conf
+  apt-get -y install grc
+  cp /root/sources/grc/grc.conf /etc/grc.conf
 }
 
 function pykek() {
@@ -495,7 +524,7 @@ function autorecon() {
   colorecho "[EXEGOL] Installing autorecon"
   git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
   cd /opt/tools/AutoRecon/
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function privexchange() {
@@ -507,18 +536,18 @@ function LNKUp() {
   colorecho "[EXEGOL] Installing LNKUp"
   git -C /opt/tools/ clone https://github.com/Plazmaz/LNKUp
   cd /opt/tools/LNKUp
-  pip install -r requirements.txt
+  python -m pip install -r requirements.txt
 }
 
 function pwntools() {
   colorecho "[EXEGOL] Installing pwntools"
-  pip install pwntools
-  pip3 install pwntools
+  python -m pip install pwntools
+  python3 -m pip install pwntools
 }
 
 function pwndbg() {
   colorecho "[EXEGOL] Installing pwndbg"
-  apt -y install python3.8 python3.8-dev
+  apt-get -y install python3.8 python3.8-dev
   git -C /opt/tools/ clone https://github.com/pwndbg/pwndbg
   cd /opt/tools/pwndbg
   ./setup.sh
@@ -529,12 +558,12 @@ function darkarmour() {
   colorecho "[EXEGOL] Installing darkarmour"
   git -C /opt/tools/ clone https://github.com/bats3c/darkarmour
   cd /opt/tools/darkarmour
-  apt -y install mingw-w64-tools mingw-w64-common g++-mingw-w64 gcc-mingw-w64 upx-ucl osslsigncode
+  apt-get -y install mingw-w64-tools mingw-w64-common g++-mingw-w64 gcc-mingw-w64 upx-ucl osslsigncode
 }
 
 function powershell() {
   colorecho "[EXEGOL] Installing powershell"
-  apt -y install powershell
+  apt-get -y install powershell
   mv /opt/microsoft /opt/tools/microsoft
   rm /usr/bin/pwsh
   ln -s /opt/tools/microsoft/powershell/7/pwsh /usr/bin/pwsh
@@ -551,12 +580,12 @@ function shellerator() {
   colorecho "[EXEGOL] Installing shellerator"
   git -C /opt/tools clone https://github.com/ShutdownRepo/shellerator
   cd /opt/tools/shellerator
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function kadimus() {
   colorecho "[EXEGOL] Installing kadimus"
-  apt -y install libcurl4-openssl-dev libpcre3-dev libssh-dev
+  apt-get -y install libcurl4-openssl-dev libpcre3-dev libssh-dev
   git -C /opt/tools/ clone https://github.com/P0cL4bs/Kadimus
   cd /opt/tools/Kadimus
   make
@@ -564,7 +593,7 @@ function kadimus() {
 
 function testssl() {
   colorecho "[EXEGOL] Installing testssl"
-  apt -y install testssl.sh bsdmainutils
+  apt-get -y install testssl.sh bsdmainutils
 }
 
 function bat() {
@@ -580,6 +609,7 @@ function mdcat() {
   tar xvfz mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
   mv mdcat-0.16.0-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
   rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
+  chown root:root /opt/tools/bin/mdcat
 }
 
 function xsrfprobe() {
@@ -602,12 +632,12 @@ function hakrawler() {
 function jwt_tool() {
   colorecho "[EXEGOL] Installing JWT tool"
   git -C /opt/tools/ clone https://github.com/ticarpi/jwt_tool
-  pip3 install pycryptodomex
+  python3 -m pip install pycryptodomex
 }
 
 function jwt_cracker() {
   colorecho "[EXEGOL] Installing JWT cracker"
-  apt -y install npm
+  apt-get -y install npm
   npm install --global jwt-cracker
 }
 
@@ -642,7 +672,7 @@ function evilwinrm() {
 
 function pypykatz() {
   colorecho "[EXEGOL] Installing pypykatz"
-  pip3 install pypykatz
+  python3 -m pip install pypykatz
 }
 
 function enyx() {
@@ -659,7 +689,7 @@ function git-dumper() {
   colorecho "[EXEGOL] Installing git-dumper"
   git -C /opt/tools/ clone https://github.com/arthaud/git-dumper
   cd /opt/tools/git-dumper
-  pip3 install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function gittools(){
@@ -678,6 +708,17 @@ function ysoserial() {
   colorecho "[EXEGOL] Installing ysoserial"
   mkdir /opt/tools/ysoserial/
   wget -O /opt/tools/ysoserial/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
+}
+
+function ysoserial_net() {
+  colorecho "[EXEGOL] Downloading ysoserial"
+  url=$(curl -s https://github.com/pwntester/ysoserial.net/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
+  tag=${url##*/}
+  prefix=${tag:1}
+  mkdir /opt/resources/windows/ysoserial.net
+  wget -O /opt/resources/windows/ysoserial.net/ysoserial.zip "$url/ysoserial-$prefix.zip"
+  unzip -d /opt/resources/windows/ysoserial.net /opt/tools/ysoserial.net/ysoserial.zip
+  rm /opt/resources/windows/ysoserial.net/ysoserial.zip
 }
 
 function john() {
@@ -710,12 +751,17 @@ function proxmark3() {
   colorecho "[EXEGOL] Installing proxmark3 client"
   colorecho "[EXEGOL] Compiling proxmark client for generic usage with PLATFORM=PM3OTHER (read https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/md/Use_of_Proxmark/4_Advanced-compilation-parameters.md#platform)"
   colorecho "[EXEGOL] It can be compiled again for RDV4.0 with 'make clean && make all && make install' from /opt/tools/proxmak3/"
-  apt -y install --no-install-recommends git ca-certificates build-essential pkg-config libreadline-dev gcc-arm-none-eabi libnewlib-dev qtbase5-dev libbz2-dev libbluetooth-dev
+  apt-get -y install --no-install-recommends git ca-certificates build-essential pkg-config libreadline-dev gcc-arm-none-eabi libnewlib-dev qtbase5-dev libbz2-dev libbluetooth-dev
   git -C /opt/tools/ clone https://github.com/RfidResearchGroup/proxmark3.git
   cd /opt/tools/proxmark3
   make clean
   make all PLATFORM=PM3OTHER
   make install PLATFORM=PM3OTHER
+}
+
+function checksec_py() {
+  colorecho "[EXEGOL] Installing checksec.py"
+  python3 -m pip install checksec.py
 }
 
 function sysinternals() {
@@ -770,14 +816,19 @@ function mimikatz() {
   unzip -d /opt/resources/windows/mimikatz /opt/resources/windows/mimikatz.zip
 }
 
+function mailsniper() {
+  colorecho "[EXEGOL] Downloading MailSniper"
+  git -C /opt/resources/windows/ clone https://github.com/dafthack/MailSniper
+}
+
 function powersploit() {
   colorecho "[EXEGOL] Downloading PowerSploit"
-  git -C /opt/resources/windows/ https://github.com/PowerShellMafia/PowerSploit
+  git -C /opt/resources/windows/ clone https://github.com/PowerShellMafia/PowerSploit
 }
 
 function privesccheck() {
   colorecho "[EXEGOL] Downloading PrivescCheck"
-  git -C /opt/resources/windows/ https://github.com/itm4n/PrivescCheck
+  git -C /opt/resources/windows/ clone https://github.com/itm4n/PrivescCheck
 }
 
 function rubeus() {
@@ -810,9 +861,6 @@ function impacket_windows() {
 
 function webshells() {
   colorecho "[EXEGOL] Downloading webshells"
-  mkdir -p /opt/resources/webshells/
-  mkdir -p /opt/resources/webshells/PHP/
-  mkdir -p /opt/resources/webshells/ASPX/
   git -C /opt/resources/webshells/PHP/ clone https://github.com/mIcHyAmRaNe/wso-webshell
   # Setting password to exegol4thewin
   sed -i 's/fa769dac7a0a94ee47d8ebe021eaba9e/0fc3bcf177377d328c77b2b51b7f3c9b/g' /opt/resources/webshells/PHP/wso-webshell/wso.php
@@ -884,21 +932,29 @@ function arsenal() {
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
 }
 
-function bloodhound(){
+function bloodhound() {
   echo "[EXEGOL] Installing Bloodhound from latest release"
   fapt libxss1
   wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
-  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound3
   rm /tmp/BloodHound-linux-x64.zip
   mkdir -p ~/.config/bloodhound
-  wget -O ~/.config/bloodhound/config.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/config.json
-  wget -O ~/.config/bloodhound/customqueries.json https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/bloodhound/customqueries.json
+  cp /root/sources/bloodhound/config.json ~/.config/bloodhound/config.json
+  cp /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
+}
+
+function bloodhound_old_v2() {
+  echo "[EXEGOL] Installing BloodHound v2 (for older databases/collections)"
+  wget -P /tmp/ https://github.com/BloodHoundAD/BloodHound/releases/download/2.2.1/BloodHound-linux-x64.zip
+  unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
+  mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound2
+  rm /tmp/BloodHound-linux-x64.zip
 }
 
 function bettercap_install(){
   colorecho "[EXEGOL] Installing Bettercap"
-  apt -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
+  apt-get -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
   go get -u -v github.com/bettercap/bettercap
   bettercap -eval "caplets.update; ui.update; q"
   sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
@@ -917,7 +973,7 @@ function hcxtools() {
 
 function hcxdumptool() {
   colorecho "[EXEGOL] Installing hcxdumptool"
-  apt -y install libcurl4-openssl-dev libssl-dev
+  apt-get -y install libcurl4-openssl-dev libssl-dev
   git -C /opt/tools/ clone https://github.com/ZerBea/hcxdumptool
   cd /opt/tools/hcxdumptool
   make
@@ -929,9 +985,9 @@ function pyrit() {
   colorecho "[EXEGOL] Installing pyrit"
   git -C /opt/tools clone https://github.com/JPaulMora/Pyrit
   cd /opt/tools/Pyrit
-  pip install psycopg2-binary scapy
+  python -m pip install psycopg2-binary scapy
   #https://github.com/JPaulMora/Pyrit/issues/591
-  wget -O undefined-symbol-aesni-key.patch https://raw.githubusercontent.com/ShutdownRepo/Exegol/$BRANCH/sources/patches/undefined-symbol-aesni-key.patch
+  cp /root/sources/patches/undefined-symbol-aesni-key.patch undefined-symbol-aesni-key.patch
   git apply undefined-symbol-aesni-key.patch
   python setup.py clean
   python setup.py build
@@ -947,7 +1003,7 @@ function wifite2() {
 
 function wireshark_sources() {
   colorecho "[EXEGOL] Installing tshark, wireshark"
-  apt -y install cmake libgcrypt20-dev libglib2.0-dev libpcap-dev qtbase5-dev libssh-dev libsystemd-dev qtmultimedia5-dev libqt5svg5-dev qttools5-dev libc-ares-dev flex bison byacc
+  apt-get -y install cmake libgcrypt20-dev libglib2.0-dev libpcap-dev qtbase5-dev libssh-dev libsystemd-dev qtmultimedia5-dev libqt5svg5-dev qttools5-dev libc-ares-dev flex bison byacc
   wget -O /tmp/wireshark.tar.xz https://www.wireshark.org/download/src/wireshark-latest.tar.xz
   cd /tmp/
   tar -xvf /tmp/wireshark.tar.xz
@@ -967,13 +1023,93 @@ function trilium() {
   touch /opt/tools/trilium-linux-x64-server/trilium.sh && echo '#!/bin/sh\n/opt/tools/trilium-linux-x64-server/node/bin/node /opt/tools/trilium-linux-x64-server/src/www' > /opt/tools/trilium-linux-x64-server/trilium.sh
 }
 
+function infoga() {
+  colorecho "[EXEGOL] Installing infoga"
+  git -C /opt/tools/ clone https://github.com/m4ll0k/Infoga.git
+  find /opt/tools/Infoga/ -type f -print0 | xargs -0 dos2unix
+  cd /opt/tools/Infoga
+  python setup.py install
+}
+
+function oaburl_py() {
+  colorecho "[EXEGOL] Downloading oaburl.py"
+  mkdir /opt/tools/OABUrl
+  wget -O /opt/tools/OABUrl/oaburl.py "https://gist.githubusercontent.com/snovvcrash/4e76aaf2a8750922f546eed81aa51438/raw/96ec2f68a905eed4d519d9734e62edba96fd15ff/oaburl.py"
+  chmod +x /opt/tools/OABUrl/oaburl.py
+}
+
+function libmspack() {
+  colorecho "[EXEGOL] Installing libmspack"
+  git -C /opt/tools/ clone https://github.com/kyz/libmspack.git
+  cd /opt/tools/libmspack/libmspack
+  ./rebuild.sh
+  ./configure
+  make
+}
+
+function peas_offensive() {
+  colorecho "[EXEGOL] Installing PEAS-Offensive"
+  git -C /opt/tools/ clone https://github.com/snovvcrash/peas.git peas-offensive
+  python3 -m pip install pipenv
+  cd /opt/tools/peas-offensive
+  pipenv --python 2.7 install -r requirements.txt
+}
+
+function ruler() {
+  colorecho "[EXEGOL] Downloading ruler and form templates"
+  mkdir -p /opt/tools/ruler/templates
+  wget -O /opt/tools/ruler/ruler "$(curl -s https://github.com/sensepost/ruler/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/ruler-linux64"
+  chmod +x /opt/tools/ruler/ruler
+  wget -O /opt/tools/ruler/templates/formdeletetemplate.bin "https://github.com/sensepost/ruler/raw/master/templates/formdeletetemplate.bin"
+  wget -O /opt/tools/ruler/templates/formtemplate.bin "https://github.com/sensepost/ruler/raw/master/templates/formtemplate.bin"
+  wget -O /opt/tools/ruler/templates/img0.bin "https://github.com/sensepost/ruler/raw/master/templates/img0.bin"
+  wget -O /opt/tools/ruler/templates/img1.bin "https://github.com/sensepost/ruler/raw/master/templates/img1.bin"
+}
+
+function ghidra() {
+  colorecho "[EXEGOL] Installing Ghidra"
+  apt-get -y install openjdk-14-jdk
+  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
+  unzip /tmp/ghidra_9.1.2_PUBLIC_20200212.zip -d /opt/tools
+  rm /tmp/ghidra_9.1.2_PUBLIC_20200212.zip
+}
+
+function bitleaker() {
+  colorecho "[EXEGOL] Downloading bitleaker for BitLocker TPM attacks"
+  git -C "/opt/resources/encrypted disks/" clone https://github.com/kkamagui/bitleaker
+}
+
+function napper() {
+  colorecho "[EXEGOL] Download napper for TPM vuln scanning"
+  git -C "/opt/resources/encrypted disks/" clone https://github.com/kkamagui/napper-for-tpm
+}
+
+function sherlock() {
+  colorecho "[EXEGOL] Installing sherlock"
+  git -C /opt/tools/ clone https://github.com/sherlock-project/sherlock
+  cd /opt/tools/sherlock
+  python3 -m python -m pip install -r requirements.txt
+}
+
+function holehe() {
+  colorecho "[EXEGOL] Installing holehe"
+  python3 -m pip install holehe
+}
+
+function windapsearch-go() {
+  colorecho "[EXEGOL] Installing Go windapsearch"
+  wget -O /opt/tools/bin/windapsearch "$(curl -s https://github.com/ropnop/go-windapsearch/releases/latest/ | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/windapsearch-linux-amd64"
+  chmod +x /opt/tools/bin/windapsearch
+}
 
 function install_base() {
   update || exit
   apt_packages || exit
   python-pip
   filesystem
+  locales
   ohmyzsh
+  tmux
 }
 
 function install_tools() {
@@ -998,7 +1134,8 @@ function install_tools() {
   CrackMapExec_pip
   sprayhound
   bloodhound.py
-  neo4j
+  neo4j_install
+  cypheroth
   #mitm6_sources
   mitm6_pip
   aclpwn
@@ -1066,10 +1203,22 @@ function install_tools() {
   pyrit
   wifite2
   trilium
+  infoga
+  oaburl_py
+  libmspack
+  peas_offensive
+  ruler
+  checksec_py
+  sherlock
+  holehe
+  windapsearch-go
 }
 
 function install_tools_gui() {
   bloodhound
+  #bloodhound_old_v2
+  fapt freerdp2-x11
+  ghidra
 }
 
 function install_resources() {
@@ -1093,17 +1242,22 @@ function install_resources() {
   diaghub
   lazagne
   sublinacl
-  powersploit
   mimipenguin
   mimipy
   plink
   deepce
   rockyou
   webshells
+  mailsniper
+  ysoserial_net
+  bitleaker
+  napper
 }
 
 function install_clean() {
   colorecho "[EXEGOL] Cleaning..."
+  # I don't want this, I don't know yet what tools installs it, this should be a temporary fix
+  rm /usr/local/bin/bloodhound-python
   #rm /tmp/gobuster.7z
   #rm -r /tmp/gobuster-linux-amd64
 }
