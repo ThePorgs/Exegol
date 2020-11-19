@@ -27,6 +27,8 @@
   - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
   - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
 
+  ![Example](assets/example-main.gif)
+
 # :fast_forward: Quick start
   Bear in mind that the install process can be long as it downloads a ~6GB image.
   ```
@@ -44,10 +46,16 @@
   4. Install : `exegol install`
 
 # :mag_right: Usage
+  A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
+
   1. Start : `exegol start`
   2. Stop : `exegol stop`
   3. Reset the container state : `exegol reset`
   4. Get help on advanced usage : `exegol --help`
+
+  By default, Exegol will start with display sharing allowing GUI-based programs to run, here is an example with BloodHound.
+
+  ![Example](assets/example-display-sharing.gif)
 
 # :closed_lock_with_key: Credentials
   Some tools are pre-configured with the following credentials
@@ -65,6 +73,7 @@
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound (https://github.com/BloodHoundAD/BloodHound)
+  - Ghidra (https://ghidra-sre.org/)
   - Powershell Empire (https://github.com/BC-SECURITY/Empire)
   - ffuf (https://github.com/ffuf/ffuf)
   - shellerator (https://github.com/ShutdownRepo/shellerator)

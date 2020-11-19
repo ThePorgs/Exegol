@@ -1230,7 +1230,7 @@ function install_tools() {
 
 function install_tools_gui() {
   bloodhound
-  #bloodhound_old_v2
+  bloodhound_old_v2
   fapt freerdp2-x11
   ghidra
 }
