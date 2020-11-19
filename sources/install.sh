@@ -132,6 +132,7 @@ function apt_packages() {
   fapt python3-pyftpdlib
   fapt gpp-decrypt
   fapt gifsicle
+  fapt padbuster
 }
 
 function python-pip() {
@@ -507,8 +508,7 @@ function findomain() {
 
 function proxychains() {
   colorecho "[EXEGOL] Editing /etc/proxychains.conf for ntlmrelayx.py"
-  sed -i 's/9050/1080/g' /etc/proxychains.conf
-  echo 'socks5 	127.0.0.1 1090' >> /etc/proxychains.conf
+  cp /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
 }
 
 function grc() {
@@ -580,8 +580,15 @@ function fzf() {
 
 function shellerator() {
   colorecho "[EXEGOL] Installing shellerator"
-  git -C /opt/tools clone https://github.com/ShutdownRepo/shellerator
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/shellerator
   cd /opt/tools/shellerator
+  python3 -m pip install -r requirements.txt
+}
+
+function uberfile() {
+  colorecho "[EXEGOL] Installing uberfile"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/uberfile
+  cd /opt/tools/uberfile/
   python3 -m pip install -r requirements.txt
 }
 
@@ -1218,6 +1225,7 @@ function install_tools() {
   sherlock
   holehe
   windapsearch-go
+  uberfile
 }
 
 function install_tools_gui() {
