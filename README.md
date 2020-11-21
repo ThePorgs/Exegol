@@ -12,7 +12,7 @@
     <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
     <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29">
     <br></br>
-    <a target="_blank" href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
+    <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
     <br><br>
   </p>
 
@@ -39,11 +39,12 @@
 
 # :inbox_tray: Install
   The install process takes time. Install it before needing it.
-  0. Install per-requisites: python3, python3-pip, git, docker
-  1. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
-  2. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
-  3. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
-  4. Install : `exegol install`
+  1. Install pre-requisites: python3, python3-pip, git, docker
+  2. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
+  3. (optional) change branch : `git checkout <branch>`
+  4. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
+  5. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
+  6. Install : `exegol install`
 
 # :mag_right: Usage
   A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
@@ -101,5 +102,5 @@
 
 # :movie_camera: Introducing Exegol (in french w/ english subs)
   <p align="center">
-    <a target="_blank" href="ttp://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
+    <a href="http://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
   </p>

@@ -1,6 +1,9 @@
 # Personal shared volume
-shared-data/
+shared-data-volumes/
 shared-resources/
+
+# TODO: needs to be removed once the multi-containers/images update is fully functionnal
+shared-data/
 
 # Build logs for debugging
 .build.log
