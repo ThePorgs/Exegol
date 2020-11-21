@@ -853,9 +853,13 @@ function inveigh() {
 
 function sharphound() {
   colorecho "[EXEGOL] Downloading SharpHound"
-  mkdir /opt/resources/windows/SharpHound
-  wget -P /opt/resources/windows/SharpHound/ "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.exe"
-  wget -P /opt/resources/windows/SharpHound/ "https://github.com/BloodHoundAD/BloodHound/raw/master/Ingestors/SharpHound.ps1"
+  wget -P /opt/resources/windows/ "https://raw.githubusercontent.com/BloodHoundAD/BloodHound/master/Collectors/SharpHound.exe"
+  wget -P /opt/resources/windows/ "https://raw.githubusercontent.com/BloodHoundAD/BloodHound/master/Collectors/SharpHound.ps1"
+}
+
+function azurehound() {
+  colorecho "[EXEGOL] Downloading AzureHound"
+  wget -P /opt/resources/windows/ "https://raw.githubusercontent.com/BloodHoundAD/BloodHound/master/Collectors/AzureHound.ps1"
 }
 
 function juicypotato() {
@@ -947,9 +951,19 @@ function arsenal() {
 }
 
 function bloodhound() {
-  echo "[EXEGOL] Installing Bloodhound from latest release"
+  echo "[EXEGOL] Installing BloodHound from sources"
+  git -C /opt/tools/ clone https://github.com/BloodHoundAD/BloodHound/
+  mv /opt/tools/BloodHound /opt/tools/BloodHound4
+  npm install -g electron-packager
+  cd /opt/tools/BloodHound4
+  npm install
+  npm run linuxbuild
+}
+
+function bloodhound_old_v3() {
+  echo "[EXEGOL] Installing Bloodhound v3 (just-in-case)"
   fapt libxss1
-  wget -P /tmp/ "$(curl -s https://github.com/BloodHoundAD/BloodHound/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/BloodHound-linux-x64.zip"
+  wget -P /tmp/ "https://github.com/BloodHoundAD/BloodHound/releases/download/3.0.5/BloodHound-linux-x64.zip"
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
   mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound3
   rm /tmp/BloodHound-linux-x64.zip
@@ -1230,6 +1244,7 @@ function install_tools() {
 
 function install_tools_gui() {
   bloodhound
+  bloodhound_old_v3
   bloodhound_old_v2
   fapt freerdp2-x11
   ghidra
@@ -1267,6 +1282,7 @@ function install_resources() {
   bitleaker
   napper
   http-put-server
+  azurehound
 }
 
 function install_clean() {
