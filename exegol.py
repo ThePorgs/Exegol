@@ -19,7 +19,7 @@ TODO LIST
 - gérer les volumes partagés et leur nettoyage (prévoir une fonction de remove pour les containers en plus de la fonction de reset par exemple, ou intégrer une question à la fonction de reset qui va del le dossier?)
 - vérifier que le help est clair (dans le help, bien expliquer que le container-tag est un identifiant unique pour le container)
 - nettoyer les variables et fonctions qui ne sont plus utilisées
-- remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest"
+- remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest" (rename de master et latest vers main ?)
 - revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
 - info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
 '''
@@ -490,6 +490,25 @@ def install():
         dockertag = input("{}[?]{} What image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
         if dockertag == "":
             dockertag = default_dockertag
+        logger.debug("Fetching DockerHub image tags")
+        logger.debug("Obtaining token for DockerHub API queries")
+        token_request = requests.get(
+            url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
+                IMAGE_NAME
+            )
+        )
+        token = eval(token_request.text)["token"]
+        headers = {
+            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+            "Authorization": "Bearer {}".format(token),
+        }
+        remote_image_request = requests.get(
+            url="https://registry.hub.docker.com/v2/{}/tags/list".format(
+                IMAGE_NAME
+            ),
+            headers=headers,
+        )
+        remote_image_tags = eval(remote_image_request.text)["tags"]
         if dockertag not in remote_image_tags:
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
@@ -708,13 +727,15 @@ if __name__ == "__main__":
     options = get_options()
     logger = Logger(options.verbosity, options.quiet)
 
+    # get working git branch
+    LOCAL_GIT_BRANCH = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
+    if not LOCAL_GIT_BRANCH:
+        LOCAL_GIT_BRANCH = "master"
+
+
     if not options.containertag:
         logger.debug("No container tag (-t/--container-tag) supplied")
 
-        # get working git branch
-        LOCAL_GIT_BRANCH = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
-        if not LOCAL_GIT_BRANCH:
-            LOCAL_GIT_BRANCH = "master"
         default_containertag = LOCAL_GIT_BRANCH
 
         # get last used container
