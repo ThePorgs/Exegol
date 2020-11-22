@@ -9,6 +9,7 @@ import subprocess
 import shutil
 from tabulate import tabulate
 import pandas as pd
+import dateutil
 
 '''
 TODO LIST
@@ -18,8 +19,9 @@ TODO LIST
 - gérer les volumes partagés et leur nettoyage (prévoir une fonction de remove pour les containers en plus de la fonction de reset par exemple, ou intégrer une question à la fonction de reset qui va del le dossier?)
 - vérifier que le help est clair (dans le help, bien expliquer que le container-tag est un identifiant unique pour le container)
 - nettoyer les variables et fonctions qui ne sont plus utilisées
-- remove le default suivant ~l507 + ~l534 quand l'image master sera faite : if dockertag == "": dockertag = "latest"
+- remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest"
 - revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
+- info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
 '''
 
 class Logger:
@@ -406,12 +408,11 @@ def start():
                 logger.error("Something went wrong...")
             else:
                 logger.warning("Container does not exist")
-                logger.info("Available local images: {}".format(len_images))
-                info_images()
+                info_local_images()
+                # TODO: do this
+                default_imagetag = ""
                 imagetag = input("{}[?]{} What image do you want the container to create to be based upon (give tag)? ".format(BOLD_BLUE, END))
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
-                    len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
-                    logger.info("Available local containers: {}".format(len_containers))
                     info_containers()
                     if not container_exists(imagetag):
                         default_containertag = imagetag
@@ -420,7 +421,7 @@ def start():
                     client.containers.list(all=True, filters={"name": "exegol-"})
                     containertag = input("{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(BOLD_BLUE, END, default_containertag))
                     if containertag == "":
-                        containertag = imagetag
+                        containertag = default_containertag
                     options.containertag = containertag
                     logger.info("Creating the container")
                     logger.debug("{} container based on the {} image".format("exegol-" + containertag, IMAGE_NAME + ":" + imagetag))
@@ -479,36 +480,16 @@ def reset():
 
 
 def install():
-    len_images = len(client.images.list(IMAGE_NAME))
-    logger.info("Available local images: {}".format(len_images))
-    info_images()
+    info_local_images()
     if options.mode == "release":
-        logger.debug("Fetching DockerHub image tags")
-        logger.debug("Obtaining token for DockerHub API queries")
-        token_request = requests.get(
-            url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
-                IMAGE_NAME
-            )
-        )
-        token = eval(token_request.text)["token"]
-        headers = {
-            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-            "Authorization": "Bearer {}".format(token),
-        }
-        remote_image_request = requests.get(
-            url="https://registry.hub.docker.com/v2/{}/tags/list".format(
-                IMAGE_NAME
-            ),
-            headers=headers,
-        )
-        remote_image_tags = eval(remote_image_request.text)["tags"]
-        logger.info("Available DockerHub remote images (tags)")
-        for tag in remote_image_tags:
-            logger.info(" •  {}".format(tag))
-        print()
-        dockertag = input("{}[?]{} What image (tag) do you want to install/update [default: latest]? ".format(BOLD_BLUE, END))
+        info_remote_images()
+        if LOCAL_GIT_BRANCH == "master": # TODO: fix this crap when I'll have branch names that are equal to docker tags
+            default_dockertag = "latest"
+        else:
+            default_dockertag = LOCAL_GIT_BRANCH
+        dockertag = input("{}[?]{} What image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
         if dockertag == "":
-            dockertag = "latest"
+            dockertag = default_dockertag
         if dockertag not in remote_image_tags:
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
@@ -521,7 +502,8 @@ def install():
         logger.info("Available GitHub branches")
         for branch in branches:
             logger.info(" •  {}".format(branch["name"]))
-        branch = input("{}[?]{} What branch do you want the code to be based upon [default: master]? ".format(BOLD_BLUE, END))
+        default_branch = LOCAL_GIT_BRANCH
+        branch = input("{}[?]{} What branch do you want the code to be based upon [default: master]? ".format(BOLD_BLUE, END, default_branch))
         if branch == "":
             branch = "master"
         branch_in_branches = False
@@ -551,7 +533,7 @@ def remove():
     len_images = len(client.images.list(IMAGE_NAME))
     logger.info("Available local images: {}".format(len_images))
     if not len_images == 0:
-        info_images()
+        info_local_images()
         imagetag = input("{}[?]{} What image do you want to remove (give tag)? ".format(BOLD_BLUE, END))
         if not client.images.list(IMAGE_NAME + ":" + imagetag):
             logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(IMAGE_NAME + ":" + imagetag))
@@ -577,7 +559,47 @@ def remove():
         logger.info("No Exegol image here, ya messin with me?")
 
 
-def info_images():
+def info_remote_images():
+    images = []
+    images.append(["IMAGE TAG", "SIZE"])
+    logger.debug("Fetching DockerHub image tags")
+    logger.debug("Obtaining token for DockerHub API queries")
+    token_request = requests.get(
+        url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
+            IMAGE_NAME
+        )
+    )
+    token = eval(token_request.text)["token"]
+    headers = {
+        "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+        "Authorization": "Bearer {}".format(token),
+    }
+    remote_image_request = requests.get(
+        url="https://registry.hub.docker.com/v2/{}/tags/list".format(
+            IMAGE_NAME
+        ),
+        headers=headers,
+    )
+    remote_image_tags = eval(remote_image_request.text)["tags"]
+    logger.info("Available DockerHub remote images (tags)")
+    for tag in remote_image_tags:
+        remote_image = requests.get(
+            url="https://registry.hub.docker.com/v2/{}/manifests/{}".format(
+                IMAGE_NAME, tag
+            ),
+            headers=headers,
+        )
+        size = readable_size(eval(remote_image.text)["config"]["size"] * 1000000)
+        images.append([tag, size])
+
+    df = pd.DataFrame(images[1:], columns=images[0])
+    print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
+    print()
+
+
+def info_local_images():
+    len_images = len(client.images.list(IMAGE_NAME))
+    logger.info("Available local images: {}".format(len_images))
     images = []
     images.append(["IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
     logger.debug("Obtaining token for DockerHub API queries")
@@ -588,41 +610,50 @@ def info_images():
     )
     token = eval(token_request.text)["token"]
     for image in client.images.list(IMAGE_NAME):
-        name, tag = image.attrs["RepoTags"][0].split(':')
-        if image.attrs["RepoDigests"]:
-            mode = "release"
-            logger.debug("Fetching local image digest for image {}".format(IMAGE_NAME + ":" + tag))
-            local_image_hash = image.attrs["Id"]
-            logger.debug("└── {}...".format(local_image_hash[:32]))
-            logger.debug("Fetching remote image digest for image {}".format(name + ":" + tag))
-            headers = {
-                "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-                "Authorization": "Bearer {}".format(token),
-            }
-            remote_image_request = requests.get(
-                url="https://registry.hub.docker.com/v2/{}/manifests/{}".format(
-                    name, tag
-                ),
-                headers=headers,
-            )
-            remote_image_hash = eval(remote_image_request.text)["config"]["digest"]
-            logger.debug("└── {}...".format(remote_image_hash[:32]))
-            if local_image_hash == remote_image_hash:
-                uptodate = BOLD_GREEN + "yes" + END
-            else:
-                uptodate = BOLD_ORANGE + "no" + END
+        if not image.attrs["RepoTags"]:
+            # TODO: investigate this
+            logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
+            logger.debug("This image won't be listed until I know what those images are and what I should do with them")
         else:
-            mode = "sources"
-            uptodate = ""
-        size = readable_size(image.attrs["Size"])
-        images.append([tag, size, mode, uptodate])
+            name, tag = image.attrs["RepoTags"][0].split(':')
+            if image.attrs["RepoDigests"]:
+                mode = "release"
+                logger.debug("Fetching local image digest for image {}".format(IMAGE_NAME + ":" + tag))
+                local_image_hash = image.attrs["Id"]
+                logger.debug("└── {}...".format(local_image_hash[:32]))
+                logger.debug("Fetching remote image digest for image {}".format(name + ":" + tag))
+                headers = {
+                    "Accept": "application/vnd.docker.distribution.manifest.v2+json",
+                    "Authorization": "Bearer {}".format(token),
+                }
+                remote_image_request = requests.get(
+                    url="https://registry.hub.docker.com/v2/{}/manifests/{}".format(
+                        name, tag
+                    ),
+                    headers=headers,
+                )
+                remote_image_hash = eval(remote_image_request.text)["config"]["digest"]
+                logger.debug("└── {}...".format(remote_image_hash[:32]))
+                if local_image_hash == remote_image_hash:
+                    uptodate = BOLD_GREEN + "yes" + END
+                else:
+                    uptodate = BOLD_ORANGE + "no" + END
+            else:
+                mode = "sources"
+                uptodate = ""
+            size = readable_size(image.attrs["Size"])
+            images.append([tag, size, mode, uptodate])
 
     df = pd.DataFrame(images[1:], columns=images[0])
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
     print()
+    if len_images == 0:
+        logger.warning("Exegol image does not exist, you should install it")
 
 
 def info_containers():
+    len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
+    logger.info("Available local containers: {}".format(len_containers))
     containers = []
     # TODO: move the host networking, shared display and such in a column "attributes" with values like 1100, 1101 and so on and explain that attributes=host net,shared display, ... this is fore pretty printing, I'm not sure I'll do this though, I like precision
     containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING", "PRIVILEGED"])
@@ -642,21 +673,16 @@ def info_containers():
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
     print()
 
+
 def test():
     c = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
     print(c)
 
+
 def info():
-    len_images = len(client.images.list(IMAGE_NAME))
-    logger.info("Available local images: {}".format(len_images))
-    info_images()
-    len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
-    logger.info("Available local containers: {}".format(len_containers))
+    info_remote_images()
+    info_local_images()
     info_containers()
-    if len_images == 0:
-        logger.warning("Exegol image does not exist, you should install it")
-    elif len_containers == 0:
-        logger.warning("You have at least one Exegol image lying aroung,you might as well use it ;)")
 
 
 if __name__ == "__main__":
@@ -686,32 +712,34 @@ if __name__ == "__main__":
         logger.debug("No container tag (-t/--container-tag) supplied")
 
         # get working git branch
-        branch = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
-        if not branch:
-            branch = "master"
-        default_containertag = branch
+        LOCAL_GIT_BRANCH = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
+        if not LOCAL_GIT_BRANCH:
+            LOCAL_GIT_BRANCH = "master"
+        default_containertag = LOCAL_GIT_BRANCH
 
         # get last used container
         containers = client.containers.list(all=True, filters={"name": "exegol-"})
         len_containers = len(containers)
         logger.debug("Available local containers: {}".format(len_containers))
+        logger.debug("Fetching 'FinishedAt' attribute for each container")
         if not len_containers == 0:
-            at = containers[0].attrs["State"]["FinishedAt"]
             finished_at = ""
             for container in containers:
+                logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(container.attrs["State"]["FinishedAt"]))
+                this_finished_at = dateutil.parser.parse(container.attrs["State"]["FinishedAt"])
                 if finished_at:
-                    this_finished_at = dateutil.parser.parse(container.attrs["State"]["FinishedAt"])
                     if this_finished_at >= finished_at:
                         finished_at = this_finished_at
                         last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
                 else:
                     last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
+                    finished_at = this_finished_at
             logger.debug("Last used container: {}".format(last_used_container_tag))
             default_containertag = last_used_container_tag
-
-        logger.debug("Defaulting to the last used container, or working git branch if none, or 'master' if none")
-        logger.debug("Container tag set to {}".format(branch))
-        options.containertag = branch
+        # TODO: need to find a way to default to the latest "used" container instead of "created"
+        logger.debug("Defaulting to the last created container, or working git branch if none, or 'master' if none")
+        logger.debug("Container tag set to {}".format(default_containertag))
+        options.containertag = default_containertag
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
 
     LOOP_PREVENTION = ""
