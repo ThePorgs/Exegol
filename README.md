@@ -54,6 +54,8 @@
   3. Reset the container state : `exegol reset`
   4. Get help on advanced usage : `exegol --help`
 
+  ![Example](assets/example-info.gif)
+
   By default, Exegol will start with display sharing allowing GUI-based programs to run, here is an example with BloodHound.
 
   ![Example](assets/example-display-sharing.gif)
