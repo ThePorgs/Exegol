@@ -714,7 +714,7 @@ def info_local_images():
             name, tag = image.attrs["RepoTags"][0].split(':')
             if image.attrs["RepoDigests"]:
                 mode = "release"
-                local_image_hash = image.attrs["Id"]
+                local_image_hash = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
                 logger.debug("└── {} → {}...".format(tag, local_image_hash[:32]))
                 if local_image_hash == remote_images[tag]:
                     uptodate = BOLD_GREEN + "yes" + END
