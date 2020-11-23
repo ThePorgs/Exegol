@@ -18,7 +18,6 @@ TODO LIST
 - faire correspondre les noms de branche github avec le docker tag
 - faire plus d'affichage de debug
 - dans l'epilog, donner des exemples pour les devs et/ou faire une partie advanced usage dans le wiki, référencer le wiki dans le readme
-- gérer les volumes partagés et leur nettoyage (prévoir une fonction de remove pour les containers en plus de la fonction de reset par exemple, ou intégrer une question à la fonction de reset qui va del le dossier?)
 - vérifier que le help est clair (dans le help, bien expliquer que le container-tag est un identifiant unique pour le container)
 - nettoyer les variables et fonctions qui ne sont plus utilisées
 - remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest" (rename de master et latest vers main ?)
@@ -74,13 +73,13 @@ def get_options():
         epilog += "  {}\t{}\n".format(example, examples[example])
 
     actions = {
-        "start": "automatically start, resume, or enter Exegol",
-        "stop": "stop Exegol in a saved state",
-        "reset": "remove the saved state, clean slate (removes the container, not the image)",
+        "start": "automatically start, resume, create or enter an Exegol container",
+        "stop": "stop an Exegol container in a saved state",
+        "rm-container": "remove a container",
         "install": "install Exegol image (build or pull depending on the chosen install --mode)",
         "update": "update Exegol image (build or pull depending on the chosen update --mode)",
-        "info": "print info on Exegol container/image (up to date, size, state, ...)",
-        "remove": "remove Exegol image",
+        "info": "print info on containers and local & remote images (name, size, state, ...)",
+        "rm-image": "remove Exegol image",
     }
 
     actions_help = ""
@@ -216,7 +215,7 @@ def get_options():
         default="",
         help="specify custom options for the container creation",
     )
-    default_start.add_argument(
+    advanced_start.add_argument(
         "-cwd",
         "--cwd-mount",
         dest="mount_current_dir",
@@ -230,6 +229,7 @@ def get_options():
         options.X11 = True
         options.host_network = True
         options.bind_resources = True
+    options.action = options.action.replace("-", "")
     if options.action == "update":
         options.action = "install"
     return options
@@ -494,9 +494,13 @@ def start():
             else:
                 logger.warning("Container does not exist")
                 info_local_images()
-                # TODO: do this
-                default_imagetag = ""
-                imagetag = input("{}[?]{} What image do you want the container to create to be based upon (give tag)? ".format(BOLD_BLUE, END))
+                if LOCAL_GIT_BRANCH == "master": # TODO: fix this crap when I'll have branch names that are equal to docker tags
+                    default_dockertag = "latest"
+                else:
+                    default_dockertag = LOCAL_GIT_BRANCH
+                imagetag = input("{}[?]{} What image do you want the container to create to be based upon [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
+                if not imagetag:
+                    imagetag = default_dockertag
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
                     info_containers()
                     if not container_exists(imagetag):
@@ -550,7 +554,7 @@ def stop():
         logger.success("Container is down")
 
 
-def reset():
+def rmcontainer():
     if not options.containertag:
         select_containertag(LOCAL_GIT_BRANCH)
     if container_exists(options.containertag):
@@ -564,9 +568,24 @@ def reset():
             logger.success("Container does not exist anymore")
     else:
         logger.success("Container does not exist")
+    logger.info("Cleaning unused host directories (resources and empty data)")
     if os.path.isdir(SHARED_RESOURCES):
-        logger.debug("Host directory {} exists. Removing it...".format(SHARED_RESOURCES))
-        shutil.rmtree(SHARED_RESOURCES, ignore_errors=True)
+        logger.verbose("Host directory {} exists. Removing it...".format(SHARED_RESOURCES))
+        try:
+            shutil.rmtree(SHARED_RESOURCES)
+        except PermissionError:
+            logger.warning("I don't have the rights to remove {} (do it yourself)".format(SHARED_RESOURCES))
+        except:
+            logger.error("Something else went wrong")
+    if os.path.isdir(SHARED_DATA_VOLUMES + "/" + options.containertag):
+        if len(os.listdir(SHARED_DATA_VOLUMES + "/" + options.containertag)) == 0:
+            logger.verbose("Host directory {} exists and is empty. Removing...".format(SHARED_DATA_VOLUMES + "/" + options.containertag))
+            try:
+                shutil.rmtree(SHARED_DATA_VOLUMES + "/" + options.containertag)
+            except PermissionError:
+                logger.warning("I don't have the rights to remove {} (do it yourself)".format(SHARED_DATA_VOLUMES + "/" + options.containertag))
+            except:
+                logger.error("Something else went wrong")
 
 
 def install():
@@ -577,28 +596,14 @@ def install():
             default_dockertag = "latest"
         else:
             default_dockertag = LOCAL_GIT_BRANCH
-        dockertag = input("{}[?]{} What image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
+        dockertag = input("{}[?]{} What remote image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
         if dockertag == "":
             dockertag = default_dockertag
-        logger.debug("Fetching DockerHub image tags")
-        logger.debug("Obtaining token for DockerHub API queries")
-        token_request = requests.get(
-            url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
-                IMAGE_NAME
-            )
-        )
-        token = eval(token_request.text)["token"]
-        headers = {
-            "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-            "Authorization": "Bearer {}".format(token),
-        }
-        remote_image_request = requests.get(
-            url="https://registry.hub.docker.com/v2/{}/tags/list".format(
-                IMAGE_NAME
-            ),
-            headers=headers,
-        )
-        remote_image_tags = eval(remote_image_request.text)["tags"]
+        logger.debug("Fetching DockerHub images tags")
+        remote_image_tags = []
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+        for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+            remote_image_tags.append(image["name"])
         if dockertag not in remote_image_tags:
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
@@ -607,7 +612,7 @@ def install():
     elif options.mode == "sources":
         logger.debug("Fetching available GitHub branches")
         branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches")
-        branches = eval(branches_request.text.replace("true", "True").replace("false", "False"))
+        branches = eval(branches_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))
         logger.info("Available GitHub branches")
         for branch in branches:
             logger.info(" •  {}".format(branch["name"]))
@@ -638,7 +643,7 @@ def install():
             )
 
 
-def remove():
+def rmimage(): # TODO: this needs to be improved to have the possibility to remove images, containers, volumes, networks and so on related to Exegol
     len_images = len(client.images.list(IMAGE_NAME))
     logger.info("Available local images: {}".format(len_images))
     if not len_images == 0:
@@ -655,7 +660,7 @@ def remove():
             )
             if confirmation == "y" or confirmation == "yes" or confirmation == "Y":
                 logger.info("Deletion confirmed, proceeding")
-                reset()
+                rmcontainer()
                 logger.info("Deleting image {}".format(IMAGE_NAME + ":" + imagetag))
                 exec_system("docker image rm {}".format(IMAGE_NAME + ":" + imagetag))
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
@@ -671,36 +676,15 @@ def remove():
 def info_remote_images():
     images = []
     images.append(["IMAGE TAG", "SIZE"])
-    logger.debug("Fetching DockerHub image tags")
-    logger.debug("Obtaining token for DockerHub API queries")
-    token_request = requests.get(
-        url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
-            IMAGE_NAME
-        )
-    )
-    token = eval(token_request.text)["token"]
-    headers = {
-        "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-        "Authorization": "Bearer {}".format(token),
-    }
-    remote_image_request = requests.get(
-        url="https://registry.hub.docker.com/v2/{}/tags/list".format(
-            IMAGE_NAME
-        ),
-        headers=headers,
-    )
-    remote_image_tags = eval(remote_image_request.text)["tags"]
-    logger.info("Available DockerHub remote images (tags)")
-    for tag in remote_image_tags:
-        remote_image = requests.get(
-            url="https://registry.hub.docker.com/v2/{}/manifests/{}".format(
-                IMAGE_NAME, tag
-            ),
-            headers=headers,
-        )
-        size = readable_size(eval(remote_image.text)["config"]["size"] * 1000000)
+    logger.debug("Fetching DockerHub images info")
+    remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+    for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+        tag = image["name"]
+        size = readable_size(image["full_size"])
         images.append([tag, size])
 
+    len_images = len(images) - 1
+    logger.info("Available remote images: {}".format(len_images))
     df = pd.DataFrame(images[1:], columns=images[0])
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
     print()
@@ -711,39 +695,28 @@ def info_local_images():
     logger.info("Available local images: {}".format(len_images))
     images = []
     images.append(["IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
-    logger.debug("Obtaining token for DockerHub API queries")
-    token_request = requests.get(
-    url="https://auth.docker.io/token?scope=repository:{}:pull&service=registry.docker.io".format(
-    IMAGE_NAME
-    )
-    )
-    token = eval(token_request.text)["token"]
+    logger.debug("Fetching remote image digests")
+    remote_images = {}
+    remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+    for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+        tag = image["name"]
+        digest = image["images"][0]["digest"]
+        logger.debug("└── {} → {}...".format(tag, digest[:32]))
+        remote_images[tag] = digest
+    logger.debug("Fetching local image digests (and other attributes)")
     for image in client.images.list(IMAGE_NAME):
         if not image.attrs["RepoTags"]:
             # TODO: investigate this
+            # manual remove : docker rmi $(docker images -f "dangling=true" -q)
             logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
             logger.debug("This image won't be listed until I know what those images are and what I should do with them")
         else:
             name, tag = image.attrs["RepoTags"][0].split(':')
             if image.attrs["RepoDigests"]:
                 mode = "release"
-                logger.debug("Fetching local image digest for image {}".format(IMAGE_NAME + ":" + tag))
                 local_image_hash = image.attrs["Id"]
-                logger.debug("└── {}...".format(local_image_hash[:32]))
-                logger.debug("Fetching remote image digest for image {}".format(name + ":" + tag))
-                headers = {
-                    "Accept": "application/vnd.docker.distribution.manifest.v2+json",
-                    "Authorization": "Bearer {}".format(token),
-                }
-                remote_image_request = requests.get(
-                    url="https://registry.hub.docker.com/v2/{}/manifests/{}".format(
-                        name, tag
-                    ),
-                    headers=headers,
-                )
-                remote_image_hash = eval(remote_image_request.text)["config"]["digest"]
-                logger.debug("└── {}...".format(remote_image_hash[:32]))
-                if local_image_hash == remote_image_hash:
+                logger.debug("└── {} → {}...".format(tag, local_image_hash[:32]))
+                if local_image_hash == remote_images[tag]:
                     uptodate = BOLD_GREEN + "yes" + END
                 else:
                     uptodate = BOLD_ORANGE + "no" + END
