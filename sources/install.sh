@@ -1103,110 +1103,146 @@ function install_base() {
   locales
   ohmyzsh
   tmux
-}
-
-function install_tools() {
   dependencies
   grc
-  Responder
-  Sublist3r
-  ReconDog
-  CloudFail
-  OneForAll
-  EyeWitness
-  wafw00f
-  #JSParser
-  LinkFinder
-  SSRFmap
-  NoSQLMap
-  fuxploider
-  CORScanner
-  Blazy
-  XSStrike
-  Bolt
-  CrackMapExec_pip
-  sprayhound
-  bloodhound.py
-  neo4j_install
-  cypheroth
-  #mitm6_sources
-  mitm6_pip
-  aclpwn
-  #IceBreaker
-  Empire
-  DeathStar
-  #Sn1per
-  dementor
-  Impacket
-  proxychains
-  pykek
-  lsassy
-  subjack
-  assetfinder
-  subfinder
-  gobuster
-  amass
-  ffuf
-  gitrob
-  shhgit
-  waybackurls
-  subover
-  subzy
-  gron
-  timing_attack
-  updog
-  findomain
-  autorecon
-  privexchange
-  pwntools
-  pwndbg
-  darkarmour
-  powershell
-  fzf
-  shellerator
-  kadimus
-  testssl
-  bat
-  mdcat
-  xsrfprobe
-  krbrelayx
-  hakrawler
-  jwt_tool
-  jwt_cracker
-  wuzz
-  gf_install
-  rbcd-attack
-  evilwinrm
-  pypykatz
-  enyx
-  enum4linux-ng
-  git-dumper
-  gittools
-  gopherus
-  ysoserial
-  john
-  memcached-cli
-  zerologon
-  arsenal
-  proxmark3
-  #wireshark_sources
-  bettercap_install
-  hcxtools
-  hcxdumptool
-  pyrit
-  wifite2
-  infoga
-  oaburl_py
-  libmspack
-  peas_offensive
-  ruler
-  checksec_py
-  sherlock
-  holehe
-  windapsearch-go
+  proxychains                     # Network tool
+  shellerator                     # Reverse shell generator
+  bat                             # Beautiful cat
+  mdcat                           # Markdown tool
+  john                            # Password cracker
+  arsenal                         # Cheatsheets tool
 }
 
-function install_tools_gui() {
+# Package dedicated to osint, recon and passive tools
+function install_osint_tools() {
+  Sublist3r                       # Subdomain bruteforcer
+  subjack                         # Subdomain bruteforcer
+  assetfinder                     # Subdomain bruteforcer
+  subfinder                       # Subdomain bruteforcer
+  subover                         # Subdomain bruteforcer
+  subzy                           # Subdomain bruteforcer
+  findomain                       # Subdomain bruteforcer
+  autorecon                       # External recon tool
+  ReconDog                        # Informations gathering tool
+  JSParser                        # Parse JS files
+  gitrob                          # Senstive files reconnaissance in github
+  shhgit                          # Senstive files reconnaissance in github
+  waybackurls                     # Website history
+  gron                            # JSON parser
+  infoga                          # Gathering email accounts informations
+  sherlock                        # Hunt down social media accounts by username across social networks
+  holehe                          # Check if the mail is used on different sites
+}
+
+# Package dedicated to applicative and active web pentest tools
+function install_web_tools() {
+  gobuster                        # Web fuzzer
+  amass                           # Web fuzzer
+  ffuf                            # Web fuzzer
+  fzf                             # Web fuzzer
+  SSRFmap                         # SSRF scanner
+  gopherus                        # SSRF helper
+  NoSQLMap                        # NoSQL scanner
+  XSStrike                        # XSS scanner
+  xsrfprobe                       # CSRF scanner
+  Bolt                            # CSRF scanner
+  kadimus                         # LFI scanner
+  fuxploider                      # File upload scanner
+  Blazy                           # Login scanner
+  testssl                         # SSL/TLS scanner
+  CloudFail                       # Cloudflare misconfiguration detector
+  EyeWitness                      # Website screenshoter
+  OneForAll                       # FIXME
+  wafw00f                         # Waf detector
+  CORScanner                      # CORS misconfiguration detector
+  hakrawler                       # Web endpoint discovery
+  LinkFinder                      # Discovers endpoint JS files
+  timing_attack                   # Cryptocraphic timing attack
+  updog                           # New HTTPServer
+  jwt_tool                        # Toolkit for validating, forging, scanning and tampering JWTs
+  jwt_cracker                     # JWT cracker and bruteforcer
+  wuzz                            # Burp cli
+  gf_install                      # FIXME (chinese tool)
+  git-dumper                      # Dump a git repository from a website
+  gittools                        # Dump a git repository from a website
+  ysoserial                       # Deserialization payloads
+  memcached-cli                   # FIXME
+}
+
+# Package dedicated to internal Active Directory pentest tools
+function install_ad_tools() {
+  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  CrackMapExec_pip                # Network scanner
+  sprayhound                      # Password spraying tool
+  bloodhound.py                   # AD cartographer
+  neo4j_install                   # Bloodhound dependency
+  cypheroth                       # Bloodhound dependency
+  # mitm6_sources                 # FIXME
+  mitm6_pip                       # DNS server misconfiguration exploiter
+  aclpwn                          # ACL exploiter
+  # IceBreaker                    # FIXME
+  Empire                          # Exploit framework
+  DeathStar                       # Exploit framework
+  # Sn1per                        # Vulnerability scanner
+  dementor                        # SpoolService exploiter
+  Impacket                        # Network protocols scripts
+  pykek                           # AD vulnerability exploiter
+  lsassy                          # Credentials extracter
+  privexchange                    # Exchange exploiter
+  ruler                           # Exchange exploiter
+  darkarmour                      # Windows AV evasion
+  powershell                      # Windows Powershell for Linux
+  krbrelayx                       # Kerberos unconstrained delegation abuse toolkit
+  rbcd-attack                     # Kerberos Resource-Based Constrained Delegation Attack
+  evilwinrm                       # WinRM shell
+  pypykatz                        # Mimikatz implementation in pure Python
+  enyx                            # Hosts discovery
+  enum4linux-ng                   # Hosts enumeration
+  zerologon                       # Exploit for zerologon cve-2020-1472
+  libmspack                       # Library for some loosely related Microsoft compression format
+  peas_offensive                  # Library and command line application for running commands on Microsoft Exchange
+  windapsearch-go                 # Active Directory Domain enumeration through LDAP queries
+}
+
+# Package dedicated to mobile pentest tools
+function install_mobile_tools() {
+  # TODO
+}
+
+# Package dedicated to network pentest tools
+function install_network_tools() {
+  proxmark3                       # Proxmark3 scripts
+  # wireshark_sources             # Wireshark sources
+  bettercap_install               # MiTM tool
+  hcxtools                        # Network tool
+  hcxdumptool                     # Small tool to capture packets from wlan devices
+  oaburl_py                       # Send request to the MS Exchange Autodiscover service
+}
+
+# Package dedicated to wifi pentest tools
+function install_wifi_tools() {
+  pyrit                           # Databases of pre-computed WPA/WPA2-PSK authentication phase
+  wifite2                         # Retrieving password of a wireless access point (router)
+}
+
+# Package dedicated to reverse engineering tools
+function install_reverse_tools() {
+  pwntools                        # CTF framework and exploit development library
+  pwndbg                          # Advanced Gnu Debugger
+  checksec_py                     # Check security on binaries
+}
+
+function install_all_tools() {
+  install_osint_tools
+  install_web_tools
+  install_ad_tools
+  install_network_tools
+  install_mobile_tools
+  install_wifi_tools
+  install_reverse_tools
+}
+
+function install_all_tools_gui() {
   bloodhound
   #bloodhound_old_v2
   fapt freerdp2-x11
@@ -1279,8 +1315,8 @@ else
       echo -e "${NOCOLOR}"
       sleep 30
       install_base
-      install_tools
-      install_tools_gui
+      install_all_tools
+      install_all_tools_gui
       install_resources
       install_clean
     fi
