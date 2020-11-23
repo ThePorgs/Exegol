@@ -1206,6 +1206,7 @@ function install_ad_tools() {
 
 # Package dedicated to mobile pentest tools
 function install_mobile_tools() {
+  continue
   # TODO
 }
 
