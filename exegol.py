@@ -13,6 +13,8 @@ import dateutil
 
 '''
 TODO LIST
+- prévoir quand pas d'accès internet pour les pull des images remote, pour les vérif update etc.
+- le reset est-il réellement utile/clair ? Faudrait le remplacer par remove-container ou quoi jsp ??
 - faire correspondre les noms de branche github avec le docker tag
 - faire plus d'affichage de debug
 - dans l'epilog, donner des exemples pour les devs et/ou faire une partie advanced usage dans le wiki, référencer le wiki dans le readme
@@ -165,8 +167,8 @@ def get_options():
         help="mount the /opt/resources of the container in a subdirectory of host\'s {}".format(SHARED_RESOURCES)
     )
     default_start.add_argument(
-        "--shell",
         "-s",
+        "--shell",
         dest="shell",
         action="store",
         choices={"zsh", "bash", "tmux"},
@@ -183,7 +185,7 @@ def get_options():
         "--container-tag",
         dest="containertag",
         action="store",
-        help="Tag to use in the container name. This allows for multiple and separate containers",
+        help="tag to use in the container name",
     )
     advanced_start.add_argument(
         "--no-default",
@@ -213,6 +215,13 @@ def get_options():
         action="store",
         default="",
         help="specify custom options for the container creation",
+    )
+    default_start.add_argument(
+        "-cwd",
+        "--cwd-mount",
+        dest="mount_current_dir",
+        action="store_true",
+        help="mount current dir to container's /workspace",
     )
 
     options = parser.parse_args()
@@ -324,6 +333,9 @@ def container_creation_options(containertag):
     if options.device:
         logger.verbose("Enabling host device ({}) sharing".format(options.device))
         advanced_options += " --device {}".format(options.device)
+    if options.mount_current_dir:
+        logger.verbose("Sharing /workspace (container) ↔ {} (host)".format(os.getcwd()))
+        advanced_options += " --volume {}:/workspace".format(os.getcwd())
     if options.custom_options:
         logger.verbose("Specifying custom options: {}".format(options.custom_options))
         advanced_options += " " + options.custom_options
@@ -363,12 +375,85 @@ def readable_size(size, precision=1):
         size = size / 1024.0  # apply the division
     return "%.*f%s" % (precision, size, suffixes[suffixIndex])
 
+
+def select_containertag(local_git_branch):
+    logger.info("No container tag (-t/--container-tag) supplied")
+
+    info_containers()
+
+    # default to local git branch or master if none
+    if not local_git_branch:
+        default_containertag = "master"
+    else:
+        default_containertag = local_git_branch
+
+    # fetching containers
+    containers = client.containers.list(all=True, filters={"name": "exegol-"})
+    len_containers = len(containers)
+    logger.debug("Available local containers: {}".format(len_containers))
+
+    # default to last created container
+    # TODO: need to find a way to default to the latest "used" container instead of "created"
+    logger.debug("Fetching 'FinishedAt' attribute for each container")
+    last_used_container_tag = ""
+    if not len_containers == 0:
+        finished_at = ""
+        for container in containers:
+            logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(container.attrs["State"]["FinishedAt"]))
+            this_finished_at = dateutil.parser.parse(container.attrs["State"]["FinishedAt"])
+            if finished_at:
+                if this_finished_at >= finished_at:
+                    finished_at = this_finished_at
+                    last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
+            else:
+                last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
+                finished_at = this_finished_at
+        logger.debug("Last used container: {}".format(last_used_container_tag))
+    if last_used_container_tag:
+        default_containertag = last_used_container_tag
+
+
+    # default to container that has the local dir mounted as volume
+    logger.debug("Fetching volumes for each container")
+    cwd_in_vol_container = ""
+    if not len_containers == 0:
+        for container in containers:
+            volumes = []
+            if container.attrs["HostConfig"]["Binds"]:
+                for bind in container.attrs["HostConfig"]["Binds"]:
+                    volumes.append(bind.split(":")[0])
+            if container.attrs["HostConfig"]["Mounts"]:
+                for mount in container.attrs["HostConfig"]["Mounts"]:
+                    volumes.append(mount["VolumeOptions"]["DriverConfig"]["Options"]["device"])
+            logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(volumes))
+            if os.getcwd() in volumes:
+                cwd_in_vol_container = container.attrs["Name"].replace('/exegol-', '')
+                logger.debug("Current dir is in volumes of container: {}".format(cwd_in_vol_container))
+    if cwd_in_vol_container:
+        default_containertag = cwd_in_vol_container
+
+    # TODO: ask user for input
+    containertags = []
+    if not len_containers == 0:
+        for container in containers:
+            containertags.append(container.attrs["Name"].replace('/exegol-', ''))
+
+    containertag = input("{}[?]{} What container do you want to {} [default: {}]? ".format(BOLD_BLUE, END, options.action, default_containertag))
+
+    if not containertag or not containertag in containertags:
+        options.containertag = default_containertag
+    else:
+        options.containertag = containertag
+
+
 def start():
     global LOOP_PREVENTION
     len_images = len(client.images.list(IMAGE_NAME))
     if not len_images == 0:
         if LOOP_PREVENTION == "":
             logger.success("{} Exegol images exist".format(len_images))
+        if not options.containertag:
+            select_containertag(LOCAL_GIT_BRANCH)
         if container_exists(options.containertag):
             if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
                 logger.success("Container exists")
@@ -449,6 +534,8 @@ def start():
 
 
 def stop():
+    if not options.containertag:
+        select_containertag(LOCAL_GIT_BRANCH)
     container = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})[0]
     if container.attrs["State"]["Status"] == "running":
         logger.info("Container is up")
@@ -462,7 +549,10 @@ def stop():
     else:
         logger.success("Container is down")
 
+
 def reset():
+    if not options.containertag:
+        select_containertag(LOCAL_GIT_BRANCH)
     if container_exists(options.containertag):
         logger.info("Container exists")
         stop()
@@ -671,31 +761,62 @@ def info_local_images():
 
 
 def info_containers():
+    if options.verbosity == 0:
+        len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
+        logger.info("Available local containers: {}".format(len_containers))
+        containers = []
+        containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING", "PRIVILEGED"])
+        for container in client.containers.list(all=True, filters={"name": "exegol-"}):
+            tag = container.attrs["Name"].replace('/exegol-', '')
+            state = container.attrs["State"]["Status"]
+            if state == "running":
+                state = BOLD_GREEN + state + END
+            image = container.attrs["Config"]["Image"]
+            display_sharing = "✓" if was_created_with_gui(container) else ""
+            device_sharing = "✓" if was_created_with_device(container) else ""
+            privileged = "✓" if was_created_with_privileged(container) else ""
+            host_networking = "✓" if was_created_with_host_networking(container) else ""
+            containers.append([tag, state, image, host_networking, display_sharing, device_sharing, privileged])
+
+        df = pd.DataFrame(containers[1:], columns=containers[0])
+        print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
+        print()
+    elif options.verbosity >= 1:
+        info_containers_verbose()
+
+
+def info_containers_verbose(): # TODO: in this mode, display ID of images and containers
     len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
     logger.info("Available local containers: {}".format(len_containers))
     containers = []
-    # TODO: move the host networking, shared display and such in a column "attributes" with values like 1100, 1101 and so on and explain that attributes=host net,shared display, ... this is fore pretty printing, I'm not sure I'll do this though, I like precision
-    containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING", "PRIVILEGED"])
+    containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "ADV. PARAMETERS", "BINDS & MOUNTS"])
     for container in client.containers.list(all=True, filters={"name": "exegol-"}):
         tag = container.attrs["Name"].replace('/exegol-', '')
         state = container.attrs["State"]["Status"]
         if state == "running":
             state = BOLD_GREEN + state + END
         image = container.attrs["Config"]["Image"]
-        display_sharing = "✓" if was_created_with_gui(container) else ""
-        device_sharing = "✓" if was_created_with_device(container) else ""
-        privileged = "✓" if was_created_with_privileged(container) else ""
-        host_networking = "✓" if was_created_with_host_networking(container) else ""
-        containers.append([tag, state, image, host_networking, display_sharing, device_sharing, privileged])
+        adv_params = ""
+        adv_params += "Display sharing\n" if was_created_with_gui(container) else ""
+        adv_params += "Device sharing\n" if was_created_with_device(container) else ""
+        adv_params += "Privileged\n" if was_created_with_privileged(container) else ""
+        adv_params += "Host networking\n" if was_created_with_host_networking(container) else ""
+        logger.debug("Fetching volumes for each container")
+        volumes = ""
+        if container.attrs["HostConfig"]["Binds"]:
+            for bind in container.attrs["HostConfig"]["Binds"]:
+                volumes += bind.replace(":", " → ") + "\n"
+        if container.attrs["HostConfig"]["Mounts"]:
+            for mount in container.attrs["HostConfig"]["Mounts"]:
+                volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
+                volumes += " → "
+                volumes += mount["Target"]
+                volumes += "\n"
+        containers.append([tag, state, image, adv_params, volumes])
 
     df = pd.DataFrame(containers[1:], columns=containers[0])
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
     print()
-
-
-def test():
-    c = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
-    print(c)
 
 
 def info():
@@ -732,35 +853,6 @@ if __name__ == "__main__":
     if not LOCAL_GIT_BRANCH:
         LOCAL_GIT_BRANCH = "master"
 
-
-    if not options.containertag:
-        logger.debug("No container tag (-t/--container-tag) supplied")
-
-        default_containertag = LOCAL_GIT_BRANCH
-
-        # get last used container
-        containers = client.containers.list(all=True, filters={"name": "exegol-"})
-        len_containers = len(containers)
-        logger.debug("Available local containers: {}".format(len_containers))
-        logger.debug("Fetching 'FinishedAt' attribute for each container")
-        if not len_containers == 0:
-            finished_at = ""
-            for container in containers:
-                logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(container.attrs["State"]["FinishedAt"]))
-                this_finished_at = dateutil.parser.parse(container.attrs["State"]["FinishedAt"])
-                if finished_at:
-                    if this_finished_at >= finished_at:
-                        finished_at = this_finished_at
-                        last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
-                else:
-                    last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
-                    finished_at = this_finished_at
-            logger.debug("Last used container: {}".format(last_used_container_tag))
-            default_containertag = last_used_container_tag
-        # TODO: need to find a way to default to the latest "used" container instead of "created"
-        logger.debug("Defaulting to the last created container, or working git branch if none, or 'master' if none")
-        logger.debug("Container tag set to {}".format(default_containertag))
-        options.containertag = default_containertag
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
 
     LOOP_PREVENTION = ""

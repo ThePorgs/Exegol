@@ -27,6 +27,8 @@
   - add JSP webshell (test all https://github.com/tennc/webshell/tree/master/jsp)
   - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
   - add ssh special commands to history (socks proxy, local/remote port forwarding)
+  - versioning git/dockerhub
+  
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal
