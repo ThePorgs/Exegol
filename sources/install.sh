@@ -23,114 +23,7 @@ function fapt() {
 function apt_packages() {
   colorecho "[EXEGOL] Installing APT packages"
   # this is easier to debug when there are dependencies issues and such. I install package by package to quickly locate errors.
-  fapt aircrack-ng
-  fapt crunch
-  fapt curl
-  fapt dirb
-  fapt dirbuster
-  fapt dnsenum
-  fapt dnsrecon
-  fapt dnsutils
-  fapt dos2unix
-  fapt enum4linux
-  fapt exploitdb
-  fapt ftp
-  fapt git
-  fapt hashcat
-  fapt hping3
-  fapt hydra
-  fapt joomscan
-  fapt masscan
-  fapt metasploit-framework
-  fapt mimikatz
-  fapt nasm
-  fapt ncat
-  fapt netcat-traditional
-  fapt nikto
-  fapt nmap
-  fapt patator
-  fapt php
   #fapt powersploit
-  fapt proxychains
-  fapt python3
-  fapt recon-ng
-  fapt samba
-  fapt samdump2
-  fapt seclists
-  fapt smbclient
-  fapt smbmap
-  fapt snmp
-  fapt socat
-  fapt sqlmap
-  fapt sslscan
-  fapt theharvester
-  fapt tree
-  fapt vim
-  fapt nano
-  fapt weevely
-  fapt wfuzz
-  fapt wget
-  fapt whois
-  fapt wordlists
-  fapt seclists
-  fapt wpscan
-  fapt zsh
-  fapt golang
-  fapt ssh
-  fapt iproute2
-  fapt iputils-ping
-  fapt python3-pip
-  fapt python3-dev
-  fapt sudo
-  fapt tcpdump
-  fapt gem
-  fapt tidy
-  fapt passing-the-hash
-  fapt ssh-audit
-  fapt whatweb
-  fapt smtp-user-enum
-  fapt onesixtyone
-  fapt cewl
-  fapt radare2
-  fapt nbtscan
-  fapt amap
-  fapt python-dev
-  fapt python2
-  fapt file
-  fapt dotdotpwn
-  fapt xsser
-  fapt rlwrap
-  fapt lsof
-  fapt bruteforce-luks
-  fapt less
-  fapt redis-tools
-  fapt telnet
-  fapt pst-utils
-  fapt mariadb-client
-  fapt fcrackzip
-  fapt exiftool
-  fapt tmux
-  fapt man
-  fapt x11-apps
-  fapt hostapd-wpe
-  fapt iproute2
-  fapt reaver
-  fapt bully
-  fapt cowpatty
-  DEBIAN_FRONTEND=noninteractive fapt macchanger
-  DEBIAN_FRONTEND=noninteractive fapt wireshark
-  DEBIAN_FRONTEND=noninteractive fapt tshark
-  fapt imagemagick
-  fapt mlocate
-  fapt xsel
-  fapt rpcbind
-  fapt nfs-common
-  fapt automake
-  fapt autoconf
-  fapt libtool
-  fapt net-tools
-  fapt python3-pyftpdlib
-  fapt gpp-decrypt
 }
 
 function python-pip() {
@@ -1097,20 +990,84 @@ function windapsearch-go() {
 
 function install_base() {
   update || exit
-  apt_packages || exit
-  python-pip
+  fapt man                        # Most important
+  # apt_packages || exit
+  python-pip                      # Pip
+  fapt python3-pip                # Pip
   filesystem
   locales
-  ohmyzsh
-  tmux
+  fapt zsh                        # Awesome shell
+  ohmyzsh                         # Awesome shell
+  tmux                            # Tmux
   dependencies
   grc
+  fapt file                       # Detect type of file with magic number
+  fapt lsof                       # Linux utility
+  fapt less                       # Linux utility
+  fapt x11-apps                   # Linux utility
+  fapt net-tools                  # Linux utility
+  fapt vim                        # Text editor
+  fapt nano                       # Text editor (not the best)
+  fapt iputils-ping               # Ping binary
   proxychains                     # Network tool
+  fapt proxychains                # Network tool
   shellerator                     # Reverse shell generator
-  bat                             # Beautiful cat
-  mdcat                           # Markdown tool
-  john                            # Password cracker
+  fapt rlwrap                     # Reverse shell utility
   arsenal                         # Cheatsheets tool
+  bat                             # Beautiful cat
+  fapt tidy                       # FIXME
+  fapt amap                       # FIXME
+  fapt mlocate                    # FIXME
+  fapt xsel                       # FIXME
+  fapt libtool                    # FIXME
+  mdcat                           # Markdown tool
+  fapt sudo                       # Sudo
+  fapt curl                       # HTTP handler
+  fapt wget                       # Wget
+  fapt dnsutils                   # DNS scripts
+  fapt dos2unix                   # Convert encoded dos script
+  DEBIAN_FRONTEND=noninteractive fapt macchanger  # Macchanger
+  fapt git                        # Git client
+  fapt ftp                        # FTP client
+  fapt python3-pyftpdlib          # FTP server python library 
+  fapt nfs-common                 # NFS client
+  fapt ssh                        # SSH client
+  fapt telnet                     # Telnet client
+  fapt php                        # Php language
+  fapt python2                    # Python 2 language
+  fapt python3                    # Python 3 language
+  fapt python-dev                 # Python 2 language (dev version)
+  fapt python3-dev                # Python 3 language (dev version)
+  fapt golang                     # Golang language
+  fapt gem                        # Install ruby packages
+  fapt automake                   # Automake
+  fapt autoconf                   # Autoconf
+  fapt redis-tools                # Redis protocol
+  fapt mariadb-client             # Mariadb client
+}
+
+# Package dedicated to most used offensive tools
+function install_most_used_tools {
+  fapt exploitdb                  # Exploitdb downloaded locally
+  fapt metasploit-framework       # Offensive framework
+  fapt nmap                       # Port scanner
+  gobuster                        # Web fuzzer
+}
+
+# Package dedicated to offensive miscellaneous tools
+function install_misc_tools() {
+  john                            # Password cracker
+  fapt hashcat                    # Password cracker
+  fapt fcrackzip                  # Zip cracker
+  fapt crunch                     # Wordlist generator
+  fapt cewl                       # Wordlist generator
+  fapt exploitdb                  # Exploitdb downloaded locally
+  fapt metasploit-framework       # Offensive framework
+  fapt ncat                       # Socket manager
+  fapt netcat-traditional         # Socket manager
+  fapt socat                      # Socket manager
+  fapt seclists                   # Awesome wordlists
+  fapt wordlists                  # Others wordlists (not the best)
 }
 
 # Package dedicated to osint, recon and passive tools
@@ -1122,7 +1079,11 @@ function install_osint_tools() {
   subover                         # Subdomain bruteforcer
   subzy                           # Subdomain bruteforcer
   findomain                       # Subdomain bruteforcer
+  fapt dnsenum                    # Subdomain bruteforcer
+  fapt dnsrecon                   # Subdomain bruteforcer
   autorecon                       # External recon tool
+  fapt recon-ng                   # External recon tool
+  fapt whois                      # See information about a specific domain name or IP address
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
   gitrob                          # Senstive files reconnaissance in github
@@ -1132,24 +1093,39 @@ function install_osint_tools() {
   infoga                          # Gathering email accounts informations
   sherlock                        # Hunt down social media accounts by username across social networks
   holehe                          # Check if the mail is used on different sites
+  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners 
+  fapt whatweb                    # Recognises web technologies including content management
 }
 
 # Package dedicated to applicative and active web pentest tools
 function install_web_tools() {
-  gobuster                        # Web fuzzer
+  gobuster                        # Web fuzzer (pretty good for several extensions)
   amass                           # Web fuzzer
-  ffuf                            # Web fuzzer
+  ffuf                            # Web fuzzer (little favorites)
   fzf                             # Web fuzzer
+  fapt dirb                       # Web fuzzer
+  fapt dirbuster                  # Web fuzzer
+  fapt wfuzz                      # Web fuzzer (second favorites)
+  fapt nikto                      # Web scanner
+  fapt sqlmap                     # SQL injection scanner
   SSRFmap                         # SSRF scanner
   gopherus                        # SSRF helper
   NoSQLMap                        # NoSQL scanner
   XSStrike                        # XSS scanner
+  fapt xsser                      # XSS scanner
   xsrfprobe                       # CSRF scanner
   Bolt                            # CSRF scanner
+  fapt dotdotpwn                  # LFI scanner
   kadimus                         # LFI scanner
   fuxploider                      # File upload scanner
   Blazy                           # Login scanner
+  fapt hydra                      # Login scanner
+  fapt patator                    # Login scanner
+  fapt joomscan                   # Joomla scanner
+  fapt wpscan                     # Wordpress scanner
   testssl                         # SSL/TLS scanner
+  fapt sslscan                    # SSL/TLS scanner
+  fapt weevely                    # Awesome secure and light PHP webshell
   CloudFail                       # Cloudflare misconfiguration detector
   EyeWitness                      # Website screenshoter
   OneForAll                       # FIXME
@@ -1167,6 +1143,7 @@ function install_web_tools() {
   gittools                        # Dump a git repository from a website
   ysoserial                       # Deserialization payloads
   memcached-cli                   # FIXME
+  fapt ssh-audit                  # SSH server audit
 }
 
 # Package dedicated to internal Active Directory pentest tools
@@ -1197,11 +1174,21 @@ function install_ad_tools() {
   evilwinrm                       # WinRM shell
   pypykatz                        # Mimikatz implementation in pure Python
   enyx                            # Hosts discovery
+  fapt enum4linux                 # Hosts enumeration
   enum4linux-ng                   # Hosts enumeration
   zerologon                       # Exploit for zerologon cve-2020-1472
   libmspack                       # Library for some loosely related Microsoft compression format
   peas_offensive                  # Library and command line application for running commands on Microsoft Exchange
   windapsearch-go                 # Active Directory Domain enumeration through LDAP queries
+  fapt mimikatz                   # AD vulnerability exploiter
+  fapt samdump2                   # Dumps Windows 2k/NT/XP/Vista password hashes
+  fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
+  fapt smbmap                     # Allows users to enumerate samba share drives across an entire domain
+  fapt passing-the-hash           # Pass the hash attack
+  fapt smtp-user-enum             # SMTP user enumeration via VRFY, EXPN and RCPT
+  fapt onesixtyone                # SNMP scanning
+  fapt nbtscan                    # NetBIOS scanning tool
+  fapt rpcbind                    # RPC scanning
 }
 
 # Package dedicated to mobile pentest tools
@@ -1218,12 +1205,35 @@ function install_network_tools() {
   hcxtools                        # Network tool
   hcxdumptool                     # Small tool to capture packets from wlan devices
   oaburl_py                       # Send request to the MS Exchange Autodiscover service
+  fapt hping3                     # Discovery tool
+  fapt masscan                    # Port scanner
+  fapt nmap                       # Port scanner
+  fapt snmp                       # FIXME
+  fapt samba                      # Samba
+  fapt iproute2                   # Firewall rules
+  fapt tcpdump                    # Capture TCP traffic
+  DEBIAN_FRONTEND=noninteractive fapt wireshark # Wireshark packet sniffer
+  DEBIAN_FRONTEND=noninteractive fapt tshark    # Tshark packet sniffer
 }
 
 # Package dedicated to wifi pentest tools
 function install_wifi_tools() {
   pyrit                           # Databases of pre-computed WPA/WPA2-PSK authentication phase
   wifite2                         # Retrieving password of a wireless access point (router)
+  fapt aircrack-ng                # WiFi security auditing tools suite
+  fapt hostapd-wpe                # Modified hostapd to facilitate AP impersonation attacks
+  fapt reaver                     # Brute force attack against Wifi Protected Setup
+  fapt bully                      # WPS brute force attack
+  fapt cowpatty                   # WPA2-PSK Cracking
+}
+
+# Package dedicated to forensic tools
+function install_forensic_tools() {
+  fapt bruteforce-luks            # Find the password of a LUKS encrypted volume
+  fapt pst-utils                  # Reads a PST and prints the tree structure to the console
+  fapt exiftool                   # Meta information reader/writer
+  fapt imagemagick                # Copy, modify, and distribute image
+  fapt gpp-decrypt                # Decrypt a given GPP encrypted string
 }
 
 # Package dedicated to reverse engineering tools
@@ -1231,15 +1241,19 @@ function install_reverse_tools() {
   pwntools                        # CTF framework and exploit development library
   pwndbg                          # Advanced Gnu Debugger
   checksec_py                     # Check security on binaries
+  fapt nasm                       # Netwide Assembler
+  fapt radare2                    # Awesome debugger
 }
 
 function install_all_tools() {
+  install_misc_tools
   install_osint_tools
   install_web_tools
   install_ad_tools
   install_network_tools
   install_mobile_tools
   install_wifi_tools
+  install_forensic_tools
   install_reverse_tools
 }
 
