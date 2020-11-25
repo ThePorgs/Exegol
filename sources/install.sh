@@ -1042,8 +1042,6 @@ function install_base() {
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
   fapt autoconf                   # Autoconf
-  fapt redis-tools                # Redis protocol
-  fapt mariadb-client             # Mariadb client
 }
 
 # Package dedicated to most used offensive tools
@@ -1214,6 +1212,8 @@ function install_network_tools() {
   fapt tcpdump                    # Capture TCP traffic
   DEBIAN_FRONTEND=noninteractive fapt wireshark # Wireshark packet sniffer
   DEBIAN_FRONTEND=noninteractive fapt tshark    # Tshark packet sniffer
+  fapt redis-tools                # Redis protocol
+  fapt mariadb-client             # Mariadb client
 }
 
 # Package dedicated to wifi pentest tools

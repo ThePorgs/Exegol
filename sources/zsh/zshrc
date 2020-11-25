@@ -8,7 +8,12 @@ plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autos
 source $ZSH/oh-my-zsh.sh
 
 TIME_="%{$fg[white]%}[%{$fg[red]%}%D{%b %d, %Y - %T (%Z)}%{$fg[white]%}]%{$reset_color%}"
-PROMPT="$TIME_%{$FX[bold]$FG[013]%} %m %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "
+
+# Zsh prompt with date
+# PROMPT="$TIME_%{$FX[bold]$FG[013]%} %m %{$fg_bold[blue]%}%(!.%1~.%c) $(prompt_char)%{$reset_color%} "
+
+# Zsh prompt without date
+PROMPT="%(!.%{$fg_bold[red]%}.%{$fg_bold[green]%}%n@)toolbox %{$fg_bold[blue]%}%(!.%1~.%~) $(git_prompt_info)$(prompt_char)%{$reset_color%} "
 
 export GOPATH=$HOME/go
 export GO111MODULE=on
