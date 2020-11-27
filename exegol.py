@@ -47,6 +47,7 @@ def get_options():
         "install (↓ ~6GB):": "exegol install",
         "get a shell:\t": "exegol start",
         "get a tmux shell:": "exegol -s tmux start",
+        "use VPN:": "        exegol --vpn start",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
         "check image updates:": "exegol info",
@@ -169,6 +170,13 @@ def get_options():
         action="store_true",
         default=False,
         help="disable the default start options (e.g. --X11, --host-network)",
+    )
+    advanced_start.add_argument(
+        "--vpn",
+        dest="vpn",
+        action="store_true",
+        default=False,
+        help="allows to launch a vpn client ",
     )
     advanced_start.add_argument(
         "--privileged",
@@ -302,6 +310,9 @@ def container_creation_options():
         advanced_options += 'volume-opt=type=none,'
         advanced_options += 'volume-opt=o=bind,'
         advanced_options += 'volume-opt=device={}'.format(SHARED_RESOURCES_PATH)
+    if options.vpn:
+        logger.warning("Activating VPN")
+        advanced_options += " --cap-add=NET_ADMIN --device /dev/net/tun --sysctl net.ipv6.conf.all.disable_ipv6=0"
     if options.privileged:
         logger.warning("Enabling extended privileges")
         advanced_options += " --privileged"
@@ -314,7 +325,7 @@ def container_creation_options():
     base_options += " --interactive"
     base_options += " --tty"
     # base_options += ' --detach'
-    base_options += " --volume {}:/data".format(SHARED_DATA_PATH)
+    base_options += " --volume {}:/data".format(SHARED_DATA_PATH) + ":Z"
     base_options += " --name {}".format(CONTAINER_NAME)
     base_options += " --hostname {}".format(HOSTNAME)
     return base_options, advanced_options
