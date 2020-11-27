@@ -36,6 +36,7 @@ function apt_packages() {
   fapt exploitdb
   fapt ftp
   fapt git
+  fapt openvpn
   fapt hashcat
   fapt hping3
   fapt hydra
