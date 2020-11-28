@@ -7,9 +7,11 @@ RUN chmod +x /root/sources/install.sh
 
 RUN /root/sources/install.sh install_base
 
-RUN /root/sources/install.sh install_misc_tools
-RUN /root/sources/install.sh install_osint_tools
-RUN /root/sources/install.sh install_web_tools
+RUN /root/sources/install.sh install_most_used_tools
+
+# RUN /root/sources/install.sh install_misc_tools
+# RUN /root/sources/install.sh install_osint_tools
+# RUN /root/sources/install.sh install_web_tools
 # RUN /root/sources/install.sh install_ad_tools
 # RUN /root/sources/install.sh install_network_tools
 # RUN /root/sources/install.sh install_mobile_tools

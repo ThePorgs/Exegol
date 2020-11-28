@@ -12,7 +12,7 @@ function colorecho () {
 
 function update() {
   colorecho "[EXEGOL] Updating, upgrading, cleaning"
-  apt-get -y update && apt-get -y install apt-utils lsb-release && apt-get -y upgrade && apt-get -y autoremove && apt-get clean
+  apt-get -y update && apt-get -y install apt-utils && apt-get -y upgrade && apt-get -y autoremove && apt-get clean
 }
 
 function fapt() {
@@ -115,7 +115,7 @@ function OneForAll() {
 function EyeWitness() {
   colorecho "[EXEGOL] Installing EyeWitness"
   git -C /opt/tools/ clone https://github.com/FortyNorthSecurity/EyeWitness
-  cd /opt/tools/EyeWitness/setup
+  cd /opt/tools/EyeWitness/Python/setup
   ./setup.sh
 }
 
@@ -152,6 +152,14 @@ function NoSQLMap() {
   colorecho "[EXEGOL] Installing NoSQLMap"
   git -C /opt/tools clone https://github.com/codingo/NoSQLMap.git
   cd /opt/tools/NoSQLMap
+  python setup.py install
+}
+
+function droopescan() {
+  colorecho "[EXEGOL] Installing droopescan"
+  git -C /opt/tools clone https://github.com/droope/droopescan.git
+  cd /opt/tools/droopescan
+  python -m pip install -r requirements.txt
   python setup.py install
 }
 
@@ -418,6 +426,13 @@ function autorecon() {
   git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
   cd /opt/tools/AutoRecon/
   python3 -m pip install -r requirements.txt
+}
+
+function simplyemail() {
+  colorecho "[EXEGOL] Installing SimplyEmail"
+  git -C /opt/tools/ clone https://github.com/SimplySecurity/SimplyEmail.git
+  cd /opt/tools/SimplyEmail/
+  sudo bash setup/setup.sh
 }
 
 function privexchange() {
@@ -992,41 +1007,9 @@ function install_base() {
   update || exit
   fapt man                        # Most important
   # apt_packages || exit
-  python-pip                      # Pip
-  fapt python3-pip                # Pip
-  filesystem
-  locales
-  fapt zsh                        # Awesome shell
-  ohmyzsh                         # Awesome shell
-  tmux                            # Tmux
-  dependencies
-  grc
-  fapt file                       # Detect type of file with magic number
-  fapt lsof                       # Linux utility
-  fapt less                       # Linux utility
-  fapt x11-apps                   # Linux utility
-  fapt net-tools                  # Linux utility
-  fapt vim                        # Text editor
-  fapt nano                       # Text editor (not the best)
-  fapt iputils-ping               # Ping binary
-  proxychains                     # Network tool
-  fapt proxychains                # Network tool
-  shellerator                     # Reverse shell generator
-  fapt rlwrap                     # Reverse shell utility
-  arsenal                         # Cheatsheets tool
-  bat                             # Beautiful cat
-  fapt tidy                       # FIXME
-  fapt amap                       # FIXME
-  fapt mlocate                    # FIXME
-  fapt xsel                       # FIXME
-  fapt libtool                    # FIXME
-  mdcat                           # Markdown tool
   fapt sudo                       # Sudo
   fapt curl                       # HTTP handler
   fapt wget                       # Wget
-  fapt dnsutils                   # DNS scripts
-  fapt dos2unix                   # Convert encoded dos script
-  DEBIAN_FRONTEND=noninteractive fapt macchanger  # Macchanger
   fapt git                        # Git client
   fapt ftp                        # FTP client
   fapt python3-pyftpdlib          # FTP server python library 
@@ -1038,10 +1021,42 @@ function install_base() {
   fapt python3                    # Python 3 language
   fapt python-dev                 # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
+  python-pip                      # Pip
+  fapt python3-pip                # Pip
+  filesystem
+  locales
+  fapt zsh                        # Awesome shell
+  ohmyzsh                         # Awesome shell
+  tmux                            # Tmux
+  dependencies
+  grc
   fapt golang                     # Golang language
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
   fapt autoconf                   # Autoconf
+  fapt file                       # Detect type of file with magic number
+  fapt lsof                       # Linux utility
+  fapt less                       # Linux utility
+  fapt x11-apps                   # Linux utility
+  fapt net-tools                  # Linux utility
+  fapt vim                        # Text editor
+  fapt nano                       # Text editor (not the best)
+  fapt iputils-ping               # Ping binary
+  fapt proxychains                # Network tool
+  proxychains                     # Network tool
+  shellerator                     # Reverse shell generator
+  fapt rlwrap                     # Reverse shell utility
+  arsenal                         # Cheatsheets tool
+  bat                             # Beautiful cat
+  fapt tidy                       # FIXME
+  fapt amap                       # FIXME
+  fapt mlocate                    # FIXME
+  fapt xsel                       # FIXME
+  fapt libtool                    # FIXME
+  mdcat                           # Markdown tool
+  fapt dnsutils                   # DNS scripts
+  fapt dos2unix                   # Convert encoded dos script
+  DEBIAN_FRONTEND=noninteractive fapt macchanger  # Macchanger
 }
 
 # Package dedicated to most used offensive tools
@@ -1049,7 +1064,40 @@ function install_most_used_tools {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt metasploit-framework       # Offensive framework
   fapt nmap                       # Port scanner
-  gobuster                        # Web fuzzer
+  john                            # Password cracker
+  fapt fcrackzip                  # Zip cracker
+  fapt seclists                   # Awesome wordlists
+  subfinder                       # Subdomain bruteforcer
+  autorecon                       # External recon tool
+  gitrob                          # Senstive files reconnaissance in github
+  waybackurls                     # Website history
+  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners 
+  simplyemail                     # Gather emails
+  gobuster                        # Web fuzzer (pretty good for several extensions)
+  ffuf                            # Web fuzzer (little favorites)
+  fapt wfuzz                      # Web fuzzer (second favorites)
+  fapt nikto                      # Web scanner
+  fapt sqlmap                     # SQL injection scanner
+  fapt hydra                      # Login scanner
+  fapt joomscan                   # Joomla scanner
+  fapt wpscan                     # Wordpress scanner
+  droopescan                      # Drupal scanner
+  testssl                         # SSL/TLS scanner
+  fapt sslscan                    # SSL/TLS scanner
+  fapt weevely                    # Awesome secure and light PHP webshell
+  CloudFail                       # Cloudflare misconfiguration detector
+  EyeWitness                      # Website screenshoter
+  wafw00f                         # Waf detector
+  jwt_tool                        # Toolkit for validating, forging, scanning and tampering JWTs
+  gittools                        # Dump a git repository from a website
+  ysoserial                       # Deserialization payloads
+  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  CrackMapExec_pip                # Network scanner
+  Impacket                        # Network protocols scripts
+  fapt enum4linux                 # Hosts enumeration
+  fapt mimikatz                   # AD vulnerability exploiter
+  fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
+  fapt smbmap                     # Allows users to enumerate samba share drives across an entire domain
 }
 
 # Package dedicated to offensive miscellaneous tools
@@ -1092,6 +1140,7 @@ function install_osint_tools() {
   sherlock                        # Hunt down social media accounts by username across social networks
   holehe                          # Check if the mail is used on different sites
   fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners 
+  simplyemail                     # Gather emails
   fapt whatweb                    # Recognises web technologies including content management
 }
 
@@ -1121,6 +1170,7 @@ function install_web_tools() {
   fapt patator                    # Login scanner
   fapt joomscan                   # Joomla scanner
   fapt wpscan                     # Wordpress scanner
+  droopescan                      # Drupal scanner
   testssl                         # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
@@ -1300,9 +1350,9 @@ function install_resources() {
 function install_clean() {
   colorecho "[EXEGOL] Cleaning..."
   # I don't want this, I don't know yet what tools installs it, this should be a temporary fix
-  rm /usr/local/bin/bloodhound-python
-  #rm /tmp/gobuster.7z
-  #rm -r /tmp/gobuster-linux-amd64
+  # rm /usr/local/bin/bloodhound-python
+  # rm /tmp/gobuster.7z
+  # rm -r /tmp/gobuster-linux-amd64
 }
 
 if [[ $EUID -ne 0 ]]; then

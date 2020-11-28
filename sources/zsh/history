@@ -191,3 +191,4 @@ nmap -sS -n --open -p 88 192.168.56.0/24
 windapsearch --dc 192.168.56.101 --module metadata
 windapsearch --dc 192.168.56.101 --module users
 nmap --script broadcast-dhcp-discover
+SimplyEmail.py -all -e cybersyndicates.com 
