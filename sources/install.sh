@@ -161,9 +161,9 @@ function filesystem() {
 function ohmyzsh() {
   colorecho "[EXEGOL] Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-  cp /root/sources/zsh/history ~/.zsh_history
-  cp /root/sources/zsh/aliases /opt/.zsh_aliases
-  cp /root/sources/zsh/zshrc ~/.zshrc
+  cp -v /root/sources/zsh/history ~/.zsh_history
+  cp -v /root/sources/zsh/aliases /opt/.zsh_aliases
+  cp -v /root/sources/zsh/zshrc ~/.zshrc
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-autosuggestions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
@@ -177,7 +177,7 @@ function locales() {
 }
 
 function tmux() {
-  cp /root/sources/tmux/tmux.conf ~/.tmux.conf
+  cp -v /root/sources/tmux/tmux.conf ~/.tmux.conf
   touch ~/.hushlogin
 }
 
@@ -330,11 +330,11 @@ function Impacket() {
   colorecho "[EXEGOL] Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  cp /root/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch 0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  cp -v /root/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
   python3 -m pip install .
-  cp /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
-  cp /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
+  cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
+  cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
 }
 
 function bloodhound.py() {
@@ -508,13 +508,13 @@ function findomain() {
 
 function proxychains() {
   colorecho "[EXEGOL] Editing /etc/proxychains.conf for ntlmrelayx.py"
-  cp /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
+  cp -v /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
 }
 
 function grc() {
   colorecho "[EXEGOL] Installing and configuring grc"
   apt-get -y install grc
-  cp /root/sources/grc/grc.conf /etc/grc.conf
+  cp -v /root/sources/grc/grc.conf /etc/grc.conf
 }
 
 function pykek() {
@@ -674,6 +674,11 @@ function rbcd-attack() {
   git -C /opt/tools/ clone https://github.com/tothi/rbcd-attack
 }
 
+function rbcd-permissions() {
+  colorecho "[EXEGOL] Installing rbcd_permissions (alternative to rbcd-attack)"
+  git -C /opt/tools/ clone https://github.com/NinjaStyle82/rbcd_permissions
+}
+
 function evilwinrm() {
   colorecho "[EXEGOL] Installing evil-winrm"
   gem install evil-winrm
@@ -797,8 +802,8 @@ function pspy() {
 function peass() {
   colorecho "[EXEGOL] Downloading PEAS Suite"
   git -C /opt/resources/ clone https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite
-  cp /opt/resources/windows/winPEAS/winPEASexe/winPEAS/bin/x64/Release/winPEAS.exe /opt/resources/windows/winPEAS/winPEAS_x64.exe
-  cp /opt/resources/windows/winPEAS/winPEASexe/winPEAS/bin/x86/Release/winPEAS.exe /opt/resources/windows/winPEAS/winPEAS_x86.exe
+  cp -v /opt/resources/windows/winPEAS/winPEASexe/winPEAS/bin/x64/Release/winPEAS.exe /opt/resources/windows/winPEAS/winPEAS_x64.exe
+  cp -v /opt/resources/windows/winPEAS/winPEASexe/winPEAS/bin/x86/Release/winPEAS.exe /opt/resources/windows/winPEAS/winPEAS_x86.exe
   mv /opt/resources/privilege-escalation-awesome-scripts-suite/linPEAS /opt/resources/linux
   mv /opt/resources/privilege-escalation-awesome-scripts-suite/winPEAS /opt/resources/windows
   rm -r /opt/resources/privilege-escalation-awesome-scripts-suite
@@ -884,7 +889,7 @@ function webshells() {
 
 function nc() {
   colorecho "[EXEGOL] Downloading nc for Windows"
-  cp /usr/bin/nc.traditional /opt/resources/linux/nc
+  cp -v /usr/bin/nc.traditional /opt/resources/linux/nc
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/nc.exe"
 }
 
@@ -958,6 +963,9 @@ function bloodhound() {
   cd /opt/tools/BloodHound4
   npm install
   npm run linuxbuild
+  mkdir -p ~/.config/bloodhound
+  cp -v /root/sources/bloodhound/config.json ~/.config/bloodhound/config.json
+  cp -v /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
 }
 
 function bloodhound_old_v3() {
@@ -967,9 +975,6 @@ function bloodhound_old_v3() {
   unzip /tmp/BloodHound-linux-x64.zip -d /opt/tools/
   mv /opt/tools/BloodHound-linux-x64 /opt/tools/BloodHound3
   rm /tmp/BloodHound-linux-x64.zip
-  mkdir -p ~/.config/bloodhound
-  cp /root/sources/bloodhound/config.json ~/.config/bloodhound/config.json
-  cp /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
 }
 
 function bloodhound_old_v2() {
@@ -1015,7 +1020,7 @@ function pyrit() {
   cd /opt/tools/Pyrit
   python -m pip install psycopg2-binary scapy
   #https://github.com/JPaulMora/Pyrit/issues/591
-  cp /root/sources/patches/undefined-symbol-aesni-key.patch undefined-symbol-aesni-key.patch
+  cp -v /root/sources/patches/undefined-symbol-aesni-key.patch undefined-symbol-aesni-key.patch
   git apply undefined-symbol-aesni-key.patch
   python setup.py clean
   python setup.py build
@@ -1126,8 +1131,20 @@ function windapsearch-go() {
 function icmptools() {
   colorecho "[EXEGOL] Installing icmptools"
   git -C /opt/tools/ clone https://github.com/krabelize/icmpdoor
-  mkdir /opt/resources/windows/icmptools/ && cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/windows/icmptools/
-  mkdir /opt/resources/linux/icmptools/ && cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
+  mkdir /opt/resources/windows/icmptools/
+  cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/windows/icmptools/
+  mkdir /opt/resources/linux/icmptools/
+  cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
+}
+
+function trilium() {
+  colorecho "[EXEGOL] Installing Trilium"
+  apt -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
+  git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
+  cd /opt/tools/trilium
+  npm install
+  mkdir /root/.local/share/trilium-data
+  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
 
 function install_base() {
@@ -1240,6 +1257,8 @@ function install_tools() {
   holehe
   windapsearch-go
   uberfile
+  rbcd-permissions
+  trilium
 }
 
 function install_tools_gui() {
