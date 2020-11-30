@@ -67,6 +67,7 @@
   | wso-webshell (PHP) | | exegol4thewin |
   | neo4j database | neo4j | exegol4thewin |
   | bettercap ui | bettercap | exegol4thewin |
+  | trilium | trilium | exegol4thewin |
 
 # :pushpin: Pre-requisites
   You need python3, python3-pip, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).

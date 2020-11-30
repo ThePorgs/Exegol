@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-## -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import argparse
-import docker
 import os
-import requests
-import subprocess
 import shutil
-from tabulate import tabulate
-import pandas as pd
+import subprocess
+
 import dateutil
+import docker
+import pandas as pd
+import requests
+from tabulate import tabulate
 
 '''
-TODO LIST
+# TODO :
 - prévoir quand pas d'accès internet pour les pull des images remote, pour les vérif update etc.
-- le reset est-il réellement utile/clair ? Faudrait le remplacer par remove-container ou quoi jsp ??
 - faire correspondre les noms de branche github avec le docker tag
 - faire plus d'affichage de debug
 - dans l'epilog, donner des exemples pour les devs et/ou faire une partie advanced usage dans le wiki, référencer le wiki dans le readme
@@ -24,6 +24,7 @@ TODO LIST
 - revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
 - info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
 '''
+
 
 class Logger:
     def __init__(self, verbosity=0, quiet=False):
@@ -56,7 +57,6 @@ class Logger:
 
 
 def get_options():
-
     description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine."
 
     examples = {
@@ -244,7 +244,8 @@ def container_exists(containertag):
 
 
 def was_created_with_gui(container):
-    logger.debug("Looking for the {} in the container {}".format("'DISPLAY' environment variable", container.attrs["Name"]))
+    logger.debug(
+        "Looking for the {} in the container {}".format("'DISPLAY' environment variable", container.attrs["Name"]))
     container_info = container.attrs
     for var in container_info["Config"]["Env"]:
         if "DISPLAY" in var:
@@ -266,16 +267,20 @@ def was_created_with_device(container):
 
 
 def was_created_with_host_networking(container):
-    logger.debug("Looking for the {} in the container {}".format("'host' value in the 'Networks' attribute", container.attrs["Name"]))
+    logger.debug("Looking for the {} in the container {}".format("'host' value in the 'Networks' attribute",
+                                                                 container.attrs["Name"]))
     return ("host" in container.attrs["NetworkSettings"]["Networks"])
 
 
 def container_analysis(container):
     if was_created_with_device(container):
         if options.device and options.device != was_created_with_device(container):
-            logger.warning("Container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account".format(was_created_with_device()))
+            logger.warning(
+                "Container was created with another shared device ({}), you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account".format(
+                    was_created_with_device(container)))
         else:
-            logger.verbose("Container was created with host device ({}) sharing".format(was_created_with_device(container)))
+            logger.verbose(
+                "Container was created with host device ({}) sharing".format(was_created_with_device(container)))
     elif options.device:
         logger.warning(
             "Container was created with no device sharing, you need to reset it and start it with the -d/--device option, and the name of the device, for it to be taken into account"
@@ -299,7 +304,8 @@ def container_analysis(container):
         logger.verbose("Container was created with display sharing")
     elif options.X11:
         logger.warning(
-            "Container was not created with display sharing, you need to reset it and start it with the -x/--X11 option (or without --no-default) for it to be taken into account"
+            "Container was not created with display sharing, you need to reset it and start it with the -x/--X11 "
+            "option (or without --no-default) for it to be taken into account "
         )
 
 
@@ -319,7 +325,7 @@ def container_creation_options(containertag):
         logger.verbose("Sharing /opt/resources (container) ↔ {} (host)".format(SHARED_RESOURCES))
         if not os.path.isdir(SHARED_RESOURCES):
             logger.debug("Host directory {} doesn\'t exist. Creating it...".format(SHARED_RESOURCES))
-            os.mkdir(SHARED_RESOURCES )
+            os.mkdir(SHARED_RESOURCES)
         advanced_options += ' --mount '
         advanced_options += 'type=volume,'
         advanced_options += 'dst=/opt/resources,'
@@ -353,27 +359,27 @@ def exec_popen(command):
     logger.debug("Running command on host with subprocess.Popen(): {}".format(str(cmd)))
     output = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = output.communicate()
-    if not stdout == None and not stdout == b"":
+    if stdout is not None and not stdout == b"":
         for line in stdout.decode().strip().splitlines():
             logger.debug("{}(cmd stdout){}\t{}".format(BLUE, END, line))
-    if not stderr == None and not stderr == b"":
+    if stderr is not None and not stderr == b"":
         for line in stderr.decode().strip().splitlines():
             logger.error("{}(cmd stderr){}\t{}".format(RED, END, line))
-
-
-def exec_system(command):
-    logger.debug("Running on host with os.system(): {}".format(command))
-    os.system(command)
 
 
 def readable_size(size, precision=1):
     # https://stackoverflow.com/a/32009595
     suffixes = ["B", "KB", "MB", "GB", "TB"]
-    suffixIndex = 0
-    while size > 1024 and suffixIndex < 4:
-        suffixIndex += 1  # increment the index of the suffix
+    suffix_index = 0
+    while size > 1024 and suffix_index < 4:
+        suffix_index += 1  # increment the index of the suffix
         size = size / 1024.0  # apply the division
-    return "%.*f%s" % (precision, size, suffixes[suffixIndex])
+    return "%.*f%s" % (precision, size, suffixes[suffix_index])
+
+
+def exec_system(command):
+    logger.debug("Running on host with os.system(): {}".format(command))
+    os.system(command)
 
 
 def select_containertag(local_git_branch):
@@ -408,10 +414,9 @@ def select_containertag(local_git_branch):
             else:
                 last_used_container_tag = container.attrs["Name"].replace('/exegol-', '')
                 finished_at = this_finished_at
-        logger.debug("Last used container: {}".format(last_used_container_tag))
+        logger.debug("Last created container: {}".format(last_used_container_tag))
     if last_used_container_tag:
         default_containertag = last_used_container_tag
-
 
     # default to container that has the local dir mounted as volume
     logger.debug("Fetching volumes for each container")
@@ -432,13 +437,14 @@ def select_containertag(local_git_branch):
     if cwd_in_vol_container:
         default_containertag = cwd_in_vol_container
 
-    # TODO: ask user for input
     containertags = []
     if not len_containers == 0:
         for container in containers:
             containertags.append(container.attrs["Name"].replace('/exegol-', ''))
 
-    containertag = input("{}[?]{} What container do you want to {} [default: {}]? ".format(BOLD_BLUE, END, options.action, default_containertag))
+    containertag = input(
+        "{}[?]{} What container do you want to {} [default: {}]? ".format(BOLD_BLUE, END, options.action,
+                                                                          default_containertag))
 
     if not containertag or not containertag in containertags:
         options.containertag = default_containertag
@@ -448,7 +454,7 @@ def select_containertag(local_git_branch):
 
 def start():
     global LOOP_PREVENTION
-    len_images = len(client.images.list(IMAGE_NAME))
+    len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
     if not len_images == 0:
         if LOOP_PREVENTION == "":
             logger.success("{} Exegol images exist".format(len_images))
@@ -494,11 +500,13 @@ def start():
             else:
                 logger.warning("Container does not exist")
                 info_local_images()
-                if LOCAL_GIT_BRANCH == "master": # TODO: fix this crap when I'll have branch names that are equal to docker tags
+                if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
                     default_dockertag = "latest"
                 else:
                     default_dockertag = LOCAL_GIT_BRANCH
-                imagetag = input("{}[?]{} What image do you want the container to create to be based upon [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
+                imagetag = input(
+                    "{}[?]{} What image do you want the container to create to be based upon [default: {}]? ".format(
+                        BOLD_BLUE, END, default_dockertag))
                 if not imagetag:
                     imagetag = default_dockertag
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
@@ -508,18 +516,22 @@ def start():
                     else:
                         default_containertag = options.containertag
                     client.containers.list(all=True, filters={"name": "exegol-"})
-                    containertag = input("{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(BOLD_BLUE, END, default_containertag))
+                    containertag = input(
+                        "{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(
+                            BOLD_BLUE, END, default_containertag))
                     if containertag == "":
                         containertag = default_containertag
                     options.containertag = containertag
                     logger.info("Creating the container")
-                    logger.debug("{} container based on the {} image".format("exegol-" + containertag, IMAGE_NAME + ":" + imagetag))
+                    logger.debug("{} container based on the {} image".format("exegol-" + containertag,
+                                                                             IMAGE_NAME + ":" + imagetag))
                     base_options, advanced_options = container_creation_options(options.containertag)
                     exec_popen("docker create {} {} {}:{}".format(base_options, advanced_options, IMAGE_NAME, imagetag))
                     LOOP_PREVENTION = "create"
                     start()
                 else:
-                    logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(IMAGE_NAME + ":" + imagetag))
+                    logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(
+                        IMAGE_NAME + ":" + imagetag))
     else:
         if LOOP_PREVENTION == "install":
             logger.debug("Loop prevention triggered")
@@ -574,16 +586,18 @@ def rmcontainer():
         try:
             shutil.rmtree(SHARED_RESOURCES)
         except PermissionError:
-            logger.warning("I don't have the rights to remove {} (do it yourself)".format(SHARED_RESOURCES))
+            logger.warning("I don't have the rights to remove {}".format(SHARED_RESOURCES))
         except:
             logger.error("Something else went wrong")
     if os.path.isdir(SHARED_DATA_VOLUMES + "/" + options.containertag):
         if len(os.listdir(SHARED_DATA_VOLUMES + "/" + options.containertag)) == 0:
-            logger.verbose("Host directory {} exists and is empty. Removing...".format(SHARED_DATA_VOLUMES + "/" + options.containertag))
+            logger.verbose("Host directory {} exists and is empty. Removing...".format(
+                SHARED_DATA_VOLUMES + "/" + options.containertag))
             try:
                 shutil.rmtree(SHARED_DATA_VOLUMES + "/" + options.containertag)
             except PermissionError:
-                logger.warning("I don't have the rights to remove {} (do it yourself)".format(SHARED_DATA_VOLUMES + "/" + options.containertag))
+                logger.warning("I don't have the rights to remove {} (do it yourself)".format(
+                    SHARED_DATA_VOLUMES + "/" + options.containertag))
             except:
                 logger.error("Something else went wrong")
 
@@ -592,17 +606,22 @@ def install():
     info_local_images()
     if options.mode == "release":
         info_remote_images()
-        if LOCAL_GIT_BRANCH == "master": # TODO: fix this crap when I'll have branch names that are equal to docker tags
+        if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
             default_dockertag = "latest"
         else:
             default_dockertag = LOCAL_GIT_BRANCH
-        dockertag = input("{}[?]{} What remote image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END, default_dockertag))
+        dockertag = input(
+            "{}[?]{} What remote image (tag) do you want to install/update [default: {}]? ".format(BOLD_BLUE, END,
+                                                                                                   default_dockertag))
         if dockertag == "":
             dockertag = default_dockertag
         logger.debug("Fetching DockerHub images tags")
         remote_image_tags = []
         remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-        for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+        for image in \
+                eval(
+                    remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
+                    "results"]:
             remote_image_tags.append(image["name"])
         if dockertag not in remote_image_tags:
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
@@ -617,7 +636,9 @@ def install():
         for branch in branches:
             logger.info(" •  {}".format(branch["name"]))
         default_branch = LOCAL_GIT_BRANCH
-        branch = input("{}[?]{} What branch do you want the code to be based upon [default: master]? ".format(BOLD_BLUE, END, default_branch))
+        branch = input(
+            "{}[?]{} What branch do you want the code to be based upon [default: master]? ".format(BOLD_BLUE, END,
+                                                                                                   default_branch))
         if branch == "":
             branch = "master"
         branch_in_branches = False
@@ -634,7 +655,9 @@ def install():
                 default_imagetag = "latest"
             else:
                 default_imagetag = branch
-            imagetag = input("{}[?]{} What tag do you want to give to your Exegol image [default: {}]? ".format(BOLD_BLUE, END, default_imagetag))
+            imagetag = input(
+                "{}[?]{} What tag do you want to give to your Exegol image [default: {}]? ".format(BOLD_BLUE, END,
+                                                                                                   default_imagetag))
             logger.info("Building Exegol image {} from sources".format(IMAGE_NAME + ":" + imagetag))
             exec_system(
                 "docker build --no-cache --tag {}:{} {} | tee {}/.build.log".format(
@@ -643,14 +666,15 @@ def install():
             )
 
 
-def rmimage(): # TODO: this needs to be improved to have the possibility to remove images, containers, volumes, networks and so on related to Exegol
-    len_images = len(client.images.list(IMAGE_NAME))
+def rmimage():  # TODO: this needs to be improved to have the possibility to remove images, containers, volumes, networks and so on related to Exegol
+    len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
     logger.info("Available local images: {}".format(len_images))
     if not len_images == 0:
         info_local_images()
         imagetag = input("{}[?]{} What image do you want to remove (give tag)? ".format(BOLD_BLUE, END))
         if not client.images.list(IMAGE_NAME + ":" + imagetag):
-            logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(IMAGE_NAME + ":" + imagetag))
+            logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(
+                IMAGE_NAME + ":" + imagetag))
         else:
             logger.warning(
                 "About to remove docker Image {}".format(IMAGE_NAME + ":" + imagetag)
@@ -678,7 +702,9 @@ def info_remote_images():
     images.append(["IMAGE TAG", "SIZE"])
     logger.debug("Fetching DockerHub images info")
     remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-    for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+    for image in \
+            eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
+                "results"]:
         tag = image["name"]
         size = readable_size(image["full_size"])
         images.append([tag, size])
@@ -691,25 +717,83 @@ def info_remote_images():
 
 
 def info_local_images():
-    len_images = len(client.images.list(IMAGE_NAME))
+    if options.verbosity == 0:
+        len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
+        logger.info("Available local images: {}".format(len_images))
+        images = []
+        images.append(["IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
+        logger.debug("Fetching remote image digests")
+        remote_images = {}
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+        for image in \
+                eval(
+                    remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
+                    "results"]:
+            tag = image["name"]
+            digest = image["images"][0]["digest"]
+            logger.debug("└── {} → {}...".format(tag, digest[:32]))
+            remote_images[tag] = digest
+        logger.debug("Fetching local image digests (and other attributes)")
+        for image in client.images.list(IMAGE_NAME, filters={"dangling": False}):
+            if not image.attrs["RepoTags"]:
+                # TODO: investigate this, print those images as "layers"
+                # these are layers for other images
+                logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
+                logger.debug(
+                    "This image won't be listed until I know what those images are and what I should do with them")
+            else:
+                name, tag = image.attrs["RepoTags"][0].split(':')
+                if image.attrs["RepoDigests"]:
+                    mode = "release"
+                    local_image_hash = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
+                    logger.debug("└── {} → {}...".format(tag, local_image_hash[:32]))
+                    if local_image_hash == remote_images[tag]:
+                        uptodate = BOLD_GREEN + "yes" + END
+                    else:
+                        uptodate = BOLD_ORANGE + "no" + END
+                else:
+                    mode = "sources"
+                    uptodate = ""
+                size = readable_size(image.attrs["Size"])
+                images.append([tag, size, mode, uptodate])
+
+        df = pd.DataFrame(images[1:], columns=images[0])
+        print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
+        print()
+        if len_images == 0:
+            logger.warning("Exegol image does not exist, you should install it")
+    elif options.verbosity >= 1:
+        info_local_images_verbose()
+
+
+def info_local_images_verbose():
+    len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
     logger.info("Available local images: {}".format(len_images))
     images = []
-    images.append(["IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
+    images.append(["ID", "IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
     logger.debug("Fetching remote image digests")
     remote_images = {}
     remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-    for image in eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))["results"]:
+    for image in \
+            eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
+                "results"]:
         tag = image["name"]
         digest = image["images"][0]["digest"]
         logger.debug("└── {} → {}...".format(tag, digest[:32]))
         remote_images[tag] = digest
     logger.debug("Fetching local image digests (and other attributes)")
-    for image in client.images.list(IMAGE_NAME):
+    for image in client.images.list(IMAGE_NAME, filters={"dangling": False}):
+        id = image.attrs["Id"].replace("sha256:", "")[:12]
         if not image.attrs["RepoTags"]:
-            # TODO: investigate this
-            # manual remove : docker rmi $(docker images -f "dangling=true" -q)
+            # TODO: investigate this, print those images as "layers"
+            # these are layers for other images
             logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
             logger.debug("This image won't be listed until I know what those images are and what I should do with them")
+            tag = "<none>"
+            size = readable_size(image.attrs["Size"])
+            mode = "layer"
+            uptodate = ""
+            images.append([id, tag, size, mode, uptodate])
         else:
             name, tag = image.attrs["RepoTags"][0].split(':')
             if image.attrs["RepoDigests"]:
@@ -724,7 +808,7 @@ def info_local_images():
                 mode = "sources"
                 uptodate = ""
             size = readable_size(image.attrs["Size"])
-            images.append([tag, size, mode, uptodate])
+            images.append([id, tag, size, mode, uptodate])
 
     df = pd.DataFrame(images[1:], columns=images[0])
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
@@ -738,7 +822,9 @@ def info_containers():
         len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
         logger.info("Available local containers: {}".format(len_containers))
         containers = []
-        containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING", "PRIVILEGED"])
+        containers.append(
+            ["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING",
+             "PRIVILEGED"])
         for container in client.containers.list(all=True, filters={"name": "exegol-"}):
             tag = container.attrs["Name"].replace('/exegol-', '')
             state = container.attrs["State"]["Status"]
@@ -758,12 +844,13 @@ def info_containers():
         info_containers_verbose()
 
 
-def info_containers_verbose(): # TODO: in this mode, display ID of images and containers
+def info_containers_verbose():  # TODO: in this mode, display ID of images and containers
     len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
     logger.info("Available local containers: {}".format(len_containers))
     containers = []
-    containers.append(["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "ADV. PARAMETERS", "BINDS & MOUNTS"])
+    containers.append(["ID", "CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "ADV. PARAMETERS", "BINDS & MOUNTS"])
     for container in client.containers.list(all=True, filters={"name": "exegol-"}):
+        id = container.attrs["Id"][:12]
         tag = container.attrs["Name"].replace('/exegol-', '')
         state = container.attrs["State"]["Status"]
         if state == "running":
@@ -785,7 +872,8 @@ def info_containers_verbose(): # TODO: in this mode, display ID of images and co
                 volumes += " → "
                 volumes += mount["Target"]
                 volumes += "\n"
-        containers.append([tag, state, image, adv_params, volumes])
+        containers.append([id, tag, state, image, adv_params, volumes])
+        containers.append(["\x00", "", "", "", "", ""])
 
     df = pd.DataFrame(containers[1:], columns=containers[0])
     print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
@@ -822,9 +910,14 @@ if __name__ == "__main__":
     logger = Logger(options.verbosity, options.quiet)
 
     # get working git branch
-    LOCAL_GIT_BRANCH = subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
+    LOCAL_GIT_BRANCH = \
+        subprocess.Popen(f"git -C {EXEGOL_PATH} symbolic-ref --short -q HEAD".split(), stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE).communicate()[0].decode("utf-8").strip()
     if not LOCAL_GIT_BRANCH:
+        logger.debug("No local git branch or error when fetching it, defaulting to 'master'")
         LOCAL_GIT_BRANCH = "master"
+    else:
+        logger.debug("Local git branch: {}".format(LOCAL_GIT_BRANCH))
 
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
 
