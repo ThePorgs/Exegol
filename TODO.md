@@ -29,6 +29,10 @@
   - versioning git/dockerhub
   - add an option to mount an encrypted volume
   - update CONTRIBUTING.md
+  - limits to actual packaging method
+    - 2 install functions can't call the same tool installation twice. It will probably cause errors
+    - install functions don't take into account the history or the aliases
+    - resources and GUI-based tools don't have package installation for now
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

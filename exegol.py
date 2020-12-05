@@ -689,7 +689,6 @@ def rmimage():  # TODO: this needs to be improved to have the possibility to rem
             )
             if confirmation == "y" or confirmation == "yes" or confirmation == "Y":
                 logger.info("Deletion confirmed, proceeding")
-                rmcontainer()
                 logger.info("Deleting image {}".format(IMAGE_NAME + ":" + imagetag))
                 exec_system("docker image rm {}".format(IMAGE_NAME + ":" + imagetag))
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
