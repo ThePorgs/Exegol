@@ -27,7 +27,8 @@
   - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
   - add ssh special commands to history (socks proxy, local/remote port forwarding)
   - versioning git/dockerhub
-  - add an option to mount an encrypted volume 
+  - add an option to mount an encrypted volume
+  - update CONTRIBUTING.md
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

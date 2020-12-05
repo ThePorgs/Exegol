@@ -18,7 +18,6 @@ export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH
 source /opt/.zsh_aliases
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh
 
 # Color correction for zsh-syntax-highlighting
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#626262'

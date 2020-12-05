@@ -200,6 +200,7 @@ nmap -sS -n --open -p 88 192.168.56.0/24
 windapsearch --dc 192.168.56.101 --module metadata
 windapsearch --dc 192.168.56.101 --module users
 nmap --script broadcast-dhcp-discover
+SimplyEmail -all -e cybersyndicates.com 
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username -m 0 -a 0 hashes.txt `fzf-wordlists`
 rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
