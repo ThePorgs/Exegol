@@ -227,7 +227,7 @@ function OneForAll() {
 function EyeWitness() {
   colorecho "[EXEGOL] Installing EyeWitness"
   git -C /opt/tools/ clone https://github.com/FortyNorthSecurity/EyeWitness
-  cd /opt/tools/EyeWitness/setup
+  cd /opt/tools/EyeWitness/Python/setup
   ./setup.sh
 }
 
@@ -1130,12 +1130,12 @@ function windapsearch-go() {
   chmod +x /opt/tools/bin/windapsearch
 }
 
-function icmptools() {
+function icmpdoor() {
   colorecho "[EXEGOL] Installing icmptools"
   git -C /opt/tools/ clone https://github.com/krabelize/icmpdoor
-  mkdir /opt/resources/windows/icmptools/
+  mkdir -p /opt/resources/windows/icmptools/
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/windows/icmptools/
-  mkdir /opt/resources/linux/icmptools/
+  mkdir -p /opt/resources/linux/icmptools/
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
 }
 
@@ -1152,6 +1152,21 @@ function trilium() {
 function ntlmv1-multi() {
   colorecho "[EXEGOL] Installing ntlmv1 multi tool"
   git -C /opt/tools clone https://github.com/evilmog/ntlmv1-multi
+}
+
+function droopescan() {
+  colorecho "[EXEGOL] Installing droopescan"
+  git -C /opt/tools clone https://github.com/droope/droopescan.git
+  cd /opt/tools/droopescan
+  python3 -m pip install -r requirements.txt
+  python3 setup.py install
+}
+
+function simplyemail() {
+  colorecho "[EXEGOL] Installing SimplyEmail"
+  git -C /opt/tools/ clone https://github.com/SimplySecurity/SimplyEmail.git
+  cd /opt/tools/SimplyEmail/
+  bash setup/setup.sh
 }
 
 function install_base() {
@@ -1265,6 +1280,7 @@ function install_tools() {
   windapsearch-go
   uberfile
   rbcd-permissions
+  icmpdoor
   trilium
   ntlmv1-multi
 }
