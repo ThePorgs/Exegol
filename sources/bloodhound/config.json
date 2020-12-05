@@ -4,7 +4,8 @@
 		"lowGraphics": false,
 		"nodeLabels": 1,
 		"edgeLabels": 1,
-		"darkMode": true
+		"darkMode": true,
+		"debug": true
 	},
 	"edgeincluded": {
 		"MemberOf": true,

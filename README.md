@@ -1,7 +1,7 @@
 # Exegol
 
   <p align="center">
-    <img width="1200" src="https://i.imgur.com/auHlh70.png">
+    <img width="1200" src="https://repository-images.githubusercontent.com/246120835/336bee80-2986-11eb-9bb1-6ddf03e4e882">
     <br></br>
     <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
     <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
@@ -12,7 +12,7 @@
     <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
     <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29">
     <br></br>
-    <a target="_blank" href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
+    <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
     <br><br>
   </p>
 
@@ -27,6 +27,8 @@
   - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
   - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
 
+  ![Example](assets/example-main.gif)
+
 # :fast_forward: Quick start
   Bear in mind that the install process can be long as it downloads a ~6GB image.
   ```
@@ -37,17 +39,26 @@
 
 # :inbox_tray: Install
   The install process takes time. Install it before needing it.
-  0. Install per-requisites: python3, python3-pip, git, docker 
-  1. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
-  2. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
-  3. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
-  4. Install : `exegol install`
+  1. Install pre-requisites: python3, python3-pip, git, docker
+  2. Clone this repo: `git clone https://github.com/ShutdownRepo/Exegol`
+  3. (optional) change branch : `git checkout <branch>`
+  4. Install the python requirements to use the wrapper: `python3 -m pip install -r requirements.txt`
+  5. (optional) Set the following alias in you zshrc/bashrc/whateverrc: `alias exegol='python3 /PATH/TO/Exegol/exegol.py'`
+  6. Install : `exegol install`
 
 # :mag_right: Usage
+  A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
+
   1. Start : `exegol start`
   2. Stop : `exegol stop`
   3. Reset the container state : `exegol reset`
   4. Get help on advanced usage : `exegol --help`
+
+  ![Example](assets/example-info.gif)
+
+  By default, Exegol will start with display sharing allowing GUI-based programs to run, here is an example with BloodHound.
+
+  ![Example](assets/example-display-sharing.gif)
 
 # :closed_lock_with_key: Credentials
   Some tools are pre-configured with the following credentials
@@ -56,6 +67,7 @@
   | wso-webshell (PHP) | | exegol4thewin |
   | neo4j database | neo4j | exegol4thewin |
   | bettercap ui | bettercap | exegol4thewin |
+  | trilium | trilium | exegol4thewin |
 
 # :pushpin: Pre-requisites
   You need python3, python3-pip, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
@@ -65,6 +77,7 @@
   - CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
   - Impacket (https://github.com/SecureAuthCorp/impacket)
   - BloodHound (https://github.com/BloodHoundAD/BloodHound)
+  - Ghidra (https://ghidra-sre.org/)
   - Powershell Empire (https://github.com/BC-SECURITY/Empire)
   - ffuf (https://github.com/ffuf/ffuf)
   - shellerator (https://github.com/ShutdownRepo/shellerator)
@@ -92,5 +105,5 @@
 
 # :movie_camera: Introducing Exegol (in french w/ english subs)
   <p align="center">
-    <a target="_blank" href="ttp://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
+    <a href="http://www.youtube.com/watch?v=TA3vrNpWGvg" title="Video"><img src="http://img.youtube.com/vi/TA3vrNpWGvg/0.jpg">
   </p>
