@@ -24,6 +24,8 @@ function apt_packages() {
   colorecho "[EXEGOL] Installing APT packages"
   # this is easier to debug when there are dependencies issues and such. I install package by package to quickly locate errors.
   fapt aircrack-ng
+  fapt pciutils
+  fapt kmod
   fapt crunch
   fapt curl
   fapt dirb
@@ -1147,6 +1149,11 @@ function trilium() {
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
 
+function ntlmv1-multi() {
+  colorecho "[EXEGOL] Installing ntlmv1 multi tool"
+  git -C /opt/tools clone https://github.com/evilmog/ntlmv1-multi
+}
+
 function install_base() {
   update || exit
   apt_packages || exit
@@ -1259,6 +1266,7 @@ function install_tools() {
   uberfile
   rbcd-permissions
   trilium
+  ntlmv1-multi
 }
 
 function install_tools_gui() {
