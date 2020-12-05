@@ -14,7 +14,6 @@
   - install https://github.com/ambionics/symfony-exploits
   - install https://github.com/ambionics/phpggc
   - clean /tmp folder where lots of pip files are are not removed. What are they doing here ?
-  - install Trilium for local note taking
   - Add pygpoabuse and sharpgpoabuse
   - add Ghunt
   - when creating containers, create them with a name like "exegol-tag__name__" for instance. So that users can create and start another instance of exegol for temporary usage (like when wanting --privileged for example). Edit a few things in the info() function so that the wrapper looks for all instances like "exegol-tag__something__"
@@ -28,7 +27,7 @@
   - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
   - add ssh special commands to history (socks proxy, local/remote port forwarding)
   - versioning git/dockerhub
-  
+  - add an option to mount an encrypted volume 
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

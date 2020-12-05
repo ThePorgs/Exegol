@@ -1,6 +1,8 @@
 # Personal shared volume
 shared-data-volumes/
 shared-resources/
+
+# PyCharm workspace
 .idea/
 
 # TODO: needs to be removed once the multi-containers/images update is fully functionnal

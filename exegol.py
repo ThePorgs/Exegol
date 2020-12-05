@@ -23,6 +23,7 @@ from tabulate import tabulate
 - remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest" (rename de master et latest vers main ?)
 - revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
 - info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
+- info container : rajouter la taille locale
 '''
 
 
@@ -446,7 +447,7 @@ def select_containertag(local_git_branch):
         "{}[?]{} What container do you want to {} [default: {}]? ".format(BOLD_BLUE, END, options.action,
                                                                           default_containertag))
 
-    if not containertag or not containertag in containertags:
+    if not containertag:
         options.containertag = default_containertag
     else:
         options.containertag = containertag
