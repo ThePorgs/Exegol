@@ -16,7 +16,7 @@ function update() {
 }
 
 function fapt() {
-  colorecho "Installing APT package: $@"
+  colorecho "Installing apt-get package: $@"
   apt-get install -y --no-install-recommends "$@" || exit
 }
 
@@ -63,7 +63,7 @@ function locales() {
 
 function tmux() {
   colorecho "Installing tmux"
-  apt -y install tmux
+  apt-get -y install tmux
   cp -v /root/sources/tmux/tmux.conf ~/.tmux.conf
   touch ~/.hushlogin
 }
@@ -95,6 +95,50 @@ function ReconDog() {
   colorecho "Installing ReconDog"
   git -C /opt/tools/ clone https://github.com/s0md3v/ReconDog
   python3 -m pip install -r /opt/tools/ReconDog/requirements.txt
+}
+
+function githubemail() {
+  colorecho "Installing github-email"
+  npm install --global github-email
+}
+
+function onionsearch() {
+  colorecho "Installing onionsearch"
+  git -C /opt/tools/ clone https://github.com/megadose/onionsearch
+  cd /opt/tools/onionsearch
+  python3 setup.py install
+  rm -rf /opt/tools/onionsearch
+
+}
+
+function photon() {
+  colorecho "Installing photon"
+  git -C /opt/tools/ clone https://github.com/s0md3v/photon
+  python3 -m pip install -r /opt/tools/photon/requirements.txt
+}
+
+
+function WikiLeaker() {
+  colorecho "Installing WikiLeaker"
+  git -C /opt/tools/ clone https://github.com/jocephus/WikiLeaker.git
+  python3 -m pip install -r /opt/tools/WikiLeaker/requirements.txt
+}
+
+
+function OSRFramework() {
+  colorecho "Installing OSRFramework"
+  python3 -m pip install osrframework
+}
+
+function sn0int() {
+  colorecho "Installing sn0int"
+  apt-get install debian- -y
+  gpg -a --export --keyring /usr/share/keyrings/debian-maintainers.gpg git@rxv.cc | apt-key add -
+  apt-key adv --keyserver keyserver.ubuntu.com --refresh-keys git@rxv.cc
+  echo deb http://apt.vulns.sexy stable main > /etc/apt/sources.list.d/apt-vulns-sexy.list
+  apt-get update -y
+  apt-get install sn0int -y
+  apt-get install --fix-broken -y
 }
 
 function CloudFail() {
@@ -311,22 +355,17 @@ function dementor() {
   wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
 }
 
-function subjack() {
-  colorecho "Installing subjack"
-  go get -u -v github.com/haccer/subjack
-}
-
 function assetfinder() {
   colorecho "Installing assetfinder"
   go get -u -v github.com/tomnomnom/assetfinder
 }
 
-function subfinder() {
+function install_subfinder() {
   colorecho "Installing subfinder"
-  go get -u -v github.com/projectdiscovery/subfinder/cmd/subfinder
+  go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
 }
 
-function gobuster() {
+function install_gobuster() {
   colorecho "Installing gobuster"
   go get -u -v github.com/OJ/gobuster
 }
@@ -336,35 +375,19 @@ function amass() {
   go get -v -u github.com/OWASP/Amass/v3/...
 }
 
-function ffuf() {
+function install_ffuf() {
   colorecho "Installing ffuf"
   go get -v -u github.com/ffuf/ffuf
 }
 
-function gitrob() {
-  colorecho "Installing gitrob"
-  go get -v -u github.com/michenriksen/gitrob
-}
-
-function shhgit() {
-  colorecho "Installing shhgit"
-  go get -v -u github.com/eth0izzle/shhgit
-}
-
-function waybackurls() {
+function install_waybackurls() {
   colorecho "Installing waybackurls"
   go get -v -u github.com/tomnomnom/waybackurls
 }
 
-function subover() {
-  colorecho "Installing SubOver"
-  go get -v -u github.com/Ice3man543/SubOver
-}
-
-function subzy() {
-  colorecho "Installing subzy"
-  go get -u -v github.com/lukasikic/subzy
-  go install -v github.com/lukasikic/subzy
+function install_gitrob(){
+  colorecho "Installing gitrob"
+  go get -v -u github.com/michenriksen/gitrob
 }
 
 function gron() {
@@ -405,14 +428,14 @@ function pykek() {
   git -C /opt/tools/ clone https://github.com/preempt/pykek
 }
 
-function autorecon() {
+function install_autorecon() {
   colorecho "Installing autorecon"
   git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
   cd /opt/tools/AutoRecon/
   python3 -m pip install -r requirements.txt
 }
 
-function simplyemail() {
+function install_simplyemail() {
   colorecho "Installing SimplyEmail"
   git -C /opt/tools/ clone https://github.com/SimplySecurity/SimplyEmail.git
   cd /opt/tools/SimplyEmail/
@@ -490,7 +513,7 @@ function kadimus() {
   make
 }
 
-function testssl() {
+function install_testssl() {
   colorecho "Installing testssl"
   apt-get -y install testssl.sh bsdmainutils
 }
@@ -528,7 +551,7 @@ function hakrawler() {
   go get -u -v github.com/hakluke/hakrawler
 }
 
-function jwt_tool() {
+function install_jwt_tool() {
   colorecho "Installing JWT tool"
   git -C /opt/tools/ clone https://github.com/ticarpi/jwt_tool
   python3 -m pip install pycryptodomex
@@ -609,7 +632,7 @@ function gopherus() {
   ./install.sh
 }
 
-function ysoserial() {
+function install_ysoserial() {
   colorecho "Installing ysoserial"
   mkdir /opt/tools/ysoserial/
   wget -O /opt/tools/ysoserial/ysoserial.jar "https://jitpack.io/com/github/frohoff/ysoserial/master-SNAPSHOT/ysoserial-master-SNAPSHOT.jar"
@@ -626,7 +649,7 @@ function ysoserial_net() {
   rm /opt/resources/windows/ysoserial.net/ysoserial.zip
 }
 
-function john() {
+function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
@@ -948,6 +971,33 @@ function infoga() {
   python setup.py install
 }
 
+function buster() {
+  colorecho "Installing buster"
+  git -C /opt/tools/ clone https://github.com/sham00n/buster.git
+  cd /opt/tools/buster
+  python3 setup.py install
+}
+
+function pwnedornot() {
+  colorecho "Installing pwnedornot"
+  git -C /opt/tools/ clone https://github.com/thewhiteh4t/pwnedOrNot
+}
+function ghunt() {
+  colorecho "Installing ghunt"
+  apt-get update 
+  apt-get install -y curl unzip gnupg 
+  curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - 
+  echo "deb [arch=amd64]  http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
+  apt-get update
+  apt-get install -y google-chrome-stable
+  rm -rf /var/lib/apt/lists/*
+  git -C /opt/tools/ clone https://github.com/mxrch/GHunt
+  cd /opt/tools/GHunt
+  python3 -m pip install -r requirements.txt
+  python3 download_chromedriver.py
+}
+
+
 function oaburl_py() {
   colorecho "Downloading oaburl.py"
   mkdir /opt/tools/OABUrl
@@ -1001,16 +1051,72 @@ function napper() {
   git -C "/opt/resources/encrypted disks/" clone https://github.com/kkamagui/napper-for-tpm
 }
 
-function sherlock() {
-  colorecho "Installing sherlock"
-  git -C /opt/tools/ clone https://github.com/sherlock-project/sherlock
-  cd /opt/tools/sherlock
+function linkedin2username() {
+  colorecho "Installing linkedin2username"
+  git -C /opt/tools/ clone https://github.com/initstring/linkedin2username
+  cd /opt/tools/linkedin2username
   python3 -m python -m pip install -r requirements.txt
 }
+
+function toutatis() {
+  colorecho "Installing toutatis"
+  git -C /opt/tools/ clone https://github.com/megadose/toutatis
+  cd /opt/tools/toutatis
+  python3 setup.py install
+}
+
+function carbon14() {
+  colorecho "Installing Carbon14"
+  git -C /opt/tools/ clone https://github.com/Lazza/Carbon14
+  cd /opt/tools/Carbon14
+  python3 -m pip install -r requirements.txt
+}
+
+function youtubedl() {
+  colorecho "Installing youtube-dl"
+  python3 -m pip install youtube-dl
+}
+
+function ipinfo() {
+  colorecho "Installing ipinfo"
+  apt-get -y install npm
+  sudo npm install ipinfo-cli --global
+}
+
+function constellation() {
+  colorecho "Installing constellation"
+  cd /opt/tools/
+  wget https://github.com/constellation-app/constellation/releases/download/v2.1.0-rc1/constellation-linux-v2.1.0-rc1.tar.gz
+  tar xvf constellation-linux-v2.1.0-rc1.tar.gz
+  rm constellation-linux-v2.1.0-rc1.tar.gz
+}
+
 
 function holehe() {
   colorecho "Installing holehe"
   python3 -m pip install holehe
+}
+
+function twint() {
+  colorecho "Installing twint"
+  python3 -m pip install twint
+}
+
+function tiktokscraper() {
+  colorecho "Installing tiktok-scraper"
+  npm i -g tiktok-scraper
+}
+
+function h8mail() {
+  colorecho "Installing h8mail"
+  python3 -m pip install h8mail
+}
+
+
+function phoneinfoga() {
+  colorecho "Installing phoneinfoga"
+  curl -sSL https://raw.githubusercontent.com/sundowndev/PhoneInfoga/master/support/scripts/install | bash
+  sudo mv ./phoneinfoga /opt/tools/bin
 }
 
 function windapsearch-go() {
@@ -1030,7 +1136,7 @@ function icmpdoor() {
 
 function trilium() {
   colorecho "Installing Trilium"
-  apt -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
+  apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
   npm install
@@ -1043,19 +1149,12 @@ function ntlmv1-multi() {
   git -C /opt/tools clone https://github.com/evilmog/ntlmv1-multi
 }
 
-function droopescan() {
+function install_droopescan() {
   colorecho "Installing droopescan"
   git -C /opt/tools clone https://github.com/droope/droopescan.git
   cd /opt/tools/droopescan
   python3 -m pip install -r requirements.txt
   python3 setup.py install
-}
-
-function simplyemail() {
-  colorecho "Installing SimplyEmail"
-  git -C /opt/tools/ clone https://github.com/SimplySecurity/SimplyEmail.git
-  cd /opt/tools/SimplyEmail/
-  bash setup/setup.sh
 }
 
 function maigret_pip() {
@@ -1085,13 +1184,14 @@ function install_base() {
   fapt python3                    # Python 3 language
   fapt python-dev                 # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
+  fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
   fapt python3-pip                # Pip
   filesystem
   locales
+  tmux                            # Tmux
   fapt zsh                        # Awesome shell
   ohmyzsh                         # Awesome shell
-  tmux                            # Tmux
   dependencies
   grc
   fapt golang                     # Golang language
@@ -1135,32 +1235,32 @@ function install_most_used_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt metasploit-framework       # Offensive framework
   fapt nmap                       # Port scanner
-  john                            # Password cracker
+  install_john                    # Password cracker
   fapt seclists                   # Awesome wordlists
-  subfinder                       # Subdomain bruteforcer
-  autorecon                       # External recon tool
-  gitrob                          # Senstive files reconnaissance in github
-  waybackurls                     # Website history
-  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners 
-  simplyemail                     # Gather emails
-  gobuster                        # Web fuzzer (pretty good for several extensions)
-  ffuf                            # Web fuzzer (little favorites)
+  install_subfinder               # Subdomain bruteforcer
+  install_autorecon               # External recon tool
+  install_gitrob                  # Senstive files reconnaissance in github
+  install_waybackurls             # Website history
+  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners
+  install_simplyemail             # Gather emails
+  install_gobuster                # Web fuzzer (pretty good for several extensions)
+  install_ffuf                    # Web fuzzer (little favorites)
   fapt wfuzz                      # Web fuzzer (second favorites)
   fapt nikto                      # Web scanner
   fapt sqlmap                     # SQL injection scanner
   fapt hydra                      # Login scanner
   fapt joomscan                   # Joomla scanner
   fapt wpscan                     # Wordpress scanner
-  droopescan                      # Drupal scanner
-  testssl                         # SSL/TLS scanner
+  install_droopescan              # Drupal scanner
+  install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
   CloudFail                       # Cloudflare misconfiguration detector
   EyeWitness                      # Website screenshoter
   wafw00f                         # Waf detector
-  jwt_tool                        # Toolkit for validating, forging, scanning and tampering JWTs
-  gittools                        # Dump a git repository from a website
-  ysoserial                       # Deserialization payloads
+  install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
+  install_gittools                # Dump a git repository from a website
+  install_ysoserial               # Deserialization payloads
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
   CrackMapExec_pip                # Network scanner
   Impacket                        # Network protocols scripts
@@ -1192,43 +1292,81 @@ function install_wordlists_tools() {
 # Package dedicated to offline cracking/bruteforcing tools
 function install_cracking_tools() {
   fapt hashcat                    # Password cracker
-  john                            # Password cracker
+  install_john                    # Password cracker
   fapt fcrackzip                  # Zip cracker
   fapt bruteforce-luks            # Find the password of a LUKS encrypted volume
 }
 
 # Package dedicated to osint, recon and passive tools
 function install_osint_tools() {
-  Sublist3r                       # Subdomain bruteforcer
-  subjack                         # Subdomain bruteforcer
-  assetfinder                     # Subdomain bruteforcer
-  subfinder                       # Subdomain bruteforcer
-  subover                         # Subdomain bruteforcer
-  subzy                           # Subdomain bruteforcer
-  findomain                       # Subdomain bruteforcer
-  fapt dnsenum                    # Subdomain bruteforcer
-  fapt dnsrecon                   # Subdomain bruteforcer
+  #Picture And Videos
+  youtubedl                       # Command-line program to download videos from YouTube.com and other video sites
+  apt-get update
+  fapt exiftool                   # For read exif information
+  fapt exifprobe                  # Probe and report structure and metadata content of camera image files
+  #Subdomain
+  Sublist3r                       # Fast subdomains enumeration tool
+  assetfinder                     # Find domains and subdomains potentially related to a given domain
+  install_subfinder               # Subfinder is a subdomain discovery tool that discovers valid subdomains for websites
+  fapt amass                      # OWASP Amass tool suite is used to build a network map of the target
+  findomain                       # Findomain Monitoring Service use OWASP Amass, Sublist3r, Assetfinder and Subfinder
+  #DNS
+  fapt dnsenum                    # DNSEnum is a command-line tool that automatically identifies basic DNS records
+  fapt dnsrecon                   # DNS Enumeration Script
+  #Email
+  holehe                          # Check if the mail is used on different sites
+  install_simplyemail             # Gather emails
+  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners
+  h8mail                          # Email OSINT & Password breach hunting tool
+  infoga                          # Gathering email accounts informations
+  buster                          # An advanced tool for email reconnaissance
+  pwnedornot                      # OSINT Tool for Finding Passwords of Compromised Email Addresses
+  ghunt                           # Investigate Google Accounts with emails
+  #Phone
+  phoneinfoga                     # Advanced information gathering & OSINT framework for phone numbers
+  #Social Network
+  maigret_pip                     # Search pseudos and information about users on many platforms
+  linkedin2username               # Generate username lists for companies on LinkedIn
+  toutatis                        # Toutatis is a tool that allows you to extract information from instagrams accounts
+  tiktokscraper                   # TikTok Scraper. Download video posts, collect user/trend/hashtag/music feed metadata, sign URL and etc
+  #Website
+  install_waybackurls             # Website history
+  carbon14                        # OSINT tool for estimating when a web page was written
+  WikiLeaker                      # A WikiLeaks scraper
+  photon                          # Incredibly fast crawler designed for OSINT.
+  CloudFail                       # Utilize misconfigured DNS and old database records to find hidden IP's behind the CloudFlare network
+  #Ip
+  ipinfo                          # Get information about an IP address using command line with ipinfo.io
+  #Data visualization
+  constellation                   # A graph-focused data visualisation and interactive analysis application.
+  #Framework
+  apt-get update
+  fapt maltego                    # Maltego is a software used for open-source intelligence and forensics
+  fapt spiderfoot                 # SpiderFoot automates OSINT collection
+  fapt finalrecon                 # A fast and simple python script for web reconnaissance
   fapt recon-ng                   # External recon tool
+  sn0int                          # Semi-automatic OSINT framework and package manager
+  OSRFramework                    # OSRFramework, the Open Sources Research Framework
+  #Dark
+  apt-get update
+  fapt tor                        # Tor proxy
+  fapt torbrowser-launcher        # Tor browser
+  onionsearch                     # OnionSearch is a script that scrapes urls on different .onion search engines.
+  #Github
+  githubemail                     # Retrieve a GitHub user's email even if it's not public
+  #Other
+  apt-get update
   fapt whois                      # See information about a specific domain name or IP address
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
-  gitrob                          # Senstive files reconnaissance in github
-  shhgit                          # Senstive files reconnaissance in github
-  waybackurls                     # Website history
   gron                            # JSON parser
-  infoga                          # Gathering email accounts informations
-  sherlock                        # Hunt down social media accounts by username across social networks
-  holehe                          # Check if the mail is used on different sites
-  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners 
-  simplyemail                     # Gather emails
-  maigret_pip                     # Search pseudos and information about users on many platforms
 }
 
 # Package dedicated to applicative and active web pentest tools
 function install_web_tools() {
-  gobuster                        # Web fuzzer (pretty good for several extensions)
+  install_gobuster                # Web fuzzer (pretty good for several extensions)
   amass                           # Web fuzzer
-  ffuf                            # Web fuzzer (little favorites)
+  install_ffuf                    # Web fuzzer (little favorites)
   fapt dirb                       # Web fuzzer
   fapt dirbuster                  # Web fuzzer
   fapt wfuzz                      # Web fuzzer (second favorites)
@@ -1248,8 +1386,8 @@ function install_web_tools() {
   fapt patator                    # Login scanner
   fapt joomscan                   # Joomla scanner
   fapt wpscan                     # Wordpress scanner
-  droopescan                      # Drupal scanner
-  testssl                         # SSL/TLS scanner
+  install_droopescan              # Drupal scanner
+  install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
   CloudFail                       # Cloudflare misconfiguration detector
@@ -1261,13 +1399,13 @@ function install_web_tools() {
   LinkFinder                      # Discovers endpoint JS files
   timing_attack                   # Cryptocraphic timing attack
   updog                           # New HTTPServer
-  jwt_tool                        # Toolkit for validating, forging, scanning and tampering JWTs
+  install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   jwt_cracker                     # JWT cracker and bruteforcer
   wuzz                            # Burp cli
   git-dumper                      # Dump a git repository from a website
-  gittools                        # Dump a git repository from a website
+  install_gittools                # Dump a git repository from a website
   fapt padbuster
-  ysoserial                       # Deserialization payloads
+  install_ysoserial               # Deserialization payloads
   fapt whatweb                    # Recognises web technologies including content management
 }
 
@@ -1362,7 +1500,7 @@ function install_network_tools() {
   fapt hping3                     # Discovery tool
   fapt masscan                    # Port scanner
   fapt nmap                       # Port scanner
-  autorecon                       # External recon tool
+  install_autorecon               # External recon tool
   # Sn1per                        # Vulnerability scanner
   fapt iproute2                   # Firewall rules
   fapt tcpdump                    # Capture TCP traffic

