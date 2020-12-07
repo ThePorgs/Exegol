@@ -26,6 +26,7 @@ from tabulate import tabulate
 - info container : rajouter la taille locale
 - tester un exegol -m sources install et de nommer l'image sur un nom existant, voir le comportement
 - l640 corriger default_git_branch
+- exegol info -v : lister les devices partagés
 '''
 
 
