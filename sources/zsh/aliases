@@ -101,3 +101,4 @@ alias osintgram='cd /opt/tools/Osintgram/ && echo "[*] changed dir : cd /opt/too
 alias pwnedornot.py='python3 /opt/tools/pwnedOrNot/pwnedornot.py'
 alias ghunt='cd /opt/tools/GHunt/ && echo "[*] changed dir : cd /opt/tools/GHunt/" && python3 hunt.py '
 alias configghunt='cd /opt/tools/GHunt/ && echo "[*] changed dir : cd /opt/tools/GHunt/" && python3 check_and_gen.py'
+alias full-revshell='/opt/tools/full-reverse-shell/reverseshell_full.sh'
