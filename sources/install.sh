@@ -505,6 +505,13 @@ function uberfile() {
   python3 -m pip install -r requirements.txt
 }
 
+function full-revshell() {
+  colorecho "Installing full-revshell"
+  git -C /opt/tools/ clone https://github.com/nodauf/full-reverse-shell
+  cd /opt/tools/full-reverse-shell
+  sed -i 's/shellerator/python3 \/opt\/tools\/shellerator\/shellerator.py/g' reverseshell_full.sh
+}
+
 function kadimus() {
   colorecho "Installing kadimus"
   apt-get -y install libcurl4-openssl-dev libpcre3-dev libssh-dev
