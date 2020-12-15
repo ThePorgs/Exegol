@@ -420,10 +420,26 @@
             }]
         },
         {
-            "name": "(Warning: edits the DB) Mark Top Ten Computers with Most Admins",
+            "name": "(Warning: edits the DB) Mark Top Ten Computers with Most Admins as HVT",
             "queryList": [{
                 "final": true,
                 "query": "MATCH (n:User),(m:Computer), (n)-[r:AdminTo]->(m) WHERE NOT n.name STARTS WITH 'ANONYMOUS LOGON' AND NOT n.name='' WITH m, count(r) as rel_count order by rel_count desc LIMIT 10 MATCH p=(m)<-[r:AdminTo]-(n) SET m.highvalue = true RETURN m",
+                "allowCollapse": true
+            }]
+        },
+                {
+            "name": "Top 20 nodes with most first degree object controls",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(u)-[r1]->(n) WHERE r1.isacl = true WITH u, count(r1) AS count_ctrl ORDER BY count_ctrl DESC LIMIT 20 RETURN u",
+                "allowCollapse": true
+            }]
+        },
+                {
+            "name": "Top ten nodes with most group delegated object controls",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p=(u)-[r1:MemberOf*1..]->(g:Group)-[r2]->(n) WHERE r2.isacl=true WITH u, count(r2) AS count_ctrl ORDER BY count_ctrl DESC LIMIT 20 RETURN u",
                 "allowCollapse": true
             }]
         },

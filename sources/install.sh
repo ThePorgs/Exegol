@@ -495,14 +495,14 @@ function shellerator() {
   colorecho "Installing shellerator"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/shellerator
   cd /opt/tools/shellerator
-  python3 -m pip install -r requirements.txt
+  python3 setup.py install
 }
 
 function uberfile() {
   colorecho "Installing uberfile"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/uberfile
   cd /opt/tools/uberfile/
-  python3 -m pip install -r requirements.txt
+  python3 setup.py install
 }
 
 function kadimus() {
@@ -1168,6 +1168,13 @@ function amber() {
   go get -u -v github.com/EgeBalci/amber
 }
 
+function hashonymize() {
+  colorecho "Installing hashonymizer"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/hashonymize
+  cd /opt/tools/hashonymize
+  python3 setup.py install
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1229,6 +1236,7 @@ function install_base() {
   fapt netcat-traditional         # Socket manager
   fapt socat                      # Socket manager
   #gf_install                      # wrapper around grep
+  fapt rdate
 }
 
 # Package dedicated to most used offensive tools
@@ -1473,6 +1481,7 @@ function install_ad_tools() {
   fapt rpcbind                    # RPC scanning
   fapt gpp-decrypt                # Decrypt a given GPP encrypted string
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
+  hashonymize
 }
 
 # Package dedicated to mobile apps pentest tools
