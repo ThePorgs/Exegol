@@ -34,6 +34,8 @@
     - resources and GUI-based tools don't have package installation for now
   - identify problem apt update
   - classify GUI tools
+  - add dumpert dll and exe in windows resources
+  - add snaffler
 
 
 # Split install
