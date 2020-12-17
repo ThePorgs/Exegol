@@ -43,6 +43,18 @@ function filesystem() {
   mkdir -p "/opt/resources/encrypted disks/"
 }
 
+function hostapd(){
+  colorecho "Installing hostapd-wpe, think to edit hostapd-wpe.conf"
+  git clone https://github.com/OpenSecurityResearch/hostapd-wpe
+  apt-get install -y libssl-dev libnl-dev
+  wget http://hostap.epitest.fi/releases/hostapd-2.6.tar.gz
+  tar -zxf hostapd-2.6.tar.gz
+  cd hostapd-2.6
+  patch -p1 < ../hostapd-wpe/hostapd-wpe.patch
+  make
+
+}
+
 function ohmyzsh() {
   colorecho "Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
