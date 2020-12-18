@@ -64,11 +64,12 @@ def get_options():
     description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine."
 
     examples = {
-        "install (↓ ~6GB):": "exegol install",
+        "install (↓ ~8GB max):": "exegol install",
         "get a shell:\t": "exegol start",
         "get a tmux shell:": "exegol -s tmux start",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
+        "use an ACR122u:": "exegol --device /dev/bus/usb/ start",
         "check image updates:": "exegol info",
     }
 
