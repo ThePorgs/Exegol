@@ -1175,6 +1175,60 @@ function hashonymize() {
   python3 setup.py install
 }
 
+function install_pcsc() {
+  colorecho "Installing tools for PC/SC (smartcard)"
+  apt-get install -y pcsc-tools pcscd libpcsclite-dev libpcsclite1
+}
+
+function install_libnfc() {
+  colorecho "Installing libnfc"
+  apt-get install -y libnfc-dev libnfc-bin
+  cd /opt/tools/
+  wget http://dl.bintray.com/nfc-tools/sources/libnfc-1.7.1.tar.bz2
+  tar xjf libnfc-1.7.1.tar.bz2
+  cd libnfc-1.7.1
+  ./configure --with-drivers=all
+  make
+  make install
+  ldconfig
+  cd ../
+  rm libnfc-1.7.1.tar.bz2
+}
+
+function install_mfoc() {
+  colorecho "Installing mfoc"
+  git -C /opt/tools/ clone https://github.com/nfc-tools/mfoc
+  cd /opt/tools/mfoc
+  autoreconf -vis
+  ./configure
+  make
+  make install
+}
+
+function install_mfcuk() {
+  colorecho "Installing mfcuk"
+  apt-get install -y mfcuk
+}
+
+function install_libnfc-crypto1-crack() {
+  colorecho "Installing libnfc_crypto1_crack"
+  git -C /opt/tools/ clone https://github.com/aczid/crypto1_bs
+  cd /opt/tools/crypto1_bs
+  wget https://github.com/droidnewbie2/acr122uNFC/raw/master/crapto1-v3.3.tar.xz
+  wget https://github.com/droidnewbie2/acr122uNFC/raw/master/craptev1-v1.1.tar.xz
+  xz -d craptev1-v1.1.tar.xz crapto1-v3.3.tar.xz
+  tar xvf craptev1-v1.1.tar
+  tar xvf crapto1-v3.3.tar --one-top-level
+  make CFLAGS=-"-std=gnu99 -O3 -march=native -Wl,--allow-multiple-definition"
+  cp libnfc_crypto1_crack /opt/tools/bin
+}
+
+function install_mfdread() {
+  colorecho "Installing mfdread"
+  pip3 install bitstring
+  git -C /opt/tools/ clone https://github.com/zhovner/mfdread
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1490,10 +1544,19 @@ function install_mobile_tools() {
   # TODO
 }
 
-# Package dedicated to RFID pentest tools
+# Package dedicated to RFID/NCF pentest tools
 function install_rfid_tools() {
+  fapt git
+  fapt libusb-dev
+  fapt autoconf
+  fapt nfct
+  install_pcsc
+  install_libnfc                  # NFC library
+  install_mfoc                    # Tool for nested attack on Mifare Classic
+  install_mfcuk                   # Tool for Darkside attack on Mifare Classic
+  install_libnfc-crypto1-crack    # tool for hardnested attack on Mifare Classic
+  install_mfdread                 # Tool to pretty print Mifare 1k/4k dumps
   proxmark3                       # Proxmark3 scripts
-  # TODO
 }
 
 function install_sdr_tools() {

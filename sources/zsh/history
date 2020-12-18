@@ -237,3 +237,11 @@ cloudfail.py --target seo.com --tor
 assetfinder google.com
 subfinder -d freelancer.com
 theHarvester -d github.com -b all
+nfc-scan-device -v
+nfc-list
+mfoc -O original.dmp
+mfoc -O magic-gen1.dmp
+mfdread original.dmp
+nfc-mfclassic W A B original.dmp magic-gen1.dmp
+libnfc_crypto1_crack a0a1a2a3a4a5 0 A 4 B
+mfoc -O original.dmp -k keys.txt
