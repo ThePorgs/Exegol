@@ -16,7 +16,6 @@
   - clean /tmp folder where lots of pip files are are not removed. What are they doing here ?
   - Add pygpoabuse and sharpgpoabuse
   - when creating containers, create them with a name like "exegol-tag__name__" for instance. So that users can create and start another instance of exegol for temporary usage (like when wanting --privileged for example). Edit a few things in the info() function so that the wrapper looks for all instances like "exegol-tag__something__"
-  - dockerize jackit/mousejacker
   - add chisel https://github.com/jpillora/chisel
   - improve proxychains conf
   - fix ysoserial_net install

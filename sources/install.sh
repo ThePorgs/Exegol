@@ -675,7 +675,7 @@ function zerologon() {
   mv /opt/tools/CVE-2020-1472 /opt/tools/zerologon-exploit
 }
 
-function proxmark3() {
+function install_proxmark3() {
   colorecho "Installing proxmark3 client"
   colorecho "Compiling proxmark client for generic usage with PLATFORM=PM3OTHER (read https://github.com/RfidResearchGroup/proxmark3/blob/master/doc/md/Use_of_Proxmark/4_Advanced-compilation-parameters.md#platform)"
   colorecho "It can be compiled again for RDV4.0 with 'make clean && make all && make install' from /opt/tools/proxmak3/"
@@ -1229,6 +1229,25 @@ function install_mfdread() {
   git -C /opt/tools/ clone https://github.com/zhovner/mfdread
 }
 
+function install_mousejack() {
+  colorecho "Installing mousejack"
+  apt-get -y install sdcc binutils python git
+  python-pip
+  git -C /opt/tools/ clone https://github.com/BastilleResearch/mousejack
+  cd /opt/tools/mousejack
+  git submodule init
+  git submodule update
+  cd nrf-research-firmware
+  make
+}
+
+function install_jackit() {
+  colorecho "Installing jackit"
+  git -C /opt/tools/ clone https://github.com/insecurityofthings/jackit
+  cd /opt/tools/jackit
+  pip install -e .
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1290,7 +1309,9 @@ function install_base() {
   fapt netcat-traditional         # Socket manager
   fapt socat                      # Socket manager
   #gf_install                      # wrapper around grep
-  fapt rdate
+  fapt rdate                      # tool for querying the current time from a network server
+  fapt putty                      # GUI-based SSH, Telnet and Rlogin client
+  fapt screen                     # CLI-based PuTT-like
 }
 
 # Package dedicated to most used offensive tools
@@ -1556,12 +1577,13 @@ function install_rfid_tools() {
   install_mfcuk                   # Tool for Darkside attack on Mifare Classic
   install_libnfc-crypto1-crack    # tool for hardnested attack on Mifare Classic
   install_mfdread                 # Tool to pretty print Mifare 1k/4k dumps
-  proxmark3                       # Proxmark3 scripts
+  install_proxmark3               # Proxmark3 scripts
 }
 
 function install_sdr_tools() {
-  continue
-  # TODO
+  install_mousejack               # tools for mousejacking
+  install_jackit                  # tools for mousejacking
+  # TODO : hackrf, ubertooth, ...
 }
 
 # Package dedicated to network pentest tools

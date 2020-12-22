@@ -65,12 +65,13 @@ def get_options():
 
     examples = {
         "install (↓ ~8GB max):": "exegol install",
+        "check image updates:": "exegol info",
         "get a shell:\t": "exegol start",
-        "get a tmux shell:": "exegol -s tmux start",
+        "get a tmux shell:": "exegol --shell tmux start",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
         "use an ACR122u:": "exegol --device /dev/bus/usb/ start",
-        "check image updates:": "exegol info",
+        "use a Crazyradio PA:": "exegol --device /dev/bus/usb/ start",
     }
 
     epilog = "{}Examples:{}\n".format(GREEN, END)
