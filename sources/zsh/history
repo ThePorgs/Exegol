@@ -245,3 +245,5 @@ mfdread original.dmp
 nfc-mfclassic W A B original.dmp magic-gen1.dmp
 libnfc_crypto1_crack a0a1a2a3a4a5 0 A 4 B
 mfoc -O original.dmp -k keys.txt
+nrf24-scanner.py -l -v
+jackit --reset --debug
