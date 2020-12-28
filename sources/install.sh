@@ -1248,6 +1248,12 @@ function install_jackit() {
   pip install -e .
 }
 
+function install_gosecretsdump() {
+  colorecho "Installing gosecretsdump"
+  git -C /opt/tools/ clone https://github.com/c-sto/gosecretsdump
+  go get -u -v github.com/C-Sto/gosecretsdump
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1556,7 +1562,8 @@ function install_ad_tools() {
   fapt rpcbind                    # RPC scanning
   fapt gpp-decrypt                # Decrypt a given GPP encrypted string
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
-  hashonymize
+  hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
+  install_gosecretsdump           # secretsdump in Go for heavy files 
 }
 
 # Package dedicated to mobile apps pentest tools

