@@ -903,7 +903,7 @@ function bettercap_install() {
   colorecho "Installing Bettercap"
   apt-get -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
   go get -u -v github.com/bettercap/bettercap
-  bettercap -eval "caplets.update; ui.update; q"
+  /root/go/bin/bettercap -eval "caplets.update; ui.update; q"
   sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
   sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/http-ui.cap
   sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/https-ui.cap
