@@ -411,9 +411,14 @@ function findomain() {
   chmod +x /opt/tools/bin/findomain
 }
 
-function proxychains() {
+function install_proxychains() {
   colorecho "Installing proxychains"
-  fapt proxychains
+  git -C /opt/tools/ clone https://github.com/rofl0r/proxychains-ng
+  cd /opt/tools/proxychains-ng/
+  ./configure --prefix=/usr --sysconfdir=/etc
+  make
+  make install
+  make install-config
   cp -v /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
 }
 
@@ -1595,7 +1600,7 @@ function install_sdr_tools() {
 
 # Package dedicated to network pentest tools
 function install_network_tools() {
-  proxychains                     # Network tool
+  install_proxychains                     # Network tool
   DEBIAN_FRONTEND=noninteractive fapt wireshark # Wireshark packet sniffer
   DEBIAN_FRONTEND=noninteractive fapt tshark    # Tshark packet sniffer
   # wireshark_sources             # Install Wireshark from sources
