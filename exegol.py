@@ -70,6 +70,7 @@ def get_options():
         "get a tmux shell:": "exegol --shell tmux start",
         "use wifi/bluetooth:": "exegol --privileged start",
         "use a proxmark:": "exegol --device /dev/ttyACM0 start",
+        "use a LOGITacker:": "exegol --device /dev/ttyACM0 start",
         "use an ACR122u:": "exegol --device /dev/bus/usb/ start",
         "use a Crazyradio PA:": "exegol --device /dev/bus/usb/ start",
     }
