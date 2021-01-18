@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
 
-import dateutil
 import docker
-import pandas as pd
 import requests
-from tabulate import tabulate
+from dateutil import parser
+from rich.table import Table
+from rich import box
+from rich.console import Console
 
 '''
 # TODO :
@@ -26,7 +28,8 @@ from tabulate import tabulate
 - info container : rajouter la taille locale
 - tester un exegol -m sources install et de nommer l'image sur un nom existant, voir le comportement
 - l640 corriger default_git_branch
-- exegol info -v : lister les devices partagés
+- edit --device option so that it can be called multiple times to share multiple devices, need to adapt the info_containers
+- remove the eval() calls
 '''
 
 
@@ -37,27 +40,27 @@ class Logger:
 
     def debug(self, message):
         if self.verbosity == 2:
-            print("{}[DEBUG]{} {}".format(YELLOW, END, message))
+            console.print("{}[DEBUG]{} {}".format("[yellow3]", "[/yellow3]", message), highlight=False)
 
     def verbose(self, message):
         if self.verbosity >= 1:
-            print("{}[VERBOSE]{} {}".format(BLUE, END, message))
+            console.print("{}[VERBOSE]{} {}".format("[blue]", "[/blue]", message), highlight=False)
 
     def info(self, message):
         if not self.quiet:
-            print("{}[*]{} {}".format(BOLD_BLUE, END, message))
+            console.print("{}[*]{} {}".format("[bold blue]", "[/bold blue]", message), highlight=False)
 
     def success(self, message):
         if not self.quiet:
-            print("{}[+]{} {}".format(BOLD_GREEN, END, message))
+            console.print("{}[+]{} {}".format("[bold green]", "[/bold green]", message), highlight=False)
 
     def warning(self, message):
         if not self.quiet:
-            print("{}[-]{} {}".format(BOLD_ORANGE, END, message))
+            console.print("{}[-]{} {}".format("[bold orange3]", "[/bold orange3]", message), highlight=False)
 
     def error(self, message):
         if not self.quiet:
-            print("{}[!]{} {}".format(BOLD_RED, END, message))
+            console.print("{}[!]{} {}".format("[bold red]", "[/bold red]", message), highlight=False)
 
 
 def get_options():
@@ -82,11 +85,10 @@ def get_options():
     actions = {
         "start": "automatically start, resume, create or enter an Exegol container",
         "stop": "stop an Exegol container in a saved state",
-        "rm-container": "remove a container",
         "install": "install Exegol image (build or pull depending on the chosen install --mode)",
         "update": "update Exegol image (build or pull depending on the chosen update --mode)",
         "info": "print info on containers and local & remote images (name, size, state, ...)",
-        "rm-image": "remove Exegol image",
+        "remove": "remove Exegol image(s) and/or container(s)",
     }
 
     actions_help = ""
@@ -111,7 +113,7 @@ def get_options():
     )
 
     # Required arguments
-    parser._positionals.title = "{}Required arguments{}".format(BOLD_GREEN, END)
+    parser._positionals.title = "{}Required arguments{}".format("\033[1;32m", END)
     parser.add_argument("action", choices=actions.keys(), help=actions_help)
 
     # Optional arguments
@@ -415,7 +417,7 @@ def select_containertag(local_git_branch):
         finished_at = ""
         for container in containers:
             logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(container.attrs["State"]["FinishedAt"]))
-            this_finished_at = dateutil.parser.parse(container.attrs["State"]["FinishedAt"])
+            this_finished_at = parser.parse(container.attrs["State"]["FinishedAt"])
             if finished_at:
                 if this_finished_at >= finished_at:
                     finished_at = this_finished_at
@@ -508,7 +510,7 @@ def start():
                 logger.error("Something went wrong...")
             else:
                 logger.warning("Container does not exist")
-                info_local_images()
+                info_images()
                 if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
                     default_dockertag = "latest"
                 else:
@@ -575,7 +577,7 @@ def stop():
         logger.success("Container is down")
 
 
-def rmcontainer():
+def remove_container():
     if not options.containertag:
         select_containertag(LOCAL_GIT_BRANCH)
     if container_exists(options.containertag):
@@ -612,9 +614,8 @@ def rmcontainer():
 
 
 def install():
-    info_local_images()
+    info_images()
     if options.mode == "release":
-        info_remote_images()
         if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
             default_dockertag = "latest"
         else:
@@ -675,11 +676,11 @@ def install():
             )
 
 
-def rmimage():  # TODO: this needs to be improved to have the possibility to remove images, containers, volumes, networks and so on related to Exegol
+def remove_image():
     len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
     logger.info("Available local images: {}".format(len_images))
     if not len_images == 0:
-        info_local_images()
+        info_images()
         imagetag = input("{}[?]{} What image do you want to remove (give tag)? ".format(BOLD_BLUE, END))
         if not client.images.list(IMAGE_NAME + ":" + imagetag):
             logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(
@@ -705,170 +706,117 @@ def rmimage():  # TODO: this needs to be improved to have the possibility to rem
         logger.info("No Exegol image here, ya messin with me?")
 
 
-def info_remote_images():
+def remove():
+    # TODO: this needs to be improved to have the possibility to remove files, networks and so on related to Exegol,
+    #  and improve for simultaneous multiple removals
+    to_remove = input("{}[?]{} Do you want to remove container(s) or image(s) [C/i]? ".format(BOLD_BLUE, END))
+    if to_remove.lower() == "c" or not to_remove:
+        remove_container()
+    elif to_remove.lower() == "i":
+        remove_image()
+    else:
+        logger.warning("Invalid choice")
+
+
+def info_images():
     images = []
-    images.append(["IMAGE TAG", "SIZE"])
-    logger.debug("Fetching DockerHub images info")
-    remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-    for image in \
-            eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
-                "results"]:
-        tag = image["name"]
-        size = readable_size(image["full_size"])
-        images.append([tag, size])
-
-    len_images = len(images) - 1
-    logger.info("Available remote images: {}".format(len_images))
-    df = pd.DataFrame(images[1:], columns=images[0])
-    print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
-    print()
-
-
-def info_local_images():
-    if options.verbosity == 0:
-        len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
-        logger.info("Available local images: {}".format(len_images))
-        images = []
-        images.append(["IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
-        logger.debug("Fetching remote image digests")
-        remote_images = {}
-        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-        for image in \
-                eval(
-                    remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
-                    "results"]:
-            tag = image["name"]
-            digest = image["images"][0]["digest"]
-            logger.debug("└── {} → {}...".format(tag, digest[:32]))
-            remote_images[tag] = digest
-        logger.debug("Fetching local image digests (and other attributes)")
-        for image in client.images.list(IMAGE_NAME, filters={"dangling": False}):
-            if not image.attrs["RepoTags"]:
-                # TODO: investigate this, print those images as "layers"
-                # these are layers for other images
-                logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
-                logger.debug(
-                    "This image won't be listed until I know what those images are and what I should do with them")
-            else:
-                name, tag = image.attrs["RepoTags"][0].split(':')
-                if image.attrs["RepoDigests"]:
-                    mode = "release"
-                    local_image_hash = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
-                    logger.debug("└── {} → {}...".format(tag, local_image_hash[:32]))
-                    if local_image_hash == remote_images[tag]:
-                        uptodate = BOLD_GREEN + "yes" + END
-                    else:
-                        uptodate = BOLD_ORANGE + "no" + END
-                else:
-                    mode = "sources"
-                    uptodate = ""
-                size = readable_size(image.attrs["Size"])
-                images.append([tag, size, mode, uptodate])
-
-        df = pd.DataFrame(images[1:], columns=images[0])
-        print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
-        print()
-        if len_images == 0:
-            logger.warning("Exegol image does not exist, you should install it")
-    elif options.verbosity >= 1:
-        info_local_images_verbose()
-
-
-def info_local_images_verbose():
-    len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
-    logger.info("Available local images: {}".format(len_images))
-    images = []
-    images.append(["ID", "IMAGE TAG", "SIZE", "TYPE", "UP TO DATE"])
-    logger.debug("Fetching remote image digests")
+    logger.info("Available images")
     remote_images = {}
+    logger.debug("Fetching remote image tags, digests and sizes")
     remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-    for image in \
-            eval(remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
-                "results"]:
+    remote_images_list = json.loads(remote_images_request.text)
+    for image in remote_images_list["results"]:
         tag = image["name"]
         digest = image["images"][0]["digest"]
+        compressed_size = readable_size(image["full_size"])
         logger.debug("└── {} → {}...".format(tag, digest[:32]))
-        remote_images[tag] = digest
-    logger.debug("Fetching local image digests (and other attributes)")
-    for image in client.images.list(IMAGE_NAME, filters={"dangling": False}):
-        id = image.attrs["Id"].replace("sha256:", "")[:12]
+        remote_images[digest] = {"tag": tag, "compressed_size": compressed_size}
+    uninstalled_remote_images = remote_images
+    logger.debug("Fetching local image tags, digests (and other attributes)")
+    local_images_list = client.images.list(IMAGE_NAME, filters={"dangling": False})
+    for image in local_images_list:
+        id = image.attrs["Id"].split(":")[1][:12]
         if not image.attrs["RepoTags"]:
             # TODO: investigate this, print those images as "layers"
-            # these are layers for other images
+            #  these are layers for other images
             logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
             logger.debug("This image won't be listed until I know what those images are and what I should do with them")
-            tag = "<none>"
-            size = readable_size(image.attrs["Size"])
-            mode = "layer"
-            uptodate = ""
-            images.append([id, tag, size, mode, uptodate])
+            real_size = readable_size(image.attrs["Size"])
+            digest = image.attrs["Id"].replace("sha256:", "")
+            images.append([id, "<none>", real_size, "local layer"])
         else:
             name, tag = image.attrs["RepoTags"][0].split(':')
-            if image.attrs["RepoDigests"]:
-                mode = "release"
-                local_image_hash = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
-                logger.debug("└── {} → {}...".format(tag, local_image_hash[:32]))
-                if local_image_hash == remote_images[tag]:
-                    uptodate = BOLD_GREEN + "yes" + END
-                else:
-                    uptodate = BOLD_ORANGE + "no" + END
-            else:
-                mode = "sources"
-                uptodate = ""
-            size = readable_size(image.attrs["Size"])
-            images.append([id, tag, size, mode, uptodate])
+            real_size = readable_size(image.attrs["Size"])
 
-    df = pd.DataFrame(images[1:], columns=images[0])
-    print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
+            if image.attrs["RepoDigests"]:
+                digest = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
+
+                logger.debug("└── {} → {}...".format(tag, digest[:32]))
+                if digest in remote_images.keys():
+                    images.append([id, tag, real_size, "remote ({}, {})".format("[green]up to date[/green]",
+                                                                                remote_images[digest][
+                                                                                    "compressed_size"])])
+                    uninstalled_remote_images.pop(digest)
+                else:
+                    for key in remote_images:
+                        if remote_images[key]["tag"] == tag:
+                            remote_digest = key
+                    compressed_size = remote_images[remote_digest]["compressed_size"]
+                    images.append([id, tag, real_size,
+                                   "remote ({}, {})".format("[orange3]deprecated[/orange3]", compressed_size)])
+                    uninstalled_remote_images.pop(remote_digest)
+            else:
+                images.append([id, tag, real_size, "local image"])
+    for uninstalled_remote_image in uninstalled_remote_images.items():
+        tag = uninstalled_remote_image[1]["tag"]
+        compressed_size = uninstalled_remote_image[1]["compressed_size"]
+        id = uninstalled_remote_image[0].split(":")[1][:12]
+        images.append([id, tag, "[bright_black]N/A[/bright_black]",
+                       "remote ({}, {})".format("[yellow3]uninstalled[/yellow3]", compressed_size)])
+
+    images = sorted(images, key=lambda k: k[1])
+    if options.verbosity == 0:
+        table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
+        table.add_column("Image tag")
+        table.add_column("Real size")
+        table.add_column("Type")
+        for image in images:
+            if image[1] != "<none>":
+                table.add_row(image[1], image[2], image[3])
+    elif options.verbosity >= 1:
+        table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
+        table.add_column("Id")
+        table.add_column("Image tag")
+        table.add_column("Real size")
+        table.add_column("Type")
+        for image in images:
+            table.add_row(image[0], image[1], image[2], image[3])
+    console.print(table)
     print()
-    if len_images == 0:
-        logger.warning("Exegol image does not exist, you should install it")
 
 
 def info_containers():
-    if options.verbosity == 0:
-        len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
-        logger.info("Available local containers: {}".format(len_containers))
-        containers = []
-        containers.append(
-            ["CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "HOST NETWORKING", "DISPLAY SHARING", "DEVICE SHARING",
-             "PRIVILEGED"])
-        for container in client.containers.list(all=True, filters={"name": "exegol-"}):
-            tag = container.attrs["Name"].replace('/exegol-', '')
-            state = container.attrs["State"]["Status"]
-            if state == "running":
-                state = BOLD_GREEN + state + END
-            image = container.attrs["Config"]["Image"]
-            display_sharing = "✓" if was_created_with_gui(container) else ""
-            device_sharing = "✓" if was_created_with_device(container) else ""
-            privileged = "✓" if was_created_with_privileged(container) else ""
-            host_networking = "✓" if was_created_with_host_networking(container) else ""
-            containers.append([tag, state, image, host_networking, display_sharing, device_sharing, privileged])
-
-        df = pd.DataFrame(containers[1:], columns=containers[0])
-        print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
-        print()
-    elif options.verbosity >= 1:
-        info_containers_verbose()
-
-
-def info_containers_verbose():  # TODO: in this mode, display ID of images and containers
     len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
     logger.info("Available local containers: {}".format(len_containers))
     containers = []
-    containers.append(["ID", "CONTAINER TAG", "STATE", "IMAGE (repo:image tag)", "ADV. PARAMETERS", "BINDS & MOUNTS"])
     for container in client.containers.list(all=True, filters={"name": "exegol-"}):
         id = container.attrs["Id"][:12]
         tag = container.attrs["Name"].replace('/exegol-', '')
         state = container.attrs["State"]["Status"]
         if state == "running":
-            state = BOLD_GREEN + state + END
+            state = "[green]" + state + "[/green]"
         image = container.attrs["Config"]["Image"]
-        adv_params = ""
-        adv_params += "Display sharing\n" if was_created_with_gui(container) else ""
-        adv_params += "Device sharing\n" if was_created_with_device(container) else ""
-        adv_params += "Privileged\n" if was_created_with_privileged(container) else ""
-        adv_params += "Host networking\n" if was_created_with_host_networking(container) else ""
+        logger.debug("Fetching details on containers creation")
+        details = []
+        if was_created_with_gui(container):
+            details.append("--X11")
+        if was_created_with_host_networking(container):
+            details.append("--host-network")
+        if was_created_with_device(container):
+            details.append("--device {}".format(was_created_with_device(container)))
+        if was_created_with_privileged(container):
+            details.append("[orange3]--privileged[/orange3]")
+        details = " ".join(details)
         logger.debug("Fetching volumes for each container")
         volumes = ""
         if container.attrs["HostConfig"]["Binds"]:
@@ -880,17 +828,32 @@ def info_containers_verbose():  # TODO: in this mode, display ID of images and c
                 volumes += " ↔ "
                 volumes += mount["Target"]
                 volumes += "\n"
-        containers.append([id, tag, state, image, adv_params, volumes])
-        containers.append(["\x00", "", "", "", "", ""])
+        containers.append([id, tag, state, image, details, volumes])
 
-    df = pd.DataFrame(containers[1:], columns=containers[0])
-    print(tabulate(df, headers='keys', tablefmt='psql', showindex="never"))
+    if options.verbosity == 0:
+        table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
+        table.add_column("Container tag")
+        table.add_column("State")
+        table.add_column("Image (repo/image:tag)")
+        table.add_column("Creation details")
+        for container in containers:
+            table.add_row(container[1], container[2], container[3], container[4])
+    elif options.verbosity >= 1:
+        table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
+        table.add_column("Id")
+        table.add_column("Container tag")
+        table.add_column("State")
+        table.add_column("Image (repo/image:tag)")
+        table.add_column("Creation details")
+        table.add_column("Binds & mounts")
+        for container in containers:
+            table.add_row(container[0], container[1], container[2], container[3], container[4], container[5])
+    console.print(table)
     print()
 
 
 def info():
-    info_remote_images()
-    info_local_images()
+    info_images()
     info_containers()
 
 
@@ -905,8 +868,6 @@ if __name__ == "__main__":
     GREEN = "\033[0;32m"
     YELLOW = "\033[0;33m"
     RED = "\033[0;31m"
-    OK = BOLD_GREEN + "OK" + END
-    KO = BOLD_ORANGE + "KO" + END
 
     IMAGE_NAME = "nwodtuhs/exegol"
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -916,6 +877,7 @@ if __name__ == "__main__":
     client = docker.from_env()
     options = get_options()
     logger = Logger(options.verbosity, options.quiet)
+    console = Console()
 
     # get working git branch
     LOCAL_GIT_BRANCH = \
@@ -930,5 +892,4 @@ if __name__ == "__main__":
     EXEGOL_PATH = os.path.dirname(os.path.realpath(__file__))
 
     LOOP_PREVENTION = ""
-
     globals()[options.action]()
