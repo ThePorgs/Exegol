@@ -520,7 +520,8 @@ function kadimus() {
 
 function install_testssl() {
   colorecho "Installing testssl"
-  apt-get -y install testssl.sh bsdmainutils
+  apt-get -y install bsdmainutils
+  git -C /opt/tools/ clone --depth 1 https://github.com/drwetter/testssl.sh.git
 }
 
 function bat() {
