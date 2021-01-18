@@ -102,6 +102,7 @@ smbmap -H 192.168.10.10 -R test
 smbclient --list 192.168.10.10
 smbclient --no-pass --user '' //192.168.10.10/SYSVOL
 smbclient --no-pass --user '' --list 192.168.10.10
+smbclient.py BREAKING.BAD/user:astrongpassword@192.168.56.201
 nmap --script smb-enum-shares -p 139,445 -T4 -Pn 192.168.10.10
 amap -d 192.168.10.10 4455
 nikto -host 192.168.10.10
