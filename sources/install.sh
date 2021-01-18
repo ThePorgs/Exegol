@@ -1262,6 +1262,16 @@ function install_gosecretsdump() {
   go get -u -v github.com/C-Sto/gosecretsdump
 }
 
+function install_hackrf() {
+  colorecho "Installing HackRF tools"
+  apt-get -y install hackrf
+}
+
+function install_gqrx() {
+  colorecho "Installing gqrx"
+  apt-get -y install gqrx-sdr
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1598,7 +1608,9 @@ function install_rfid_tools() {
 function install_sdr_tools() {
   install_mousejack               # tools for mousejacking
   install_jackit                  # tools for mousejacking
-  # TODO : hackrf, ubertooth, ...
+  install_hackrf                  # tools for hackrf
+  install_gqrx                    # spectrum analyzer for SDR
+  # TODO : ubertooth, ...
 }
 
 # Package dedicated to network pentest tools
