@@ -307,6 +307,8 @@ function mitm6_pip() {
   colorecho "Installing mitm6 with pip"
   python3 -m pip install service_identity
   python3 -m pip install mitm6
+  cd /usr/lib/x86_64-linux-gnu/
+  ln -s -f libc.a liblibc.a
 }
 
 function aclpwn() {
