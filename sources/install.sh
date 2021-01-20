@@ -1605,6 +1605,13 @@ function install_rfid_tools() {
   install_proxmark3               # Proxmark3 scripts
 }
 
+# Package dedicated to IoT tools
+function install_iot_tools() {
+  fapt avrdude
+  fapt minicom
+}
+
+# Package dedicated to SDR
 function install_sdr_tools() {
   install_mousejack               # tools for mousejacking
   install_jackit                  # tools for mousejacking
