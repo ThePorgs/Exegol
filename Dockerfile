@@ -21,6 +21,7 @@ RUN /root/sources/install.sh install_c2_tools
 RUN /root/sources/install.sh install_services_tools
 RUN /root/sources/install.sh install_ad_tools
 RUN /root/sources/install.sh install_mobile_tools
+RUN /root/sources/install.sh install_iot_tools
 RUN /root/sources/install.sh install_rfid_tools
 RUN /root/sources/install.sh install_sdr_tools
 RUN /root/sources/install.sh install_network_tools
