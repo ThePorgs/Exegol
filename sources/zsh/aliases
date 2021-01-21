@@ -107,3 +107,5 @@ alias nrf24-sniffer.py='/opt/tools/mousejack/nrf-research-firmware/tools/nrf24-s
 alias proxychains4='proxychains4 '
 alias proxychains='proxychains4 '
 alias testssl='/opt/tools/testssl.sh/testssl.sh'
+alias multirelay='/opt/tools/Responder/tools/MultiRelay.py'
+alias runfinger='/opt/tools/Responder/tools/RunFinger.py'
