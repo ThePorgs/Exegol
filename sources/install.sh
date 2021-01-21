@@ -657,6 +657,11 @@ function ysoserial_net() {
   rm /opt/resources/windows/ysoserial.net/ysoserial.zip
 }
 
+function phpggc(){
+  colorecho "Installing phpggc"
+  git -C /opt/tools clone https://github.com/ambionics/phpggc.git
+}
+
 function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
@@ -1546,6 +1551,7 @@ function install_web_tools() {
   fapt padbuster
   install_ysoserial               # Deserialization payloads
   fapt whatweb                    # Recognises web technologies including content management
+  phpggc                          # php deserialization payloads
 }
 
 # Package dedicated to command & control frameworks
