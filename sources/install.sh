@@ -1180,6 +1180,16 @@ function kubectl(){
   install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 }
 
+function awscli(){
+  colorecho "Installing aws cli"
+  cd /tmp
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  ./aws/install -i /opt/tools/aws-cli -b /usr/local/bin
+  rm -rf aws
+  rm awscliv2.zip
+}
+
 function maigret_pip() {
   colorecho "Installing maigret"
   pip3 install maigret
@@ -1685,6 +1695,7 @@ function install_steganography_tools() {
 # Package dedicated to cloud tools
 function install_cloud_tools() {
   kubectl
+  awscli
 }
 
 # Package dedicated to reverse engineering tools
