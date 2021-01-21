@@ -1297,6 +1297,11 @@ function install_gosecretsdump() {
   go get -u -v github.com/C-Sto/gosecretsdump
 }
 
+function creddump(){
+  colorecho "Installing creddump"
+  git -C /opt/tools/ clone https://github.com/moyix/creddump.git
+}
+
 function install_hackrf() {
   colorecho "Installing HackRF tools"
   apt-get -y install hackrf
@@ -1625,6 +1630,7 @@ function install_ad_tools() {
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
   hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
   install_gosecretsdump           # secretsdump in Go for heavy files 
+  creddump                        # install creddump
 }
 
 # Package dedicated to mobile apps pentest tools
