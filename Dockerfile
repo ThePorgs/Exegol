@@ -27,6 +27,7 @@ RUN /root/sources/install.sh install_sdr_tools
 RUN /root/sources/install.sh install_network_tools
 RUN /root/sources/install.sh install_wifi_tools
 RUN /root/sources/install.sh install_forensic_tools
+RUN /root/sources/install.sh install_cloud_tools
 RUN /root/sources/install.sh install_steganography_tools
 RUN /root/sources/install.sh install_reverse_tools
 RUN /root/sources/install.sh install_GUI_tools

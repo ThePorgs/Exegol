@@ -1172,6 +1172,14 @@ function install_drupwn() {
   python3 setup.py install
 }
 
+function kubectl(){
+  colorecho "Installing kubectl"
+  mkdir -p /opt/tools/kubectl
+  cd /opt/tools/kubectl
+  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+}
+
 function maigret_pip() {
   colorecho "Installing maigret"
   pip3 install maigret
@@ -1672,6 +1680,11 @@ function install_forensic_tools() {
 function install_steganography_tools() {
   continue
   # TODO
+}
+
+# Package dedicated to cloud tools
+function install_cloud_tools() {
+  kubectl
 }
 
 # Package dedicated to reverse engineering tools
