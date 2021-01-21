@@ -1200,6 +1200,11 @@ function awscli(){
   rm awscliv2.zip
 }
 
+function jdwp_shellifier(){
+  colorecho "Installing jdwp_shellifier"
+  git -C /opt/tools/ clone https://github.com/IOActive/jdwp-shellifier.git
+}
+
 function maigret_pip() {
   colorecho "Installing maigret"
   pip3 install maigret
@@ -1563,6 +1568,7 @@ function install_web_tools() {
   fapt whatweb                    # Recognises web technologies including content management
   phpggc                          # php deserialization payloads
   symfony_exploits                # symfony secret fragments exploit
+  jdwp_shellifier                 # exploit java debug
 }
 
 # Package dedicated to command & control frameworks
