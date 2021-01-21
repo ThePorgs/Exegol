@@ -1714,6 +1714,7 @@ function install_GUI_tools() {
   bloodhound_old_v2
   fapt freerdp2-x11
   ghidra
+  fapt xtightvncviewer
 }
 
 # Package dedicated to the download of resources
