@@ -662,6 +662,11 @@ function phpggc(){
   git -C /opt/tools clone https://github.com/ambionics/phpggc.git
 }
 
+function symfony_exploits(){
+  colorecho "Installing symfony-exploits"
+  git -C /opt/tools clone https://github.com/ambionics/symfony-exploits
+}
+
 function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
@@ -1552,6 +1557,7 @@ function install_web_tools() {
   install_ysoserial               # Deserialization payloads
   fapt whatweb                    # Recognises web technologies including content management
   phpggc                          # php deserialization payloads
+  symfony_exploits                # symfony secret fragments exploit
 }
 
 # Package dedicated to command & control frameworks
