@@ -1165,6 +1165,13 @@ function install_droopescan() {
   python3 setup.py install
 }
 
+function install_drupwn() {
+  colorecho "Installing drupwn"
+  git -C /opt/tools clone https://github.com/immunIT/drupwn.git
+  cd /opt/tools/drupwn
+  python3 setup.py install
+}
+
 function maigret_pip() {
   colorecho "Installing maigret"
   pip3 install maigret
@@ -1360,6 +1367,7 @@ function install_most_used_tools() {
   fapt joomscan                   # Joomla scanner
   fapt wpscan                     # Wordpress scanner
   install_droopescan              # Drupal scanner
+  install_drupwn                  # Drupal scanner
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
@@ -1495,6 +1503,7 @@ function install_web_tools() {
   fapt joomscan                   # Joomla scanner
   fapt wpscan                     # Wordpress scanner
   install_droopescan              # Drupal scanner
+  install_drupwn                  # Drupal scanner
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
