@@ -251,4 +251,5 @@ jackit --reset --debug
 secretsdump -ntds ntds.dit.save -system system.save LOCAL
 gosecretsdump -ntds ntds.dit.save -system system.save
 screen /dev/ttyACM0 115200
+httpmethods -u http://someinternalsite.s01.breaking.bad/
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
