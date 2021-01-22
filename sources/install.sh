@@ -1317,6 +1317,13 @@ function install_gqrx() {
   apt-get -y install gqrx-sdr
 }
 
+function install_httpmethods() {
+  colorecho "Installing httpmethods"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/httpmethods
+  cd /opt/tools/httpmethods
+  python3 setup.py install
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1569,6 +1576,7 @@ function install_web_tools() {
   phpggc                          # php deserialization payloads
   symfony_exploits                # symfony secret fragments exploit
   jdwp_shellifier                 # exploit java debug
+  install_httpmethods             # Tool for HTTP methods enum & verb tampering
 }
 
 # Package dedicated to command & control frameworks
