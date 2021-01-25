@@ -1151,8 +1151,20 @@ function icmpdoor() {
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
 }
 
-function trilium() {
-  colorecho "Installing Trilium"
+function install_trilium_packaged() {
+  colorecho "Installing Trilium (packaged)"
+  url=$(curl -s https://github.com/zadam/trilium/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
+  tag=${url##*/v}
+  wget -O /opt/tools/trilium.tar.xz $url/trilium-linux-x64-server-$tag.tar.xz
+  tar -xvf /opt/tools/trilium.tar.xz -C /opt/tools/
+  mv /opt/tools/trilium-linux-x64-server /opt/tools/trilium
+  rm /opt/tools/trilium.tar.xz
+  mkdir /root/.local/share/trilium-data
+  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
+}
+
+function install_trilium_sources() {
+  colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
@@ -1441,7 +1453,7 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   shellerator                     # Reverse shell generator
   uberfile                        # file uploader/downloader commands generator
-  trilium                         # notes taking tool
+  install_trilium_packaged        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
 }
