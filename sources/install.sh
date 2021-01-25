@@ -1097,7 +1097,6 @@ function youtubedl() {
 
 function ipinfo() {
   colorecho "Installing ipinfo"
-  apt-get -y install npm
   sudo npm install ipinfo-cli --global
 }
 
@@ -1388,6 +1387,7 @@ function install_base() {
   fapt rdate                      # tool for querying the current time from a network server
   fapt putty                      # GUI-based SSH, Telnet and Rlogin client
   fapt screen                     # CLI-based PuTT-like
+  fapt npm                        # Node Package Manager
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
