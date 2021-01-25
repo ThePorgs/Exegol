@@ -35,6 +35,7 @@
   - classify GUI tools
   - add dumpert dll and exe in windows resources
   - add snaffler
+  - check hackrf support (wrapper + tools)
 
 
 # Split install
