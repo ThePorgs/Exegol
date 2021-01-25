@@ -668,6 +668,8 @@ def install():
             imagetag = input(
                 "{}[?]{} What tag do you want to give to your Exegol image [default: {}]? ".format(BOLD_BLUE, END,
                                                                                                    default_imagetag))
+            if not imagetag:
+                imagetag = default_imagetag
             logger.info("Building Exegol image {} from sources".format(IMAGE_NAME + ":" + imagetag))
             exec_system(
                 "docker build --no-cache --tag {}:{} {} | tee {}/.build.log".format(

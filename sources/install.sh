@@ -1159,7 +1159,7 @@ function install_trilium_packaged() {
   tar -xvf /opt/tools/trilium.tar.xz -C /opt/tools/
   mv /opt/tools/trilium-linux-x64-server /opt/tools/trilium
   rm /opt/tools/trilium.tar.xz
-  mkdir /root/.local/share/trilium-data
+  mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
 
@@ -1169,7 +1169,7 @@ function install_trilium_sources() {
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
   npm install
-  mkdir /root/.local/share/trilium-data
+  mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
 
@@ -1404,6 +1404,7 @@ function install_base() {
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
   fapt unrar                      # unrar
+  fapt xz-utils                   # xz (de)compression
 }
 
 # Package dedicated to most used offensive tools
