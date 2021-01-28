@@ -154,7 +154,7 @@ wfuzz --hc 401 -c -v -w /usr/share/seclists/Usernames/top-usernames-shortlist.tx
 pypykatz lsa minidump lsass.dmp
 enyx 1 public 192.168.10.10
 wfuzz --hc 403,404 -c -w /usr/share/seclists/Discovery/Web-Content/big.txt -w /usr/share/seclists/Discovery/Web-Content/web-extensions.txt -u http://192.168.10.10/FUZZFUZ2Z
-ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.txt,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
+ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
 fcrackzip -u -v -D -p /usr/share/wordlists/rockyou.txt file.zip
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.machine.org' -u http://192.168.10.10/
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.org' -u http://192.168.10.10/
@@ -251,5 +251,6 @@ jackit --reset --debug
 secretsdump -ntds ntds.dit.save -system system.save LOCAL
 gosecretsdump -ntds ntds.dit.save -system system.save
 screen /dev/ttyACM0 115200
-httpmethods -u http://someinternalsite.s01.breaking.bad/
+httpmethods --threads 40 --location http://www.s01.breaking.bad/
+hakrawler -url http://www.s01.breaking.bad/
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

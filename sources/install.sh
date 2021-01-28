@@ -1587,7 +1587,7 @@ function install_web_tools() {
   install_ysoserial               # Deserialization payloads
   fapt whatweb                    # Recognises web technologies including content management
   phpggc                          # php deserialization payloads
-  symfony_exploits                # symfony secret fragments exploit
+  symfony_exploits                #  symfony secret fragments exploit
   jdwp_shellifier                 # exploit java debug
   install_httpmethods             # Tool for HTTP methods enum & verb tampering
 }
