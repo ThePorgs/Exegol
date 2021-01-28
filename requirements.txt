@@ -1,4 +1,4 @@
-docker~=4.3.1
+docker~=4.4.1
 requests~=2.23.0
 pandas~=1.0.5
 numpy==1.19.3
