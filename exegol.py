@@ -876,10 +876,23 @@ if __name__ == "__main__":
     SHARED_DATA_VOLUMES = EXEGOL_PATH + "/shared-data-volumes"
     SHARED_RESOURCES = EXEGOL_PATH + "/shared-resources"
 
-    client = docker.from_env()
     options = get_options()
     logger = Logger(options.verbosity, options.quiet)
     console = Console()
+
+    try:
+        client = docker.from_env()
+    except docker.errors.DockerException as e:
+        if "ConnectionRefusedError" in str(e):
+            logger.error("Connection to docker service API refused (your docker service is probably down)")
+        elif "PermissionError" in str(e):
+            logger.error("Connection to docker service API not allowed (you probably need higher privileges to run "
+                         "docker, try to use sudo or to add your user to the 'docker' group)")
+        else:
+            logger.error(f"Some error occurred while calling the docker service API: {e}")
+        exit(0)
+    except Exception as e:
+        logger.error(f"Some error occurred while calling the docker service API: {e}")
 
     # get working git branch
     LOCAL_GIT_BRANCH = \
