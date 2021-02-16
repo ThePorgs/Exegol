@@ -181,6 +181,13 @@
             }]
         },
         {
+            "name": "Find computers admin to other computers",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH p = (c1:Computer)-[r1:AdminTo]->(c2:Computer) RETURN p UNION ALL MATCH p = (c3:Computer)-[r2:MemberOf*1..]->(g:Group)-[r3:AdminTo]->(c4:Computer) RETURN p"
+            }]
+        },
+        {
             "name": ""
         },
         {
