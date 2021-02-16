@@ -1335,6 +1335,13 @@ function install_httpmethods() {
   python3 setup.py install
 }
 
+function install_adidnsdump() {
+  colorecho "Installing adidnsdump"
+  git -C /opt/tools/ clone https://github.com/dirkjanm/adidnsdump
+  cd /opt/tools/adidnsdump/
+  python3 -m pip install .
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1658,6 +1665,7 @@ function install_ad_tools() {
   hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
   install_gosecretsdump           # secretsdump in Go for heavy files 
   creddump                        # install creddump
+  install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
 }
 
 # Package dedicated to mobile apps pentest tools
