@@ -651,10 +651,10 @@ function ysoserial_net() {
   url=$(curl -s https://github.com/pwntester/ysoserial.net/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
   tag=${url##*/}
   prefix=${tag:1}
-  mkdir /opt/resources/windows/ysoserial.net
-  wget -O /opt/resources/windows/ysoserial.net/ysoserial.zip "$url/ysoserial-$prefix.zip"
-  unzip -d /opt/resources/windows/ysoserial.net /opt/tools/ysoserial.net/ysoserial.zip
-  rm /opt/resources/windows/ysoserial.net/ysoserial.zip
+  wget -O /tmp/ysoserial_net.zip "$url/ysoserial-$prefix.zip"
+  unzip -d /opt/resources/windows/ /tmp/ysoserial_net.zip
+  mv /opt/resources/windows/Release/ /opt/resources/windows/ysoserial.net
+  rm /tmp/ysoserial_net.zip
 }
 
 function phpggc(){
@@ -1342,6 +1342,20 @@ function install_adidnsdump() {
   python3 -m pip install .
 }
 
+function install_powermad() {
+  colorecho "Downloading Powermad for resources"
+  git -C /opt/resources/windows/ clone https://github.com/Kevin-Robertson/Powermad
+}
+
+function install_snaffler() {
+  colorecho "Downloading Snaffler for resources"
+  url=$(curl -s https://github.com/SnaffCon/Snaffler/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
+  mkdir -p /opt/resources/windows/Snaffler
+  wget -O /opt/resources/windows/Snaffler.zip $url/Snaffler.zip
+  unzip -d /opt/resources/windows/Snaffler /opt/resources/windows/Snaffler.zip
+  rm -v /opt/resources/windows/Snaffler.zip
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1666,6 +1680,8 @@ function install_ad_tools() {
   install_gosecretsdump           # secretsdump in Go for heavy files 
   creddump                        # install creddump
   install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
+  install_powermad                # MachineAccountQuota and DNS exploit tools
+  install_snaffler                # Shares enumeration and looting
 }
 
 # Package dedicated to mobile apps pentest tools

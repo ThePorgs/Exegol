@@ -5,7 +5,7 @@
   <br></br>
   <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
   <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
-  <img alt="image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/latest">
+  <img alt="image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/dev">
   <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/ShutdownRepo/Exegol">
   <img alt="Python" src="https://img.shields.io/badge/Python-3-success">
   <br>
