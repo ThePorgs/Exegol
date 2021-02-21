@@ -1356,6 +1356,11 @@ function install_snaffler() {
   rm -v /opt/resources/windows/Snaffler.zip
 }
 
+function install_dnschef() {
+    colorecho "Installing DNSChef"
+    git -C /opt/tools/ clone https://github.com/iphelix/dnschef
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1733,6 +1738,7 @@ function install_network_tools() {
   # Sn1per                        # Vulnerability scanner
   fapt iproute2                   # Firewall rules
   fapt tcpdump                    # Capture TCP traffic
+  install_dnschef                 # Python DNS server
 }
 
 # Package dedicated to wifi pentest tools
