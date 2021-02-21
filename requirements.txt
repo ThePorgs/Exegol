@@ -1,9 +1,9 @@
-docker
-requests
-pandas
+docker~=4.4.1
+requests~=2.23.0
+pandas~=1.0.5
 numpy==1.19.3 #temporary fix for issue #33: forced numpy version while this fix is not over: https://tinyurl.com/y3dm3h86
-tabulate
-python-dateutil
-rich
-pyasn1
-psutil
+tabulate~=0.8.2
+python-dateutil~=2.8.1
+rich~=9.8.2
+pyasn1~=0.4.8
+psutil~=5.7.2

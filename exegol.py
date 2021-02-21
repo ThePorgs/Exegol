@@ -725,76 +725,83 @@ def info_images():
     logger.info("Available images")
     remote_images = {}
     logger.debug("Fetching remote image tags, digests and sizes")
-    remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
-    remote_images_list = json.loads(remote_images_request.text)
-    for image in remote_images_list["results"]:
-        tag = image["name"]
-        digest = image["images"][0]["digest"]
-        compressed_size = readable_size(image["full_size"])
-        logger.debug("└── {} → {}...".format(tag, digest[:32]))
-        remote_images[digest] = {"tag": tag, "compressed_size": compressed_size}
-    uninstalled_remote_images = remote_images
-    logger.debug("Fetching local image tags, digests (and other attributes)")
-    local_images_list = client.images.list(IMAGE_NAME, filters={"dangling": False})
-    for image in local_images_list:
-        id = image.attrs["Id"].split(":")[1][:12]
-        if not image.attrs["RepoTags"]:
-            # TODO: investigate this, print those images as "layers"
-            #  these are layers for other images
-            logger.debug("Found image with attribute 'RepoTags' empty, don't know why though")
-            logger.debug("This image won't be listed until I know what those images are and what I should do with them")
-            real_size = readable_size(image.attrs["Size"])
-            digest = image.attrs["Id"].replace("sha256:", "")
-            images.append([id, "<none>", real_size, "local layer"])
-        else:
-            name, tag = image.attrs["RepoTags"][0].split(':')
-            real_size = readable_size(image.attrs["Size"])
-
-            if image.attrs["RepoDigests"]:
-                digest = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
-
-                logger.debug("└── {} → {}...".format(tag, digest[:32]))
-                if digest in remote_images.keys():
-                    images.append([id, tag, real_size, "remote ({}, {})".format("[green]up to date[/green]",
-                                                                                remote_images[digest][
-                                                                                    "compressed_size"])])
-                    uninstalled_remote_images.pop(digest)
-                else:
-                    for key in remote_images:
-                        if remote_images[key]["tag"] == tag:
-                            remote_digest = key
-                    compressed_size = remote_images[remote_digest]["compressed_size"]
-                    images.append([id, tag, real_size,
-                                   "remote ({}, {})".format("[orange3]deprecated[/orange3]", compressed_size)])
-                    uninstalled_remote_images.pop(remote_digest)
+    try:
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), timeout=(5, 10))
+        remote_images_list = json.loads(remote_images_request.text)
+        for image in remote_images_list["results"]:
+            tag = image["name"]
+            digest = image["images"][0]["digest"]
+            compressed_size = readable_size(image["full_size"])
+            logger.debug("└── {} → {}...".format(tag, digest[:32]))
+            remote_images[digest] = {"tag": tag, "compressed_size": compressed_size}
+        notinstalled_remote_images = remote_images
+        logger.debug("Fetching local image tags, digests (and other attributes)")
+        local_images_list = client.images.list(IMAGE_NAME, filters={"dangling": False})
+        for image in local_images_list:
+            id = image.attrs["Id"].split(":")[1][:12]
+            if not image.attrs["RepoTags"]:
+                # TODO: investigate this, print those images as "layers"
+                #  these are layers for other images
+                real_size = readable_size(image.attrs["Size"])
+                digest = image.attrs["Id"].replace("sha256:", "")
+                images.append([id, "<none>", real_size, "local layer"])
             else:
-                images.append([id, tag, real_size, "local image"])
-    for uninstalled_remote_image in uninstalled_remote_images.items():
-        tag = uninstalled_remote_image[1]["tag"]
-        compressed_size = uninstalled_remote_image[1]["compressed_size"]
-        id = uninstalled_remote_image[0].split(":")[1][:12]
-        images.append([id, tag, "[bright_black]N/A[/bright_black]",
-                       "remote ({}, {})".format("[yellow3]uninstalled[/yellow3]", compressed_size)])
+                name, tag = image.attrs["RepoTags"][0].split(':')
+                real_size = readable_size(image.attrs["Size"])
 
-    images = sorted(images, key=lambda k: k[1])
-    if options.verbosity == 0:
-        table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
-        table.add_column("Image tag")
-        table.add_column("Real size")
-        table.add_column("Type")
-        for image in images:
-            if image[1] != "<none>":
-                table.add_row(image[1], image[2], image[3])
-    elif options.verbosity >= 1:
-        table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
-        table.add_column("Id")
-        table.add_column("Image tag")
-        table.add_column("Real size")
-        table.add_column("Type")
-        for image in images:
-            table.add_row(image[0], image[1], image[2], image[3])
-    console.print(table)
-    print()
+                if image.attrs["RepoDigests"]:  # If true, the image was pulled instead of built
+                    digest = image.attrs["RepoDigests"][0].replace("{}@".format(IMAGE_NAME), "")
+
+                    logger.debug("└── {} → {}...".format(tag, digest[:32]))
+                    if digest in remote_images.keys():
+                        images.append([id, tag, real_size, "remote ({}, {})".format("[green]up to date[/green]",
+                                                                                    remote_images[digest][
+                                                                                        "compressed_size"])])
+                        notinstalled_remote_images.pop(digest)
+                    else:
+                        for key in remote_images:
+                            if remote_images[key]["tag"] == tag:
+                                remote_digest = key
+                                break
+                            else:  # This means the image was pulled but it doesn't exist anymore on DockerHub
+                                remote_digest = ""
+                        if remote_digest:
+                            compressed_size = remote_images[remote_digest]["compressed_size"]
+                            images.append([id, tag, real_size,
+                                           "remote ({}, {})".format("[orange3]deprecated[/orange3]", compressed_size)])
+                            notinstalled_remote_images.pop(remote_digest)
+                        else:
+                            images.append([id, tag, real_size, "remote ({})".format("[bright_black]discontinued["
+                                                                                    "/bright_black]")])
+                else:
+                    images.append([id, tag, real_size, "local image"])
+        for uninstalled_remote_image in notinstalled_remote_images.items():
+            tag = uninstalled_remote_image[1]["tag"]
+            compressed_size = uninstalled_remote_image[1]["compressed_size"]
+            id = uninstalled_remote_image[0].split(":")[1][:12]
+            images.append([id, tag, "[bright_black]N/A[/bright_black]",
+                           "remote ({}, {})".format("[yellow3]not installed[/yellow3]", compressed_size)])
+        images = sorted(images, key=lambda k: k[1])
+        if options.verbosity == 0:
+            table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
+            table.add_column("Image tag")
+            table.add_column("Real size")
+            table.add_column("Type")
+            for image in images:
+                if image[1] != "<none>":
+                    table.add_row(image[1], image[2], image[3])
+        elif options.verbosity >= 1:
+            table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
+            table.add_column("Id")
+            table.add_column("Image tag")
+            table.add_column("Real size")
+            table.add_column("Type")
+            for image in images:
+                table.add_row(image[0], image[1], image[2], image[3])
+        console.print(table)
+        print()
+    except requests.exceptions.ConnectionError:
+        logger.warning("Connection Error: you probably have no internet, skipping online queries")
 
 
 def info_containers():
