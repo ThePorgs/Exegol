@@ -21,8 +21,8 @@ function fapt() {
 }
 
 function python-pip() {
-  colorecho "Installing python-pip"
-  curl --insecure https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  colorecho "Installing python-pip (for Python2.7)"
+  curl --insecure https://bootstrap.pypa.io/2.7/get-pip.py -o get-pip.py
   python get-pip.py
   rm get-pip.py
 }
@@ -1361,6 +1361,12 @@ function install_dnschef() {
     git -C /opt/tools/ clone https://github.com/iphelix/dnschef
 }
 
+function install_h2csmuggler() {
+  colorecho "Installing h2csmuggler"
+  git -C /opt/tools/ clone https://github.com/BishopFox/h2csmuggler
+  python3 -m pip install h2
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1616,6 +1622,7 @@ function install_web_tools() {
   symfony_exploits                #  symfony secret fragments exploit
   jdwp_shellifier                 # exploit java debug
   install_httpmethods             # Tool for HTTP methods enum & verb tampering
+  install_h2csmuggler             # Tool for HTTP2 smuggling
 }
 
 # Package dedicated to command & control frameworks
