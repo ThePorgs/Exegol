@@ -255,4 +255,5 @@ httpmethods --threads 40 --location http://www.s01.breaking.bad/
 hakrawler -url http://www.s01.breaking.bad/
 adidnsdump -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
 proxychains adidnsdump --dns-tcp -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
+ngrok authtoken AUTHTOKEN:::https://dashboard.ngrok.com/get-started/your-authtoken
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

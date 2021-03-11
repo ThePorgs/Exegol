@@ -22,7 +22,7 @@ function fapt() {
 
 function python-pip() {
   colorecho "Installing python-pip (for Python2.7)"
-  curl --insecure https://bootstrap.pypa.io/2.7/get-pip.py -o get-pip.py
+  curl --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py
   python get-pip.py
   rm get-pip.py
 }
@@ -228,26 +228,22 @@ function Bolt() {
   git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
 }
 
-function CrackMapExec_pip() {
+function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
   apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
-  python3 -m pip install pipx
-  pipx ensurepath
   pipx install crackmapexec
   # this is for having the ability to check the source code when working with modules and so on
   git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
-  crackmapexec smb # this is for initializing everything TODO : need to check it works
 }
 
-function lsassy() {
+function install_lsassy() {
   colorecho "Installing lsassy"
   git -C /opt/tools/ clone https://github.com/Hackndo/lsassy/
   cd /opt/tools/lsassy
+  git checkout 3.0.0
+  git pull origin 3.0.0
   python3 setup.py install
-  #wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
-  #cd /opt/tools/CrackMapExec
-  #python3 setup.py install
-  python3 -m pip install 'asn1crypto>=1.3.0'
+  # python3 -m pip install 'asn1crypto>=1.3.0'
 }
 
 function sprayhound() {
@@ -291,7 +287,7 @@ function neo4j_install() {
 }
 
 function cypheroth() {
-  coloecho "Installing cypheroth"
+  colorecho "Installing cypheroth"
   git -C /opt/tools/ clone https://github.com/seajaysec/cypheroth/
 }
 
@@ -1367,6 +1363,44 @@ function install_h2csmuggler() {
   python3 -m pip install h2
 }
 
+function install_byp4xx() {
+  colorecho "Installing byp4xx"
+  git -C /opt/tools/ clone https://github.com/lobuhi/byp4xx
+}
+
+function install_pipx() {
+  colorecho "Installing pipx"
+  python3 -m pip install pipx
+  pipx ensurepath
+}
+
+function install_volatility() {
+  colorecho "Installing volatility"
+  apt-get -y install pcregrep libpcre++-dev python-dev yara
+  git -C /opt/tools/ clone https://github.com/volatilityfoundation/volatility
+  cd /opt/tools/volatility
+  python -m pip install pycrypto distorm3 pillow openpyxl ujson
+  python setup.py install
+  # https://github.com/volatilityfoundation/volatility/issues/535#issuecomment-407571161
+  ln -s /usr/local/lib/python2.7/dist-packages/usr/lib/libyara.so /usr/lib/libyara.so
+}
+
+function install_zsteg() {
+  colorecho "Installing zsteg"
+  gem install zsteg
+}
+
+function install_ngrok() {
+  colorecho "Installing ngrok"
+  wget -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+  unzip -d /opt/tools/bin/ /tmp/ngrok.zip
+}
+
+function install_pygpoabuse() {
+  colorecho "Installing pyGPOabuse"
+  git -C /opt/tools/ clone https://github.com/Hackndo/pyGPOAbuse
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1437,6 +1471,7 @@ function install_base() {
   fapt rar                        # rar
   fapt unrar                      # unrar
   fapt xz-utils                   # xz (de)compression
+  install_pipx
 }
 
 # Package dedicated to most used offensive tools
@@ -1472,7 +1507,7 @@ function install_most_used_tools() {
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  CrackMapExec_pip                # Network scanner
+  install_crackmapexec                # Network scanner
   Impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
@@ -1489,6 +1524,7 @@ function install_misc_tools() {
   install_trilium_packaged        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
+  install_ngrok                   # expose a local development server to the Internet
 }
 
 # Package dedicated to the installation of wordlists and tools like wl generators
@@ -1623,6 +1659,7 @@ function install_web_tools() {
   jdwp_shellifier                 # exploit java debug
   install_httpmethods             # Tool for HTTP methods enum & verb tampering
   install_h2csmuggler             # Tool for HTTP2 smuggling
+  install_byp4xx                  # Tool to automate 40x errors bypass attempts
 }
 
 # Package dedicated to command & control frameworks
@@ -1645,7 +1682,7 @@ install_services_tools() {
 # Package dedicated to internal Active Directory tools
 function install_ad_tools() {
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  CrackMapExec_pip                # Network scanner
+  install_crackmapexec                # Network scanner
   sprayhound                      # Password spraying tool
   bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
@@ -1657,7 +1694,7 @@ function install_ad_tools() {
   dementor                        # SpoolService exploiter
   Impacket                        # Network protocols scripts
   pykek                           # AD vulnerability exploiter
-  lsassy                          # Credentials extracter
+  install_lsassy                  # Credentials extracter
   privexchange                    # Exchange exploiter
   ruler                           # Exchange exploiter
   darkarmour                      # Windows AV evasion
@@ -1694,6 +1731,7 @@ function install_ad_tools() {
   install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
   install_powermad                # MachineAccountQuota and DNS exploit tools
   install_snaffler                # Shares enumeration and looting
+  install_pygpoabuse              # TODO : comment this
 }
 
 # Package dedicated to mobile apps pentest tools
@@ -1765,13 +1803,14 @@ function install_wifi_tools() {
 # Package dedicated to forensic tools
 function install_forensic_tools() {
   fapt pst-utils                  # Reads a PST and prints the tree structure to the console
-  # TODO: add volatility
+  fapt binwalk                    # Tool to find embedded files
+  fapt foremost                   # Alternative to binwalk
+  install_volatility              # Memory analysis tool
 }
 
 # Package dedicated to steganography tools
 function install_steganography_tools() {
-  continue
-  # TODO
+  install_zsteg               # detect stegano-hidden data in PNG & BMP
 }
 
 # Package dedicated to cloud tools
@@ -1839,11 +1878,8 @@ function install_resources() {
 # Function used to clean up post-install files
 function install_clean() {
   colorecho "Cleaning..."
-  # TODO: clean /tmp and other dirs
-  # rm -r /tmp/*
+  rm -r /tmp/*
   # rm /usr/local/bin/bloodhound-python
-  # rm /tmp/gobuster.7z
-  # rm -r /tmp/gobuster-linux-amd64
 }
 
 # Entry point for the installation

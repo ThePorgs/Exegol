@@ -7,14 +7,13 @@
   - install tools for mobile applications pentest
   - install https://github.com/aircrack-ng/rtl8814au
   - install https://github.com/lexfo/rpc2socks
-  - install ngrok
-  - clean /tmp folder where lots of pip files are are not removed. What are they doing here ?
-  - Add pygpoabuse and sharpgpoabuse
-  - add chisel https://github.com/jpillora/chisel
+  - Add precompiled binaries (i.e. sharpgpoabuse, and others)
+  - install chisel https://github.com/jpillora/chisel
   - improve proxychains conf ?
   - add static nmap binary install for resources
   - add JSP webshell (test all https://github.com/tennc/webshell/tree/master/jsp)
   - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
+  - make the wrapper remove the container if it's unable to start
   - add ssh special commands to history (socks proxy, local/remote port forwarding)
   - versioning git/dockerhub
   - add an option to mount an encrypted volume
