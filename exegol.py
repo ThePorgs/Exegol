@@ -14,18 +14,16 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
+VERSION = "3.1.0"
+
 '''
 # TODO :
-- prévoir quand pas d'accès internet pour les pull des images remote, pour les vérif update etc.
-- faire correspondre les noms de branche github avec le docker tag
 - faire plus d'affichage de debug
 - dans l'epilog, donner des exemples pour les devs et/ou faire une partie advanced usage dans le wiki, référencer le wiki dans le readme
 - vérifier que le help est clair (dans le help, bien expliquer que le container-tag est un identifiant unique pour le container)
 - nettoyer les variables et fonctions qui ne sont plus utilisées
 - remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest" (rename de master et latest vers main ?)
-- revoir la gestion/montage des ressources, peut-être un container différent ? /shrug
-- info : ajouter une vérif sur le code local et vérfier s'il est à jour ou non, proposer d'update sinon
-- info container : rajouter la taille locale
+- revoir la gestion/montage des ressources, peut-être un container différent ?
 - tester un exegol -m sources install et de nommer l'image sur un nom existant, voir le comportement
 - l640 corriger default_git_branch
 - edit --device option so that it can be called multiple times to share multiple devices, need to adapt the info_containers
@@ -87,8 +85,9 @@ def get_options():
         "stop": "stop an Exegol container in a saved state",
         "install": "install Exegol image (build or pull depending on the chosen install --mode)",
         "update": "update Exegol image (build or pull depending on the chosen update --mode)",
-        "info": "print info on containers and local & remote images (name, size, state, ...)",
         "remove": "remove Exegol image(s) and/or container(s)",
+        "info": "print info on containers and local & remote images (name, size, state, ...)",
+        "version": "print current version",
     }
 
     actions_help = ""
@@ -865,6 +864,9 @@ def info():
     info_images()
     info_containers()
 
+def version():
+   logger.info(f"You are running version {VERSION}")
+   print()
 
 if __name__ == "__main__":
     BOLD_GREEN = "\033[1;32m"

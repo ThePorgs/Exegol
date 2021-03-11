@@ -1396,6 +1396,14 @@ function install_pygpoabuse() {
   git -C /opt/tools/ clone https://github.com/Hackndo/pyGPOAbuse
 }
 
+function install_rsactftool() {
+  colorecho "Installing RsaCtfTool"
+  git -C /opt/tools/ clone https://github.com/Ganapati/RsaCtfTool
+  cd /opt/tools/RsaCtfTool
+  apt-get -y install libgmp3-dev libmpc-dev
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1821,6 +1829,11 @@ function install_reverse_tools() {
   checksec_py                     # Check security on binaries
   fapt nasm                       # Netwide Assembler
   fapt radare2                    # Awesome debugger
+}
+
+# Package dedicated to attack crypto
+function install_crypto_tools() {
+  install_rsactftool              # attack rsa
 }
 
 # Package dedicated to GUI-based apps

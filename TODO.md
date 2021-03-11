@@ -15,7 +15,6 @@
   - improve error handling (see https://github.com/ShutdownRepo/Exegol/issues/29)
   - make the wrapper remove the container if it's unable to start
   - add ssh special commands to history (socks proxy, local/remote port forwarding)
-  - versioning git/dockerhub
   - add an option to mount an encrypted volume
   - update CONTRIBUTING.md
   - limits to actual packaging method
