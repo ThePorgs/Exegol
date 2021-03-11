@@ -1309,11 +1309,6 @@ function install_gosecretsdump() {
   go get -u -v github.com/C-Sto/gosecretsdump
 }
 
-function creddump(){
-  colorecho "Installing creddump"
-  git -C /opt/tools/ clone https://github.com/moyix/creddump.git
-}
-
 function install_hackrf() {
   colorecho "Installing HackRF tools"
   apt-get -y install hackrf
@@ -1591,7 +1586,8 @@ function install_osint_tools() {
   fapt spiderfoot                 # SpiderFoot automates OSINT collection
   fapt finalrecon                 # A fast and simple python script for web reconnaissance
   fapt recon-ng                   # External recon tool
-  sn0int                          # Semi-automatic OSINT framework and package manager
+  # TODO : http://apt.vulns.sexy make apt update print a warning, and the repo has a weird name, we need to fix this in order to not alarm users
+  # sn0int                          # Semi-automatic OSINT framework and package manager
   OSRFramework                    # OSRFramework, the Open Sources Research Framework
   #Dark
   apt-get update
@@ -1727,7 +1723,6 @@ function install_ad_tools() {
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
   hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
   install_gosecretsdump           # secretsdump in Go for heavy files 
-  creddump                        # install creddump
   install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
   install_powermad                # MachineAccountQuota and DNS exploit tools
   install_snaffler                # Shares enumeration and looting
