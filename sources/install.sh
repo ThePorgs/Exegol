@@ -1404,6 +1404,16 @@ function install_rsactftool() {
   python3 -m pip install -r requirements.txt
 }
 
+function install_feroxbuster() {
+  colorecho "Installing feroxbuster"
+  cd /tmp
+  curl -sLO https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip
+  unzip feroxbuster_amd64.deb.zip
+  rm feroxbuster_amd64.deb.zip
+  apt-get -y install -f ./feroxbuster*.deb
+  rm feroxbuster*.deb
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1664,6 +1674,7 @@ function install_web_tools() {
   install_httpmethods             # Tool for HTTP methods enum & verb tampering
   install_h2csmuggler             # Tool for HTTP2 smuggling
   install_byp4xx                  # Tool to automate 40x errors bypass attempts
+  install_feroxbuster             # ffuf but with multithreaded recursion
 }
 
 # Package dedicated to command & control frameworks

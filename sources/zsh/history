@@ -157,7 +157,9 @@ fcrackzip -u -v -D -p /usr/share/wordlists/rockyou.txt file.zip
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.machine.org' -u http://192.168.10.10/
 ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.org' -u http://192.168.10.10/
 ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
+ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ --extract-links
 ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
+feroxbuster -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.machine.org" -u http://192.168.10.10/
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.org" -u http://192.168.10.10/
 evil-winrm -u serviceaccount -p P4ssw0rd -i 192.168.56.101

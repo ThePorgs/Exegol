@@ -24,6 +24,7 @@
   - classify GUI tools
   - add dumpert dll and exe in windows resources
   - check hackrf support (wrapper + tools)
+  - add: apktool, uncompyle, angr, one_gadget
 
 
 # Split install
