@@ -1420,6 +1420,8 @@ function install_base() {
   fapt git                        # Git client
   fapt lsb-release
   fapt pciutils
+  fapt zip
+  fapt unzip
   fapt kmod
   fapt gifsicle
   fapt sudo                       # Sudo
