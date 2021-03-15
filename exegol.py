@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.0"
+VERSION = "3.1.1"
 
 '''
 # TODO :
@@ -22,7 +22,7 @@ VERSION = "3.1.0"
 - dans l'epilog, donner des exemples pour les devs et/ou faire une partie advanced usage dans le wiki, référencer le wiki dans le readme
 - vérifier que le help est clair (dans le help, bien expliquer que le container-tag est un identifiant unique pour le container)
 - nettoyer les variables et fonctions qui ne sont plus utilisées
-- remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la latest pointe vers master là : if dockertag == "": dockertag = "latest" (rename de master et latest vers main ?)
+- remove le default suivant ~l507 + ~l534 quand j'aurais dockertag == branch, la stable pointe vers master là : if dockertag == "": dockertag = "stable" (rename de master et stable vers main ?)
 - revoir la gestion/montage des ressources, peut-être un container différent ?
 - tester un exegol -m sources install et de nommer l'image sur un nom existant, voir le comportement
 - l640 corriger default_git_branch
@@ -511,7 +511,7 @@ def start():
                 logger.warning("Container does not exist")
                 info_images()
                 if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
-                    default_dockertag = "latest"
+                    default_dockertag = "stable"
                 else:
                     default_dockertag = LOCAL_GIT_BRANCH
                 imagetag = input(
@@ -616,7 +616,7 @@ def install():
     info_images()
     if options.mode == "release":
         if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
-            default_dockertag = "latest"
+            default_dockertag = "stable"
         else:
             default_dockertag = LOCAL_GIT_BRANCH
         dockertag = input(
@@ -646,10 +646,10 @@ def install():
             logger.info(" •  {}".format(branch["name"]))
         default_branch = LOCAL_GIT_BRANCH
         branch = input(
-            "{}[?]{} What branch do you want the code to be based upon [default: master]? ".format(BOLD_BLUE, END,
+            "{}[?]{} What branch do you want the code to be based upon [default: {}]? ".format(BOLD_BLUE, END,
                                                                                                    default_branch))
         if branch == "":
-            branch = "master"
+            branch = default_branch
         branch_in_branches = False
         for b in branches:
             if branch == b["name"]:
@@ -661,7 +661,7 @@ def install():
             # TODO: not sure the following cmd is needed : exec_system("git -C {} checkout {}".format(EXEGOL_PATH, branch))
             exec_system("git -C {} pull origin {}".format(EXEGOL_PATH, branch))
             if branch == "master":
-                default_imagetag = "latest"
+                default_imagetag = "stable"
             else:
                 default_imagetag = branch
             imagetag = input(
