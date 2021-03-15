@@ -21,8 +21,8 @@ function fapt() {
 }
 
 function python-pip() {
-  colorecho "Installing python-pip"
-  curl --insecure https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  colorecho "Installing python-pip (for Python2.7)"
+  curl --insecure https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py
   python get-pip.py
   rm get-pip.py
 }
@@ -228,26 +228,22 @@ function Bolt() {
   git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
 }
 
-function CrackMapExec_pip() {
+function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
   apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
-  python3 -m pip install pipx
-  pipx ensurepath
   pipx install crackmapexec
   # this is for having the ability to check the source code when working with modules and so on
   git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
-  crackmapexec smb # this is for initializing everything TODO : need to check it works
 }
 
-function lsassy() {
+function install_lsassy() {
   colorecho "Installing lsassy"
   git -C /opt/tools/ clone https://github.com/Hackndo/lsassy/
   cd /opt/tools/lsassy
+  git checkout 3.0.0
+  git pull origin 3.0.0
   python3 setup.py install
-  #wget -O /opt/tools/CrackMapExec/cme/modules/lsassy3.py https://raw.githubusercontent.com/Hackndo/lsassy/master/cme/lsassy3.py
-  #cd /opt/tools/CrackMapExec
-  #python3 setup.py install
-  python3 -m pip install 'asn1crypto>=1.3.0'
+  # python3 -m pip install 'asn1crypto>=1.3.0'
 }
 
 function sprayhound() {
@@ -291,7 +287,7 @@ function neo4j_install() {
 }
 
 function cypheroth() {
-  coloecho "Installing cypheroth"
+  colorecho "Installing cypheroth"
   git -C /opt/tools/ clone https://github.com/seajaysec/cypheroth/
 }
 
@@ -1313,11 +1309,6 @@ function install_gosecretsdump() {
   go get -u -v github.com/C-Sto/gosecretsdump
 }
 
-function creddump(){
-  colorecho "Installing creddump"
-  git -C /opt/tools/ clone https://github.com/moyix/creddump.git
-}
-
 function install_hackrf() {
   colorecho "Installing HackRF tools"
   apt-get -y install hackrf
@@ -1361,12 +1352,76 @@ function install_dnschef() {
     git -C /opt/tools/ clone https://github.com/iphelix/dnschef
 }
 
+function install_h2csmuggler() {
+  colorecho "Installing h2csmuggler"
+  git -C /opt/tools/ clone https://github.com/BishopFox/h2csmuggler
+  python3 -m pip install h2
+}
+
+function install_byp4xx() {
+  colorecho "Installing byp4xx"
+  git -C /opt/tools/ clone https://github.com/lobuhi/byp4xx
+}
+
+function install_pipx() {
+  colorecho "Installing pipx"
+  python3 -m pip install pipx
+  pipx ensurepath
+}
+
+function install_volatility() {
+  colorecho "Installing volatility"
+  apt-get -y install pcregrep libpcre++-dev python-dev yara
+  git -C /opt/tools/ clone https://github.com/volatilityfoundation/volatility
+  cd /opt/tools/volatility
+  python -m pip install pycrypto distorm3 pillow openpyxl ujson
+  python setup.py install
+  # https://github.com/volatilityfoundation/volatility/issues/535#issuecomment-407571161
+  ln -s /usr/local/lib/python2.7/dist-packages/usr/lib/libyara.so /usr/lib/libyara.so
+}
+
+function install_zsteg() {
+  colorecho "Installing zsteg"
+  gem install zsteg
+}
+
+function install_ngrok() {
+  colorecho "Installing ngrok"
+  wget -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+  unzip -d /opt/tools/bin/ /tmp/ngrok.zip
+}
+
+function install_pygpoabuse() {
+  colorecho "Installing pyGPOabuse"
+  git -C /opt/tools/ clone https://github.com/Hackndo/pyGPOAbuse
+}
+
+function install_rsactftool() {
+  colorecho "Installing RsaCtfTool"
+  git -C /opt/tools/ clone https://github.com/Ganapati/RsaCtfTool
+  cd /opt/tools/RsaCtfTool
+  apt-get -y install libgmp3-dev libmpc-dev
+  python3 -m pip install -r requirements.txt
+}
+
+function install_feroxbuster() {
+  colorecho "Installing feroxbuster"
+  cd /tmp
+  curl -sLO https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip
+  unzip feroxbuster_amd64.deb.zip
+  rm feroxbuster_amd64.deb.zip
+  apt-get -y install -f ./feroxbuster*.deb
+  rm feroxbuster*.deb
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
   fapt git                        # Git client
   fapt lsb-release
   fapt pciutils
+  fapt zip
+  fapt unzip
   fapt kmod
   fapt gifsicle
   fapt sudo                       # Sudo
@@ -1431,6 +1486,7 @@ function install_base() {
   fapt rar                        # rar
   fapt unrar                      # unrar
   fapt xz-utils                   # xz (de)compression
+  install_pipx
 }
 
 # Package dedicated to most used offensive tools
@@ -1466,7 +1522,7 @@ function install_most_used_tools() {
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  CrackMapExec_pip                # Network scanner
+  install_crackmapexec                # Network scanner
   Impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
@@ -1483,6 +1539,7 @@ function install_misc_tools() {
   install_trilium_packaged        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
+  install_ngrok                   # expose a local development server to the Internet
 }
 
 # Package dedicated to the installation of wordlists and tools like wl generators
@@ -1549,7 +1606,8 @@ function install_osint_tools() {
   fapt spiderfoot                 # SpiderFoot automates OSINT collection
   fapt finalrecon                 # A fast and simple python script for web reconnaissance
   fapt recon-ng                   # External recon tool
-  sn0int                          # Semi-automatic OSINT framework and package manager
+  # TODO : http://apt.vulns.sexy make apt update print a warning, and the repo has a weird name, we need to fix this in order to not alarm users
+  # sn0int                          # Semi-automatic OSINT framework and package manager
   OSRFramework                    # OSRFramework, the Open Sources Research Framework
   #Dark
   apt-get update
@@ -1616,6 +1674,9 @@ function install_web_tools() {
   symfony_exploits                #  symfony secret fragments exploit
   jdwp_shellifier                 # exploit java debug
   install_httpmethods             # Tool for HTTP methods enum & verb tampering
+  install_h2csmuggler             # Tool for HTTP2 smuggling
+  install_byp4xx                  # Tool to automate 40x errors bypass attempts
+  install_feroxbuster             # ffuf but with multithreaded recursion
 }
 
 # Package dedicated to command & control frameworks
@@ -1638,7 +1699,7 @@ install_services_tools() {
 # Package dedicated to internal Active Directory tools
 function install_ad_tools() {
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  CrackMapExec_pip                # Network scanner
+  install_crackmapexec                # Network scanner
   sprayhound                      # Password spraying tool
   bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
@@ -1650,7 +1711,7 @@ function install_ad_tools() {
   dementor                        # SpoolService exploiter
   Impacket                        # Network protocols scripts
   pykek                           # AD vulnerability exploiter
-  lsassy                          # Credentials extracter
+  install_lsassy                  # Credentials extracter
   privexchange                    # Exchange exploiter
   ruler                           # Exchange exploiter
   darkarmour                      # Windows AV evasion
@@ -1683,10 +1744,10 @@ function install_ad_tools() {
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
   hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
   install_gosecretsdump           # secretsdump in Go for heavy files 
-  creddump                        # install creddump
   install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
   install_powermad                # MachineAccountQuota and DNS exploit tools
   install_snaffler                # Shares enumeration and looting
+  install_pygpoabuse              # TODO : comment this
 }
 
 # Package dedicated to mobile apps pentest tools
@@ -1758,13 +1819,14 @@ function install_wifi_tools() {
 # Package dedicated to forensic tools
 function install_forensic_tools() {
   fapt pst-utils                  # Reads a PST and prints the tree structure to the console
-  # TODO: add volatility
+  fapt binwalk                    # Tool to find embedded files
+  fapt foremost                   # Alternative to binwalk
+  install_volatility              # Memory analysis tool
 }
 
 # Package dedicated to steganography tools
 function install_steganography_tools() {
-  continue
-  # TODO
+  install_zsteg               # detect stegano-hidden data in PNG & BMP
 }
 
 # Package dedicated to cloud tools
@@ -1780,6 +1842,11 @@ function install_reverse_tools() {
   checksec_py                     # Check security on binaries
   fapt nasm                       # Netwide Assembler
   fapt radare2                    # Awesome debugger
+}
+
+# Package dedicated to attack crypto
+function install_crypto_tools() {
+  install_rsactftool              # attack rsa
 }
 
 # Package dedicated to GUI-based apps
@@ -1832,11 +1899,8 @@ function install_resources() {
 # Function used to clean up post-install files
 function install_clean() {
   colorecho "Cleaning..."
-  # TODO: clean /tmp and other dirs
-  # rm -r /tmp/*
+  rm -r /tmp/*
   # rm /usr/local/bin/bloodhound-python
-  # rm /tmp/gobuster.7z
-  # rm -r /tmp/gobuster-linux-amd64
 }
 
 # Entry point for the installation
