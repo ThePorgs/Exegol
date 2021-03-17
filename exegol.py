@@ -868,7 +868,6 @@ def info():
 
 def version():
    logger.info(f"You are running version {VERSION}")
-   print()
 
 if __name__ == "__main__":
     BOLD_GREEN = "\033[1;32m"
