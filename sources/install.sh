@@ -1410,7 +1410,7 @@ function install_feroxbuster() {
   curl -sLO https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip
   unzip feroxbuster_amd64.deb.zip
   rm feroxbuster_amd64.deb.zip
-  apt-get -y install -f ./feroxbuster*.deb
+  apt-get -y install -f ./feroxbuster_*_.deb
   rm feroxbuster*.deb
 }
 

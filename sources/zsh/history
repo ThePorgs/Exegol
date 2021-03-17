@@ -159,7 +159,6 @@ ffuf -fs 185 -c -w `fzf-wordlists` -H 'Host: FUZZ.org' -u http://192.168.10.10/
 ffuf -c -w `fzf-wordlists` -e .php,.txt,.pl,.sh,.asp,.aspx,.html,.json,.py,.cfm,.rb,.cgi,.bak,.tar.gz,.tgz,.zip -u http://192.168.10.10/FUZZ
 ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ --extract-links
 ffuf -c -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
-feroxbuster -w `fzf-wordlists` -u http://192.168.10.10/FUZZ
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.machine.org" -u http://192.168.10.10/
 wfuzz --hh 185 -c -w `fzf-wordlists` -H "Host: FUZZ.org" -u http://192.168.10.10/
 evil-winrm -u serviceaccount -p P4ssw0rd -i 192.168.56.101
@@ -258,4 +257,5 @@ hakrawler -url http://www.s01.breaking.bad/
 adidnsdump -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
 proxychains adidnsdump --dns-tcp -u "BREAKING.BAD\someuser" -p 'somepassword' --print-zones 192.168.56.101
 ngrok authtoken AUTHTOKEN:::https://dashboard.ngrok.com/get-started/your-authtoken
+feroxbuster -w `fzf-wordlists` -u http://192.168.10.10/
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
