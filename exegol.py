@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.2"
+VERSION = "3.1.3"
 
 '''
 # TODO :
@@ -635,6 +635,8 @@ def install():
         if dockertag not in remote_image_tags:
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
+            logger.info("Pulling sources from GitHub (local changes won't be overwritten)")
+            exec_system("git -C {} pull origin {}".format(EXEGOL_PATH, LOCAL_GIT_BRANCH))
             logger.info("Pulling {} from DockerHub".format(IMAGE_NAME + ":" + dockertag))
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
@@ -866,7 +868,6 @@ def info():
 
 def version():
    logger.info(f"You are running version {VERSION}")
-   print()
 
 if __name__ == "__main__":
     BOLD_GREEN = "\033[1;32m"
