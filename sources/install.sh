@@ -231,9 +231,11 @@ function Bolt() {
 function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
   apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
-  pipx install crackmapexec
+  #pipx install crackmapexec
   # this is for having the ability to check the source code when working with modules and so on
-  git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
+  #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
+  apt-get -y install crackmapexec
+  # Installing from apt instead of sources or pip in order to have the kali exclusive version
 }
 
 function install_lsassy() {
@@ -781,7 +783,7 @@ function rubeus() {
 
 function inveigh() {
   colorecho "Downloading Inveigh"
-  git -C /opt/resources/windows https://github.com/Kevin-Robertson/Inveigh
+  git -C /opt/resources/windows/ clone https://github.com/Kevin-Robertson/Inveigh
 }
 
 function sharphound() {
@@ -1414,6 +1416,23 @@ function install_feroxbuster() {
   rm feroxbuster*.deb
 }
 
+function install_bloodhound-import() {
+  colorecho "Installing bloodhound-import"
+  python3 -m pip install bloodhound-import
+}
+
+function install_bloodhound-quickwin() {
+  colorecho "Installing bloodhound-quickwin"
+  python3 -m pip install py2neo pandas prettytable
+  git -C /opt/tools/ clone https://github.com/kaluche/bloodhound-quickwin
+}
+
+function install_ldapsearch-ad() {
+  colorecho "Installing ldapsearch-ad"
+  python3 -m pip install -r requirements.txt
+  git -C /opt/tools/ clone https://github.com/yaap7/ldapsearch-ad
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1748,6 +1767,9 @@ function install_ad_tools() {
   install_powermad                # MachineAccountQuota and DNS exploit tools
   install_snaffler                # Shares enumeration and looting
   install_pygpoabuse              # TODO : comment this
+  install_bloodhound-import       # Python script to import BH data to a neo4j db
+  install_bloodhound-quickwin     # Python script to find quickwins from BH data in a neo4j db
+  install_ldapsearch-ad           # Python script to find quickwins from basic ldap enum
 }
 
 # Package dedicated to mobile apps pentest tools
