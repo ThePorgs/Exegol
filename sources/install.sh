@@ -261,8 +261,10 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  cp -v /root/sources/patches/0001-User-defined-password-for-LDAP-attack-addComputer.patch 0001-User-defined-password-for-LDAP-attack-addComputer.patch
-  git apply 0001-User-defined-password-for-LDAP-attack-addComputer.patch
+  cp -v /root/sources/patches/impacket-pull-request-843.patch impacket-pull-request-843.patch
+  cp -v /root/sources/patches/impacket-pull-request-1091.patch impacket-pull-request-1091.patch
+  git apply --verbose impacket-pull-request-843.patch
+  git apply --verbose impacket-pull-request-1091.patch
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -951,7 +953,7 @@ function pyrit() {
   python -m pip install psycopg2-binary scapy
   #https://github.com/JPaulMora/Pyrit/issues/591
   cp -v /root/sources/patches/undefined-symbol-aesni-key.patch undefined-symbol-aesni-key.patch
-  git apply undefined-symbol-aesni-key.patch
+  git apply --verbose undefined-symbol-aesni-key.patch
   python setup.py clean
   python setup.py build
   python setup.py install
