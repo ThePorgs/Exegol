@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.3"
+VERSION = "3.1.4"
 
 '''
 # TODO :
@@ -244,11 +244,16 @@ def get_options():
 
 
 def container_exists(containertag):
-    len_containers = len(client.containers.list(all=True, filters={"name": "exegol-" + containertag}))
-    logger.debug("Containers with name {}: {}".format("exegol-" + containertag, str(len_containers)))
-    if len_containers > 1:
+    containers = client.containers.list(all=True, filters={"name": "exegol-" + containertag})
+    for container in containers:
+        if not container.name == "exegol-" + containertag:
+            containers.remove(container)
+    logger.debug("Containers with name {}: {}".format("exegol-" + containertag, str(len(containers))))
+    if len(containers) > 1:
         logger.error("Something's wrong, you shouldn't have multiple containers with the same name...")
-    return bool(client.containers.list(all=True, filters={"name": "exegol-" + containertag}))
+        return False
+    else:
+        return True
 
 
 def was_created_with_gui(container):
@@ -473,7 +478,11 @@ def start():
         if container_exists(options.containertag):
             if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
                 logger.success("Container exists")
-            container = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})[0]
+            containers = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
+            for container in containers:
+                if not container.name == "exegol-" + options.containertag:
+                    containers.remove(container)
+            container = containers[0]
             if container.attrs["State"]["Status"] == "running":
                 if LOOP_PREVENTION == "exec":
                     logger.debug("Loop prevention triggered")
@@ -562,12 +571,20 @@ def start():
 def stop():
     if not options.containertag:
         select_containertag(LOCAL_GIT_BRANCH)
-    container = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})[0]
+    containers = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
+    for container in containers:
+        if not container.name == "exegol-" + options.containertag:
+            containers.remove(container)
+    container = containers[0]
     if container.attrs["State"]["Status"] == "running":
         logger.info("Container is up")
         logger.info("Stopping container")
         exec_popen("docker stop --time 3 {}".format("exegol-" + options.containertag))
-        container = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})[0]
+        containers = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
+        for container in containers:
+            if not container.name == "exegol-" + options.containertag:
+                containers.remove(container)
+        container = containers[0]
         if container.attrs["State"]["Status"] == "running":
             logger.error("Container is still up, something went wrong...")
         else:

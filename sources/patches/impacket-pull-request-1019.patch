@@ -1,0 +1,96 @@
+From e852343adfee6b66075d3c94510661ccf7fab03e Mon Sep 17 00:00:00 2001
+From: mxrch <kvwaljam@protonmail.ch>
+Date: Sat, 26 Dec 2020 02:50:15 +0100
+Subject: [PATCH 1/2] Added cat command to smbclient
+
+---
+ impacket/examples/smbclient.py | 28 ++++++++++++++++++++++++++++
+ requirements.txt               |  1 +
+ 2 files changed, 29 insertions(+)
+
+diff --git a/impacket/examples/smbclient.py b/impacket/examples/smbclient.py
+index 2480f5fa..4ca0abea 100755
+--- a/impacket/examples/smbclient.py
++++ b/impacket/examples/smbclient.py
+@@ -15,6 +15,7 @@
+ #
+ from __future__ import division
+ from __future__ import print_function
++from io import BytesIO
+ import sys
+ import time
+ import cmd
+@@ -29,6 +30,8 @@
+     FILE_READ_DATA, FILE_SHARE_READ, FILE_SHARE_WRITE
+ from impacket.smb3structs import FILE_DIRECTORY_FILE, FILE_LIST_DIRECTORY
+
++import chardet
++
+
+ # If you wanna have readline like functionality in Windows, install pyreadline
+ try:
+@@ -460,6 +463,31 @@ def do_get(self, filename):
+             raise
+         fh.close()
+
++    def do_cat(self, filename):
++        if self.tid is None:
++            LOG.error("No share selected")
++            return
++        filename = filename.replace('/','\\')
++        fh = BytesIO()
++        pathname = ntpath.join(self.pwd,filename)
++        try:
++            self.smb.getFile(self.share, pathname, fh.write)
++        except:
++            raise
++        output = fh.getvalue()
++        encoding = chardet.detect(output)["encoding"]
++        error_msg = "[-] Output cannot be correctly decoded, are you sure the text is readable ?"
++        if encoding:
++            try:
++                print(output.decode(encoding))
++            except:
++                print(error_msg)
++            finally:
++                fh.close()
++        else:
++            print(error_msg)
++            fh.close()
++
+     def do_close(self, line):
+         self.do_logoff(line)
+
+diff --git a/requirements.txt b/requirements.txt
+index 433e7387..fd8459bb 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,5 +1,6 @@
+ future
+ six
++chardet
+ pyasn1>=0.2.3
+ pycryptodomex
+ pyOpenSSL>=0.16.2
+
+From c2749e472c86850b4c993985ab0a90cb1fd08de4 Mon Sep 17 00:00:00 2001
+From: mxrch <17338428+mxrch@users.noreply.github.com>
+Date: Sat, 26 Dec 2020 03:07:46 +0100
+Subject: [PATCH 2/2] Added command description
+
+---
+ impacket/examples/smbclient.py | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/impacket/examples/smbclient.py b/impacket/examples/smbclient.py
+index 4ca0abea..98475a74 100755
+--- a/impacket/examples/smbclient.py
++++ b/impacket/examples/smbclient.py
+@@ -114,6 +114,7 @@ def do_help(self,line):
+  rmdir {dirname} - removes the directory under the current path
+  put {filename} - uploads the filename into the current path
+  get {filename} - downloads the filename from the current path
++ cat {filename} - reads the filename from the current path
+  mount {target,path} - creates a mount point from {path} to {target} (admin required)
+  umount {path} - removes the mount point at {path} without deleting the directory (admin required)
+  list_snapshots {path} - lists the vss snapshots for the specified path
