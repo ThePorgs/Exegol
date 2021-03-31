@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.3"
+VERSION = "3.1.4"
 
 '''
 # TODO :
