@@ -9,7 +9,7 @@
   <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/ShutdownRepo/Exegol">
   <img alt="Python" src="https://img.shields.io/badge/Python-3-success">
   <br>
-  <img alt="current version" src="https://img.shields.io/badge/version-3.1.4-blueviolet">
+  <img alt="current version" src="https://img.shields.io/badge/version-3.1.5-blueviolet">
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29">
   <br></br>
