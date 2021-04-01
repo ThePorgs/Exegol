@@ -114,6 +114,15 @@ def get_options():
     # Required arguments
     parser._positionals.title = "{}Required arguments{}".format("\033[1;32m", END)
     parser.add_argument("action", choices=actions.keys(), help=actions_help)
+    parser.add_argument(
+        "-k",
+        "--insecure",
+        dest="verify",
+        action="store_false",
+        default=True,
+        required=False,
+        help="Allow insecure server connections for web requests (default: False)",
+    )
 
     # Optional arguments
     parser._optionals.title = "{}Optional arguments{}".format(BLUE, END)
@@ -643,7 +652,7 @@ def install():
             dockertag = default_dockertag
         logger.debug("Fetching DockerHub images tags")
         remote_image_tags = []
-        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), verify=options.verify)
         for image in \
                 eval(
                     remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
@@ -658,7 +667,7 @@ def install():
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
         logger.debug("Fetching available GitHub branches")
-        branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches")
+        branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches", verify=options.verify)
         branches = eval(branches_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))
         logger.info("Available GitHub branches")
         for branch in branches:
@@ -744,7 +753,7 @@ def info_images():
     remote_images = {}
     logger.debug("Fetching remote image tags, digests and sizes")
     try:
-        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), timeout=(5, 10))
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), timeout=(5, 10), verify=options.verify)
         remote_images_list = json.loads(remote_images_request.text)
         for image in remote_images_list["results"]:
             tag = image["name"]
@@ -818,8 +827,9 @@ def info_images():
                 table.add_row(image[0], image[1], image[2], image[3])
         console.print(table)
         print()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as err:
         logger.warning("Connection Error: you probably have no internet, skipping online queries")
+        logger.warning(f"Error: {err}")
 
 
 def info_containers():
@@ -906,6 +916,16 @@ if __name__ == "__main__":
     options = get_options()
     logger = Logger(options.verbosity, options.quiet)
     console = Console()
+
+    if not options.verify:
+        requests.packages.urllib3.disable_warnings()
+        logger.verbose("Disabling warnings of insecure connection for invalid certificates")
+        requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
+        logger.debug("Allowing the use of deprecated and weak cipher methods")
+        try:
+            requests.packages.urllib3.contrib.pyopenssl.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
+        except AttributeError:
+            pass
 
     try:
         client = docker.from_env()
