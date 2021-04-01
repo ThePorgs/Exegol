@@ -1435,6 +1435,11 @@ function install_ldapsearch-ad() {
   git -C /opt/tools/ clone https://github.com/yaap7/ldapsearch-ad
 }
 
+function install_ntlm-scanner() {
+  colorecho "Installing ntlm-scanner"
+  git -C /opt/tools/ clone https://github.com/preempt/ntlm-scanner
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1772,6 +1777,7 @@ function install_ad_tools() {
   install_bloodhound-import       # Python script to import BH data to a neo4j db
   install_bloodhound-quickwin     # Python script to find quickwins from BH data in a neo4j db
   install_ldapsearch-ad           # Python script to find quickwins from basic ldap enum
+  install_ntlm-scanner            # Python script to check public vulns on DCs
 }
 
 # Package dedicated to mobile apps pentest tools
