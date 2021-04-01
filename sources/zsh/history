@@ -264,4 +264,8 @@ ldapsearch-ad -l 'dc01.breaking.bad' -d 'breaking.bad' -u 'someuser' -p 'somepas
 ldapsearch-ad -l 'dc01.breaking.bad' -t info
 dnstool.py -u 'BREAKING.BAD\johndoe' -p 'somepassword' --record '*' --action query DC01.BREAKING.BAD
 dnstool.py -u 'BREAKING.BAD\johndoe' -p 'somepassword' --record '*' --action add --data 192.168.56.1 DC01.BREAKING.BAD
+ntlm-scanner -vuln CVE-2019-1019 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
+ntlm-scanner -vuln CVE-2019-1338 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
+ntlm-scanner -vuln CVE-2019-1166 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
+ntlm-scanner -vuln CVE-2019-1040 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
