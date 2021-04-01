@@ -251,9 +251,9 @@ def container_exists(containertag):
     logger.debug("Containers with name {}: {}".format("exegol-" + containertag, str(len(containers))))
     if len(containers) > 1:
         logger.error("Something's wrong, you shouldn't have multiple containers with the same name...")
-        return False
+        exit(1)
     else:
-        return True
+        return bool(len(containers))
 
 
 def was_created_with_gui(container):
