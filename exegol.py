@@ -539,10 +539,16 @@ def start():
                     imagetag = default_dockertag
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
                     info_containers()
-                    if not container_exists(imagetag):
+                    if options.containertag:
+                        default_containertag = options.containertag
+                    elif not container_exists(imagetag):
                         default_containertag = imagetag
                     else:
-                        default_containertag = options.containertag
+                        logger.error(f"Something's wrong. Please create a detailed issue with everything you did and are trying to do (https://github.com/ShutdownRepo/Exegol/issues)")
+                        # When running start without supplying a container tag, there are multiple scenarios
+                        # 1. if >= 1 container(s) exist(s), one will be chosen to start
+                        # 2. else, a container is created, either using a supplied tag or using the imagetag
+                        # The user shouldn't end up here.
                     client.containers.list(all=True, filters={"name": "exegol-"})
                     containertag = input(
                         "{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(
