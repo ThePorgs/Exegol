@@ -259,7 +259,7 @@ proxychains adidnsdump --dns-tcp -u "BREAKING.BAD\someuser" -p 'somepassword' --
 ngrok authtoken AUTHTOKEN:::https://dashboard.ngrok.com/get-started/your-authtoken
 feroxbuster -w `fzf-wordlists` -u http://192.168.10.10/
 bloodhound-import -du neo4j -dp exegol4thewin *.json
-bloodhound-quickwin -u neo4j -p exegol4thewin'
+bloodhound-quickwin -u neo4j -p exegol4thewin
 ldapsearch-ad -l 'dc01.breaking.bad' -d 'breaking.bad' -u 'someuser' -p 'somepassword' -t all
 ldapsearch-ad -l 'dc01.breaking.bad' -t info
 dnstool.py -u 'BREAKING.BAD\johndoe' -p 'somepassword' --record '*' --action query DC01.BREAKING.BAD

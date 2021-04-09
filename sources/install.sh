@@ -551,6 +551,7 @@ function xsrfprobe() {
 
 function krbrelayx() {
   colorecho "Installing krbrelayx"
+  python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
 }
 
