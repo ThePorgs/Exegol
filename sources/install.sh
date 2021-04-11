@@ -372,6 +372,16 @@ function install_gobuster() {
   go get -u -v github.com/OJ/gobuster
 }
 
+function install_kiterunner() {
+  colorecho "Installing kiterunner (kr)"
+  git -C /opt/tools/ clone https://github.com/assetnote/kiterunner.git
+  cd /opt/tools/kiterunner
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-large.kite.tar.gz
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-small.kite.tar.gz
+  make build
+  ln -s $(pwd)/dist/kr /opt/tools/bin/kr
+}
+
 function amass() {
   colorecho "Installing amass"
   go get -v -u github.com/OWASP/Amass/v3/...
@@ -1552,6 +1562,7 @@ function install_most_used_tools() {
   install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   install_simplyemail             # Gather emails
   install_gobuster                # Web fuzzer (pretty good for several extensions)
+  install_kiterunner              # Web fuzzer (fast and pretty good for api bruteforce)
   install_ffuf                    # Web fuzzer (little favorites)
   fapt wfuzz                      # Web fuzzer (second favorites)
   fapt nikto                      # Web scanner
@@ -1676,6 +1687,7 @@ function install_osint_tools() {
 # Package dedicated to applicative and active web pentest tools
 function install_web_tools() {
   install_gobuster                # Web fuzzer (pretty good for several extensions)
+  install_kiterunner              # Web fuzzer (fast and pretty good for api bruteforce)
   amass                           # Web fuzzer
   install_ffuf                    # Web fuzzer (little favorites)
   fapt dirb                       # Web fuzzer
