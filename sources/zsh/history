@@ -268,4 +268,9 @@ ntlm-scanner -vuln CVE-2019-1019 -target 'BREAKING.BAD'/'someuser':'somepassword
 ntlm-scanner -vuln CVE-2019-1338 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 ntlm-scanner -vuln CVE-2019-1166 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 ntlm-scanner -vuln CVE-2019-1040 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
+das add -db dbname masscan '-e eth0 --rate 1000 -iL hosts.txt --open -p1-65535'
+das add -db dbname rustscan '-b 1000 -t 2000 -u 5000 -a hosts.txt -r 1-65535 -g --no-config --scan-order "Random"'
+das scan -db dbname -hosts all -oA report1 -nmap '-Pn -sVC -O' -parallel
+das scan -db dbname -ports 22,80,443,445 -show
+das report -hosts 192.168.1.0/24 -oA report2
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

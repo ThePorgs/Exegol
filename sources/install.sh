@@ -1441,6 +1441,21 @@ function install_ntlm-scanner() {
   git -C /opt/tools/ clone https://github.com/preempt/ntlm-scanner
 }
 
+function install_rustscan() {
+  colorecho "Installing RustScan"
+  mkdir /opt/tools/rustscan/
+  wget -qO- https://api.github.com/repos/RustScan/RustScan/releases/latest | grep "browser_download_url.*amd64.deb" | cut -d: -f2,3 | tr -d \" | wget -qO /opt/tools/rustscan/rustscan.deb -i-
+  dpkg -i /opt/tools/rustscan/rustscan.deb
+  wget https://gist.github.com/snovvcrash/c7f8223cc27154555496a9cbb4650681/raw/a76a2c658370d8b823a8a38a860e4d88051b417e/rustscan-ports-top1000.toml -O /root/.rustscan.toml
+}
+
+function install_divideandscan() {
+  colorecho "Installing DivideAndScan"
+  git -C /opt/tools/ clone https://github.com/snovvcrash/DivideAndScan
+  cd /opt/tools/DivideAndScan
+  python3 -m pip install .
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1513,6 +1528,7 @@ function install_base() {
   fapt rar                        # rar
   fapt unrar                      # unrar
   fapt xz-utils                   # xz (de)compression
+  fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
 }
 
@@ -1831,6 +1847,8 @@ function install_network_tools() {
   fapt iproute2                   # Firewall rules
   fapt tcpdump                    # Capture TCP traffic
   install_dnschef                 # Python DNS server
+  install_rustscan                # Fast port scanner
+  install_divideandscan           # Python project to automate port scanning routine
 }
 
 # Package dedicated to wifi pentest tools
