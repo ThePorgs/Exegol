@@ -1235,6 +1235,12 @@ function hashonymize() {
   python3 setup.py install
 }
 
+function install_theHarvester() {
+  colorecho "Installing theHarvester"
+  python3 -m pip install censys
+  apt-get -y install theharvester
+}
+
 function install_pcsc() {
   colorecho "Installing tools for PC/SC (smartcard)"
   apt-get install -y pcsc-tools pcscd libpcsclite-dev libpcsclite1
@@ -1543,7 +1549,7 @@ function install_most_used_tools() {
   install_autorecon               # External recon tool
   install_gitrob                  # Senstive files reconnaissance in github
   install_waybackurls             # Website history
-  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners
+  install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   install_simplyemail             # Gather emails
   install_gobuster                # Web fuzzer (pretty good for several extensions)
   install_ffuf                    # Web fuzzer (little favorites)
@@ -1620,7 +1626,7 @@ function install_osint_tools() {
   #Email
   holehe                          # Check if the mail is used on different sites
   install_simplyemail             # Gather emails
-  fapt theharvester               # Gather emails, subdomains, hosts, employee names, open ports and banners
+  install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   h8mail                          # Email OSINT & Password breach hunting tool
   infoga                          # Gathering email accounts informations
   buster                          # An advanced tool for email reconnaissance
