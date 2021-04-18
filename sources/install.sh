@@ -1855,6 +1855,8 @@ function install_network_tools() {
   install_dnschef                 # Python DNS server
   install_rustscan                # Fast port scanner
   install_divideandscan           # Python project to automate port scanning routine
+  fapt iptables                   # iptables for the win
+  fapt traceroute                 # ping ping
 }
 
 # Package dedicated to wifi pentest tools
