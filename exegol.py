@@ -483,7 +483,17 @@ def start():
         if LOOP_PREVENTION == "":
             logger.success("{} Exegol images exist".format(len_images))
         if not options.containertag:
-            select_containertag(LOCAL_GIT_BRANCH)
+            len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
+            if len_containers > 0:
+                select_containertag(LOCAL_GIT_BRANCH)
+            else:
+                # no container exists, let's set the containertag and we'll bypass the next condition
+                # and go directly to the else, i.e. the container creation
+                # default to local git branch or master if none
+                if not LOCAL_GIT_BRANCH:
+                    options.containertag = "master"
+                else:
+                    options.containertag = LOCAL_GIT_BRANCH
         if container_exists(options.containertag):
             if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
                 logger.success("Container exists")
@@ -840,59 +850,59 @@ def info_images():
 
 def info_containers():
     len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
-    logger.info("Available local containers: {}".format(len_containers))
-    containers = []
-    for container in client.containers.list(all=True, filters={"name": "exegol-"}):
-        id = container.attrs["Id"][:12]
-        tag = container.attrs["Name"].replace('/exegol-', '')
-        state = container.attrs["State"]["Status"]
-        if state == "running":
-            state = "[green]" + state + "[/green]"
-        image = container.attrs["Config"]["Image"]
-        logger.debug("Fetching details on containers creation")
-        details = []
-        if was_created_with_gui(container):
-            details.append("--X11")
-        if was_created_with_host_networking(container):
-            details.append("--host-network")
-        if was_created_with_device(container):
-            details.append("--device {}".format(was_created_with_device(container)))
-        if was_created_with_privileged(container):
-            details.append("[orange3]--privileged[/orange3]")
-        details = " ".join(details)
-        logger.debug("Fetching volumes for each container")
-        volumes = ""
-        if container.attrs["HostConfig"]["Binds"]:
-            for bind in container.attrs["HostConfig"]["Binds"]:
-                volumes += bind.replace(":", " ↔ ") + "\n"
-        if container.attrs["HostConfig"]["Mounts"]:
-            for mount in container.attrs["HostConfig"]["Mounts"]:
-                volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
-                volumes += " ↔ "
-                volumes += mount["Target"]
-                volumes += "\n"
-        containers.append([id, tag, state, image, details, volumes])
-
-    if options.verbosity == 0:
-        table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
-        table.add_column("Container tag")
-        table.add_column("State")
-        table.add_column("Image (repo/image:tag)")
-        table.add_column("Creation details")
-        for container in containers:
-            table.add_row(container[1], container[2], container[3], container[4])
-    elif options.verbosity >= 1:
-        table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
-        table.add_column("Id")
-        table.add_column("Container tag")
-        table.add_column("State")
-        table.add_column("Image (repo/image:tag)")
-        table.add_column("Creation details")
-        table.add_column("Binds & mounts")
-        for container in containers:
-            table.add_row(container[0], container[1], container[2], container[3], container[4], container[5])
-    console.print(table)
-    print()
+    if len_containers > 0:
+        logger.info("Available local containers: {}".format(len_containers))
+        containers = []
+        for container in client.containers.list(all=True, filters={"name": "exegol-"}):
+            id = container.attrs["Id"][:12]
+            tag = container.attrs["Name"].replace('/exegol-', '')
+            state = container.attrs["State"]["Status"]
+            if state == "running":
+                state = "[green]" + state + "[/green]"
+            image = container.attrs["Config"]["Image"]
+            logger.debug("Fetching details on containers creation")
+            details = []
+            if was_created_with_gui(container):
+                details.append("--X11")
+            if was_created_with_host_networking(container):
+                details.append("--host-network")
+            if was_created_with_device(container):
+                details.append("--device {}".format(was_created_with_device(container)))
+            if was_created_with_privileged(container):
+                details.append("[orange3]--privileged[/orange3]")
+            details = " ".join(details)
+            logger.debug("Fetching volumes for each container")
+            volumes = ""
+            if container.attrs["HostConfig"]["Binds"]:
+                for bind in container.attrs["HostConfig"]["Binds"]:
+                    volumes += bind.replace(":", " ↔ ") + "\n"
+            if container.attrs["HostConfig"]["Mounts"]:
+                for mount in container.attrs["HostConfig"]["Mounts"]:
+                    volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
+                    volumes += " ↔ "
+                    volumes += mount["Target"]
+                    volumes += "\n"
+            containers.append([id, tag, state, image, details, volumes])
+        if options.verbosity == 0:
+            table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
+            table.add_column("Container tag")
+            table.add_column("State")
+            table.add_column("Image (repo/image:tag)")
+            table.add_column("Creation details")
+            for container in containers:
+                table.add_row(container[1], container[2], container[3], container[4])
+        elif options.verbosity >= 1:
+            table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
+            table.add_column("Id")
+            table.add_column("Container tag")
+            table.add_column("State")
+            table.add_column("Image (repo/image:tag)")
+            table.add_column("Creation details")
+            table.add_column("Binds & mounts")
+            for container in containers:
+                table.add_row(container[0], container[1], container[2], container[3], container[4], container[5])
+        console.print(table)
+        print()
 
 
 def info():
