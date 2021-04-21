@@ -25,7 +25,8 @@
   - add dumpert dll and exe in windows resources
   - check hackrf support (wrapper + tools)
   - add: apktool, uncompyle, angr, one_gadget
-
+  - add kerbrute
+  - replace is and is not with == and !=, danger ahead
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

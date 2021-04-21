@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.5"
+VERSION = "3.1.6"
 
 '''
 # TODO :
@@ -114,6 +114,15 @@ def get_options():
     # Required arguments
     parser._positionals.title = "{}Required arguments{}".format("\033[1;32m", END)
     parser.add_argument("action", choices=actions.keys(), help=actions_help)
+    parser.add_argument(
+        "-k",
+        "--insecure",
+        dest="verify",
+        action="store_false",
+        default=True,
+        required=False,
+        help="Allow insecure server connections for web requests (default: False)",
+    )
 
     # Optional arguments
     parser._optionals.title = "{}Optional arguments{}".format(BLUE, END)
@@ -474,7 +483,17 @@ def start():
         if LOOP_PREVENTION == "":
             logger.success("{} Exegol images exist".format(len_images))
         if not options.containertag:
-            select_containertag(LOCAL_GIT_BRANCH)
+            len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
+            if len_containers > 0:
+                select_containertag(LOCAL_GIT_BRANCH)
+            else:
+                # no container exists, let's set the containertag and we'll bypass the next condition
+                # and go directly to the else, i.e. the container creation
+                # default to local git branch or master if none
+                if not LOCAL_GIT_BRANCH:
+                    options.containertag = "master"
+                else:
+                    options.containertag = LOCAL_GIT_BRANCH
         if container_exists(options.containertag):
             if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
                 logger.success("Container exists")
@@ -530,10 +549,16 @@ def start():
                     imagetag = default_dockertag
                 if client.images.list(IMAGE_NAME + ":" + imagetag):
                     info_containers()
-                    if not container_exists(imagetag):
+                    if options.containertag:
+                        default_containertag = options.containertag
+                    elif not container_exists(imagetag):
                         default_containertag = imagetag
                     else:
-                        default_containertag = options.containertag
+                        logger.error(f"Something's wrong. Please create a detailed issue with everything you did and are trying to do (https://github.com/ShutdownRepo/Exegol/issues)")
+                        # When running start without supplying a container tag, there are multiple scenarios
+                        # 1. if >= 1 container(s) exist(s), one will be chosen to start
+                        # 2. else, a container is created, either using a supplied tag or using the imagetag
+                        # The user shouldn't end up here.
                     client.containers.list(all=True, filters={"name": "exegol-"})
                     containertag = input(
                         "{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(
@@ -643,7 +668,7 @@ def install():
             dockertag = default_dockertag
         logger.debug("Fetching DockerHub images tags")
         remote_image_tags = []
-        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME))
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), verify=options.verify)
         for image in \
                 eval(
                     remote_images_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))[
@@ -658,7 +683,7 @@ def install():
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
         logger.debug("Fetching available GitHub branches")
-        branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches")
+        branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches", verify=options.verify)
         branches = eval(branches_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))
         logger.info("Available GitHub branches")
         for branch in branches:
@@ -744,7 +769,7 @@ def info_images():
     remote_images = {}
     logger.debug("Fetching remote image tags, digests and sizes")
     try:
-        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), timeout=(5, 10))
+        remote_images_request = requests.get(url="https://hub.docker.com/v2/repositories/{}/tags".format(IMAGE_NAME), timeout=(5, 10), verify=options.verify)
         remote_images_list = json.loads(remote_images_request.text)
         for image in remote_images_list["results"]:
             tag = image["name"]
@@ -818,65 +843,66 @@ def info_images():
                 table.add_row(image[0], image[1], image[2], image[3])
         console.print(table)
         print()
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as err:
         logger.warning("Connection Error: you probably have no internet, skipping online queries")
+        logger.warning(f"Error: {err}")
 
 
 def info_containers():
     len_containers = len(client.containers.list(all=True, filters={"name": "exegol-"}))
-    logger.info("Available local containers: {}".format(len_containers))
-    containers = []
-    for container in client.containers.list(all=True, filters={"name": "exegol-"}):
-        id = container.attrs["Id"][:12]
-        tag = container.attrs["Name"].replace('/exegol-', '')
-        state = container.attrs["State"]["Status"]
-        if state == "running":
-            state = "[green]" + state + "[/green]"
-        image = container.attrs["Config"]["Image"]
-        logger.debug("Fetching details on containers creation")
-        details = []
-        if was_created_with_gui(container):
-            details.append("--X11")
-        if was_created_with_host_networking(container):
-            details.append("--host-network")
-        if was_created_with_device(container):
-            details.append("--device {}".format(was_created_with_device(container)))
-        if was_created_with_privileged(container):
-            details.append("[orange3]--privileged[/orange3]")
-        details = " ".join(details)
-        logger.debug("Fetching volumes for each container")
-        volumes = ""
-        if container.attrs["HostConfig"]["Binds"]:
-            for bind in container.attrs["HostConfig"]["Binds"]:
-                volumes += bind.replace(":", " ↔ ") + "\n"
-        if container.attrs["HostConfig"]["Mounts"]:
-            for mount in container.attrs["HostConfig"]["Mounts"]:
-                volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
-                volumes += " ↔ "
-                volumes += mount["Target"]
-                volumes += "\n"
-        containers.append([id, tag, state, image, details, volumes])
-
-    if options.verbosity == 0:
-        table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
-        table.add_column("Container tag")
-        table.add_column("State")
-        table.add_column("Image (repo/image:tag)")
-        table.add_column("Creation details")
-        for container in containers:
-            table.add_row(container[1], container[2], container[3], container[4])
-    elif options.verbosity >= 1:
-        table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
-        table.add_column("Id")
-        table.add_column("Container tag")
-        table.add_column("State")
-        table.add_column("Image (repo/image:tag)")
-        table.add_column("Creation details")
-        table.add_column("Binds & mounts")
-        for container in containers:
-            table.add_row(container[0], container[1], container[2], container[3], container[4], container[5])
-    console.print(table)
-    print()
+    if len_containers > 0:
+        logger.info("Available local containers: {}".format(len_containers))
+        containers = []
+        for container in client.containers.list(all=True, filters={"name": "exegol-"}):
+            id = container.attrs["Id"][:12]
+            tag = container.attrs["Name"].replace('/exegol-', '')
+            state = container.attrs["State"]["Status"]
+            if state == "running":
+                state = "[green]" + state + "[/green]"
+            image = container.attrs["Config"]["Image"]
+            logger.debug("Fetching details on containers creation")
+            details = []
+            if was_created_with_gui(container):
+                details.append("--X11")
+            if was_created_with_host_networking(container):
+                details.append("--host-network")
+            if was_created_with_device(container):
+                details.append("--device {}".format(was_created_with_device(container)))
+            if was_created_with_privileged(container):
+                details.append("[orange3]--privileged[/orange3]")
+            details = " ".join(details)
+            logger.debug("Fetching volumes for each container")
+            volumes = ""
+            if container.attrs["HostConfig"]["Binds"]:
+                for bind in container.attrs["HostConfig"]["Binds"]:
+                    volumes += bind.replace(":", " ↔ ") + "\n"
+            if container.attrs["HostConfig"]["Mounts"]:
+                for mount in container.attrs["HostConfig"]["Mounts"]:
+                    volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
+                    volumes += " ↔ "
+                    volumes += mount["Target"]
+                    volumes += "\n"
+            containers.append([id, tag, state, image, details, volumes])
+        if options.verbosity == 0:
+            table = Table(show_header=True, header_style="bold blue", border_style="blue", box=box.SIMPLE)
+            table.add_column("Container tag")
+            table.add_column("State")
+            table.add_column("Image (repo/image:tag)")
+            table.add_column("Creation details")
+            for container in containers:
+                table.add_row(container[1], container[2], container[3], container[4])
+        elif options.verbosity >= 1:
+            table = Table(show_header=True, header_style="bold blue", border_style="grey35", box=box.SQUARE)
+            table.add_column("Id")
+            table.add_column("Container tag")
+            table.add_column("State")
+            table.add_column("Image (repo/image:tag)")
+            table.add_column("Creation details")
+            table.add_column("Binds & mounts")
+            for container in containers:
+                table.add_row(container[0], container[1], container[2], container[3], container[4], container[5])
+        console.print(table)
+        print()
 
 
 def info():
@@ -906,6 +932,16 @@ if __name__ == "__main__":
     options = get_options()
     logger = Logger(options.verbosity, options.quiet)
     console = Console()
+
+    if not options.verify:
+        requests.packages.urllib3.disable_warnings()
+        logger.verbose("Disabling warnings of insecure connection for invalid certificates")
+        requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
+        logger.debug("Allowing the use of deprecated and weak cipher methods")
+        try:
+            requests.packages.urllib3.contrib.pyopenssl.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
+        except AttributeError:
+            pass
 
     try:
         client = docker.from_env()
