@@ -261,10 +261,9 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  cp -v /root/sources/patches/impacket-pull-request-843.patch impacket-pull-request-843.patch
-  cp -v /root/sources/patches/impacket-pull-request-1091.patch impacket-pull-request-1091.patch
-  git apply --verbose impacket-pull-request-843.patch
-  git apply --verbose impacket-pull-request-1091.patch
+  curl https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  curl https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
+  curl https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump

