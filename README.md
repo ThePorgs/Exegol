@@ -1,8 +1,6 @@
 # Exegol
 
 <p align="center">
-  <img width="1200" src="https://repository-images.githubusercontent.com/246120835/336bee80-2986-11eb-9bb1-6ddf03e4e882">
-  <br></br>
   <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
   <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
   <img alt="image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/dev">
