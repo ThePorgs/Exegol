@@ -2,8 +2,9 @@
 shared-data-volumes/
 shared-resources/
 
-# PyCharm workspace
+# PyCharm and Python workspace
 .idea/
+venv
 
 # Build logs for debugging
 .build.log
