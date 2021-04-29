@@ -43,8 +43,7 @@ A powerful Python wrapper allows to manage Exegol without having to know docker-
 - Install (pull or build) an image : `exegol install`
 - Create/start/enter a container : `exegol start`
 - Stop a container : `exegol stop`
-- Remove a container : `exegol rm-container`
-- Remove an image : `exegol rm-image`
+- Remove a container or an image : `exegol remove`
 - Get help and advanced usage : `exegol --help`
 
 ![Example](assets/example-info.gif)
