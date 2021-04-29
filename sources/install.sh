@@ -263,12 +263,13 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  curl https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  curl https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
-  curl https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
+  cp -v /root/sources/grc/conf.getgpppassword /usr/share/grc/conf.getgpppassword
 }
 
 function bloodhound.py() {
@@ -354,7 +355,7 @@ function Sn1per() {
 function dementor() {
   colorecho "Installing dementor"
   mkdir /opt/tools/dementor
-  python -m pip install pycrypto
+  python -m pip install pycryptodomex
   wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
 }
 
@@ -1958,8 +1959,7 @@ function install_resources() {
 # Function used to clean up post-install files
 function install_clean() {
   colorecho "Cleaning..."
-  rm -r /tmp/*
-  # rm /usr/local/bin/bloodhound-python
+  rm -rfv /tmp/*
 }
 
 # Entry point for the installation
@@ -1976,7 +1976,7 @@ else
       echo "This script is running in docker, as it should :)"
       echo "If you see things in red, don't panic, it's usually not errors, just badly handled colors"
       echo -e "${NOCOLOR}${BLUE}"
-      echo "A successful build whill output the following last line:"
+      echo "A successful build will output the following last line:"
       echo "  Successfully tagged nwodtuhs/exegol:latest"
       echo -e "${NOCOLOR}"
       sleep 2
