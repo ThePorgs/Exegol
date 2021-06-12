@@ -264,8 +264,6 @@ function Impacket() {
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
