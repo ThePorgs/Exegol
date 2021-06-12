@@ -1562,7 +1562,6 @@ function install_most_used_tools() {
   install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   install_simplyemail             # Gather emails
   install_gobuster                # Web fuzzer (pretty good for several extensions)
-  install_kiterunner              # Web fuzzer (fast and pretty good for api bruteforce)
   install_ffuf                    # Web fuzzer (little favorites)
   fapt wfuzz                      # Web fuzzer (second favorites)
   fapt nikto                      # Web scanner
