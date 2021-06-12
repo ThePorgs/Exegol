@@ -264,8 +264,6 @@ function Impacket() {
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -676,13 +674,7 @@ function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
-  cd /opt/tools/john/src
-  ./configure --disable-openmp
-  make -s clean && make -sj4
-  mv ../run/john ../run/john-non-omp
-  ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
-  make -s clean && make -sj4
-  sudo make shell-completion
+  cd /opt/tools/john/src && ./configure && make
 }
 
 function memcached-cli() {
@@ -1169,6 +1161,15 @@ function install_trilium_packaged() {
 }
 
 function install_trilium_sources() {
+  colorecho "Installing Trilium (packaged)"
+  git -C /opt/tools/ clone https://github.com/zadam/trilium
+  cd /opt/tools/trilium
+  npm install
+  mkdir -p /root/.local/share/trilium-data
+  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
+}
+
+function install_trilium_sources() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
@@ -1467,6 +1468,21 @@ function install_divideandscan() {
   python3 -m pip install .
 }
 
+function install_trid() {
+  colorecho "Installing trid"
+  mkdir /opt/tools/trid/
+  cd /opt/tools/trid
+  wget https://mark0.net/download/tridupdate.zip
+  wget https://mark0.net/download/triddefs.zip
+  wget https://mark0.net/download/trid_linux_64.zip
+  unzip trid_linux_64.zip
+  unzip triddefs.zip
+  unzip tridupdate.zip
+  rm tridupdate.zip triddefs.zip trid_linux_64.zip
+  chmod +x trid
+  python3 tridupdate.py
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1500,6 +1516,9 @@ function install_base() {
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
   fapt autoconf                   # Autoconf
+  fapt make
+  fapt gcc
+  fapt g++
   fapt file                       # Detect type of file with magic number
   fapt lsof                       # Linux utility
   fapt less                       # Linux utility
@@ -1548,7 +1567,6 @@ function install_most_used_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt metasploit-framework       # Offensive framework
   fapt nmap                       # Port scanner
-  install_john                    # Password cracker
   fapt seclists                   # Awesome wordlists
   install_subfinder               # Subdomain bruteforcer
   install_autorecon               # External recon tool
@@ -1590,7 +1608,8 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   shellerator                     # Reverse shell generator
   uberfile                        # file uploader/downloader commands generator
-  install_trilium_packaged        # notes taking tool
+#  install_trilium_packaged        # notes taking tool
+  install_trilium_sources        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
@@ -1884,6 +1903,7 @@ function install_forensic_tools() {
   fapt binwalk                    # Tool to find embedded files
   fapt foremost                   # Alternative to binwalk
   install_volatility              # Memory analysis tool
+  install_trid                    # filetype detection tool
 }
 
 # Package dedicated to steganography tools
