@@ -1167,6 +1167,15 @@ function install_trilium_packaged() {
 }
 
 function install_trilium_sources() {
+  colorecho "Installing Trilium (packaged)"
+  git -C /opt/tools/ clone https://github.com/zadam/trilium
+  cd /opt/tools/trilium
+  npm install
+  mkdir -p /root/.local/share/trilium-data
+  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
+}
+
+function install_trilium_sources() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
@@ -1465,6 +1474,21 @@ function install_divideandscan() {
   python3 -m pip install .
 }
 
+function install_trid() {
+  colorecho "Installing trid"
+  mkdir /opt/tools/trid/
+  cd /opt/tools/trid
+  wget https://mark0.net/download/tridupdate.zip
+  wget https://mark0.net/download/triddefs.zip
+  wget https://mark0.net/download/trid_linux_64.zip
+  unzip trid_linux_64.zip
+  unzip triddefs.zip
+  unzip tridupdate.zip
+  rm tridupdate.zip triddefs.zip trid_linux_64.zip
+  chmod +x trid
+  python3 tridupdate.py
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1588,7 +1612,8 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   shellerator                     # Reverse shell generator
   uberfile                        # file uploader/downloader commands generator
-  install_trilium_packaged        # notes taking tool
+#  install_trilium_packaged        # notes taking tool
+  install_trilium_sources        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
@@ -1882,6 +1907,7 @@ function install_forensic_tools() {
   fapt binwalk                    # Tool to find embedded files
   fapt foremost                   # Alternative to binwalk
   install_volatility              # Memory analysis tool
+  install_trid                    # filetype detection tool
 }
 
 # Package dedicated to steganography tools
