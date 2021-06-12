@@ -528,17 +528,19 @@ function install_testssl() {
 
 function bat() {
   colorecho "Installing bat"
-  wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
-  fapt -f ./bat_0.13.0_amd64.deb
-  rm bat_0.13.0_amd64.deb
+  version=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep "tag_name" | cut -d 'v' -f2 | cut -d '"' -f1)
+  wget https://github.com/sharkdp/bat/releases/download/v$version/bat_$version\_amd64.deb
+  fapt -f ./bat_$version\_amd64.deb
+  rm bat_$version\_amd64.deb
 }
 
 function mdcat() {
   colorecho "Installing mdcat"
-  wget https://github.com/lunaryorn/mdcat/releases/download/mdcat-0.16.0/mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
-  tar xvfz mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
-  mv mdcat-0.16.0-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
-  rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
+  version=$(curl -s https://api.github.com/repos/lunaryorn/mdcat/releases/latest | grep "tag_name" | cut -d '"' -f4)
+  wget https://github.com/lunaryorn/mdcat/releases/download/$version/$version-x86_64-unknown-linux-musl.tar.gz
+  tar xvfz $version-x86_64-unknown-linux-musl.tar.gz
+  mv $version-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
+  rm -r $version-x86_64-unknown-linux-musl.tar.gz $version-x86_64-unknown-linux-musl
   chown root:root /opt/tools/bin/mdcat
 }
 
@@ -1049,9 +1051,9 @@ function ruler() {
 function ghidra() {
   colorecho "Installing Ghidra"
   apt-get -y install openjdk-14-jdk
-  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
-  unzip /tmp/ghidra_9.1.2_PUBLIC_20200212.zip -d /opt/tools
-  rm /tmp/ghidra_9.1.2_PUBLIC_20200212.zip
+  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
+  unzip /tmp/ghidra_9.2.3_PUBLIC_20210325.zip -d /opt/tools
+  rm /tmp/ghidra_9.2.3_PUBLIC_20210325.zip
 }
 
 function bitleaker() {
@@ -1098,9 +1100,9 @@ function ipinfo() {
 function constellation() {
   colorecho "Installing constellation"
   cd /opt/tools/
-  wget https://github.com/constellation-app/constellation/releases/download/v2.1.0-rc1/constellation-linux-v2.1.0-rc1.tar.gz
-  tar xvf constellation-linux-v2.1.0-rc1.tar.gz
-  rm constellation-linux-v2.1.0-rc1.tar.gz
+  wget https://github.com/constellation-app/constellation/releases/download/v2.1.1/constellation-linux-v2.1.1.tar.gz
+  tar xvf constellation-linux-v2.1.1.tar.gz
+  rm constellation-linux-v2.1.1.tar.gz
 }
 
 
