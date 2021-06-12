@@ -672,13 +672,7 @@ function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
-  cd /opt/tools/john/src
-  ./configure --disable-openmp
-  make -s clean && make -sj4
-  mv ../run/john ../run/john-non-omp
-  ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
-  make -s clean && make -sj4
-  sudo make shell-completion
+  cd /opt/tools/john/src && ./configure && make
 }
 
 function memcached-cli() {
@@ -1520,6 +1514,9 @@ function install_base() {
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
   fapt autoconf                   # Autoconf
+  fapt make
+  fapt gcc
+  fapt g++
   fapt file                       # Detect type of file with magic number
   fapt lsof                       # Linux utility
   fapt less                       # Linux utility
@@ -1568,7 +1565,6 @@ function install_most_used_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt metasploit-framework       # Offensive framework
   fapt nmap                       # Port scanner
-  install_john                    # Password cracker
   fapt seclists                   # Awesome wordlists
   install_subfinder               # Subdomain bruteforcer
   install_autorecon               # External recon tool
