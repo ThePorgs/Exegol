@@ -882,6 +882,8 @@ function deepce() {
 function arsenal() {
   echo "Installing Arsenal"
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
+  cd /opt/tools/arsenal
+  python3 -m pip install -r requirements.txt
 }
 
 function bloodhound() {
