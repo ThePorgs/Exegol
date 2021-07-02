@@ -235,9 +235,6 @@ function install_crackmapexec() {
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
   apt-get -y install crackmapexec
-  # Installing from apt instead of sources or pip in order to have the kali exclusive version
-  cd /usr/lib/python3/dist-packages/cme/modules/
-  wget https://raw.githubusercontent.com/ShutdownRepo/CrackMapExec-MachineAccountQuota/main/MachineAccountQuota.py
 }
 
 function install_lsassy() {
