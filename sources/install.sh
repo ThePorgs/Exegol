@@ -264,6 +264,7 @@ function Impacket() {
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -1485,6 +1486,13 @@ function install_trid() {
   python3 tridupdate.py
 }
 
+function install_pcredz() {
+  colorecho "Installing PCredz"
+  fapt python3-pip libpcap-dev
+  python3 -m pip install Cython python-libpcap
+  git -C /opt/tools/ clone https://github.com/lgandx/PCredz
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1596,7 +1604,7 @@ function install_most_used_tools() {
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  install_crackmapexec                # Network scanner
+  install_crackmapexec            # Network scanner
   Impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
