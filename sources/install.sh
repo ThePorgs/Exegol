@@ -269,6 +269,7 @@ function Impacket() {
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
   cp -v /root/sources/grc/conf.getgpppassword /usr/share/grc/conf.getgpppassword
+  cp -v /root/sources/grc/conf.rbcd /usr/share/grc/conf.rbcd
 }
 
 function bloodhound.py() {

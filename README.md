@@ -26,7 +26,11 @@ The main features of Exegol are:
 - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
 - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
 
-![Example](assets/example-main.gif)
+Below is an example of a Zerologon attack operated with Exegol.
+![Example](assets/example-zerologon.gif)
+
+Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/active-directory-domain-services/movement/abusing-aces) operated with Exegol
+![Example](assets/example-rbcd.gif)
 
 # :fast_forward: Quick start
 Bear in mind that the install process can be long as it downloads a ~6GB image.

