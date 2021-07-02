@@ -27,6 +27,7 @@
   - add: apktool, uncompyle, angr, one_gadget
   - add kerbrute
   - replace is and is not with == and !=, danger ahead
+  - populate the wiki with the --help and with GIFs
 
 # Split install
   split install procedures in categories so that users can tell what "parts" to install, for example : exegol install web,osint,internal

@@ -1,0 +1,28 @@
+# GENERAL INFO
+regexp=.*\[\*\].*
+colours=blue
+=======
+# GENERAL WARNING
+regexp=.*\[\!\].*
+colours=yellow
+=======
+# GENERAL DEFAULT
+regexp=.*\[\-\].*
+colours=yellow
+=======
+# can impersonate success
+regexp=.*can now impersonate users on.*
+colours=green
+=======
+# delegate access success
+regexp=.*Delegation rights modified succes.*
+colours=green
+=======
+# delegate access success
+regexp=.*can already impersonate users.*
+colours=green
+=======
+# delegate access success
+regexp=.*Delegation rights flushed succes.*
+colours=green
+=======

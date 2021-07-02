@@ -235,9 +235,6 @@ function install_crackmapexec() {
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
   apt-get -y install crackmapexec
-  # Installing from apt instead of sources or pip in order to have the kali exclusive version
-  cd /usr/lib/python3/dist-packages/cme/modules/
-  wget https://raw.githubusercontent.com/ShutdownRepo/CrackMapExec-MachineAccountQuota/main/MachineAccountQuota.py
 }
 
 function install_lsassy() {
@@ -263,12 +260,13 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  curl https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  curl https://github.com/SecureAuthCorp/impacket/pull/1064.patch | git apply --verbose
-  curl https://github.com/SecureAuthCorp/impacket/pull/1019.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
+  cp -v /root/sources/grc/conf.getgpppassword /usr/share/grc/conf.getgpppassword
+  cp -v /root/sources/grc/conf.rbcd /usr/share/grc/conf.rbcd
 }
 
 function bloodhound.py() {
@@ -354,7 +352,7 @@ function Sn1per() {
 function dementor() {
   colorecho "Installing dementor"
   mkdir /opt/tools/dementor
-  python -m pip install pycrypto
+  python -m pip install pycryptodomex
   wget -O /opt/tools/dementor/dementor.py https://gist.githubusercontent.com/3xocyte/cfaf8a34f76569a8251bde65fe69dccc/raw/7c7f09ea46eff4ede636f69c00c6dfef0541cd14/dementor.py
 }
 
@@ -529,17 +527,19 @@ function install_testssl() {
 
 function bat() {
   colorecho "Installing bat"
-  wget https://github.com/sharkdp/bat/releases/download/v0.13.0/bat_0.13.0_amd64.deb
-  fapt -f ./bat_0.13.0_amd64.deb
-  rm bat_0.13.0_amd64.deb
+  version=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep "tag_name" | cut -d 'v' -f2 | cut -d '"' -f1)
+  wget https://github.com/sharkdp/bat/releases/download/v$version/bat_$version\_amd64.deb
+  fapt -f ./bat_$version\_amd64.deb
+  rm bat_$version\_amd64.deb
 }
 
 function mdcat() {
   colorecho "Installing mdcat"
-  wget https://github.com/lunaryorn/mdcat/releases/download/mdcat-0.16.0/mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
-  tar xvfz mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz
-  mv mdcat-0.16.0-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
-  rm -r mdcat-0.16.0-x86_64-unknown-linux-musl.tar.gz mdcat-0.16.0-x86_64-unknown-linux-musl
+  version=$(curl -s https://api.github.com/repos/lunaryorn/mdcat/releases/latest | grep "tag_name" | cut -d '"' -f4)
+  wget https://github.com/lunaryorn/mdcat/releases/download/$version/$version-x86_64-unknown-linux-musl.tar.gz
+  tar xvfz $version-x86_64-unknown-linux-musl.tar.gz
+  mv $version-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
+  rm -r $version-x86_64-unknown-linux-musl.tar.gz $version-x86_64-unknown-linux-musl
   chown root:root /opt/tools/bin/mdcat
 }
 
@@ -673,13 +673,7 @@ function install_john() {
   colorecho "Installing john the ripper"
   fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
-  cd /opt/tools/john/src
-  ./configure --disable-openmp
-  make -s clean && make -sj4
-  mv ../run/john ../run/john-non-omp
-  ./configure CPPFLAGS='-DOMP_FALLBACK -DOMP_FALLBACK_BINARY="\"john-non-omp\""'
-  make -s clean && make -sj4
-  sudo make shell-completion
+  cd /opt/tools/john/src && ./configure && make
 }
 
 function memcached-cli() {
@@ -887,6 +881,8 @@ function deepce() {
 function arsenal() {
   echo "Installing Arsenal"
   git -C /opt/tools/ clone https://github.com/Orange-Cyberdefense/arsenal
+  cd /opt/tools/arsenal
+  python3 -m pip install -r requirements.txt
 }
 
 function bloodhound() {
@@ -1056,9 +1052,9 @@ function ruler() {
 function ghidra() {
   colorecho "Installing Ghidra"
   apt-get -y install openjdk-14-jdk
-  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.1.2_PUBLIC_20200212.zip"
-  unzip /tmp/ghidra_9.1.2_PUBLIC_20200212.zip -d /opt/tools
-  rm /tmp/ghidra_9.1.2_PUBLIC_20200212.zip
+  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
+  unzip /tmp/ghidra_9.2.3_PUBLIC_20210325.zip -d /opt/tools
+  rm /tmp/ghidra_9.2.3_PUBLIC_20210325.zip
 }
 
 function bitleaker() {
@@ -1105,9 +1101,9 @@ function ipinfo() {
 function constellation() {
   colorecho "Installing constellation"
   cd /opt/tools/
-  wget https://github.com/constellation-app/constellation/releases/download/v2.1.0-rc1/constellation-linux-v2.1.0-rc1.tar.gz
-  tar xvf constellation-linux-v2.1.0-rc1.tar.gz
-  rm constellation-linux-v2.1.0-rc1.tar.gz
+  wget https://github.com/constellation-app/constellation/releases/download/v2.1.1/constellation-linux-v2.1.1.tar.gz
+  tar xvf constellation-linux-v2.1.1.tar.gz
+  rm constellation-linux-v2.1.1.tar.gz
 }
 
 
@@ -1161,6 +1157,15 @@ function install_trilium_packaged() {
   tar -xvf /opt/tools/trilium.tar.xz -C /opt/tools/
   mv /opt/tools/trilium-linux-x64-server /opt/tools/trilium
   rm /opt/tools/trilium.tar.xz
+  mkdir -p /root/.local/share/trilium-data
+  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
+}
+
+function install_trilium_sources() {
+  colorecho "Installing Trilium (packaged)"
+  git -C /opt/tools/ clone https://github.com/zadam/trilium
+  cd /opt/tools/trilium
+  npm install
   mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
@@ -1464,6 +1469,28 @@ function install_divideandscan() {
   python3 -m pip install .
 }
 
+function install_trid() {
+  colorecho "Installing trid"
+  mkdir /opt/tools/trid/
+  cd /opt/tools/trid
+  wget https://mark0.net/download/tridupdate.zip
+  wget https://mark0.net/download/triddefs.zip
+  wget https://mark0.net/download/trid_linux_64.zip
+  unzip trid_linux_64.zip
+  unzip triddefs.zip
+  unzip tridupdate.zip
+  rm tridupdate.zip triddefs.zip trid_linux_64.zip
+  chmod +x trid
+  python3 tridupdate.py
+}
+
+function install_pcredz() {
+  colorecho "Installing PCredz"
+  fapt python3-pip libpcap-dev
+  python3 -m pip install Cython python-libpcap
+  git -C /opt/tools/ clone https://github.com/lgandx/PCredz
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1497,6 +1524,9 @@ function install_base() {
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
   fapt autoconf                   # Autoconf
+  fapt make
+  fapt gcc
+  fapt g++
   fapt file                       # Detect type of file with magic number
   fapt lsof                       # Linux utility
   fapt less                       # Linux utility
@@ -1545,7 +1575,6 @@ function install_most_used_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt metasploit-framework       # Offensive framework
   fapt nmap                       # Port scanner
-  install_john                    # Password cracker
   fapt seclists                   # Awesome wordlists
   install_subfinder               # Subdomain bruteforcer
   install_autorecon               # External recon tool
@@ -1573,7 +1602,7 @@ function install_most_used_tools() {
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  install_crackmapexec                # Network scanner
+  install_crackmapexec            # Network scanner
   Impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
@@ -1587,7 +1616,8 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   shellerator                     # Reverse shell generator
   uberfile                        # file uploader/downloader commands generator
-  install_trilium_packaged        # notes taking tool
+#  install_trilium_packaged        # notes taking tool
+  install_trilium_sources        # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
@@ -1881,6 +1911,7 @@ function install_forensic_tools() {
   fapt binwalk                    # Tool to find embedded files
   fapt foremost                   # Alternative to binwalk
   install_volatility              # Memory analysis tool
+  install_trid                    # filetype detection tool
 }
 
 # Package dedicated to steganography tools
@@ -1958,8 +1989,7 @@ function install_resources() {
 # Function used to clean up post-install files
 function install_clean() {
   colorecho "Cleaning..."
-  rm -r /tmp/*
-  # rm /usr/local/bin/bloodhound-python
+  rm -rfv /tmp/*
 }
 
 # Entry point for the installation
@@ -1976,7 +2006,7 @@ else
       echo "This script is running in docker, as it should :)"
       echo "If you see things in red, don't panic, it's usually not errors, just badly handled colors"
       echo -e "${NOCOLOR}${BLUE}"
-      echo "A successful build whill output the following last line:"
+      echo "A successful build will output the following last line:"
       echo "  Successfully tagged nwodtuhs/exegol:latest"
       echo -e "${NOCOLOR}"
       sleep 2

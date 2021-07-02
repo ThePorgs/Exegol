@@ -678,7 +678,7 @@ def install():
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
             logger.info("Pulling sources from GitHub (local changes won't be overwritten)")
-            exec_system("git -C {} pull origin {}".format(EXEGOL_PATH, LOCAL_GIT_BRANCH))
+            exec_system("git -C {} pull origin --rebase {}".format(EXEGOL_PATH, LOCAL_GIT_BRANCH))
             logger.info("Pulling {} from DockerHub".format(IMAGE_NAME + ":" + dockertag))
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
