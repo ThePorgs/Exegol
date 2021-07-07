@@ -171,6 +171,12 @@ def get_options():
         help="enable display sharing to run GUI-based applications",
     )
     default_start.add_argument(
+        "--host-timezones",
+        dest="host_timezones",
+        action="store_true",
+        help="let the container share the host's timezones configuration",
+    )
+    default_start.add_argument(
         "--host-network",
         dest="host_network",
         action="store_true",
@@ -340,6 +346,10 @@ def container_creation_options(containertag):
         advanced_options += " --volume /tmp/.X11-unix:/tmp/.X11-unix"
         advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
     if options.host_network:
+        logger.verbose("Enabling host timezones")
+        advanced_options += " --volume /etc/timezone:/etc/timezone:ro"
+        advanced_options += " --volume /etc/localtime:/etc/localtime:ro"
+    if options.host_timezones:
         logger.verbose("Enabling host networking")
         advanced_options += " --network host"
     if options.bind_resources:
