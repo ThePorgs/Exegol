@@ -1945,6 +1945,7 @@ function install_GUI_tools() {
   bloodhound_old_v3
   bloodhound_old_v2
   fapt freerdp2-x11
+  fapt rdesktop
   ghidra
   fapt xtightvncviewer
 }
