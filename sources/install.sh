@@ -1491,6 +1491,13 @@ function install_pcredz() {
   git -C /opt/tools/ clone https://github.com/lgandx/PCredz
 }
 
+function install_smartbrute() {
+  colorecho "Installing smartbrute"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/smartbrute
+  cd /opt/tools/smartbrute
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
