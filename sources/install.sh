@@ -1496,6 +1496,7 @@ function install_smartbrute() {
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/smartbrute
   cd /opt/tools/smartbrute
   python3 -m pip install -r requirements.txt
+  python3 -m pip install --force rich
 }
 
 function install_base() {
@@ -1789,6 +1790,7 @@ function install_ad_tools() {
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
   install_crackmapexec                # Network scanner
   sprayhound                      # Password spraying tool
+  install_smartbrute              # Password spraying tool
   bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
   cypheroth                       # Bloodhound dependency

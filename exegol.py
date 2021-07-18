@@ -345,11 +345,11 @@ def container_creation_options(containertag):
         advanced_options += " --env DISPLAY=unix{}".format(os.getenv("DISPLAY"))
         advanced_options += " --volume /tmp/.X11-unix:/tmp/.X11-unix"
         advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
-    if options.host_network:
+    if options.host_timezones:
         logger.verbose("Enabling host timezones")
         advanced_options += " --volume /etc/timezone:/etc/timezone:ro"
         advanced_options += " --volume /etc/localtime:/etc/localtime:ro"
-    if options.host_timezones:
+    if options.host_network:
         logger.verbose("Enabling host networking")
         advanced_options += " --network host"
     if options.bind_resources:
