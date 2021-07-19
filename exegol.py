@@ -883,10 +883,11 @@ def info_containers():
             details = " ".join(details)
             logger.debug("Fetching volumes for each container")
             volumes = ""
-            if container.attrs["HostConfig"]["Binds"]:
+            if "Binds" in container.attrs["HostConfig"].keys():
                 for bind in container.attrs["HostConfig"]["Binds"]:
                     volumes += bind.replace(":", " ↔ ") + "\n"
-            if container.attrs["HostConfig"]["Mounts"]:
+            if "Mounts" in container.attrs["HostConfig"].keys():
+                print("coucou")
                 for mount in container.attrs["HostConfig"]["Mounts"]:
                     volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
                     volumes += " ↔ "
