@@ -282,4 +282,10 @@ Get-GPPPassword -debug -no-pass dc01.breaking.bad
 cme smb --list-modules
 cme ldap dc01.breaking.bad -d breaking.bad -u someuser -p somepassword -M maq
 ntlmrelayx -t dcsync://dc02.breaking.bad -smb2support
+whatportis 3306
+whatportis postgresql
+cmsmap -F -d http://192.168.10.10/
+clusterd -i http://192.168.10.10/
+dirsearch -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/quickhits.txt -u http://192.168.10.10/
+moodlescan -r -u http://192.168.10.10/
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
