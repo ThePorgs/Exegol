@@ -280,8 +280,16 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
+  # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  # rcbd.py in examples
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
+  # Shadow Credentials in ntlmrelayx.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
+  # AD CS in ntlmrelayx.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1101.patch | git apply --verbose
+  # Return server time in case of clock skew with KDC
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1133.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -1645,6 +1653,23 @@ function install_androguard() {
   python3 -m pip install androguard
 }
 
+function install_petitpotam() {
+  colorecho "Installing PetitPotam"
+  git -C /opt/tools/ clone https://github.com/topotam/PetitPotam
+}
+
+function install_PKINITtools() {
+  colorecho "Installing PKINITtools"
+  git -C /opt/tools/ clone https://github.com/dirkjanm/PKINITtools
+}
+
+function install_pywhisker() {
+  colorecho "Installing pyWhisker"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/pywhisker
+  cd /opt/tools/pywhisker
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -2002,6 +2027,9 @@ function install_ad_tools() {
   install_bloodhound-quickwin     # Python script to find quickwins from BH data in a neo4j db
   install_ldapsearch-ad           # Python script to find quickwins from basic ldap enum
   install_ntlm-scanner            # Python script to check public vulns on DCs
+  install_petitpotam              # Python script to coerce auth through MS-EFSR abuse
+  install_PKINITtools             # Python scripts to use kerberos PKINIT to obtain TGT
+  install_pywhisker               # Python script to manipulate msDS-KeyCredentialLink
 }
 
 # Package dedicated to mobile apps pentest tools
