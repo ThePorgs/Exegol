@@ -34,3 +34,31 @@ colours=green
 regexp=.*Delegation rights modified succesfully.*
 colours=green
 =======
+# SUCCESS Replication-Get-Changes-All
+regexp=.*Success! User.*now has Replication-Get-Changes-All privileges on the domain
+colours=green
+=======
+# SUCCESS Privilege escalation succesful
+regexp=.*Privilege escalation succesful.*
+colours=green
+=======
+# SUCCESS Try using DCSync with secretsdump.py
+regexp=.*Try using DCSync with secretsdump.py.*
+colours=green
+=======
+# SUCCESS Adding user
+regexp=.*Adding user:.*to group.*OK
+colours=green
+=======
+# SUCCESS User privileges found
+regexp=.*User privileges found:.*
+colours=green
+=======
+# SUCCESS Saved certs
+regexp=.*Saved.*
+colours=green
+=======
+# SUCCESS Updated attr
+regexp=.*Updated.*
+colours=green
+=======

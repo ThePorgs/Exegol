@@ -14,7 +14,7 @@ from rich.table import Table
 from rich import box
 from rich.console import Console
 
-VERSION = "3.1.5"
+VERSION = "3.1.6"
 
 '''
 # TODO :
@@ -169,6 +169,12 @@ def get_options():
         dest="X11",
         action="store_true",
         help="enable display sharing to run GUI-based applications",
+    )
+    default_start.add_argument(
+        "--host-timezones",
+        dest="host_timezones",
+        action="store_true",
+        help="let the container share the host's timezones configuration",
     )
     default_start.add_argument(
         "--host-network",
@@ -339,6 +345,10 @@ def container_creation_options(containertag):
         advanced_options += " --env DISPLAY=unix{}".format(os.getenv("DISPLAY"))
         advanced_options += " --volume /tmp/.X11-unix:/tmp/.X11-unix"
         advanced_options += ' --env="QT_X11_NO_MITSHM=1"'
+    if options.host_timezones:
+        logger.verbose("Enabling host timezones")
+        advanced_options += " --volume /etc/timezone:/etc/timezone:ro"
+        advanced_options += " --volume /etc/localtime:/etc/localtime:ro"
     if options.host_network:
         logger.verbose("Enabling host networking")
         advanced_options += " --network host"
@@ -678,7 +688,7 @@ def install():
             logger.warning("The supplied tag doesn't exist. You must use one from the previous list")
         else:
             logger.info("Pulling sources from GitHub (local changes won't be overwritten)")
-            exec_system("git -C {} pull origin {}".format(EXEGOL_PATH, LOCAL_GIT_BRANCH))
+            exec_system("git -C {} pull origin --rebase {}".format(EXEGOL_PATH, LOCAL_GIT_BRANCH))
             logger.info("Pulling {} from DockerHub".format(IMAGE_NAME + ":" + dockertag))
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
@@ -873,10 +883,11 @@ def info_containers():
             details = " ".join(details)
             logger.debug("Fetching volumes for each container")
             volumes = ""
-            if container.attrs["HostConfig"]["Binds"]:
+            if "Binds" in container.attrs["HostConfig"].keys():
                 for bind in container.attrs["HostConfig"]["Binds"]:
                     volumes += bind.replace(":", " ↔ ") + "\n"
-            if container.attrs["HostConfig"]["Mounts"]:
+            if "Mounts" in container.attrs["HostConfig"].keys():
+                print("coucou")
                 for mount in container.attrs["HostConfig"]["Mounts"]:
                     volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
                     volumes += " ↔ "

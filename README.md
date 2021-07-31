@@ -1,15 +1,13 @@
 # Exegol
 
 <p align="center">
-  <img width="1200" src="https://repository-images.githubusercontent.com/246120835/336bee80-2986-11eb-9bb1-6ddf03e4e882">
-  <br></br>
   <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
   <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
   <img alt="image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/dev">
   <img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/ShutdownRepo/Exegol">
   <img alt="Python" src="https://img.shields.io/badge/Python-3-success">
   <br>
-  <img alt="current version" src="https://img.shields.io/badge/version-3.1.5-blueviolet">
+  <img alt="current version" src="https://img.shields.io/badge/version-3.1.6-blueviolet">
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20commit%20%28in%20dev%20branch%29">
   <br></br>
@@ -28,7 +26,11 @@ The main features of Exegol are:
 - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
 - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
 
-![Example](assets/example-main.gif)
+Below is an example of a Zerologon attack operated with Exegol.
+![Example](assets/example-zerologon.gif)
+
+Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/active-directory-domain-services/movement/abusing-aces) operated with Exegol
+![Example](assets/example-rbcd.gif)
 
 # :fast_forward: Quick start
 Bear in mind that the install process can be long as it downloads a ~6GB image.
@@ -45,8 +47,7 @@ A powerful Python wrapper allows to manage Exegol without having to know docker-
 - Install (pull or build) an image : `exegol install`
 - Create/start/enter a container : `exegol start`
 - Stop a container : `exegol stop`
-- Remove a container : `exegol rm-container`
-- Remove an image : `exegol rm-image`
+- Remove a container or an image : `exegol remove`
 - Get help and advanced usage : `exegol --help`
 
 ![Example](assets/example-info.gif)
