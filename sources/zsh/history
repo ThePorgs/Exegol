@@ -64,6 +64,13 @@ lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
+kr scan hosts.txt -A=apiroutes-210328:20000 -x 5 -j 100 --fail-status-codes 400,401,404,403,501,502,426,411
+kr scan target.com -w routes.kite -A=apiroutes-210328:20000 -x 20 -j 1 --fail-status-codes 400,401,404,403,501,502,426,411
+kr brute https://target.com/subapp/ -A=aspx-210328:20000 -x 20 -j 1
+kr brute https://target.com/subapp/ -w dirsearch.txt -x 20 -j 1 -exml,asp,aspx,ashx -D
+kr scan https://target.com:8443/ -w  /opt/tools/kiterunner/routes-large.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
+kr scan target.com -w /opt/tools/kiterunner/routes-large.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
+kr scan targets.txt -w /opt/tools/kiterunner/routes-small.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
 cme smb 192.168.56.0/24 -u '' -p '' --shares
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
@@ -192,7 +199,7 @@ nmap -sS -n --open -p 88 192.168.56.0/24
 windapsearch --dc 192.168.56.101 --module metadata
 windapsearch --dc 192.168.56.101 --module users
 nmap --script broadcast-dhcp-discover
-SimplyEmail -all -e cybersyndicates.com 
+SimplyEmail -all -e cybersyndicates.com
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username --hash-type 0 --attack-mode 0 MD5_hashes.txt `fzf-wordlists`
 rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD

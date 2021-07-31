@@ -406,6 +406,15 @@ function install_gobuster() {
   go get -u -v github.com/OJ/gobuster
 }
 
+function install_kiterunner() {
+  colorecho "Installing kiterunner (kr)"
+  git -C /opt/tools/ clone https://github.com/assetnote/kiterunner.git
+  cd /opt/tools/kiterunner
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-large.kite.tar.gz
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-small.kite.tar.gz
+  make build
+  ln -s $(pwd)/dist/kr /opt/tools/bin/kr
+
 function install_dirsearch() {
   colorecho "Installing dirsearch"
   git -C /opt/tools/ clone https://github.com/maurosoria/dirsearch
@@ -1891,6 +1900,7 @@ function install_osint_tools() {
 # Package dedicated to applicative and active web pentest tools
 function install_web_tools() {
   install_gobuster                # Web fuzzer (pretty good for several extensions)
+  install_kiterunner              # Web fuzzer (fast and pretty good for api bruteforce)
   amass                           # Web fuzzer
   install_ffuf                    # Web fuzzer (little favorites)
   fapt dirb                       # Web fuzzer
