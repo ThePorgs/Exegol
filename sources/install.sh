@@ -290,6 +290,8 @@ function Impacket() {
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1101.patch | git apply --verbose
   # Return server time in case of clock skew with KDC
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1133.patch | git apply --verbose
+  # Improved searchFilter for GetUserSPNs
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -414,6 +416,7 @@ function install_kiterunner() {
   wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-small.kite.tar.gz
   make build
   ln -s $(pwd)/dist/kr /opt/tools/bin/kr
+}
 
 function install_dirsearch() {
   colorecho "Installing dirsearch"
@@ -1676,6 +1679,13 @@ function install_pywhisker() {
   colorecho "Installing pyWhisker"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/pywhisker
   cd /opt/tools/pywhisker
+  python3 -m pip install -r requirements.txt
+}
+
+function install_targetedKerberoast() {
+  colorecho "Installing targetedKerberoast"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/targetedKerberoast
+  cd /opt/tools/targetedKerberoast
   python3 -m pip install -r requirements.txt
 }
 

