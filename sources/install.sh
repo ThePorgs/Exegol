@@ -83,6 +83,9 @@ function Responder() {
   sed -i 's/files\/BindShell.exe/\/opt\/tools\/Responder\/files\/BindShell.exe/g' /opt/tools/Responder/Responder.conf
   sed -i 's/certs\/responder.crt/\/opt\/tools\/Responder\/certs\/responder.crt/g' /opt/tools/Responder/Responder.conf
   sed -i 's/certs\/responder.key/\/opt\/tools\/Responder\/certs\/responder.key/g' /opt/tools/Responder/Responder.conf
+  fapt gcc-mingw-w64-x86-64
+  x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Runas.c -o /opt/tools/Responder/tools/MultiRelay/bin/Runas.exe -municode -lwtsapi32 -luserenv
+  x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.c -o /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.exe -municode
 }
 
 function Sublist3r() {
@@ -359,7 +362,7 @@ function IceBreaker() {
 function install_routersploit() {
   colorecho "Installing RouterSploit"
   git -C /opt/tools/ clone https://www.github.com/threat9/routersploit
-  cd routersploit
+  cd /opt/tools/routersploit
   python3 -m pip install -r requirements.txt
 }
 

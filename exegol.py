@@ -887,7 +887,6 @@ def info_containers():
                 for bind in container.attrs["HostConfig"]["Binds"]:
                     volumes += bind.replace(":", " ↔ ") + "\n"
             if "Mounts" in container.attrs["HostConfig"].keys():
-                print("coucou")
                 for mount in container.attrs["HostConfig"]["Mounts"]:
                     volumes += mount["VolumeOptions"]["DriverConfig"]["Options"]["device"]
                     volumes += " ↔ "

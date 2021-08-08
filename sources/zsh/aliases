@@ -7,7 +7,7 @@ alias http-server='python3 -m http.server'
 alias php-server='php -S 127.0.0.1:8080 -t .'
 alias ftp-server='python3 -m pyftpdlib -u "mario" -P "m4r10" -p 2121'
 alias powershell='pwsh'
-alias responder='/opt/tools/Responder/Responder.py'
+alias responder='python3 /opt/tools/Responder/Responder.py'
 alias responder-http-on="sed -i 's/HTTP = Off/HTTP = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-http-off="sed -i 's/HTTP = On/HTTP = Off/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'HTTP ='"
 alias responder-smb-on="sed -i 's/SMB = Off/SMB = On/g' /opt/tools/Responder/Responder.conf && cat /opt/tools/Responder/Responder.conf | grep --color=never 'SMB ='"
@@ -107,8 +107,8 @@ alias nrf24-sniffer.py='/opt/tools/mousejack/nrf-research-firmware/tools/nrf24-s
 alias proxychains4='proxychains4 '
 alias proxychains='proxychains4 '
 alias testssl='/opt/tools/testssl.sh/testssl.sh'
-alias multirelay='/opt/tools/Responder/tools/MultiRelay.py'
-alias runfinger='/opt/tools/Responder/tools/RunFinger.py'
+alias multirelay='python3 /opt/tools/Responder/tools/MultiRelay.py'
+alias runfinger='python3 /opt/tools/Responder/tools/RunFinger.py'
 alias phpggc='/opt/tools/phpggc/phpggc'
 alias secret_fragment_exploit.py='/opt/tools/symfony-exploits/secret_fragment_exploit.py'
 alias cachedump.py='/opt/tools/creddump/cachedump.py'
