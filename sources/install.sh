@@ -241,6 +241,11 @@ function install_XSpear() {
   gem install XSpear
 }
 
+function install_pass_station() {
+  colorecho "Installing Pass Station"
+  gem install pass-station
+}
+
 function evilwinrm() {
   colorecho "Installing evil-winrm"
   gem install evil-winrm
@@ -1833,6 +1838,7 @@ function install_wordlists_tools() {
   fapt wordlists                  # Others wordlists (not the best)
   fapt cewl                       # Wordlist generator
   fapt cupp                       # User password profiler
+  install_pass_station            # Default credentials database
 }
 
 # Package dedicated to offline cracking/bruteforcing tools
