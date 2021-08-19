@@ -781,6 +781,11 @@ function install_john() {
   cd /opt/tools/john/src && ./configure && make
 }
 
+function install_nth() {
+  colorecho "Installing Name-That-Hash"
+  python3 -m pip install name-that-hash
+}
+
 function memcached-cli() {
   colorecho "Installing memcached-cli"
   npm install -g memcached-cli
@@ -1848,6 +1853,7 @@ function install_cracking_tools() {
   fapt fcrackzip                  # Zip cracker
   fapt pdfcrack                   # PDF cracker
   fapt bruteforce-luks            # Find the password of a LUKS encrypted volume
+  install_nth                     # Name-That-Hash, the hash identifier tool
 }
 
 # Package dedicated to osint, recon and passive tools
