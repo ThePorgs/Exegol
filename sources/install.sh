@@ -1558,6 +1558,12 @@ function install_whatportis() {
   echo y | whatportis --update
 }
 
+function install_ultimate_vimrc() {
+    colorecho "Installing The Ultimate vimrc"
+    git clone --depth=1 https://github.com/amix/vimrc.git ~/.vim_runtime
+    sh ~/.vim_runtime/install_awesome_vimrc.sh
+}
+
 function install_ngrok() {
   colorecho "Installing ngrok"
   wget -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
@@ -1744,6 +1750,7 @@ function install_base() {
   fapt x11-apps                   # Linux utility
   fapt net-tools                  # Linux utility
   fapt vim                        # Text editor
+  install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
   fapt iputils-ping               # Ping binary
   arsenal                         # Cheatsheets tool
@@ -1760,6 +1767,7 @@ function install_base() {
   fapt samba                      # Samba
   fapt ftp                        # FTP client
   fapt ssh                        # SSH client
+  fapt sshpass                    # SSHpass (wrapper for using SSH with password on the CLI)
   fapt telnet                     # Telnet client
   fapt nfs-common                 # NFS client
   fapt snmp                       # TODO: comment this
