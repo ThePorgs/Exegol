@@ -728,14 +728,14 @@ function enum4linux-ng() {
   git -C /opt/tools/ clone https://github.com/cddmp/enum4linux-ng
 }
 
-function git-dumper() {
+function install_git-dumper() {
   colorecho "Installing git-dumper"
   git -C /opt/tools/ clone https://github.com/arthaud/git-dumper
   cd /opt/tools/git-dumper
   python3 -m pip install -r requirements.txt
 }
 
-function gittools() {
+function install_gittools() {
   colorecho "Installing GitTools"
   git -C /opt/tools/ clone https://github.com/internetwache/GitTools.git
 }
@@ -1968,7 +1968,7 @@ function install_web_tools() {
   install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   jwt_cracker                     # JWT cracker and bruteforcer
   wuzz                            # Burp cli
-  git-dumper                      # Dump a git repository from a website
+  install_git-dumper              # Dump a git repository from a website
   install_gittools                # Dump a git repository from a website
   fapt padbuster
   install_ysoserial               # Deserialization payloads
