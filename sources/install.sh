@@ -111,7 +111,6 @@ function onionsearch() {
   cd /opt/tools/onionsearch
   python3 setup.py install
   rm -rf /opt/tools/onionsearch
-
 }
 
 function photon() {
@@ -1708,6 +1707,13 @@ function install_targetedKerberoast() {
   python3 -m pip install -r requirements.txt
 }
 
+function install_manspider() {
+  colorecho "Installing MANSPIDER"
+  git -C /opt/tools/ clone https://github.com/blacklanternsecurity/MANSPIDER
+  fapt install antiword
+  python3 -m pip install man-spider
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -2073,6 +2079,7 @@ function install_ad_tools() {
   install_petitpotam              # Python script to coerce auth through MS-EFSR abuse
   install_PKINITtools             # Python scripts to use kerberos PKINIT to obtain TGT
   install_pywhisker               # Python script to manipulate msDS-KeyCredentialLink
+  install_manspider               # Snaffler-like in Python
 }
 
 # Package dedicated to mobile apps pentest tools
