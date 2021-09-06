@@ -65,15 +65,16 @@ def get_options():
     description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine."
 
     examples = {
-        "install (↓ ~8GB max):": "exegol install",
-        "check image updates:": "exegol info",
-        "get a shell:\t": "exegol start",
-        "get a tmux shell:": "exegol --shell tmux start",
-        "use wifi/bluetooth:": "exegol --privileged start",
-        "use a proxmark:": "exegol --device /dev/ttyACM0 start",
-        "use a LOGITacker:": "exegol --device /dev/ttyACM0 start",
-        "use an ACR122u:": "exegol --device /dev/bus/usb/ start",
-        "use a Crazyradio PA:": "exegol --device /dev/bus/usb/ start",
+        "install (↓ ~15GB max)": "exegol install",
+        "check image updates": "exegol info",
+        "get a shell\t": "exegol start",
+        "get a tmux shell": "exegol --shell tmux start",
+        "use wifi/bluetooth": "exegol --privileged start",
+        "use a Proxmark": "exegol --device /dev/ttyACM0 start",
+        "use a LOGITacker": "exegol --device /dev/ttyACM0 start",
+        "use an ACR122u": "exegol --device /dev/bus/usb/ start",
+        "use an HackRF One": "exegol --device /dev/bus/usb/ start",
+        "use an Crazyradio PA": "exegol --device /dev/bus/usb/ start",
     }
 
     epilog = "{}Examples:{}\n".format(GREEN, END)

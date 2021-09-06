@@ -2127,6 +2127,7 @@ function install_sdr_tools() {
   install_jackit                  # tools for mousejacking
   install_hackrf                  # tools for hackrf
   install_gqrx                    # spectrum analyzer for SDR
+  fapt rtl-433                    # decode radio transmissions from devices on the ISM bands
   # TODO : ubertooth, ...
 }
 
