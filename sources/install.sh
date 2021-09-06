@@ -1710,7 +1710,7 @@ function install_targetedKerberoast() {
 function install_manspider() {
   colorecho "Installing MANSPIDER"
   git -C /opt/tools/ clone https://github.com/blacklanternsecurity/MANSPIDER
-  fapt install antiword
+  fapt antiword
   python3 -m pip install man-spider
 }
 
