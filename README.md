@@ -41,6 +41,11 @@ python3 -m pip install --user --requirement requirements.txt
 python3 exegol.py start
 ```
 
+Add Exegol to PATH :
+```
+sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
+```
+
 # :mag_right: Usage
 A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
 
