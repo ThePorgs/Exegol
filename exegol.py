@@ -68,6 +68,7 @@ def get_options():
         "install (↓ ~15GB max)": "exegol install",
         "check image updates": "exegol info",
         "get a shell\t": "exegol start",
+        "run as daemon\t": "exegol exec -e bloodhound",
         "get a tmux shell": "exegol --shell tmux start",
         "use wifi/bluetooth": "exegol --privileged start",
         "use a Proxmark": "exegol --device /dev/ttyACM0 start",
@@ -87,6 +88,7 @@ def get_options():
         "install": "install Exegol image (build or pull depending on the chosen install --mode)",
         "update": "update Exegol image (build or pull depending on the chosen update --mode)",
         "remove": "remove Exegol image(s) and/or container(s)",
+        "exec": "execute a command on an Exegol container",
         "info": "print info on containers and local & remote images (name, size, state, ...)",
         "version": "print current version",
     }
@@ -198,6 +200,15 @@ def get_options():
         default="zsh",
         help="select shell to start when entering Exegol (Default: zsh)",
     )
+
+    default_start.add_argument(
+        "-e",
+        "--exec",
+        dest="exec",
+        action="store",
+        help="execute a command on exegol container",
+    )
+
 
     # Advanced start options
     advanced_start = parser.add_argument_group(
@@ -919,6 +930,128 @@ def info_containers():
 def info():
     info_images()
     info_containers()
+
+
+def exec():
+    # TODO merge some function with 'start' process
+    global LOOP_PREVENTION
+    len_images = len(client.images.list(IMAGE_NAME, filters={"dangling": False}))
+    if options.exec is None:
+        logger.error("No command supplied (use -e or --exec parameter)")
+        return
+    if not len_images == 0:
+        if LOOP_PREVENTION == "":
+            logger.success("{} Exegol images exist".format(len_images))
+        if not options.containertag:
+            exegol_container_count = len(client.containers.list(all=True, filters={"name": "exegol-"}))
+            if exegol_container_count > 0:
+                select_containertag(LOCAL_GIT_BRANCH)
+            else:
+                # no container exists, let's set the containertag and we'll bypass the next condition
+                # and go directly to the else, i.e. the container creation
+                # default to local git branch or master if none
+                if not LOCAL_GIT_BRANCH:
+                    options.containertag = "master"
+                else:
+                    options.containertag = LOCAL_GIT_BRANCH
+        if container_exists(options.containertag):
+            if LOOP_PREVENTION == "" or LOOP_PREVENTION == "create":
+                logger.success("Container exists")
+            containers = client.containers.list(all=True, filters={"name": "exegol-" + options.containertag})
+            for container in containers:
+                if not container.name == "exegol-" + options.containertag:
+                    containers.remove(container)
+            container = containers[0]
+            if container.attrs["State"]["Status"] == "running":
+                if LOOP_PREVENTION == "exec":
+                    logger.debug("Loop prevention triggered")
+                    logger.error("Something went wrong...")
+                else:
+                    logger.success("Container is up")
+                    container_analysis(container)
+                    if was_created_with_gui(container):
+                        logger.info("Running xhost command for display sharing")
+                        exec_popen(
+                            "xhost +local:{}".format(
+                                client.api.inspect_container("exegol-" + options.containertag)["Config"][
+                                    "Hostname"
+                                ]
+                            )
+                        )
+                    logger.info("Executing command on Exegol")
+                    container.exec_run("zsh -c 'source /opt/.zsh_aliases; eval {}'".format(options.exec.replace("'", "\'")), detach=True)
+                    LOOP_PREVENTION = "exec"
+            else:
+                if LOOP_PREVENTION == "start":
+                    logger.debug("Loop prevention triggered")
+                    logger.error("Something went wrong...")
+                else:
+                    logger.warning("Container is down")
+                    logger.info("Starting the container")
+                    exec_popen("docker start {}".format("exegol-" + options.containertag))
+                    LOOP_PREVENTION = "start"
+                    exec()
+        else:
+            if LOOP_PREVENTION == "create":
+                logger.debug("Loop prevention triggered")
+                logger.error("Something went wrong...")
+            else:
+                logger.warning("Container does not exist")
+                info_images()
+                if LOCAL_GIT_BRANCH == "master":  # TODO: fix this crap when I'll have branch names that are equal to docker tags
+                    default_dockertag = "stable"
+                else:
+                    default_dockertag = LOCAL_GIT_BRANCH
+                imagetag = input(
+                    "{}[?]{} What image do you want the container to create to be based upon [default: {}]? ".format(
+                        BOLD_BLUE, END, default_dockertag))
+                if not imagetag:
+                    imagetag = default_dockertag
+                if client.images.list(IMAGE_NAME + ":" + imagetag):
+                    info_containers()
+                    if options.containertag:
+                        default_containertag = options.containertag
+                    elif not container_exists(imagetag):
+                        default_containertag = imagetag
+                    else:
+                        logger.error(f"Something's wrong. Please create a detailed issue with everything you did and are trying to do (https://github.com/ShutdownRepo/Exegol/issues)")
+                        # When running start without supplying a container tag, there are multiple scenarios
+                        # 1. if >= 1 container(s) exist(s), one will be chosen to start
+                        # 2. else, a container is created, either using a supplied tag or using the imagetag
+                        # The user shouldn't end up here.
+                    client.containers.list(all=True, filters={"name": "exegol-"})
+                    containertag = input(
+                        "{}[?]{} What unique tag do you want to name your container with (one not in list above) [default: {}]? ".format(
+                            BOLD_BLUE, END, default_containertag))
+                    if containertag == "":
+                        containertag = default_containertag
+                    options.containertag = containertag
+                    logger.info("Creating the container")
+                    logger.debug("{} container based on the {} image".format("exegol-" + containertag,
+                                                                             IMAGE_NAME + ":" + imagetag))
+                    base_options, advanced_options = container_creation_options(options.containertag)
+                    exec_popen("docker create {} {} {}:{}".format(base_options, advanced_options, IMAGE_NAME, imagetag))
+                    LOOP_PREVENTION = "create"
+                    exec()
+                else:
+                    logger.warning("Image {} does not exist. You must supply a tag from the list above.".format(
+                        IMAGE_NAME + ":" + imagetag))
+    else:
+        if LOOP_PREVENTION == "install":
+            logger.debug("Loop prevention triggered")
+            logger.error("Something went wrong...")
+        else:
+            logger.warning("Exegol image does not exist, you must install it first")
+            confirmation = input(
+                "{}[?]{} Do you wish to install it now (↓ ~6GB)? [y/N] ".format(
+                    BOLD_ORANGE, END
+                )
+            )
+            if confirmation == "y" or confirmation == "yes" or confirmation == "Y":
+                install()
+                LOOP_PREVENTION = "install"
+                exec()
+
 
 def version():
    logger.info(f"You are running version {VERSION}")
