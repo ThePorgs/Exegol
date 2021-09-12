@@ -60,6 +60,10 @@ class Logger:
         if not self.quiet:
             console.print("{}[!]{} {}".format("[bold red]", "[/bold red]", message), highlight=False)
 
+    def raw(self, message):
+        if not self.quiet:
+            console.print(message,end='')
+
 
 def get_options():
     description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine."
@@ -540,8 +544,21 @@ def start():
                                 ]
                             )
                         )
-                    logger.info("Entering Exegol")
-                    exec_system("docker exec -ti {} {}".format("exegol-" + options.containertag, options.shell))
+                    if options.exec is None:
+                        logger.info("Entering Exegol")
+                        exec_system("docker exec -ti {} {}".format("exegol-" + options.containertag, options.shell))
+                    else:
+                        logger.info("Executing command on Exegol")
+                        # Using 'zsh source /opt/.zsh_aliases; eval cmd' to interpret alias commands on a non-interactive shell
+                        cmd = "zsh -c \"source /opt/.zsh_aliases; eval {}\"".format(options.exec.replace("\"", "\\\""))
+                        logger.debug(cmd)
+                        logs_stream = container.exec_run(cmd, detach=False, stream=True)
+                        try:
+                            for log in logs_stream[1]:
+                                logger.raw(log.decode("utf-8"))
+                        except KeyboardInterrupt:
+                            logger.info("Detaching process logging")
+                            logger.warning("Exiting this command do NOT stop the process in the container")
                     LOOP_PREVENTION = "exec"
             else:
                 if LOOP_PREVENTION == "start":
@@ -978,8 +995,11 @@ def exec():
                                 ]
                             )
                         )
-                    logger.info("Executing command on Exegol")
-                    container.exec_run("zsh -c 'source /opt/.zsh_aliases; eval {}'".format(options.exec.replace("'", "\'")), detach=True)
+                    logger.info("Executing command on Exegol as daemon")
+                    # Using 'zsh source /opt/.zsh_aliases; eval cmd' to interpret alias commands on a non-interactive shell
+                    cmd = "zsh -c \"source /opt/.zsh_aliases; eval {}\"".format(options.exec.replace("\"", "\\\""))
+                    logger.debug(cmd)
+                    container.exec_run(cmd, detach=True)
                     LOOP_PREVENTION = "exec"
             else:
                 if LOOP_PREVENTION == "start":

@@ -51,7 +51,8 @@ A powerful Python wrapper allows to manage Exegol without having to know docker-
 
 - Install (pull or build) an image : `exegol install`
 - Create/start/enter a container : `exegol start`
-- Execute a command on a container : `exegol exec -e bloodhound`
+- Execute a specific command on a container (with stdout / stderr) : `exegol start -e bloodhound`
+- Execute a specific command on a container as a daemon : `exegol exec -e bloodhound`
 - Stop a container : `exegol stop`
 - Remove a container or an image : `exegol remove`
 - Get help and advanced usage : `exegol --help`
