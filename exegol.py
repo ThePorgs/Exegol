@@ -474,10 +474,10 @@ def select_containertag(local_git_branch):
     if not len_containers == 0:
         for container in containers:
             volumes = []
-            if container.attrs["HostConfig"]["Binds"]:
+            if container.attrs["HostConfig"].get("Binds"):
                 for bind in container.attrs["HostConfig"]["Binds"]:
                     volumes.append(bind.split(":")[0])
-            if container.attrs["HostConfig"]["Mounts"]:
+            if container.attrs["HostConfig"].get("Mounts"):
                 for mount in container.attrs["HostConfig"]["Mounts"]:
                     volumes.append(mount["VolumeOptions"]["DriverConfig"]["Options"]["device"])
             logger.debug("└── " + str(container.attrs["Name"]) + " → " + str(volumes))
