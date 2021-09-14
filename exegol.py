@@ -550,7 +550,7 @@ def start():
                     else:
                         logger.info("Executing command on Exegol")
                         # Using 'zsh source /opt/.zsh_aliases; eval cmd' to interpret alias commands on a non-interactive shell
-                        cmd = "zsh -c \"source /opt/.zsh_aliases; eval {}\"".format(options.exec.replace("\"", "\\\""))
+                        cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(options.exec.replace("\"", "\\\"").replace("\'", "\\\'"))
                         logger.debug(cmd)
                         logs_stream = container.exec_run(cmd, detach=False, stream=True)
                         try:
@@ -997,7 +997,7 @@ def exec():
                         )
                     logger.info("Executing command on Exegol as daemon")
                     # Using 'zsh source /opt/.zsh_aliases; eval cmd' to interpret alias commands on a non-interactive shell
-                    cmd = "zsh -c \"source /opt/.zsh_aliases; eval {}\"".format(options.exec.replace("\"", "\\\""))
+                    cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(options.exec.replace("\"", "\\\"").replace("\'", "\\\'"))
                     logger.debug(cmd)
                     container.exec_run(cmd, detach=True)
                     LOOP_PREVENTION = "exec"
