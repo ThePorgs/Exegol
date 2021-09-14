@@ -83,6 +83,9 @@ function Responder() {
   sed -i 's/files\/BindShell.exe/\/opt\/tools\/Responder\/files\/BindShell.exe/g' /opt/tools/Responder/Responder.conf
   sed -i 's/certs\/responder.crt/\/opt\/tools\/Responder\/certs\/responder.crt/g' /opt/tools/Responder/Responder.conf
   sed -i 's/certs\/responder.key/\/opt\/tools\/Responder\/certs\/responder.key/g' /opt/tools/Responder/Responder.conf
+  fapt gcc-mingw-w64-x86-64
+  x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Runas.c -o /opt/tools/Responder/tools/MultiRelay/bin/Runas.exe -municode -lwtsapi32 -luserenv
+  x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.c -o /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.exe -municode
 }
 
 function Sublist3r() {
@@ -108,7 +111,6 @@ function onionsearch() {
   cd /opt/tools/onionsearch
   python3 setup.py install
   rm -rf /opt/tools/onionsearch
-
 }
 
 function photon() {
@@ -196,6 +198,16 @@ function NoSQLMap() {
   python setup.py install
 }
 
+function install_odat() {
+  odat_latest=$(curl -L -s https://github.com/quentinhardy/odat/releases/latest | grep tar.gz | cut -d '"' -f 2 | head -1)
+  wget "https://github.com/$odat_latest" -O /tmp/odat_latest.tar.gz
+  mkdir -p /opt/tools/odat
+  tar xvf /tmp/odat_latest.tar.gz -C /opt/tools/odat --strip=2
+  mv /opt/tools/odat/odat* /opt/tools/odat/odat
+  echo -e '#!/bin/sh\n(cd /opt/tools/odat/ && ./odat $@)' > /usr/local/bin/odat
+  chmod +x /usr/local/bin/odat
+}
+
 function fuxploider() {
   colorecho "Installing fuxploider"
   git -C /opt/tools/ clone https://github.com/almandin/fuxploider.git
@@ -223,6 +235,21 @@ function XSStrike() {
   python3 -m pip install fuzzywuzzy
 }
 
+function install_XSpear() {
+  colorecho "Installing XSpear"
+  gem install XSpear
+}
+
+function install_pass_station() {
+  colorecho "Installing Pass Station"
+  gem install pass-station
+}
+
+function evilwinrm() {
+  colorecho "Installing evil-winrm"
+  gem install evil-winrm
+}
+
 function Bolt() {
   colorecho "Installing Bolt"
   git -C /opt/tools/ clone https://github.com/s0md3v/Bolt.git
@@ -231,10 +258,12 @@ function Bolt() {
 function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
   apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
-  #pipx install crackmapexec
+  git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
+  cd /opt/tools/CrackMapExec
+  python3 -m pipx install .
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
-  apt-get -y install crackmapexec
+#  apt-get -y install crackmapexec
 }
 
 function install_lsassy() {
@@ -260,8 +289,18 @@ function Impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
+  # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
+  # rcbd.py in examples
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
+  # Shadow Credentials in ntlmrelayx.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
+  # AD CS in ntlmrelayx.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1101.patch | git apply --verbose
+  # Return server time in case of clock skew with KDC
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1133.patch | git apply --verbose
+  # Improved searchFilter for GetUserSPNs
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -326,6 +365,13 @@ function IceBreaker() {
   pipenv --three install
 }
 
+function install_routersploit() {
+  colorecho "Installing RouterSploit"
+  git -C /opt/tools/ clone https://www.github.com/threat9/routersploit
+  cd /opt/tools/routersploit
+  python3 -m pip install -r requirements.txt
+}
+
 function Empire() {
   colorecho "Installing Empire"
   export STAGING_KEY=$(echo exegol4thewin | md5sum | cut -d ' ' -f1)
@@ -369,6 +415,60 @@ function install_subfinder() {
 function install_gobuster() {
   colorecho "Installing gobuster"
   go get -u -v github.com/OJ/gobuster
+}
+
+function install_kiterunner() {
+  colorecho "Installing kiterunner (kr)"
+  git -C /opt/tools/ clone https://github.com/assetnote/kiterunner.git
+  cd /opt/tools/kiterunner
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-large.kite.tar.gz
+  wget https://wordlists-cdn.assetnote.io/data/kiterunner/routes-small.kite.tar.gz
+  make build
+  ln -s $(pwd)/dist/kr /opt/tools/bin/kr
+}
+
+function install_dirsearch() {
+  colorecho "Installing dirsearch"
+  git -C /opt/tools/ clone https://github.com/maurosoria/dirsearch
+  cd /opt/tools/dirsearch/
+  python3 -m pip install .
+}
+
+function install_cmsmap() {
+  colorecho "Installing CMSmap"
+  git -C /opt/tools/ clone https://github.com/Dionach/CMSmap.git
+  cd /opt/tools/CMSmap/
+  python3 -m pip install .
+  cmsmap -U PC
+}
+
+function install_tomcatwardeployer() {
+  colorecho "Installing tomcatWarDeployer"
+  git -C /opt/tools/ clone https://github.com/mgeeky/tomcatWarDeployer.git
+  cd /opt/tools/tomcatWarDeployer/
+  python -m pip install -r requirements.txt
+}
+
+function install_clusterd() {
+  colorecho "Installing clusterd"
+  git -C /opt/tools/ clone https://github.com/hatRiot/clusterd.git
+  cd /opt/tools/clusterd/
+  python -m pip install -r requirements.txt
+  echo -e '#!/bin/sh\n(cd /opt/tools/clusterd/ && python clusterd.py $@)' > /usr/local/bin/clusterd
+  chmod +x /usr/local/bin/clusterd
+}
+
+function install_moodlescan() {
+  colorecho "Installing moodlescan"
+  git -C /opt/tools/ clone https://github.com/inc0d3/moodlescan.git
+  cd /opt/tools/moodlescan/
+  python3 -m pip install -r requirements.txt
+  /opt/tools/moodlescan/moodlescan.py -a
+}
+
+function install_arjun() {
+  colorecho "Installing arjun"
+  python3 -m pip install arjun
 }
 
 function amass() {
@@ -464,6 +564,12 @@ function pwntools() {
   colorecho "Installing pwntools"
   python -m pip install pwntools
   python3 -m pip install pwntools
+}
+
+function install_angr() {
+  colorecho "Installing angr"
+  python -m pip install angr
+  python3 -m pip install angr
 }
 
 function pwndbg() {
@@ -623,14 +729,14 @@ function enum4linux-ng() {
   git -C /opt/tools/ clone https://github.com/cddmp/enum4linux-ng
 }
 
-function git-dumper() {
+function install_git-dumper() {
   colorecho "Installing git-dumper"
   git -C /opt/tools/ clone https://github.com/arthaud/git-dumper
   cd /opt/tools/git-dumper
   python3 -m pip install -r requirements.txt
 }
 
-function gittools() {
+function install_gittools() {
   colorecho "Installing GitTools"
   git -C /opt/tools/ clone https://github.com/internetwache/GitTools.git
 }
@@ -674,6 +780,11 @@ function install_john() {
   fapt qtbase5-dev
   git -C /opt/tools/ clone https://github.com/openwall/john
   cd /opt/tools/john/src && ./configure && make
+}
+
+function install_nth() {
+  colorecho "Installing Name-That-Hash"
+  python3 -m pip install name-that-hash
 }
 
 function memcached-cli() {
@@ -763,6 +874,11 @@ function mailsniper() {
   git -C /opt/resources/windows/ clone https://github.com/dafthack/MailSniper
 }
 
+function nishang() {
+  colorecho "Downloading Nishang"
+  git -C /opt/resources/windows/ clone https://github.com/samratashok/nishang.git
+}
+
 function powersploit() {
   colorecho "Downloading PowerSploit"
   git -C /opt/resources/windows/ clone https://github.com/PowerShellMafia/PowerSploit
@@ -845,6 +961,7 @@ function lazagne() {
   mv /tmp/LaZagne/Windows /opt/resources/widnows/LaZagne
   wget -P /opt/resources/windows/LaZagne/ "$(curl -s https://github.com/AlessandroZ/LaZagne/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')/lazagne.exe"
   rm -r /tmp/LaZagne
+  # Add LaZagne Forensic? https://github.com/AlessandroZ/LaZagneForensic
 }
 
 function sublinacl() {
@@ -1000,9 +1117,9 @@ function pwnedornot() {
 }
 function ghunt() {
   colorecho "Installing ghunt"
-  apt-get update 
-  apt-get install -y curl unzip gnupg 
-  curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - 
+  apt-get update
+  apt-get install -y curl unzip gnupg
+  curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
   echo "deb [arch=amd64]  http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
   apt-get update
   apt-get install -y google-chrome-stable
@@ -1055,6 +1172,17 @@ function ghidra() {
   wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
   unzip /tmp/ghidra_9.2.3_PUBLIC_20210325.zip -d /opt/tools
   rm /tmp/ghidra_9.2.3_PUBLIC_20210325.zip
+}
+
+function burp() {
+  colorecho "Installing Burp"
+  burp_version=$(curl -s "https://portswigger.net/burp/releases#community" | grep -P -o "\d{4}-\d-\d" | head -1 | tr - .)
+  wget "https://portswigger.net/burp/releases/download?product=community&version=$burp_version&type=Linux" -O /tmp/burp.sh
+  chmod +x "/tmp/burp.sh"
+  /tmp/burp.sh -q
+  # FIXME: find a way to install in /opt/tools?
+  # FIXME: set up the dark theme right away?
+  # FIXME: add burp certificate to embedded firefox and chrome?
 }
 
 function bitleaker() {
@@ -1218,6 +1346,11 @@ function awscli(){
   rm awscliv2.zip
 }
 
+function install_scout() {
+  colorecho "Installing ScoutSuite"
+  python3 -m pip install scoutsuite
+}
+
 function jdwp_shellifier(){
   colorecho "Installing jdwp_shellifier"
   git -C /opt/tools/ clone https://github.com/IOActive/jdwp-shellifier.git
@@ -1336,6 +1469,13 @@ function install_gqrx() {
   apt-get -y install gqrx-sdr
 }
 
+function install_sipvicious() {
+  colorecho "Installing SIPVicious"
+  git -C /opt/tools/ clone https://github.com/enablesecurity/sipvicious.git
+  cd /opt/tools/sipvicious/
+  python3 setup.py install
+}
+
 function install_httpmethods() {
   colorecho "Installing httpmethods"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/httpmethods
@@ -1386,6 +1526,12 @@ function install_pipx() {
   pipx ensurepath
 }
 
+function install_peepdf() {
+  colorecho "Installing peepdf"
+  fapt libjpeg-dev
+  python3 -m pip install peepdf
+}
+
 function install_volatility() {
   colorecho "Installing volatility"
   apt-get -y install pcregrep libpcre++-dev python-dev yara
@@ -1402,10 +1548,40 @@ function install_zsteg() {
   gem install zsteg
 }
 
+function install_stegolsb() {
+  colorecho "Installing stegolsb"
+  python3 -m pip install stego-lsb
+}
+
+function install_whatportis() {
+  colorecho "Installing whatportis"
+  python3 -m pip install whatportis
+  echo y | whatportis --update
+}
+
+function install_ultimate_vimrc() {
+    colorecho "Installing The Ultimate vimrc"
+    git clone --depth=1 https://github.com/amix/vimrc.git ~/.vim_runtime
+    sh ~/.vim_runtime/install_awesome_vimrc.sh
+}
+
 function install_ngrok() {
   colorecho "Installing ngrok"
   wget -O /tmp/ngrok.zip https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
   unzip -d /opt/tools/bin/ /tmp/ngrok.zip
+}
+
+function install_chisel() {
+  colorecho "Installing chisel"
+  go get -v github.com/jpillora/chisel
+  #FIXME: add windows pre-compiled binaries in /opt/ressources/windows?
+}
+
+function install_sshuttle() {
+  colorecho "Installing sshtuttle"
+  git -C /opt/tools/ clone https://github.com/sshuttle/sshuttle.git
+  cd /opt/tools/sshuttle
+  python3 setup.py install
 }
 
 function install_pygpoabuse() {
@@ -1491,6 +1667,62 @@ function install_pcredz() {
   git -C /opt/tools/ clone https://github.com/lgandx/PCredz
 }
 
+function install_smartbrute() {
+  colorecho "Installing smartbrute"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/smartbrute
+  cd /opt/tools/smartbrute
+  python3 -m pip install -r requirements.txt
+  python3 -m pip install --force rich
+}
+
+function install_frida() {
+  colorecho "Installing frida"
+  python3 -m pip install frida-tools
+}
+
+function install_androguard() {
+  colorecho "Installing androguard"
+  python3 -m pip install androguard
+}
+
+function install_petitpotam() {
+  colorecho "Installing PetitPotam"
+  git -C /opt/tools/ clone https://github.com/topotam/PetitPotam
+}
+
+function install_PKINITtools() {
+  colorecho "Installing PKINITtools"
+  git -C /opt/tools/ clone https://github.com/dirkjanm/PKINITtools
+}
+
+function install_pywhisker() {
+  colorecho "Installing pyWhisker"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/pywhisker
+  cd /opt/tools/pywhisker
+  python3 -m pip install -r requirements.txt
+}
+
+function install_targetedKerberoast() {
+  colorecho "Installing targetedKerberoast"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/targetedKerberoast
+  cd /opt/tools/targetedKerberoast
+  python3 -m pip install -r requirements.txt
+}
+
+function install_manspider() {
+  colorecho "Installing MANSPIDER"
+  git -C /opt/tools/ clone https://github.com/blacklanternsecurity/MANSPIDER
+  fapt antiword
+  python3 -m pip install man-spider
+}
+
+function install_pywsus() {
+  colorecho "Installing pywsus"
+  git -C /opt/tools/ clone https://github.com/GoSecure/pywsus
+  cd /opt/tools/pywsus
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -1533,6 +1765,7 @@ function install_base() {
   fapt x11-apps                   # Linux utility
   fapt net-tools                  # Linux utility
   fapt vim                        # Text editor
+  install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
   fapt iputils-ping               # Ping binary
   arsenal                         # Cheatsheets tool
@@ -1549,6 +1782,7 @@ function install_base() {
   fapt samba                      # Samba
   fapt ftp                        # FTP client
   fapt ssh                        # SSH client
+  fapt sshpass                    # SSHpass (wrapper for using SSH with password on the CLI)
   fapt telnet                     # Telnet client
   fapt nfs-common                 # NFS client
   fapt snmp                       # TODO: comment this
@@ -1616,11 +1850,13 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   shellerator                     # Reverse shell generator
   uberfile                        # file uploader/downloader commands generator
-#  install_trilium_packaged        # notes taking tool
-  install_trilium_sources        # notes taking tool
+#  install_trilium_packaged       # notes taking tool
+  install_trilium_sources         # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
+  install_whatportis              # Search default port number
+  fapt ascii                      # The ascii table in the shell
 }
 
 # Package dedicated to the installation of wordlists and tools like wl generators
@@ -1629,6 +1865,8 @@ function install_wordlists_tools() {
   fapt seclists                   # Awesome wordlists
   fapt wordlists                  # Others wordlists (not the best)
   fapt cewl                       # Wordlist generator
+  fapt cupp                       # User password profiler
+  install_pass_station            # Default credentials database
 }
 
 # Package dedicated to offline cracking/bruteforcing tools
@@ -1636,7 +1874,9 @@ function install_cracking_tools() {
   fapt hashcat                    # Password cracker
   install_john                    # Password cracker
   fapt fcrackzip                  # Zip cracker
+  fapt pdfcrack                   # PDF cracker
   fapt bruteforce-luks            # Find the password of a LUKS encrypted volume
+  install_nth                     # Name-That-Hash, the hash identifier tool
 }
 
 # Package dedicated to osint, recon and passive tools
@@ -1708,17 +1948,20 @@ function install_osint_tools() {
 # Package dedicated to applicative and active web pentest tools
 function install_web_tools() {
   install_gobuster                # Web fuzzer (pretty good for several extensions)
+  install_kiterunner              # Web fuzzer (fast and pretty good for api bruteforce)
   amass                           # Web fuzzer
   install_ffuf                    # Web fuzzer (little favorites)
   fapt dirb                       # Web fuzzer
   fapt dirbuster                  # Web fuzzer
   fapt wfuzz                      # Web fuzzer (second favorites)
+  install_dirsearch               # Web fuzzer
   fapt nikto                      # Web scanner
   fapt sqlmap                     # SQL injection scanner
   SSRFmap                         # SSRF scanner
   gopherus                        # SSRF helper
   NoSQLMap                        # NoSQL scanner
   XSStrike                        # XSS scanner
+  install_XSpear                  # XSS scanner
   fapt xsser                      # XSS scanner
   xsrfprobe                       # CSRF scanner
   Bolt                            # CSRF scanner
@@ -1731,6 +1974,8 @@ function install_web_tools() {
   fapt wpscan                     # Wordpress scanner
   install_droopescan              # Drupal scanner
   install_drupwn                  # Drupal scanner
+  install_cmsmap                  # CMS scanner (Joomla, Wordpress, Drupal)
+  install_moodlescan              # Moodle scanner
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
@@ -1746,7 +1991,7 @@ function install_web_tools() {
   install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   jwt_cracker                     # JWT cracker and bruteforcer
   wuzz                            # Burp cli
-  git-dumper                      # Dump a git repository from a website
+  install_git-dumper              # Dump a git repository from a website
   install_gittools                # Dump a git repository from a website
   fapt padbuster
   install_ysoserial               # Deserialization payloads
@@ -1758,14 +2003,19 @@ function install_web_tools() {
   install_h2csmuggler             # Tool for HTTP2 smuggling
   install_byp4xx                  # Tool to automate 40x errors bypass attempts
   install_feroxbuster             # ffuf but with multithreaded recursion
+  install_tomcatwardeployer       # Apache Tomcat auto WAR deployment & pwning tool
+  install_clusterd                # Axis2/JBoss/ColdFusion/Glassfish/Weblogic/Railo scanner
+  install_arjun                   # HTTP Parameter Discovery
 }
 
 # Package dedicated to command & control frameworks
 function install_c2_tools() {
   Empire                          # Exploit framework
   fapt metasploit-framework       # Offensive framework
+  install_routersploit            # Exploitation Framework for Embedded Devices
   # TODO: add Silentrinity
   # TODO: add starkiller
+  # TODO: add beef-xss
 }
 
 # Package dedicated to specific services tools apart from HTTP/HTTPS (e.g. SSH, and so on)
@@ -1775,13 +2025,15 @@ install_services_tools() {
   memcached-cli                   # TODO: comment this
   fapt mariadb-client             # Mariadb client
   fapt redis-tools                # Redis protocol
+  install_odat                    # Oracle Database Attacking Tool
 }
 
 # Package dedicated to internal Active Directory tools
 function install_ad_tools() {
   Responder                       # LLMNR, NBT-NS and MDNS poisoner
-  install_crackmapexec                # Network scanner
+  install_crackmapexec            # Network scanner
   sprayhound                      # Password spraying tool
+  install_smartbrute              # Password spraying tool
   bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
   cypheroth                       # Bloodhound dependency
@@ -1824,7 +2076,7 @@ function install_ad_tools() {
   fapt gpp-decrypt                # Decrypt a given GPP encrypted string
   ntlmv1-multi                    # NTLMv1 multi tools: modifies NTLMv1/NTLMv1-ESS/MSCHAPv2
   hashonymize                     # Anonymize NTDS, ASREProast, Kerberoast hashes for remote cracking
-  install_gosecretsdump           # secretsdump in Go for heavy files 
+  install_gosecretsdump           # secretsdump in Go for heavy files
   install_adidnsdump              # enumerate DNS records in Domain or Forest DNS zones
   install_powermad                # MachineAccountQuota and DNS exploit tools
   install_snaffler                # Shares enumeration and looting
@@ -1833,12 +2085,32 @@ function install_ad_tools() {
   install_bloodhound-quickwin     # Python script to find quickwins from BH data in a neo4j db
   install_ldapsearch-ad           # Python script to find quickwins from basic ldap enum
   install_ntlm-scanner            # Python script to check public vulns on DCs
+  install_petitpotam              # Python script to coerce auth through MS-EFSR abuse
+  install_PKINITtools             # Python scripts to use kerberos PKINIT to obtain TGT
+  install_pywhisker               # Python script to manipulate msDS-KeyCredentialLink
+  install_manspider               # Snaffler-like in Python
+  install_targetedKerberoast
+  install_pcredz
+  install_pywsus
+
 }
 
 # Package dedicated to mobile apps pentest tools
 function install_mobile_tools() {
-  continue
-  # TODO
+  fapt android-tools-adb
+  fapt smali
+  fapt dex2jar
+  fapt zipalign
+  fapt apksigner
+  fapt apktool
+  install_frida
+  install_androguard              # Reverse engineering and analysis of Android applications
+}
+
+# Package dedicated to VOIP/SIP pentest tools
+function install_voip_tools() {
+  install_sipvicious              # Set of tools for auditing SIP based VOIP systems
+  #TODO: SIPp?
 }
 
 # Package dedicated to RFID/NCF pentest tools
@@ -1868,6 +2140,7 @@ function install_sdr_tools() {
   install_jackit                  # tools for mousejacking
   install_hackrf                  # tools for hackrf
   install_gqrx                    # spectrum analyzer for SDR
+  fapt rtl-433                    # decode radio transmissions from devices on the ISM bands
   # TODO : ubertooth, ...
 }
 
@@ -1889,6 +2162,9 @@ function install_network_tools() {
   install_divideandscan           # Python project to automate port scanning routine
   fapt iptables                   # iptables for the win
   fapt traceroute                 # ping ping
+  install_chisel                  # Fast TCP/UDP tunnel over HTTP
+  install_sshuttle                # Transparent proxy over SSH
+  fapt dns2tcp                    # TCP tunnel over DNS
 }
 
 # Package dedicated to wifi pentest tools
@@ -1912,26 +2188,35 @@ function install_forensic_tools() {
   fapt foremost                   # Alternative to binwalk
   install_volatility              # Memory analysis tool
   install_trid                    # filetype detection tool
+  install_peepdf                  # PDF analysis
 }
 
 # Package dedicated to steganography tools
 function install_steganography_tools() {
-  install_zsteg               # detect stegano-hidden data in PNG & BMP
+  install_zsteg                   # Detect stegano-hidden data in PNG & BMP
+  fapt stegosuite
+  fapt steghide
+  install_stegolsb                # (including wavsteg)
 }
 
 # Package dedicated to cloud tools
 function install_cloud_tools() {
   kubectl
   awscli
+  install_scout                   # Multi-Cloud Security Auditing Tool
 }
 
 # Package dedicated to reverse engineering tools
 function install_reverse_tools() {
   pwntools                        # CTF framework and exploit development library
   pwndbg                          # Advanced Gnu Debugger
+  angr                            # Binary analysis
   checksec_py                     # Check security on binaries
   fapt nasm                       # Netwide Assembler
   fapt radare2                    # Awesome debugger
+  fapt wabt                       # The WebAssembly Binary Toolkit
+  fapt ltrace
+  fapt strace
 }
 
 # Package dedicated to attack crypto
@@ -1945,8 +2230,11 @@ function install_GUI_tools() {
   bloodhound_old_v3
   bloodhound_old_v2
   fapt freerdp2-x11
+  fapt rdesktop
   ghidra
   fapt xtightvncviewer
+  fapt jd-gui                     # Java decompiler
+  burp
 }
 
 # Package dedicated to the download of resources
@@ -1959,6 +2247,7 @@ function install_resources() {
   linenum
   linux_exploit_suggester
   mimikatz
+  nishang
   powersploit
   privesccheck
   rubeus

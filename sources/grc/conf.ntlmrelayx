@@ -54,3 +54,11 @@ colours=green
 regexp=.*User privileges found:.*
 colours=green
 =======
+# SUCCESS Saved certs
+regexp=.*Saved.*
+colours=green
+=======
+# SUCCESS Updated attr
+regexp=.*Updated.*
+colours=green
+=======
