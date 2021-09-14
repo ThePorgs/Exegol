@@ -258,10 +258,12 @@ function Bolt() {
 function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
   apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
-  #pipx install crackmapexec
+  git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
+  cd /opt/tools/CrackMapExec
+  python3 -m pipx install .
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
-  apt-get -y install crackmapexec
+#  apt-get -y install crackmapexec
 }
 
 function install_lsassy() {
@@ -1714,6 +1716,13 @@ function install_manspider() {
   python3 -m pip install man-spider
 }
 
+function install_pywsus() {
+  colorecho "Installing pywsus"
+  git -C /opt/tools/ clone https://github.com/GoSecure/pywsus
+  cd /opt/tools/pywsus
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -2080,6 +2089,10 @@ function install_ad_tools() {
   install_PKINITtools             # Python scripts to use kerberos PKINIT to obtain TGT
   install_pywhisker               # Python script to manipulate msDS-KeyCredentialLink
   install_manspider               # Snaffler-like in Python
+  install_targetedKerberoast
+  install_pcredz
+  install_pywsus
+
 }
 
 # Package dedicated to mobile apps pentest tools

