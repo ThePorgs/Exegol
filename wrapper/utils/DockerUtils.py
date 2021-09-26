@@ -6,6 +6,7 @@ from docker.errors import APIError
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TransferSpeedColumn, TimeRemainingColumn
 
 from console.LayerTextColumn import LayerTextColumn
+from model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ExeLog import logger
 
@@ -15,6 +16,18 @@ class DockerUtils:
     __image_name = "nwodtuhs/exegol"
     __images = None
     __containers = None
+
+    # # # Container Section # # #
+
+    @classmethod
+    def listContainers(cls):
+        result = []
+        docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
+        for container in docker_containers:
+            result.append(ExegolContainer(container))
+        return result
+
+    # # # Image Section # # #
 
     @classmethod
     def listImages(cls):
@@ -53,11 +66,6 @@ class DockerUtils:
         return remote_results
 
     @classmethod
-    def listContainers(cls):
-        # TODO parse containers objects
-        return cls.__client.containers.list(all=True, filters={"name": "exegol-"})
-
-    @classmethod
     def updateImage(cls, image: ExegolImage):
         logger.info(f"Updating exegol image : {image.getName()}")
         name = image.update()
@@ -65,7 +73,8 @@ class DockerUtils:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
             try:
                 cls.__downloadImage(name)
-                logger.success(f"Image successfully updated")  # TODO remove old image version ? /!\ Collision with existing containers
+                logger.success(
+                    f"Image successfully updated")  # TODO remove old image version ? /!\ Collision with existing containers
             except APIError as err:
                 if err.status_code == 500:
                     logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")

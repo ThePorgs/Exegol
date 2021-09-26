@@ -5,7 +5,7 @@ from wrapper.utils.ExeLog import logger
 
 class ExegolImage:
 
-    def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image=None, is_local=False):
+    def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None, is_local=False):
         # Init attributes
         self.__image: Image = docker_image
         self.__name = name
@@ -37,7 +37,7 @@ class ExegolImage:
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
-    def setDockerObject(self, docker_image):
+    def setDockerObject(self, docker_image: Image):
         self.__image = docker_image
         # When a docker image exist, image is locally installed
         self.__is_install = True
