@@ -44,8 +44,7 @@ class DockerUtils:
         for docker_image in remote_images_list["results"]:
             exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
                                        digest=docker_image["images"][0]["digest"],
-                                       size=docker_image.get("full_size"),
-                                       image_type='remote')
+                                       size=docker_image.get("full_size"))
             remote_results.append(exegol_image)
             cls.__client.images.list(cls.__image_name, filters={"dangling": False})
         return remote_results
@@ -54,3 +53,14 @@ class DockerUtils:
     def listContainers(cls):
         # TODO parse containers objects
         return cls.__client.containers.list(all=True, filters={"name": "exegol-"})
+
+    @classmethod
+    def updateImage(cls, image: ExegolImage):
+        logger.info(f"Updating exegol image : {image.getName()}")
+        name = image.update()
+        if name is not None:
+            logger.info(f"Starting download. Please wait, this might be (very) long.")
+            docker_image = cls.__client.images.pull(repository=cls.__image_name, tag=name)
+            image.setDockerObject(docker_image)
+            logger.success(f"Image successfully updated")
+
