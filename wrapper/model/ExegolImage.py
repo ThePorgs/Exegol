@@ -18,10 +18,11 @@ class ExegolImage:
         self.__is_update = False
         self.__is_discontinued = False
         # Process data
-        self.__setDigest(digest)
-        self.__setImageId(image_id)
         if docker_image is not None:
             self.__initFromDockerImage()
+        else:
+            self.__setDigest(digest)
+            self.__setImageId(image_id)
         logger.debug("└── {}\t→ ({}) {}".format(self.__name, self.getType(), self.__digest))
 
     def __initFromDockerImage(self):
@@ -34,7 +35,7 @@ class ExegolImage:
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
         if self.__is_remote:
-            self.__setDigest(self.__image.attrs["RepoDigests"][0].split(":")[1])
+            self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
     def setDockerObject(self, docker_image):
         self.__image = docker_image
@@ -160,4 +161,8 @@ class ExegolImage:
             return None
 
     def remove(self):
-        raise NotImplementedError
+        if self.__is_install:
+            return self.__name
+        else:
+            logger.error("This image is not installed locally. Skipping.")
+            return None
