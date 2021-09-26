@@ -76,8 +76,10 @@ class ExegolImage:
             for image in remote_images:
                 if image.getName() == tag:
                     image.setDockerObject(local_img)
+                    # Remove processed image from queue and add it to results
                     remote_images.remove(image)
                     results.append(image)
+                    # Tag current local image as successfully processed and exit loop
                     found = True
                     break
             if not found:
@@ -90,8 +92,14 @@ class ExegolImage:
         return results
 
     def __eq__(self, other):
-        # Don't compare image's digest when using == (update check if separate)
-        return self.__name == other.__name and self.__image == other.__image
+        # How to compare two ExegolImage
+        if type(other) is ExegolImage:
+            return self.__name == other.__name and self.__digest == other.__digest
+        elif type(other) is str:
+            return self.__name == other
+        else:
+            logger.error(f"Error, {type(other)} compare to ExegolImage is not implemented")
+            raise NotImplementedError
 
     def __str__(self):
         return f"{self.__name} - {self.__real_size} - " + (
@@ -150,4 +158,4 @@ class ExegolImage:
             return None
 
     def remove(self):
-        raise NotImplemented
+        raise NotImplementedError

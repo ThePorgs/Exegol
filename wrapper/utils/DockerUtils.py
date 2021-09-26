@@ -2,6 +2,7 @@ import json
 
 import docker
 import requests
+from rich.progress import Progress
 
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ExeLog import logger
@@ -60,7 +61,34 @@ class DockerUtils:
         name = image.update()
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
-            docker_image = cls.__client.images.pull(repository=cls.__image_name, tag=name)
-            image.setDockerObject(docker_image)
-            logger.success(f"Image successfully updated")
+            layers = set()
+            layers_complete = set()
+            downloading = {}
+            with Progress(transient=True) as progress:
+                task_layers = progress.add_task("[red]Downloading layers...")
+                for line in cls.__client.api.pull(repository=cls.__image_name, tag=name, stream=True, decode=True):
+                    status = line.get("status", '')
+                    layer_id = line.get("id")
+                    if status == "Pulling fs layer":
+                        layers.add(layer_id)
+                        progress.update(task_layers, total=len(layers), completed=len(layers_complete))
+                    elif status == "Download complete":
+                        layers_complete.add(layer_id)
+                        # Remove finished layer progress bar
+                        # progress.remove_task(downloading.get(layer_id))
+                        # (or) Set progress layer as complete
+                        progress.update(downloading.get(layer_id), total=100, completed=100)
+                        downloading.pop(layer_id)
+                        progress.update(task_layers, total=len(layers), completed=len(layers_complete))
+                    elif status == "Downloading":
+                        task = downloading.get(layer_id)
+                        if task is None:
+                            task = progress.add_task(f"[blue]Downloading {layer_id}",
+                                                     total=line.get("progressDetail", {}).get("total", 100))
+                            downloading[layer_id] = task
+                        progress.update(task, total=line.get("progressDetail", {}).get("total", 100),
+                                        completed=line.get("progressDetail", {}).get("current", 100))
+
+                # image.setDockerObject(docker_image)
+                logger.success(f"Image successfully updated")
 
