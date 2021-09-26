@@ -2,8 +2,9 @@ import json
 
 import docker
 import requests
-from rich.progress import Progress
+from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TransferSpeedColumn, TimeRemainingColumn
 
+from console.LayerTextColumn import LayerTextColumn
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ExeLog import logger
 
@@ -64,8 +65,19 @@ class DockerUtils:
             layers = set()
             layers_complete = set()
             downloading = {}
-            with Progress(transient=True) as progress:
-                task_layers = progress.add_task("[red]Downloading layers...")
+            with Progress(TextColumn("{task.description}", justify="left"),
+                          BarColumn(bar_width=None),
+                          "[progress.percentage]{task.percentage:>3.1f}%",
+                          "•",
+                          LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
+                          "•",
+                          TransferSpeedColumn(),
+                          "•",
+                          TimeElapsedColumn(),
+                          "•",
+                          TimeRemainingColumn(),
+                          transient=True) as progress:
+                task_layers = progress.add_task("[bold red]Downloading layers...", total=0)
                 for line in cls.__client.api.pull(repository=cls.__image_name, tag=name, stream=True, decode=True):
                     status = line.get("status", '')
                     layer_id = line.get("id")
@@ -75,19 +87,17 @@ class DockerUtils:
                     elif status == "Download complete":
                         layers_complete.add(layer_id)
                         # Remove finished layer progress bar
-                        # progress.remove_task(downloading.get(layer_id))
-                        # (or) Set progress layer as complete
-                        progress.update(downloading.get(layer_id), total=100, completed=100)
+                        progress.remove_task(downloading.get(layer_id))
                         downloading.pop(layer_id)
                         progress.update(task_layers, total=len(layers), completed=len(layers_complete))
                     elif status == "Downloading":
                         task = downloading.get(layer_id)
                         if task is None:
                             task = progress.add_task(f"[blue]Downloading {layer_id}",
-                                                     total=line.get("progressDetail", {}).get("total", 100))
+                                                     total=line.get("progressDetail", {}).get("total", 100),
+                                                     layer=layer_id)
                             downloading[layer_id] = task
-                        progress.update(task, total=line.get("progressDetail", {}).get("total", 100),
-                                        completed=line.get("progressDetail", {}).get("current", 100))
+                        progress.update(task, completed=line.get("progressDetail", {}).get("current", 100))
 
                 # image.setDockerObject(docker_image)
                 logger.success(f"Image successfully updated")
