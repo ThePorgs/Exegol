@@ -1,7 +1,7 @@
 from docker.models.containers import Container
 
-from model.ContainerConfig import ContainerConfig
-from model.ExegolImage import ExegolImage
+from wrapper.model.ContainerConfig import ContainerConfig
+from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 
 

@@ -1,5 +1,5 @@
-from model.ContainerConfig import ContainerConfig
-from model.ExegolImage import ExegolImage
+from wrapper.model.ContainerConfig import ContainerConfig
+from wrapper.model.ExegolImage import ExegolImage
 
 
 class ExegolContainerTemplate:

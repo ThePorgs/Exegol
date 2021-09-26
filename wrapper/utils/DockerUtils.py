@@ -5,8 +5,8 @@ import requests
 from docker.errors import APIError
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TransferSpeedColumn, TimeRemainingColumn
 
-from console.LayerTextColumn import LayerTextColumn
-from model.ExegolContainer import ExegolContainer
+from wrapper.console.LayerTextColumn import LayerTextColumn
+from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ExeLog import logger
 
