@@ -18,7 +18,7 @@ class DockerUtils:
     def listImages(cls):
         logger.info("Available images")
         if cls.__images is None:
-            remote_images = cls.__list_remote_images()
+            remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)
         return cls.__images
@@ -30,7 +30,7 @@ class DockerUtils:
                                         filters={"dangling": False})
 
     @classmethod
-    def __list_remote_images(cls):
+    def __listRemoteImages(cls):
         logger.debug("Fetching remote image tags, digests and sizes")
         try:
             remote_images_request = requests.get(

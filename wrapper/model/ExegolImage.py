@@ -1,3 +1,5 @@
+from docker.models.images import Image
+
 from wrapper.utils.ExeLog import logger
 
 
@@ -5,10 +7,10 @@ class ExegolImage:
 
     def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image=None, is_local=False):
         # Init attributes
-        self.__image = docker_image
+        self.__image: Image = docker_image
         self.__name = name
-        self.__size = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
-        self.__real_size = "[bright_black]N/A[/bright_black]"
+        self.__dl_size = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
+        self.__disk_size = "[bright_black]N/A[/bright_black]"
         self.__digest = "[bright_black]Unknown digest[/bright_black]"
         self.__id = "[bright_black]Unknown ID[/bright_black]"
         self.__is_remote = not is_local
@@ -102,8 +104,8 @@ class ExegolImage:
             raise NotImplementedError
 
     def __str__(self):
-        return f"{self.__name} - {self.__real_size} - " + (
-            f"({self.getStatus()}, {self.__size})" if self.__is_remote else f"{self.getStatus()}")
+        return f"{self.__name} - {self.__disk_size} - " + \
+               (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
     def getStatus(self):
         if not self.__is_remote:
@@ -136,10 +138,10 @@ class ExegolImage:
         return self.__digest
 
     def __setRealSize(self, value):
-        self.__real_size = self.__processSize(value)
+        self.__disk_size = self.__processSize(value)
 
     def getRealSize(self):
-        return self.__real_size
+        return self.__disk_size
 
     def isInstall(self) -> bool:
         return self.__is_install

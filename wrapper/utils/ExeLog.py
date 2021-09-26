@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+from rich.console import Console
 from rich.logging import RichHandler
 
 
@@ -45,3 +46,5 @@ logging.basicConfig(
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.DEBUG)
+
+console = Console()
