@@ -6,6 +6,7 @@ class ExegolContainerTemplate:
 
     def __init__(self, name: str, config: ContainerConfig, image: ExegolImage = None):
         self.name = name.replace('exegol-', '')
+        self.hostname = name
         self.image = image
         self.config = config
 
