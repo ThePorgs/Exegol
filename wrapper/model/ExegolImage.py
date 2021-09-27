@@ -4,6 +4,7 @@ from wrapper.utils.ExeLog import logger
 
 
 class ExegolImage:
+    image_name = "nwodtuhs/exegol"
 
     def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None, is_local=False):
         # Init attributes
@@ -149,6 +150,9 @@ class ExegolImage:
 
     def getName(self):
         return self.__name
+
+    def getFullName(self):
+        return f"{ExegolImage.image_name}:{self.__name}"
 
     def update(self):
         if self.__is_remote:

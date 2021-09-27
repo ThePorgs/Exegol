@@ -44,7 +44,7 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True, show_time=False, markup=True, show_level=False, show_path=False)]
 )
 
-logger = logging.getLogger("main")
+logger: ExeLog = logging.getLogger("main")
 logger.setLevel(logging.DEBUG)
 
 console = Console()

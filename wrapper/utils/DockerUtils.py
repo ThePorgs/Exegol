@@ -6,14 +6,15 @@ from docker.errors import APIError
 from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TransferSpeedColumn, TimeRemainingColumn
 
 from wrapper.console.LayerTextColumn import LayerTextColumn
+from wrapper.exceptions.ExegolExceptions import ContainerNotFound
 from wrapper.model.ExegolContainer import ExegolContainer
+from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ExeLog import logger
 
 
 class DockerUtils:
     __client = docker.from_env()
-    __image_name = "nwodtuhs/exegol"
     __images = None
     __containers = None
 
@@ -21,11 +22,39 @@ class DockerUtils:
 
     @classmethod
     def listContainers(cls):
+        logger.info("Available containers")
         result = []
         docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
         for container in docker_containers:
             result.append(ExegolContainer(container))
         return result
+
+    @classmethod
+    def createContainer(cls, model: ExegolContainerTemplate):
+        logger.info("Creating new exegol container")
+        logger.debug(model)
+        container = cls.__client.containers.create(model.image.getFullName(),
+                                                   hostname=model.hostname,
+                                                   devices=model.config.devices,
+                                                   environment=model.config.envs,
+                                                   network_mode=model.config.getNetworkMode(),
+                                                   ports=model.config.ports,
+                                                   privileged=model.config.privileged,
+                                                   shm_size=model.config.shm_size,
+                                                   stdin_open=model.config.interactive,
+                                                   tty=model.config.tty,
+                                                   mounts=model.config.mounts,
+                                                   working_dir=model.config.getWorkingDir())
+        if container is not None:
+            logger.success("Exegol container successfully created !")
+        return ExegolContainer(container, model)
+
+    @classmethod
+    def getContainer(cls, tag):
+        container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
+        if container is None or len(container) == 0:
+            raise ContainerNotFound
+        return ExegolContainer(container[0])
 
     # # # Image Section # # #
 
@@ -41,7 +70,7 @@ class DockerUtils:
     @classmethod
     def __listLocalImages(cls, tag=None):
         logger.debug("Fetching local image tags, digests (and other attributes)")
-        return cls.__client.images.list(cls.__image_name + "" if tag is None else ":" + tag,
+        return cls.__client.images.list(ExegolImage.image_name + "" if tag is None else ":" + tag,
                                         filters={"dangling": False})
 
     @classmethod
@@ -49,7 +78,7 @@ class DockerUtils:
         logger.debug("Fetching remote image tags, digests and sizes")
         try:
             remote_images_request = requests.get(
-                url="https://hub.docker.com/v2/repositories/{}/tags".format(cls.__image_name),
+                url="https://hub.docker.com/v2/repositories/{}/tags".format(ExegolImage.image_name),
                 timeout=(5, 10), verify=True)  # TODO add verify as optional
         except requests.exceptions.ConnectionError as err:
             logger.warning("Connection Error: you probably have no internet, skipping online queries")
@@ -62,7 +91,7 @@ class DockerUtils:
                                        digest=docker_image["images"][0]["digest"],
                                        size=docker_image.get("full_size"))
             remote_results.append(exegol_image)
-            cls.__client.images.list(cls.__image_name, filters={"dangling": False})
+            cls.__client.images.list(ExegolImage.image_name, filters={"dangling": False})
         return remote_results
 
     @classmethod
@@ -100,7 +129,7 @@ class DockerUtils:
                       TimeRemainingColumn(),
                       transient=True) as progress:
             task_layers = progress.add_task("[bold red]Downloading layers...", total=0)
-            for line in cls.__client.api.pull(repository=cls.__image_name, tag=name, stream=True, decode=True):
+            for line in cls.__client.api.pull(repository=ExegolImage.image_name, tag=name, stream=True, decode=True):
                 status = line.get("status", '')
                 layer_id = line.get("id")
                 if status == "Pulling fs layer":
@@ -127,9 +156,8 @@ class DockerUtils:
         tag = image.remove()
         if tag is None:  # Skip removal if image doesn't exist locally.
             return
-        image_full_name = f"{cls.__image_name}:{tag}"
         try:
-            cls.__client.images.remove(image_full_name, force=False, noprune=False)
+            cls.__client.images.remove(image.getFullName(), force=False, noprune=False)
             logger.success("Docker image successfully removed.")
         except APIError as err:
             # Handle docker API error code
