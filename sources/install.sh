@@ -1713,6 +1713,7 @@ function install_manspider() {
   colorecho "Installing MANSPIDER"
   git -C /opt/tools/ clone https://github.com/blacklanternsecurity/MANSPIDER
   fapt antiword
+  fapt tesseract-ocr
   python3 -m pip install man-spider
 }
 
@@ -1721,6 +1722,31 @@ function install_pywsus() {
   git -C /opt/tools/ clone https://github.com/GoSecure/pywsus
   cd /opt/tools/pywsus
   python3 -m pip install -r requirements.txt
+}
+
+function install_ignorant() {
+  colorecho "Installing ignorant"
+  git -C /opt/tools/ clone https://github.com/megadose/ignorant
+  cd /opt/tools/ignorant
+  python3 -m pipx install .
+}
+
+function install_donpapi() {
+  colorecho "Installing DonPAPI"
+  git -C /opt/tools/ clone https://github.com/login-securite/DonPAPI.git
+  python3 -m pipx install -r requirements.txt
+}
+
+function install_gau() {
+  colorecho "Installing gau"
+  GO111MODULE=on go get -u -v github.com/lc/gau
+}
+
+function install_webclientservicescanner() {
+  colorecho "Installing webclientservicescanner"
+  git -C /opt/tools/ clone https://github.com/Hackndo/WebclientServiceScanner
+  cd /opt/tools/WebclientServiceScanner
+  python3 -m pipx install .
 }
 
 function install_base() {
@@ -1943,6 +1969,7 @@ function install_osint_tools() {
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
   gron                            # JSON parser
+  install_ignorant                # holehe but for phone numbers
 }
 
 # Package dedicated to applicative and active web pentest tools
@@ -2006,6 +2033,7 @@ function install_web_tools() {
   install_tomcatwardeployer       # Apache Tomcat auto WAR deployment & pwning tool
   install_clusterd                # Axis2/JBoss/ColdFusion/Glassfish/Weblogic/Railo scanner
   install_arjun                   # HTTP Parameter Discovery
+  install_gau
 }
 
 # Package dedicated to command & control frameworks
@@ -2092,7 +2120,8 @@ function install_ad_tools() {
   install_targetedKerberoast
   install_pcredz
   install_pywsus
-
+  install_donpapi
+  install_webclientservicescanner
 }
 
 # Package dedicated to mobile apps pentest tools

