@@ -1,0 +1,20 @@
+# GENERAL INFO
+regexp=.*\[\*\].*
+colours=blue
+=======
+# GENERAL WARNING
+regexp=.*\[\!\].*
+colours=yellow
+=======
+# GENERAL DEFAULT
+regexp=.*\[\-\].*
+colours=yellow
+=======
+# SUCCESS Ticket decrypt
+regexp=.*Ticket decrypt OK.*
+colours=green
+=======
+# SUCCESS Saving ticket
+regexp=.*Saving ticket.*
+colours=green
+=======
