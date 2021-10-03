@@ -3,15 +3,17 @@ import json
 import docker
 import requests
 from docker.errors import APIError
-from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn, TransferSpeedColumn, TimeRemainingColumn
 
-from wrapper.console.LayerTextColumn import LayerTextColumn
+from wrapper.console.TUI import ExegolTUI
 from wrapper.exceptions.ExegolExceptions import ContainerNotFound
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
+
+# SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
 class DockerUtils:
     __client = docker.from_env()
@@ -30,7 +32,7 @@ class DockerUtils:
         return result
 
     @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate):
+    def createContainer(cls, model: ExegolContainerTemplate, temporary=False):
         logger.info("Creating new exegol container")
         logger.debug(model)
         container = cls.__client.containers.create(model.image.getFullName(),
@@ -44,6 +46,7 @@ class DockerUtils:
                                                    stdin_open=model.config.interactive,
                                                    tty=model.config.tty,
                                                    mounts=model.config.mounts,
+                                                   remove=temporary,
                                                    working_dir=model.config.getWorkingDir())
         if container is not None:
             logger.success("Exegol container successfully created !")
@@ -101,54 +104,19 @@ class DockerUtils:
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
             try:
-                cls.__downloadImage(name)
-                logger.success(
-                    f"Image successfully updated")  # TODO remove old image version ? /!\ Collision with existing containers
+                ExegolTUI.downloadDockerLayer(
+                    cls.__client.api.pull(repository=ExegolImage.image_name,
+                                          tag=name,
+                                          stream=True,
+                                          decode=True))
+                logger.success(f"Image successfully updated")
+                # TODO remove old image version ? /!\ Collision with existing containers
             except APIError as err:
                 if err.status_code == 500:
                     logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                     logger.debug(f"Error: {err}")
                 else:
                     logger.error(f"An error occurred while downloading this image : {err}")
-
-    @classmethod
-    def __downloadImage(cls, name):
-        layers = set()
-        layers_complete = set()
-        downloading = {}
-        with Progress(TextColumn("{task.description}", justify="left"),
-                      BarColumn(bar_width=None),
-                      "[progress.percentage]{task.percentage:>3.1f}%",
-                      "•",
-                      LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
-                      "•",
-                      TransferSpeedColumn(),
-                      "•",
-                      TimeElapsedColumn(),
-                      "•",
-                      TimeRemainingColumn(),
-                      transient=True) as progress:
-            task_layers = progress.add_task("[bold red]Downloading layers...", total=0)
-            for line in cls.__client.api.pull(repository=ExegolImage.image_name, tag=name, stream=True, decode=True):
-                status = line.get("status", '')
-                layer_id = line.get("id")
-                if status == "Pulling fs layer":
-                    layers.add(layer_id)
-                    progress.update(task_layers, total=len(layers))
-                elif status == "Download complete":
-                    layers_complete.add(layer_id)
-                    # Remove finished layer progress bar
-                    progress.remove_task(downloading.get(layer_id))
-                    downloading.pop(layer_id)
-                    progress.update(task_layers, completed=len(layers_complete))
-                elif status == "Downloading":
-                    task = downloading.get(layer_id)
-                    if task is None:
-                        task = progress.add_task(f"[blue]Downloading {layer_id}",
-                                                 total=line.get("progressDetail", {}).get("total", 100),
-                                                 layer=layer_id)
-                        downloading[layer_id] = task
-                    progress.update(task, completed=line.get("progressDetail", {}).get("current", 100))
 
     @classmethod
     def removeImage(cls, image: ExegolImage):
@@ -167,3 +135,29 @@ class DockerUtils:
                 logger.error("This image doesn't exist locally. Aborting.")
             else:
                 logger.error(f"An error occurred while removing this image : {err}")
+
+    @classmethod
+    def buildImage(cls, tag, path=None):
+        logger.info(f"Building exegol image : {tag}")
+        if path is None:
+            path = ConstantConfig.root_path
+        logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
+        logger.verbose(f"Creating build context from [gold]{path}[/gold]")
+        try:
+            # path is the directory full path where Dockerfile is.
+            # tag is the name of the final build
+            ExegolTUI.buildDockerImage(
+                cls.__client.api.build(path=path,
+                                       tag=f"{ExegolImage.image_name}:{tag}",
+                                       rm=True,
+                                       forcerm=True,
+                                       pull=True,
+                                       decode=True))
+            logger.success(f"Exegol image successfully built")
+        except APIError as err:
+            logger.debug(f"Error: {err}")
+            if err.status_code == 500:
+                logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
+                logger.debug(f"Error: {err}")
+            else:
+                logger.error(f"An error occurred while building this image : {err}")

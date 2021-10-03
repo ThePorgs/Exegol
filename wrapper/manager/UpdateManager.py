@@ -4,11 +4,10 @@ from wrapper.utils.ExeLog import logger
 
 
 class UpdateManager:
-    def __init__(self, build=False):
-        self.__build = build
-        self.__git = GitManager()
+    __git = GitManager()
 
-    def updateImage(self, tag=None):
+    @staticmethod
+    def updateImage(tag=None):
         # List Images
         images = DockerUtils.listImages()
         selected_image = None
@@ -32,22 +31,24 @@ class UpdateManager:
             # Install / build image
             raise NotImplementedError
 
-    def updateGit(self, branch=None):
+    @classmethod
+    def updateGit(cls, branch=None):
         # Check if pending change -> cancel
-        if not self.__git.safeCheck():
+        if not cls.__git.safeCheck():
             logger.error("Aborting git update.")
             return
         # List & Select git branch
-        logger.info(self.__git.listBranch())
+        logger.info(cls.__git.listBranch())
         # TODO select git branch (need TUI)
         # Checkout new branch
         if branch is not None:
-            self.__git.checkout(branch)
+            cls.__git.checkout(branch)
         # git pull
-        self.__git.update()
+        cls.__git.update()
 
-    def __buildSource(self):
+    @staticmethod
+    def buildSource():
         # Ask to update git ?
         # Choose tag name
         # Docker Build
-        pass
+        DockerUtils.buildImage("local")

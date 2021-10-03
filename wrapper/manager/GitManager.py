@@ -1,14 +1,15 @@
-import pathlib
-
 from git import Repo, Remote, InvalidGitRepositoryError
 
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
+
+# SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
 
 class GitManager:
 
     def __init__(self):
-        path = pathlib.Path(__file__).parent.parent.parent.resolve()
+        path = ConstantConfig.root_path
         logger.debug(f"Loading git at {path}")
         self.__gitRepo: Repo = None
         self.__gitRemote: Remote = None
