@@ -20,14 +20,30 @@ class ExegolContainer(ExegolContainerTemplate):
                              image=model.image)
 
     def __str__(self):
-        return f"{self.name} - {self.getStatus()} - {self.image.getName()} ({self.config})"
+        return f"{self.name} - {self.getTextStatus()} - {self.image.getName()} ({self.config})"
 
     def __getState(self):
         # self.__container.reload()
         return self.__container.attrs.get("State", {})
 
-    def getStatus(self):
+    def getTextStatus(self):
         return self.__getState().get("Status", "Unknown")
+
+    def getStatus(self):
+        status = self.getTextStatus().lower()
+        if status == "unknown":
+            return "[red]:question:[/red] Unknown"
+        elif status == "exited":
+            return ":stop_sign: Stopped"
+        elif status == "running":
+            return ":green_circle: Running"
+        return status
+
+    def getFullId(self):
+        return self.__id
+
+    def getId(self):
+        return self.__id[:12]
 
     def start(self):
         self.__container.start()

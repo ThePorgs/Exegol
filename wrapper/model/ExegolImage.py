@@ -10,10 +10,10 @@ class ExegolImage:
         # Init attributes
         self.__image: Image = docker_image
         self.__name = name
-        self.__dl_size = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
-        self.__disk_size = "[bright_black]N/A[/bright_black]"
-        self.__digest = "[bright_black]Unknown digest[/bright_black]"
-        self.__id = "[bright_black]Unknown ID[/bright_black]"
+        self.__dl_size = ":question:" if size == 0 else self.__processSize(size)
+        self.__disk_size = ":question:"
+        self.__digest = "[bright_black]:question:[/bright_black]"
+        self.__id = "[bright_black]Not installed[/bright_black]"
         self.__is_remote = not is_local
         self.__is_install = False
         self.__is_update = False
@@ -127,17 +127,16 @@ class ExegolImage:
     def __setDigest(self, digest):
         if digest is not None:
             self.__digest = digest.split(":")[1]
-        else:
-            self.__digest = "[bright_black]Unknown digest[/bright_black]"
 
     def __setImageId(self, image_id):
         if image_id is not None:
             self.__id = image_id.split(":")[1][:12]
-        else:
-            self.__id = "[bright_black]Unknown ID[/bright_black]"
 
     def getDigest(self):
         return self.__digest
+
+    def getId(self):
+        return self.__id
 
     def __setRealSize(self, value):
         self.__disk_size = self.__processSize(value)

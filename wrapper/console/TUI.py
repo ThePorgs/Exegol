@@ -1,65 +1,93 @@
 import logging
 import re
 
-from rich.progress import Progress, TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich import box
+from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.table import Table
 
+from wrapper.console.ExegolProgress import ExegolProgress
 from wrapper.console.LayerTextColumn import LayerTextColumn
-from wrapper.utils.ExeLog import logger
+from wrapper.model.ExegolContainer import ExegolContainer
+from wrapper.model.ExegolImage import ExegolImage
+from wrapper.utils.ExeLog import logger, console, ExeLog
 
 
 class ExegolTUI:
 
-    @classmethod
-    def downloadDockerLayer(cls, stream, quick_exit=False):
+    @staticmethod
+    def downloadDockerLayer(stream, quick_exit=False):
         layers = set()
-        layers_complete = set()
+        layers_downloaded = set()
+        layers_extracted = set()
         downloading = {}
-        with Progress(TextColumn("{task.description}", justify="left"),
-                      BarColumn(bar_width=None),
-                      "[progress.percentage]{task.percentage:>3.1f}%",
-                      "•",
-                      LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
-                      "•",
-                      TransferSpeedColumn(),
-                      "•",
-                      TimeElapsedColumn(),
-                      "•",
-                      TimeRemainingColumn(),
-                      transient=True) as progress:
-            task_layers = progress.add_task("[bold red]Downloading layers...", total=0)
-            for line in stream:
+        extracting = {}
+        # Create progress bar with columns
+        with ExegolProgress(TextColumn("{task.description}", justify="left"),
+                            BarColumn(bar_width=None),
+                            "[progress.percentage]{task.percentage:>3.1f}%",
+                            "•",
+                            LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
+                            "•",
+                            TransferSpeedColumn(),
+                            "•",
+                            TimeElapsedColumn(),
+                            "•",
+                            TimeRemainingColumn(),
+                            transient=True) as progress:
+            task_layers_download = progress.add_task("[bold red]Downloading layers...", total=0)
+            task_layers_extract = progress.add_task("[bold gold1]Extracting layers...", total=0, start=False)
+            for line in stream:  # Receiving stream from docker API
                 status = line.get("status", '')
                 layer_id = line.get("id")
-                if status == "Pulling fs layer":
+                if status == "Pulling fs layer":  # Identify new layer to download
                     layers.add(layer_id)
-                    progress.update(task_layers, total=len(layers))
-                elif "Pulling from " in status:
-                    progress.tasks[
-                        task_layers].description = f"[bold red]Downloading {status.replace('Pulling from ', '')}:{line.get('id', 'latest')}"
-                elif status == "Download complete":
-                    layers_complete.add(layer_id)
+                    progress.update(task_layers_download, total=len(layers))
+                    progress.update(task_layers_extract, total=len(layers))
+                elif "Pulling from " in status:  # Rename task with image name
+                    progress.getTask(task_layers_download).description = \
+                        f"[bold red]Downloading {status.replace('Pulling from ', '')}:{line.get('id', 'latest')}"
+                    progress.getTask(task_layers_extract).description = \
+                        f"[bold gold1]Extracting {status.replace('Pulling from ', '')}:{line.get('id', 'latest')}"
+                elif status == "Download complete" or status == "Pull complete":  # Mark task as complete and remove it from the pool
+                    # Select task / layer pool depending on the status
+                    task_pool = downloading
+                    layer_pool = layers_downloaded
+                    if status == "Pull complete":
+                        task_pool = extracting
+                        layer_pool = layers_extracted
+                    # Tagging current layer as ended
+                    layer_pool.add(layer_id)
                     # Remove finished layer progress bar
-                    progress.remove_task(downloading.get(layer_id))
-                    downloading.pop(layer_id)
-                    progress.update(task_layers, completed=len(layers_complete))
-                    if quick_exit and len(layers_complete) == len(layers):
-                        # Exit stream when download is complete
-                        logger.info("End of download")
+                    layer_task = task_pool.get(layer_id)
+                    if layer_task is not None:
+                        progress.remove_task(layer_task)  # Remove progress bar
+                        task_pool.pop(layer_id)  # Remove task from pool
+                    # Update global task completion status
+                    progress.update(task_layers_download, completed=len(layers_downloaded))
+                    progress.update(task_layers_extract, completed=len(layers_extracted))
+                elif status == "Downloading" or status == "Extracting":  # Handle download or extract progress
+                    task_pool = downloading
+                    if status == "Extracting":
+                        task_pool = extracting
+                        if not progress.getTask(task_layers_extract).started:
+                            progress.start_task(task_layers_extract)
+                    task_id = task_pool.get(layer_id)
+                    if task_id is None:  # If this is a new layer, create a new task accordingly
+                        task_id = progress.add_task(
+                            f"[{'blue' if status == 'Downloading' else 'green'}]{status} {layer_id}",
+                            total=line.get("progressDetail", {}).get("total", 100),
+                            layer=layer_id)
+                        task_pool[layer_id] = task_id
+                    progress.update(task_id, completed=line.get("progressDetail", {}).get("current", 100))
+                elif "Image is up to date" in status or "Status: Downloaded newer image for" in status:
+                    logger.success(status)
+                    if quick_exit:
                         break
-                elif "Image is up to date" in status:
-                    logger.info(status)
-                    break
-                elif status == "Downloading":
-                    task = downloading.get(layer_id)
-                    if task is None:
-                        task = progress.add_task(f"[blue]Downloading {layer_id}",
-                                                 total=line.get("progressDetail", {}).get("total", 100),
-                                                 layer=layer_id)
-                        downloading[layer_id] = task
-                    progress.update(task, completed=line.get("progressDetail", {}).get("current", 100))
+                else:
+                    logger.debug(line)
 
-    @classmethod
-    def buildDockerImage(cls, build_stream):
+    @staticmethod
+    def buildDockerImage(build_stream):
         for line in build_stream:
             stream_text = line.get("stream", '')
             if stream_text.strip() != '':
@@ -74,5 +102,58 @@ class ExegolTUI:
                     logger.raw(stream_text, level=logging.DEBUG)
             if ': FROM ' in stream_text:
                 logger.info("Downloading docker image")
-                ExegolTUI.downloadDockerLayer(build_stream)
-                logger.info("End of download")
+                ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
+
+    @staticmethod
+    def printTable(data: list, title: str = None):
+        table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
+                      box=box.SQUARE_DOUBLE_HEAD)
+        if len(data) == 0:
+            logger.info("No data supplied")
+            # TODO handle no data
+            return
+        else:
+            if type(data[0]) is ExegolImage:
+                ExegolTUI.__buildImageTable(table, data)
+            elif type(data[0]) is ExegolContainer:
+                ExegolTUI.__buildContainerTable(table, data)
+            else:
+                logger.error(f"Print table of {type(data[0])} is not implemented")
+                raise NotImplementedError
+        console.print(table)
+
+    @staticmethod
+    def __buildImageTable(table, data: [ExegolImage]):
+        # Define columns
+        verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
+        if verbose_mode:
+            table.add_column("Id")
+        table.add_column("Image tag")
+        table.add_column("Real size")
+        table.add_column("Type")
+        # Load data into the table
+        for image in data:
+            if verbose_mode:
+                table.add_row(image.getId(), image.getName(), image.getRealSize(), image.getType())
+            else:
+                table.add_row(image.getName(), image.getRealSize(), image.getType())
+
+    @staticmethod
+    def __buildContainerTable(table, data: [ExegolContainer]):
+        # Define columns
+        verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
+        if verbose_mode:
+            table.add_column("Id")
+        table.add_column("Container tag")
+        table.add_column("State")
+        table.add_column("Image (repo/image:tag)")
+        table.add_column("Creation details")
+        if verbose_mode:
+            table.add_column("Binds & mounts")
+        # Load data into the table
+        for container in data:
+            if verbose_mode:
+                table.add_row(container.getId(), container.name, container.getStatus(), container.image.getName(),
+                              str(container.config), str(container.config.mounts))
+            else:
+                table.add_row(container.name, container.getStatus(), container.image.getName(), str(container.config))

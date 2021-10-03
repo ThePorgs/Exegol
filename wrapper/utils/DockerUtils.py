@@ -2,7 +2,7 @@ import json
 
 import docker
 import requests
-from docker.errors import APIError
+from docker.errors import APIError, DockerException
 
 from wrapper.console.TUI import ExegolTUI
 from wrapper.exceptions.ExegolExceptions import ContainerNotFound
@@ -16,7 +16,12 @@ from wrapper.utils.ExeLog import logger
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
 class DockerUtils:
-    __client = docker.from_env()
+    try:
+        __client = docker.from_env()
+    except DockerException as err:
+        logger.error(err)
+        logger.critical("Unable to connect to docker. Is docker install on your local machine ? Exiting.")
+        exit(0)
     __images = None
     __containers = None
 
@@ -140,7 +145,7 @@ class DockerUtils:
     def buildImage(cls, tag, path=None):
         logger.info(f"Building exegol image : {tag}")
         if path is None:
-            path = ConstantConfig.root_path
+            path = ConstantConfig.dockerfile_path
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{path}[/gold]")
         try:
