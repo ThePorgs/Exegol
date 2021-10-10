@@ -1969,7 +1969,7 @@ function install_osint_tools() {
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
   gron                            # JSON parser
-  install_ignorant                # holehe but for phone numbers
+  #install_ignorant                # holehe but for phone numbers
 }
 
 # Package dedicated to applicative and active web pentest tools
