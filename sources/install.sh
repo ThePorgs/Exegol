@@ -1723,6 +1723,31 @@ function install_pywsus() {
   python3 -m pip install -r requirements.txt
 }
 
+#TODO PRO
+function install_wine() {
+  colorecho "wine"
+  apt-get -y install wine
+}
+
+function install_compil_win() {
+  colorecho "installing win cross compilation tools"
+  apt-get -y install mingw-w64
+}
+
+function install_compil_dotnet() {
+  colorecho "installing dotnet runtime tools"
+  apt-get -y install  nuget mono-devel mono-xbuild
+}
+
+# function install_dotnet() {
+#   colorecho "installing dotnet compilation tools"
+#   apt-get -y install  nuget mono-devel mono-xbuild
+# }
+
+
+
+
+
 function install_base() {
   update || exit
   fapt man                        # Most important
@@ -2273,6 +2298,15 @@ function install_resources() {
   http-put-server
   azurehound
   icmpdoor
+}
+
+
+function install_windows_cross() {
+  #TODO pro remove
+  install_wine
+  install_dotnet
+  install_compil_win
+
 }
 
 # Function used to clean up post-install files
