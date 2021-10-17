@@ -1,3 +1,11 @@
+# :PRO: 
+  -CTF version
+  -CTF + Burp port (user manual)
+  -wine and windows crosscompile  images
+  -reduces images size
+  
+
+
 # :memo: Things to start
   Here are some things to do that I have in mind, I'll work on that asap. You can help if you feel like it!
   - enable connections through SOCKS4a/5 or HTTP proxies so that all of Exegol can be used through that proxy, simulating a advanced internal offensive system (callable with a `--proxy` or `--socks` option)
