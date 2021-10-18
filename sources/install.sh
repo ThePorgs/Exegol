@@ -1748,6 +1748,15 @@ function install_webclientservicescanner() {
   cd /opt/tools/WebclientServiceScanner
   python3 -m pipx install .
 }
+function install_compil_dotnet() {
+  colorecho "installing dotnet runtime tools"
+  fapt winetricks
+  WINEPREFIX="$HOME/prefix64" WINEARCH=win64 winetricks dotnet46  # please adapt with correct dotnet version 
+  PATH=$PATH:/root/.dotnet/
+
+}
+
+
 
 function install_base() {
   update || exit
@@ -1828,6 +1837,7 @@ function install_base() {
   fapt xz-utils                   # xz (de)compression
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
+  fapt openvpn                    # install Vpn Client (usefull for some CTF)
 }
 
 # Package dedicated to most used offensive tools
@@ -2303,6 +2313,18 @@ function install_resources() {
   azurehound
   icmpdoor
 }
+
+function install_windows_cross() {
+  fapt wine64                  #install runtime Wine for windows exe
+  fapt mono-complete           #install runtime mono for C# application
+  fapt mingw-w64               #install windows cross compiling 
+  fapt nuget                   #install nuget C# package manager           
+  install_compil_dotnet        #install dotnet compilation tools
+
+}
+
+
+
 
 # Function used to clean up post-install files
 function install_clean() {
