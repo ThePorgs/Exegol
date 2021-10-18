@@ -1723,28 +1723,13 @@ function install_pywsus() {
   python3 -m pip install -r requirements.txt
 }
 
-#TODO PRO
-function install_wine() {
-  colorecho "wine"
-  apt-get -y install wine
-}
-
-function install_compil_win() {
-  colorecho "installing win cross compilation tools"
-  apt-get -y install mingw-w64
-}
-
 function install_compil_dotnet() {
   colorecho "installing dotnet runtime tools"
-  apt-get -y install  nuget mono-devel mono-xbuild
+  fapt winetricks
+  WINEPREFIX="$HOME/prefix64" WINEARCH=win64 winetricks dotnet46  # please adapt with correct dotnet version 
+  PATH=$PATH:/root/.dotnet/
+
 }
-
-# function install_dotnet() {
-#   colorecho "installing dotnet compilation tools"
-#   apt-get -y install  nuget mono-devel mono-xbuild
-# }
-
-
 
 
 
@@ -1827,6 +1812,7 @@ function install_base() {
   fapt xz-utils                   # xz (de)compression
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
+  fapt openvpn                    # install Vpn Client (usefull for some CTF)
 }
 
 # Package dedicated to most used offensive tools
@@ -2300,14 +2286,17 @@ function install_resources() {
   icmpdoor
 }
 
-
 function install_windows_cross() {
-  #TODO pro remove
-  install_wine
-  install_dotnet
-  install_compil_win
+  fapt wine64                  #install runtime Wine for windows exe
+  fapt mono-complete           #install runtime mono for C# application
+  fapt mingw-w64               #install windows cross compiling 
+  fapt nuget                   #install nuget C# package manager           
+  install_compil_dotnet        #install dotnet compilation tools
 
 }
+
+
+
 
 # Function used to clean up post-install files
 function install_clean() {

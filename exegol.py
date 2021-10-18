@@ -30,6 +30,8 @@ VERSION = "3.1.6"
 - remove the eval() calls
 '''
 
+SOURCE_DOCKERFILE_GITHUB="https://api.github.com/repos/ShutdownRepo/Exegol/branches"
+
 
 class Logger:
     def __init__(self, verbosity=0, quiet=False):
@@ -211,6 +213,13 @@ def get_options():
         dest="exec",
         action="store",
         help="execute a command on exegol container",
+    ),
+    default_start.add_argument(
+        "-ctf",
+        "--ctf",
+        dest="ctf",
+        action="store_true",
+        help="run an exegol container with a openvpn client allowing connection to CTF environnement",
     )
 
 
@@ -264,10 +273,21 @@ def get_options():
 
     options = parser.parse_args()
 
+    if options.ctf:
+        options.no_default=True
+        options.X11 = True
+        options.host_network = False
+        options.bind_resources = False
+        options.device="/dev/net/tun"
+        options.custom_options="--cap-add=NET_ADMIN --sysctl net.ipv6.conf.all.disable_ipv6=0"
+
     if not options.no_default:
         options.X11 = True
         options.host_network = True
         options.bind_resources = True
+
+
+
     options.action = options.action.replace("-", "")
     if options.action == "update":
         options.action = "install"
@@ -722,7 +742,8 @@ def install():
             exec_system("docker pull {}:{}".format(IMAGE_NAME, dockertag))
     elif options.mode == "sources":
         logger.debug("Fetching available GitHub branches")
-        branches_request = requests.get(url="https://api.github.com/repos/ShutdownRepo/Exegol/branches", verify=options.verify)
+        branches_request = requests.get(url=SOURCE_DOCKERFILE_GITHUB, verify=options.verify)
+
         branches = eval(branches_request.text.replace("true", "True").replace("false", "False").replace("null", '""'))
         logger.info("Available GitHub branches")
         for branch in branches:
