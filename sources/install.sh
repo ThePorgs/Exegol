@@ -1761,7 +1761,7 @@ function install_eaphammer() {
   colorecho "Installing EPA hammer"
   git -C /opt/tools/ clone https://github.com/s0lst1c3/eaphammer
   cd /opt/tools/eaphammer
-  ./kali-setup
+  echo y | ./kali-setup
 }
 
 function download_hashcat_rules() {
