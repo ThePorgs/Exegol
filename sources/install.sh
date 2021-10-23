@@ -257,7 +257,7 @@ function Bolt() {
 
 function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
-  apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
+  apt-get -y install libssl-dev libffi-dev python2-dev build-essential python3-winrm python3-venv
   git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
   cd /opt/tools/CrackMapExec
   python3 -m pipx install .
@@ -1535,7 +1535,7 @@ function install_peepdf() {
 
 function install_volatility() {
   colorecho "Installing volatility"
-  apt-get -y install pcregrep libpcre++-dev python-dev yara
+  apt-get -y install pcregrep libpcre++-dev python2-dev yara
   git -C /opt/tools/ clone https://github.com/volatilityfoundation/volatility
   cd /opt/tools/volatility
   python -m pip install pycrypto distorm3 pillow openpyxl ujson
@@ -1790,7 +1790,7 @@ function install_base() {
   fapt php                        # Php language
   fapt python2                    # Python 2 language
   fapt python3                    # Python 3 language
-  fapt python-dev                 # Python 2 language (dev version)
+  fapt python2-dev                 # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
   fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
