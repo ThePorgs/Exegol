@@ -291,16 +291,12 @@ function Impacket() {
   cd /opt/tools/impacket/
   # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  # rcbd.py in examples
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
   # Shadow Credentials in ntlmrelayx.py
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
-  # AD CS in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1101.patch | git apply --verbose
-  # Return server time in case of clock skew with KDC
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1133.patch | git apply --verbose
   # Improved searchFilter for GetUserSPNs
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
+  # Added user filter on findDelegation
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1184.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -1739,7 +1735,7 @@ function install_ignorant() {
 function install_donpapi() {
   colorecho "Installing DonPAPI"
   git -C /opt/tools/ clone https://github.com/login-securite/DonPAPI.git
-  python3 -m pipx install -r requirements.txt
+  python3 -m pip install -r requirements.txt
 }
 
 function install_gau() {
@@ -1752,6 +1748,29 @@ function install_webclientservicescanner() {
   git -C /opt/tools/ clone https://github.com/Hackndo/WebclientServiceScanner
   cd /opt/tools/WebclientServiceScanner
   python3 -m pipx install .
+}
+
+function install_certipy() {
+  colorecho "Installing Certipy"
+  git -C /opt/tools/ clone https://github.com/ly4k/Certipy
+  cd /opt/tools/Certipy
+  python3 -m pipx install .
+}
+
+function install_eaphammer() {
+  colorecho "Installing EPA hammer"
+  git -C /opt/tools/ clone https://github.com/s0lst1c3/eaphammer
+  cd /opt/tools/eaphammer
+  ./kali-setup
+}
+
+function download_hashcat_rules() {
+  colorecho "Download hashcat rules"
+  mkdir -p /opt/resources/cracking/hashcat_rules/
+  git -C /opt/resources/cracking/hashcat_rules/ clone https://github.com/NSAKEY/nsa-rules
+  wget -O /opt/resources/cracking/hashcat_rules/hob064.rule https://raw.githubusercontent.com/praetorian-inc/Hob0Rules/master/hob064.rule
+  wget -O /opt/resources/cracking/hashcat_rules/d3adhob0.rule https://raw.githubusercontent.com/praetorian-inc/Hob0Rules/master/d3adhob0.rule
+  wget -O /opt/resources/cracking/hashcat_rules/OneRuleToRuleThemAll.rule https://raw.githubusercontent.com/NotSoSecure/password_cracking_rules/master/OneRuleToRuleThemAll.rule
 }
 
 function install_base() {
@@ -1799,6 +1818,8 @@ function install_base() {
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
   fapt iputils-ping               # Ping binary
+  fapt iproute2                   # Firewall rules
+  fapt openvpn
   arsenal                         # Cheatsheets tool
   mdcat                           # cat markdown files
   bat                             # Beautiful cat
@@ -1903,6 +1924,7 @@ function install_wordlists_tools() {
 # Package dedicated to offline cracking/bruteforcing tools
 function install_cracking_tools() {
   fapt hashcat                    # Password cracker
+  download_hashcat_rules
   install_john                    # Password cracker
   fapt fcrackzip                  # Zip cracker
   fapt pdfcrack                   # PDF cracker
@@ -2127,6 +2149,7 @@ function install_ad_tools() {
   install_pywsus
   install_donpapi
   install_webclientservicescanner
+  install_certipy
 }
 
 # Package dedicated to mobile apps pentest tools
@@ -2189,7 +2212,6 @@ function install_network_tools() {
   fapt nmap                       # Port scanner
   install_autorecon               # External recon tool
   # Sn1per                        # Vulnerability scanner
-  fapt iproute2                   # Firewall rules
   fapt tcpdump                    # Capture TCP traffic
   install_dnschef                 # Python DNS server
   install_rustscan                # Fast port scanner
@@ -2199,6 +2221,7 @@ function install_network_tools() {
   install_chisel                  # Fast TCP/UDP tunnel over HTTP
   install_sshuttle                # Transparent proxy over SSH
   fapt dns2tcp                    # TCP tunnel over DNS
+  install_eaphammer
 }
 
 # Package dedicated to wifi pentest tools

