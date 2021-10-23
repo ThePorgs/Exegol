@@ -889,6 +889,11 @@ function privesccheck() {
   git -C /opt/resources/windows/ clone https://github.com/itm4n/PrivescCheck
 }
 
+function sharpcollection() {
+  colorecho "Downloading SharpCollection"
+  git -C /opt/resources/windows/ clone https://github.com/Flangvik/SharpCollection
+}
+
 function rubeus() {
   colorecho "Downloading Rubeus"
   wget -P /opt/resources/windows/ "https://gitlab.com/onemask/pentest-tools/-/raw/master/windows/Rubeus_3.exe"
@@ -2302,6 +2307,7 @@ function install_resources() {
   http-put-server
   azurehound
   icmpdoor
+  sharpcollection
 }
 
 # Function used to clean up post-install files
