@@ -146,14 +146,16 @@ class ExegolTUI:
             table.add_column("Id")
         table.add_column("Container tag")
         table.add_column("State")
-        table.add_column("Image (repo/image:tag)")
-        table.add_column("Creation details")
+        table.add_column("Image tag")
+        table.add_column("Configurations")
         if verbose_mode:
-            table.add_column("Binds & mounts")
+            table.add_column("Mounts")
+            table.add_column("Devices")
         # Load data into the table
         for container in data:
             if verbose_mode:
-                table.add_row(container.getId(), container.name, container.getStatus(), container.image.getName(),
-                              str(container.config), str(container.config.mounts))
+                table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
+                              container.config.getTextDetails(), container.config.getTextMounts(verbose_mode),
+                              container.config.getTextDevices(verbose_mode))
             else:
-                table.add_row(container.name, container.getStatus(), container.image.getName(), str(container.config))
+                table.add_row(container.name, container.getTextStatus(), container.image.getName(), container.config.getTextDetails())

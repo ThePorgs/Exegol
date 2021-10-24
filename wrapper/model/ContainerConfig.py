@@ -3,6 +3,7 @@ import platform
 
 from docker.types import Mount
 
+from wrapper.console.ConsoleFormat import boolFormatter, getColor
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
 from wrapper.utils.ExeLog import logger
 
@@ -42,6 +43,8 @@ class ContainerConfig:
         host_config = container.attrs.get("HostConfig", {})
         self.privileged = host_config.get("Privileged", False)
         self.devices = host_config.get("Devices", [])
+        if self.devices is None:
+            self.devices = []
 
         # Volumes section
         self.__share_timezone = False
@@ -59,6 +62,8 @@ class ContainerConfig:
             self.envs[key] = value
 
     def __parseMounts(self, mounts):
+        if mounts is None:
+            mounts = []
         for share in mounts:
             self.mounts.append(Mount(source=share.get("Source"),
                                      target=share.get('Destination'),
@@ -79,7 +84,7 @@ class ContainerConfig:
             return
         if not self.__enable_gui:
             self.__enable_gui = True
-            logger.verbose("Enabling display sharing")
+            logger.verbose("Config : Enabling display sharing")
             self.addVolume("/tmp/.X11-unix", "/tmp/.X11-unix")
             self.addEnv("QT_X11_NO_MITSHM", "1")
             self.addEnv("DISPLAY", f"unix{os.getenv('DISPLAY')}")
@@ -90,7 +95,7 @@ class ContainerConfig:
             return
         if not self.__share_timezone:
             self.__share_timezone = True
-            logger.verbose("Enabling host timezones")
+            logger.verbose("Config : Enabling host timezones")
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
@@ -100,7 +105,7 @@ class ContainerConfig:
             raise NotImplementedError  # TODO test different mount / volume type for sharing volume between containers
 
     def setCwdShare(self):
-        logger.info("Sharing current working directory")
+        logger.info("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
         self.addVolume(self.__share_cwd, '/workspace')
 
@@ -131,6 +136,34 @@ class ContainerConfig:
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
         self.ports[f"{port_container}/{protocol}"] = [{'HostIp': host_ip, 'HostPort': port_host}]
+
+    def getTextDetails(self):
+        return f"{getColor(self.privileged)[0]}Privileged: {':fire:' if self.privileged else '[red]:cross_mark:[/red]'}{getColor(self.privileged)[1]}{os.linesep}" \
+               f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}" \
+               f"Network host: {'host' if self.network_host else 'custom'}{os.linesep}" \
+               f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}" \
+               f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
+
+    def getTextMounts(self, verbose=False):
+        result = ''
+        for mount in self.mounts:
+            if verbose:
+                result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else '(RW)'}{os.linesep}"
+            else:
+                # Blacklist mount
+                if mount.get('Target') in ['/tmp/.X11-unix']:
+                    continue
+                result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
+        return result
+
+    def getTextDevices(self, verbose=False):
+        result = ''
+        for device in self.devices:
+            if verbose:
+                result += f"{device}{os.linesep}"
+            else:
+                result += f"{':right_arrow:'.join(device.split(':')[0:2])}{os.linesep}"
+        return result
 
     def __str__(self):
         return f"Privileged: {self.privileged}{os.linesep}" \

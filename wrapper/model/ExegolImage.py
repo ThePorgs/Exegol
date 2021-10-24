@@ -6,15 +6,15 @@ from wrapper.utils.ExeLog import logger
 class ExegolImage:
     image_name = "nwodtuhs/exegol"
 
-    def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None, is_local=False):
+    def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None):
         # Init attributes
         self.__image: Image = docker_image
         self.__name = name
         self.__dl_size = ":question:" if size == 0 else self.__processSize(size)
         self.__disk_size = ":question:"
         self.__digest = "[bright_black]:question:[/bright_black]"
-        self.__id = "[bright_black]Not installed[/bright_black]"
-        self.__is_remote = not is_local
+        self.__image_id = "[bright_black]Not installed[/bright_black]"
+        self.__is_remote = False
         self.__is_install = False
         self.__is_update = False
         self.__is_discontinued = False
@@ -35,6 +35,7 @@ class ExegolImage:
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
+        self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
@@ -72,7 +73,7 @@ class ExegolImage:
             # Check if custom build
             if len(local_img.attrs["RepoDigests"]) == 0:
                 # This image is build locally
-                new_image = ExegolImage(docker_image=local_img, is_local=True)
+                new_image = ExegolImage(docker_image=local_img)
                 results.append(new_image)
                 continue
             found = False
@@ -130,13 +131,13 @@ class ExegolImage:
 
     def __setImageId(self, image_id):
         if image_id is not None:
-            self.__id = image_id.split(":")[1][:12]
+            self.__image_id = image_id.split(":")[1][:12]
 
     def getDigest(self):
         return self.__digest
 
     def getId(self):
-        return self.__id
+        return self.__image_id
 
     def __setRealSize(self, value):
         self.__disk_size = self.__processSize(value)
