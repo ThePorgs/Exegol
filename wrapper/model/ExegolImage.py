@@ -14,7 +14,7 @@ class ExegolImage:
         self.__disk_size = ":question:"
         self.__digest = "[bright_black]:question:[/bright_black]"
         self.__image_id = "[bright_black]Not installed[/bright_black]"
-        self.__is_remote = False
+        self.__is_remote = size > 0
         self.__is_install = False
         self.__is_update = False
         self.__is_discontinued = False
@@ -144,6 +144,14 @@ class ExegolImage:
 
     def getRealSize(self):
         return self.__disk_size
+
+    def getDownloadSize(self):
+        if not self.__is_remote:
+            return "local"
+        return self.__dl_size
+
+    def getSize(self):
+        return self.__disk_size if self.__is_install else self.__dl_size
 
     def isInstall(self) -> bool:
         return self.__is_install

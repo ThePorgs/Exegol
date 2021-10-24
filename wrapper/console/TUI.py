@@ -129,14 +129,22 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
-        table.add_column("Real size")
+        if verbose_mode:
+            table.add_column("Download size")
+            table.add_column("Disk size")
+        else:
+            # Depending on whether the image has already been downloaded or not,
+            # it will show the download size or the size on disk
+            table.add_column("Size")
+        table.add_column("Status")
         table.add_column("Type")
         # Load data into the table
         for image in data:
             if verbose_mode:
-                table.add_row(image.getId(), image.getName(), image.getRealSize(), image.getType())
+                table.add_row(image.getId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
+                              image.getStatus(), image.getType())
             else:
-                table.add_row(image.getName(), image.getRealSize(), image.getType())
+                table.add_row(image.getName(), image.getSize(), image.getStatus(), image.getType())
 
     @staticmethod
     def __buildContainerTable(table, data: [ExegolContainer]):
@@ -158,4 +166,5 @@ class ExegolTUI:
                               container.config.getTextDetails(), container.config.getTextMounts(verbose_mode),
                               container.config.getTextDevices(verbose_mode))
             else:
-                table.add_row(container.name, container.getTextStatus(), container.image.getName(), container.config.getTextDetails())
+                table.add_row(container.name, container.getTextStatus(), container.image.getName(),
+                              container.config.getTextDetails())

@@ -65,7 +65,11 @@ class ContainerConfig:
         if mounts is None:
             mounts = []
         for share in mounts:
-            self.mounts.append(Mount(source=share.get("Source"),
+            if share.get('Type', 'volume') == "volume":
+                source = f"Docker {share.get('Driver', '')} volume {share.get('Name','unknown')}"
+            else:
+                source = share.get("Source")
+            self.mounts.append(Mount(source=source,
                                      target=share.get('Destination'),
                                      type=share.get('Type', 'volume'),
                                      read_only=(not share.get("RW", True)),
@@ -140,7 +144,7 @@ class ContainerConfig:
     def getTextDetails(self):
         return f"{getColor(self.privileged)[0]}Privileged: {':fire:' if self.privileged else '[red]:cross_mark:[/red]'}{getColor(self.privileged)[1]}{os.linesep}" \
                f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}" \
-               f"Network host: {'host' if self.network_host else 'custom'}{os.linesep}" \
+               f"Network mode: {'host' if self.network_host else 'custom'}{os.linesep}" \
                f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}" \
                f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
 
