@@ -1,0 +1,40 @@
+{
+  "performance": {
+    "edge": 5,
+    "lowGraphics": false,
+    "nodeLabels": 1,
+    "edgeLabels": 1,
+    "darkMode": true,
+    "debug": true
+  },
+  "edgeincluded": {
+    "MemberOf": true,
+    "HasSession": true,
+    "AdminTo": true,
+    "AllExtendedRights": true,
+    "AddMember": true,
+    "ForceChangePassword": true,
+    "GenericAll": true,
+    "GenericWrite": true,
+    "Owns": true,
+    "WriteDacl": true,
+    "WriteOwner": true,
+    "CanRDP": true,
+    "ExecuteDCOM": true,
+    "AllowedToDelegate": true,
+    "ReadLAPSPassword": true,
+    "Contains": true,
+    "GpLink": true,
+    "AddAllowedToAct": true,
+    "AllowedToAct": true,
+    "SQLAdmin": true,
+    "ReadGMSAPassword": true,
+    "HasSIDHistory": true,
+    "CanPSRemote": true
+  },
+  "databaseInfo": {
+    "url": "bolt://localhost:7687",
+    "user": "neo4j",
+    "password": "exegol4thewin"
+  }
+}

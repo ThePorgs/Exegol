@@ -209,7 +209,7 @@ class DockerUtils:
         """Build a docker image from source"""
         logger.info(f"Building exegol image : {tag}")
         if path is None:
-            path = ConstantConfig.dockerfile_path
+            path = ConstantConfig.build_context_path
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{path}[/gold]")
         try:

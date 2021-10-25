@@ -7,7 +7,7 @@ class ConstantConfig:
     # OS root path str of the exegol project source
     root_path = str(__root_path_obj)
     # Path of the Dockerfile
-    dockerfile_path = root_path  # TODO change Dockerfile location (opti build context copy)
+    build_context_path = str(__root_path_obj.joinpath("dockerbuild"))
     # Dockerhub Exegol images repository
     IMAGE_NAME = "nwodtuhs/exegol"
     # Docker common share volume name

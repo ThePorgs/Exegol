@@ -53,5 +53,6 @@ class UpdateManager:
     def buildSource():  # TODO
         # Ask to update git ?
         # Choose tag name
+        # Choose dockerfile
         # Docker Build
         DockerUtils.buildImage("local")
