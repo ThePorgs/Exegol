@@ -1,11 +1,10 @@
 from docker.models.images import Image
 
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
 class ExegolImage:
-    # Dockerhub Exegol images repository
-    image_name = "nwodtuhs/exegol"
 
     def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None):
         """Docker image default value"""
@@ -188,7 +187,7 @@ class ExegolImage:
 
     def getFullName(self):
         """Dockerhub image's full name getter"""
-        return f"{ExegolImage.image_name}:{self.__name}"
+        return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
 
     def update(self):
         """If this image can be updated, return his name, otherwise return None"""

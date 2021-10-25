@@ -1,8 +1,9 @@
 import json
+import os
 
 import docker
 import requests
-from docker.errors import APIError, DockerException
+from docker.errors import APIError, DockerException, NotFound
 
 from wrapper.console.TUI import ExegolTUI
 from wrapper.exceptions.ExegolExceptions import ContainerNotFound
@@ -22,7 +23,8 @@ class DockerUtils:
         __client = docker.from_env()
     except DockerException as err:
         logger.error(err)
-        logger.critical("Unable to connect to docker (from env config). Is docker install on your local machine ? Exiting.")
+        logger.critical(
+            "Unable to connect to docker (from env config). Is docker install on your local machine ? Exiting.")
         exit(0)
     __images = None
     __containers = None
@@ -36,7 +38,8 @@ class DockerUtils:
         logger.verbose("List of Exegol containers")
         if cls.__containers is None:
             cls.__containers = []
-            docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})  # TODO add error handling
+            # TODO add error handling
+            docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -47,6 +50,10 @@ class DockerUtils:
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
         logger.debug(model)
+        if model.config.isCommonResourcesEnable():
+            volume = cls.loadCommonVolume()
+            if volume is None:
+                logger.warning("Error while creating common resources volume")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
                                                     detach=True,
@@ -85,6 +92,33 @@ class DockerUtils:
             raise ContainerNotFound
         return ExegolContainer(container[0])
 
+    # # # Volumes Section # # #
+
+    @classmethod
+    def loadCommonVolume(cls):
+        """Load or create the common resources volume for exegol containers
+        Return the docker volume object"""
+        os.makedirs(ConstantConfig.COMMON_SHARE_PATH, exist_ok=True)
+        try:
+            # Check if volume already exist
+            volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)
+        except NotFound:
+            try:
+                # Creating a docker volume bind to a host path
+                # Docker volume are more easily shared by container
+                # Docker volume can load data from container image on host's folder creation
+                volume = cls.__client.volumes.create(ConstantConfig.COMMON_SHARE_NAME, driver="local",
+                                                     driver_opts={'o': 'bind',
+                                                                  'device': ConstantConfig.COMMON_SHARE_PATH,
+                                                                  'type': 'none'})
+            except APIError as err:
+                logger.error(f"Error while creating common share docker volume : {err}")
+                return None
+        except APIError as err:
+            logger.error(f"Unexpected error by Docker SDK : {err}")
+            return None
+        return volume
+
     # # # Image Section # # #
 
     @classmethod
@@ -103,7 +137,7 @@ class DockerUtils:
         """List local docker images already installed.
         Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
-        return cls.__client.images.list(ExegolImage.image_name + "" if tag is None else ":" + tag,
+        return cls.__client.images.list(ConstantConfig.IMAGE_NAME + "" if tag is None else ":" + tag,
                                         filters={"dangling": False})  # TODO add error handling
 
     @classmethod
@@ -113,7 +147,7 @@ class DockerUtils:
         logger.debug("Fetching remote image tags, digests and sizes")
         try:
             remote_images_request = requests.get(
-                url="https://hub.docker.com/v2/repositories/{}/tags".format(ExegolImage.image_name),
+                url="https://hub.docker.com/v2/repositories/{}/tags".format(ConstantConfig.IMAGE_NAME),
                 timeout=(5, 10), verify=True)  # TODO add verify as optional
         except requests.exceptions.ConnectionError as err:
             logger.warning("Connection Error: you probably have no internet, skipping online queries")
@@ -138,7 +172,7 @@ class DockerUtils:
             try:
                 # TODO add error handling
                 ExegolTUI.downloadDockerLayer(
-                    cls.__client.api.pull(repository=ExegolImage.image_name,
+                    cls.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
                                           tag=name,
                                           stream=True,
                                           decode=True))
@@ -184,7 +218,8 @@ class DockerUtils:
             # TODO add error handling
             ExegolTUI.buildDockerImage(
                 cls.__client.api.build(path=path,
-                                       tag=f"{ExegolImage.image_name}:{tag}",
+                                       dockerfile='Dockerfile',
+                                       tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                        rm=True,
                                        forcerm=True,
                                        pull=True,

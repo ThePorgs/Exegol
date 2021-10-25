@@ -5,6 +5,7 @@ from docker.types import Mount
 
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
@@ -116,12 +117,14 @@ class ContainerConfig:
     def enableCommonVolume(self):
         """Procedure to enable common volume feature"""
         if not self.__common_resources:
+            logger.verbose("Config : Enable common resources volume")
             self.__common_resources = True
-            raise NotImplementedError  # TODO test different mount / volume type for sharing volume between containers
+            # Adding volume config
+            self.addVolume(ConstantConfig.COMMON_SHARE_NAME, '/opt/resources', volume_type='volume')
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the container"""
-        logger.info("Config : Sharing current working directory")
+        logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
         self.addVolume(self.__share_cwd, '/workspace')
 
@@ -133,6 +136,9 @@ class ContainerConfig:
         """Get default container's default working directory path (depending of the configuration).
         If the CWD feature is enable, /workspace is set as default."""
         return "/workspace" if self.__share_cwd is not None else "/data"
+
+    def isCommonResourcesEnable(self):
+        return self.__common_resources
 
     def addVolume(self, host_path, container_path, read_only=False, volume_type='bind'):
         """Add a volume to the container configuration"""

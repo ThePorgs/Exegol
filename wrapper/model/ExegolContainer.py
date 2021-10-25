@@ -65,11 +65,11 @@ class ExegolContainer(ExegolContainerTemplate):
         logger.info(f"Starting container {self.name}")
         self.__container.start()
 
-    def stop(self):
+    def stop(self, timeout=10):
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
-            self.__container.stop()
+            self.__container.stop(timeout=timeout)
 
     def spawnShell(self):
         """Spawn a shell on the docker container"""
@@ -86,7 +86,7 @@ class ExegolContainer(ExegolContainerTemplate):
 
     def remove(self):
         """Stop and remove the docker container"""
-        self.stop()
+        self.stop(2)
         logger.verbose("Removing container")
         self.__container.remove()
         logger.success(f"Container {self.name} successfully removed.")
