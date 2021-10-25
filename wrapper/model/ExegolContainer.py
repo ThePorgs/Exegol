@@ -82,9 +82,28 @@ class ExegolContainer(ExegolContainerTemplate):
         # result = self.__container.exec_run("zsh", stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
 
-    def exec(self):
+    def exec(self, command, daemon=True):
         """Execute a command / process on the docker container"""
-        raise NotImplementedError
+        if not self.isRunning():
+            self.start()
+        logger.info("Executing command on Exegol")
+        # TODO fix ' char eval bug
+        cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(
+            command.replace("\"", "\\\"").replace("\'", "\\\'"))
+        logger.debug(cmd)
+        stream = self.__container.exec_run(cmd, detach=daemon, stream=not daemon)
+        if daemon:
+            logger.success("Command successfully executed in background")
+        else:
+            try:
+                # stream[0] : exit code
+                # stream[1] : text stream
+                for log in stream[1]:
+                    logger.raw(log.decode("utf-8"))
+                logger.success("End of the command")
+            except KeyboardInterrupt:
+                logger.info("Detaching process logging")
+                logger.warning("Exiting this command do NOT stop the process in the container")
 
     def remove(self):
         """Stop and remove the docker container"""

@@ -27,7 +27,7 @@ class ExeLog(logging.getLoggerClass()):
             if type(msg) is bytes:
                 msg = msg.decode('utf-8', errors="ignore")
             # Raw message are print directly to the console bypassing logging system and auto formatting
-            console.print(msg, end='', markup=False, highlight=False)
+            console.print(msg, end='', markup=False, highlight=False, emoji=False)
 
     def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default info text format with rich color support"""
