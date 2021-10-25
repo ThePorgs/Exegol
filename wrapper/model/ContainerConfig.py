@@ -47,6 +47,7 @@ class ContainerConfig:
         self.devices = host_config.get("Devices", [])
         if self.devices is None:
             self.devices = []
+        logger.debug(f"Load devices : {self.devices}")
 
         # Volumes section
         self.__share_timezone = False
@@ -61,7 +62,9 @@ class ContainerConfig:
     def __parseEnvs(self, envs):
         """Parse envs object syntax"""
         for env in envs:
-            key, value = env.split('=')
+            logger.debug(f"Parsing envs : {env}")
+            # Removing " and ' at the beginning and the end of the string before splitting key / value
+            key, value = env.strip("'").strip('"').split('=')
             self.envs[key] = value
 
     def __parseMounts(self, mounts):
@@ -69,8 +72,9 @@ class ContainerConfig:
         if mounts is None:
             mounts = []
         for share in mounts:
+            logger.debug(f"Parsing mount : {share}")
             if share.get('Type', 'volume') == "volume":
-                source = f"Docker {share.get('Driver', '')} volume {share.get('Name','unknown')}"
+                source = f"Docker {share.get('Driver', '')} volume {share.get('Name', 'unknown')}"
             else:
                 source = share.get("Source")
             self.mounts.append(Mount(source=source,
@@ -153,7 +157,8 @@ class ContainerConfig:
     def addPort(self, port_host, port_container=None, protocol='tcp', host_ip='0.0.0.0'):
         """Add port NAT config, only applicable on bridge network mode."""
         if self.network_host:
-            logger.warning("This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
+            logger.warning(
+                "This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
             logger.warning("Please set network mode to bridge in order to expose specific network ports.")
             return
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
@@ -173,7 +178,7 @@ class ContainerConfig:
         result = ''
         for mount in self.mounts:
             # Blacklist technical mount
-            if not verbose and mount.get('Target') in ['/tmp/.X11-unix']:
+            if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result
@@ -186,6 +191,16 @@ class ContainerConfig:
                 result += f"{device}{os.linesep}"
             else:
                 result += f"{':right_arrow:'.join(device.split(':')[0:2])}{os.linesep}"
+        return result
+
+    def getTextEnvs(self, verbose=False):
+        """Text formatter for Envs configurations. The verbose mode does not exclude technical variables."""
+        result = ''
+        for k, v in self.envs.items():
+            # Blacklist technical variables, only shown in verbose
+            if not verbose and k in ["QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
+                continue
+            result += f"{k}={v}{os.linesep}"
         return result
 
     def __str__(self):

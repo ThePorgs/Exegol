@@ -124,6 +124,7 @@ class ExegolTUI:
 
     @staticmethod
     def __buildImageTable(table, data: [ExegolImage]):
+        logger.info("Available images")
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         if verbose_mode:
@@ -148,6 +149,7 @@ class ExegolTUI:
 
     @staticmethod
     def __buildContainerTable(table, data: [ExegolContainer]):
+        logger.info("Available containers")
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(logging.DEBUG)
@@ -160,12 +162,13 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Mounts")
             table.add_column("Devices")
+            table.add_column("Envs")
         # Load data into the table
         for container in data:
             if verbose_mode:
                 table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
                               container.config.getFeaturesDetails(), container.config.getTextMounts(debug_mode),
-                              container.config.getTextDevices(debug_mode))
+                              container.config.getTextDevices(debug_mode), container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.name, container.getTextStatus(), container.image.getName(),
                               container.config.getFeaturesDetails())
