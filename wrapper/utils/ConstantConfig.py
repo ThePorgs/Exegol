@@ -8,6 +8,8 @@ class ConstantConfig:
     root_path = str(__root_path_obj)
     # Path of the Dockerfile
     build_context_path = str(__root_path_obj.joinpath("dockerbuild"))
+    # Path of the private workspace volumes
+    private_volume_path = __root_path_obj.joinpath("shared-data-volumes")
     # Dockerhub Exegol images repository
     IMAGE_NAME = "nwodtuhs/exegol"
     # Docker common share volume name

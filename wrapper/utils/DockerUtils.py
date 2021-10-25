@@ -49,6 +49,7 @@ class DockerUtils:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
+        model.prepare()
         logger.debug(model)
         if model.config.isCommonResourcesEnable():
             volume = cls.loadCommonVolume()
@@ -97,6 +98,7 @@ class DockerUtils:
     @classmethod
     def loadCommonVolume(cls):
         """Load or create the common resources volume for exegol containers
+        (must be created before the container, SDK limitation)
         Return the docker volume object"""
         os.makedirs(ConstantConfig.COMMON_SHARE_PATH, exist_ok=True)
         try:

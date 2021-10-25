@@ -1,5 +1,6 @@
 import os
 import platform
+import re
 
 from docker.types import Mount
 
@@ -26,6 +27,7 @@ class ContainerConfig:
         self.tty = True
         self.shm_size = '1G'
         self.__share_cwd = None
+        self.__share_private = None
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -53,7 +55,7 @@ class ContainerConfig:
         # Volumes section
         self.__share_timezone = False
         self.__common_resources = False
-        self.__parseMounts(container.attrs.get("Mounts", []))
+        self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
 
         # Network section
         network_settings = container.attrs.get("NetworkSettings", {})
@@ -68,7 +70,7 @@ class ContainerConfig:
             key, value = env.strip("'").strip('"').split('=')
             self.envs[key] = value
 
-    def __parseMounts(self, mounts):
+    def __parseMounts(self, mounts, name):
         """Parse Mounts object"""
         if mounts is None:
             mounts = []
@@ -88,7 +90,19 @@ class ContainerConfig:
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__common_resources = True
             elif "/workspace" in share.get('Destination', ''):
-                self.__share_cwd = share.get('Source', '')
+                src = share.get('Source', '')
+                logger.debug(f"Loading workspace volume source : {src}")
+                if src.endswith(f"shared-data-volumes/{name}"):
+                    # Check if path is from Windows Docker Desktop
+                    matches = re.match(r"^/run/desktop/mnt/host/[a-z](/.*)$", src, re.IGNORECASE)
+                    if matches:
+                        # Convert Windows Docker-VM style volume path to local OS path
+                        self.__share_private = os.path.abspath(matches.group(1))
+                        logger.debug(f"Windows style detected : {self.__share_private}")
+                    else:
+                        self.__share_private = src
+                else:
+                    self.__share_cwd = share.get('Source', '')
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
@@ -126,22 +140,48 @@ class ContainerConfig:
         """Procedure to share Current Working Directory with the container"""
         logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
-        self.addVolume(self.__share_cwd, '/workspace')
+
+    def prepareShare(self, share_name):
+        """Add workspace share before container creation"""
+        for mount in self.mounts:
+            if mount.get('Target') == '/workspace':
+                # Volume is already prepared
+                return
+        if self.__share_cwd is not None:
+            self.addVolume(self.__share_cwd, '/workspace')
+        else:
+            volume_path = str(ConstantConfig.private_volume_path.joinpath(share_name))
+            # TODO when SDK will be ready, change this to a volume to enable auto-remove
+            self.addVolume(volume_path, '/workspace')
 
     def getNetworkMode(self):
         """Network mode, text getter"""
         return "host" if self.network_host else "bridge"
 
     def getWorkingDir(self):
-        """Get default container's default working directory path (depending of the configuration).
-        If the CWD feature is enable, /workspace is set as default."""
-        return "/workspace" if self.__share_cwd is not None else "/data"
+        """Get default container's default working directory path"""
+        return "/workspace"
+
+    def getHostWorkspacePath(self):
+        """Get private volume path (None if not set)"""
+        if self.__share_cwd:
+            return self.__share_cwd
+        elif self.__share_private:
+            return self.__share_private
+        return "not found :("
+
+    def getPrivateVolumePath(self):
+        """Get private volume path (None if not set)"""
+        return self.__share_private
 
     def isCommonResourcesEnable(self):
+        """Return if the feature 'common resources' is enable in this config"""
         return self.__common_resources
 
     def addVolume(self, host_path, container_path, read_only=False, volume_type='bind'):
         """Add a volume to the container configuration"""
+        if volume_type == 'bind':
+            os.makedirs(host_path, exist_ok=True)
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.mounts.append(mount)
 

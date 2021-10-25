@@ -1,4 +1,5 @@
 import os
+import shutil
 
 from docker.models.containers import Container
 
@@ -73,6 +74,7 @@ class ExegolContainer(ExegolContainerTemplate):
 
     def spawnShell(self):
         """Spawn a shell on the docker container"""
+        logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         os.system("docker exec -ti {} {}".format(self.getFullId(), "zsh"))  # TODO Add shell option
@@ -90,3 +92,18 @@ class ExegolContainer(ExegolContainerTemplate):
         logger.verbose("Removing container")
         self.__container.remove()
         logger.success(f"Container {self.name} successfully removed.")
+        self.__removeVolume()
+
+    def __removeVolume(self):
+        """Remove private workspace volume directory if exist"""
+        volume_path = self.config.getPrivateVolumePath()
+        if volume_path is not None:
+            logger.verbose("Removing workspace volume")
+            logger.debug(f"Removing volume {volume_path}")
+            try:
+                shutil.rmtree(volume_path)
+                logger.success("Private workspace volume removed successfully")
+            except PermissionError:
+                logger.warning(f"I don't have the rights to remove {volume_path} (do it yourself)")
+            except Exception as err:
+                logger.error(err)
