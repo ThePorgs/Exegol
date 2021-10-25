@@ -17,10 +17,12 @@ from wrapper.utils.ExeLog import logger
 
 class DockerUtils:
     try:
+        # Connect Docker SDK to the local docker instance.
+        # Docker connection setting is loaded from the user environment variables.
         __client = docker.from_env()
     except DockerException as err:
         logger.error(err)
-        logger.critical("Unable to connect to docker. Is docker install on your local machine ? Exiting.")
+        logger.critical("Unable to connect to docker (from env config). Is docker install on your local machine ? Exiting.")
         exit(0)
     __images = None
     __containers = None
@@ -29,7 +31,9 @@ class DockerUtils:
 
     @classmethod
     def listContainers(cls):
-        logger.info("Available containers")
+        """List available docker containers.
+        Return a list of ExegolContainer"""
+        logger.verbose("List of Exegol containers")
         if cls.__containers is None:
             cls.__containers = []
             docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})  # TODO add error handling
@@ -39,6 +43,8 @@ class DockerUtils:
 
     @classmethod
     def createContainer(cls, model: ExegolContainerTemplate, temporary=False):
+        """Create an Exegol container from an ExegolContainerTemplate configuration.
+        Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
         logger.debug(model)
         try:
@@ -73,6 +79,7 @@ class DockerUtils:
 
     @classmethod
     def getContainer(cls, tag):
+        """Get an ExegolContainer from tag name."""
         container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})  # TODO add error handling
         if container is None or len(container) == 0:
             raise ContainerNotFound
@@ -82,7 +89,9 @@ class DockerUtils:
 
     @classmethod
     def listImages(cls):
-        logger.info("Available images")
+        """List available docker images.
+        Return a list of ExegolImage"""
+        logger.verbose("List of Exegol images")
         if cls.__images is None:
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
@@ -91,12 +100,16 @@ class DockerUtils:
 
     @classmethod
     def __listLocalImages(cls, tag=None):
+        """List local docker images already installed.
+        Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
         return cls.__client.images.list(ExegolImage.image_name + "" if tag is None else ":" + tag,
                                         filters={"dangling": False})  # TODO add error handling
 
     @classmethod
     def __listRemoteImages(cls):  # TODO check if SDK can replace raw request
+        """List remote dockerhub images available.
+        Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
         try:
             remote_images_request = requests.get(
@@ -113,11 +126,11 @@ class DockerUtils:
                                        digest=docker_image["images"][0]["digest"],
                                        size=docker_image.get("full_size"))
             remote_results.append(exegol_image)
-            cls.__client.images.list(ExegolImage.image_name, filters={"dangling": False})  # TODO add error handling
         return remote_results
 
     @classmethod
     def updateImage(cls, image: ExegolImage):
+        """Update an ExegolImage"""  # TODO add local image support / move this procedure
         logger.info(f"Updating exegol image : {image.getName()}")
         name = image.update()
         if name is not None:
@@ -140,9 +153,10 @@ class DockerUtils:
 
     @classmethod
     def removeImage(cls, image: ExegolImage):
+        """Remove an ExegolImage from disk"""
         logger.info(f"Removing image '{image.getName()}'")
         tag = image.remove()
-        if tag is None:  # Skip removal if image doesn't exist locally.
+        if tag is None:  # Skip removal if image is not installed locally.
             return
         try:
             cls.__client.images.remove(image.getFullName(), force=False, noprune=False)  # TODO add error handling
@@ -158,6 +172,7 @@ class DockerUtils:
 
     @classmethod
     def buildImage(cls, tag, path=None):
+        """Build a docker image from source"""
         logger.info(f"Building exegol image : {tag}")
         if path is None:
             path = ConstantConfig.dockerfile_path

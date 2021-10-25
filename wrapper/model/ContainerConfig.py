@@ -11,6 +11,7 @@ from wrapper.utils.ExeLog import logger
 class ContainerConfig:
 
     def __init__(self, container=None):
+        """Container config default value"""
         self.__enable_gui = False
         self.__share_timezone = False
         self.__common_resources = False
@@ -28,6 +29,7 @@ class ContainerConfig:
             self.__parseContainerConfig(container)
 
     def __parseContainerConfig(self, container):
+        """Parse Docker object to setup self configuration"""
         # Container Config section
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
@@ -57,11 +59,13 @@ class ContainerConfig:
         self.ports = network_settings.get("Ports", {})
 
     def __parseEnvs(self, envs):
+        """Parse envs object syntax"""
         for env in envs:
             key, value = env.split('=')
             self.envs[key] = value
 
     def __parseMounts(self, mounts):
+        """Parse Mounts object"""
         if mounts is None:
             mounts = []
         for share in mounts:
@@ -82,6 +86,7 @@ class ContainerConfig:
                 self.__share_cwd = share.get('Source', '')
 
     def enableGUI(self):
+        """Procedure to enable GUI feature"""
         if platform.system() == "Windows" or "microsoft" in platform.release():
             # TODO Investigate X11 sharing on Windows with container
             logger.error("Display sharing is not (yet) supported on Windows. Skipping.")
@@ -93,7 +98,8 @@ class ContainerConfig:
             self.addEnv("QT_X11_NO_MITSHM", "1")
             self.addEnv("DISPLAY", f"unix{os.getenv('DISPLAY')}")
 
-    def shareTimezone(self):
+    def enableSharedTimezone(self):
+        """Procedure to enable shared timezone feature"""
         if platform.system() == "Windows" or "microsoft" in platform.release():
             logger.error("Timezone sharing is not (yet) supported on Windows. Skipping.")
             return
@@ -103,27 +109,34 @@ class ContainerConfig:
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
-    def enableCommonShare(self):
+    def enableCommonVolume(self):
+        """Procedure to enable common volume feature"""
         if not self.__common_resources:
             self.__common_resources = True
             raise NotImplementedError  # TODO test different mount / volume type for sharing volume between containers
 
-    def setCwdShare(self):
+    def enableCwdShare(self):
+        """Procedure to share Current Working Directory with the container"""
         logger.info("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
         self.addVolume(self.__share_cwd, '/workspace')
 
     def getNetworkMode(self):
+        """Network mode, text getter"""
         return "host" if self.network_host else "bridge"
 
     def getWorkingDir(self):
+        """Get default container's default working directory path (depending of the configuration).
+        If the CWD feature is enable, /workspace is set as default."""
         return "/workspace" if self.__share_cwd is not None else "/data"
 
     def addVolume(self, host_path, container_path, read_only=False, volume_type='bind'):
+        """Add a volume to the container configuration"""
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.mounts.append(mount)
 
     def addDevice(self, device_source: str, device_dest: str = None, readonly=False, mknod=True):
+        """Add a device to the container configuration"""
         if device_dest is None:
             device_dest = device_source
         perm = 'r'
@@ -134,14 +147,21 @@ class ContainerConfig:
         self.devices.append(f"{device_source}:{device_dest}:{perm}")
 
     def addEnv(self, key, value):
+        """Add an environment variable to the container configuration"""
         self.envs[key] = value
 
     def addPort(self, port_host, port_container=None, protocol='tcp', host_ip='0.0.0.0'):
+        """Add port NAT config, only applicable on bridge network mode."""
+        if self.network_host:
+            logger.warning("This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
+            logger.warning("Please set network mode to bridge in order to expose specific network ports.")
+            return
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
         self.ports[f"{port_container}/{protocol}"] = [{'HostIp': host_ip, 'HostPort': port_host}]
 
-    def getTextDetails(self):
+    def getFeaturesDetails(self):
+        """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)"""
         return f"{getColor(self.privileged)[0]}Privileged: {':fire:' if self.privileged else '[red]:cross_mark:[/red]'}{getColor(self.privileged)[1]}{os.linesep}" \
                f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}" \
                f"Network mode: {'host' if self.network_host else 'custom'}{os.linesep}" \
@@ -149,18 +169,17 @@ class ContainerConfig:
                f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
 
     def getTextMounts(self, verbose=False):
+        """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
         for mount in self.mounts:
-            if verbose:
-                result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else '(RW)'}{os.linesep}"
-            else:
-                # Blacklist mount
-                if mount.get('Target') in ['/tmp/.X11-unix']:
-                    continue
-                result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
+            # Blacklist technical mount
+            if not verbose and mount.get('Target') in ['/tmp/.X11-unix']:
+                continue
+            result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result
 
     def getTextDevices(self, verbose=False):
+        """Text formatter for Devices configurations. The verbose mode show full device configuration."""
         result = ''
         for device in self.devices:
             if verbose:
@@ -170,6 +189,7 @@ class ContainerConfig:
         return result
 
     def __str__(self):
+        """Default object text formatter, debug only"""
         return f"Privileged: {self.privileged}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
@@ -181,4 +201,5 @@ class ContainerConfig:
                f"Devices ({len(self.devices)}): {self.devices}"
 
     def printConfig(self):
+        """Log current object state, debug only"""
         logger.info(f"Current container config :{os.linesep}{self}")

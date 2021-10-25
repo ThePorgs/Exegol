@@ -8,6 +8,7 @@ class UpdateManager:
 
     @staticmethod
     def updateImage(tag=None):
+        """User procedure to build/pull docker image"""
         # List Images
         images = DockerUtils.listImages()
         selected_image = None
@@ -29,10 +30,12 @@ class UpdateManager:
             DockerUtils.updateImage(selected_image)
         else:
             # Install / build image
+            # Ask confirm to build ?
             raise NotImplementedError
 
     @classmethod
     def updateGit(cls, branch=None):
+        """User procedure to update local git repository"""
         # Check if pending change -> cancel
         if not cls.__git.safeCheck():
             logger.error("Aborting git update.")
@@ -47,7 +50,7 @@ class UpdateManager:
         cls.__git.update()
 
     @staticmethod
-    def buildSource():
+    def buildSource():  # TODO
         # Ask to update git ?
         # Choose tag name
         # Docker Build

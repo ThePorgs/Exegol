@@ -150,6 +150,7 @@ class ExegolTUI:
     def __buildContainerTable(table, data: [ExegolContainer]):
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
+        debug_mode = logger.isEnabledFor(logging.DEBUG)
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Container tag")
@@ -163,8 +164,8 @@ class ExegolTUI:
         for container in data:
             if verbose_mode:
                 table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getTextDetails(), container.config.getTextMounts(verbose_mode),
-                              container.config.getTextDevices(verbose_mode))
+                              container.config.getFeaturesDetails(), container.config.getTextMounts(debug_mode),
+                              container.config.getTextDevices(debug_mode))
             else:
                 table.add_row(container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getTextDetails())
+                              container.config.getFeaturesDetails())

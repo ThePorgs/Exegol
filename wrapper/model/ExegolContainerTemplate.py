@@ -14,4 +14,5 @@ class ExegolContainerTemplate:
         self.config = config
 
     def __str__(self):
+        """Default object text formatter, debug only"""
         return f"{self.name} - {self.image.getName()} ({self.config})"

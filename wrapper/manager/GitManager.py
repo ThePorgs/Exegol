@@ -27,9 +27,11 @@ class GitManager:
         pass
 
     def getCurrentBranch(self):
+        """Get current git branch name"""
         return str(self.__gitRepo.active_branch)
 
     def listBranch(self):
+        """Return a list of str of all remote git branch available"""
         result = []
         if self.__gitRemote is None:
             return result
@@ -38,6 +40,8 @@ class GitManager:
         return result
 
     def safeCheck(self) -> bool:
+        """Check the status of the local git repository,
+        if there is pending change it is not safe to apply some operations"""
         if self.__gitRepo is None:
             return False
         if self.__gitRepo.is_dirty():
@@ -45,14 +49,18 @@ class GitManager:
         return not self.__gitRepo.is_dirty()
 
     def isUpToDate(self, branch=None):
+        """Check if the local git repository is up-to-date.
+        This method compare the last commit local and remote first,
+        if this commit don't match, check the last 15 previous commit (for dev use cases)."""
         if branch is None:
             branch = self.getCurrentBranch()
         current_commit = self.__gitRepo.branches[branch].commit
         remote_commit_id = str(self.__gitRemote.fetch()[f'{self.__gitRemote}/{branch}'].commit)
         i = 0
         # Search previous 15 commit for ahead commit (only for dev)
+        COMMIT_CHECK_NUMBER = 15
         # TODO find better way to check if up-to-date with ahead commit
-        while i < 15:
+        while i < COMMIT_CHECK_NUMBER:
             if str(current_commit) == remote_commit_id:
                 return True  # Current branch is up to date if current commit is the last remote commit
             i += 1
@@ -63,6 +71,7 @@ class GitManager:
         return False
 
     def update(self):
+        """Update local git repository within current branch"""
         if not self.safeCheck():
             return
         if self.isUpToDate():
@@ -73,6 +82,7 @@ class GitManager:
             logger.success("Git successfully updated")
 
     def checkout(self, branch):
+        """Change local git branch"""
         if not self.safeCheck():
             return
         if branch == self.getCurrentBranch():
