@@ -6,7 +6,7 @@ from wrapper.utils.ExeLog import logger
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
 
-class GitManager:
+class GitUtils:
 
     def __init__(self):
         """Init git local repository object / SDK"""

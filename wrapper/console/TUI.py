@@ -204,6 +204,7 @@ class ExegolTUI:
             else:
                 logger.warning("No container were found")
             raise IndexError
+        object_type = type(data[0])
         cls.printTable(data)
         choices = [obj.getKey() for obj in data]
         if default is None:
