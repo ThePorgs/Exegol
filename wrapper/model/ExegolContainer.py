@@ -113,7 +113,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def remove(self):
         """Stop and remove the docker container"""
         self.stop(2)
-        logger.verbose("Removing container")
+        logger.info(f"Removing container {self.name}")
         self.__container.remove()
         logger.success(f"Container {self.name} successfully removed.")
         self.__removeVolume()

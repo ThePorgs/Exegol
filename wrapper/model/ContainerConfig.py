@@ -1,5 +1,4 @@
 import os
-import platform
 import re
 
 from docker.types import Mount
@@ -106,9 +105,9 @@ class ContainerConfig:
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
-        if platform.system() == "Windows" or "microsoft" in platform.release():
+        if ConstantConfig.windows_host:
             # TODO Investigate X11 sharing on Windows with container
-            logger.error("Display sharing is not (yet) supported on Windows. Skipping.")
+            logger.warning("Display sharing is not (yet) supported on Windows. Skipping.")
             return
         if not self.__enable_gui:
             self.__enable_gui = True
@@ -119,8 +118,8 @@ class ContainerConfig:
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
-        if platform.system() == "Windows" or "microsoft" in platform.release():
-            logger.error("Timezone sharing is not (yet) supported on Windows. Skipping.")
+        if ConstantConfig.windows_host:
+            logger.warning("Timezone sharing is not (yet) supported on Windows. Skipping.")
             return
         if not self.__share_timezone:
             self.__share_timezone = True

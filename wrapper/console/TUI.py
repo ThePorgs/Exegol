@@ -3,7 +3,7 @@ import re
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
-from rich.prompt import Prompt
+from rich.prompt import Prompt, Confirm
 from rich.table import Table
 
 from wrapper.console.ExegolProgress import ExegolProgress
@@ -214,6 +214,25 @@ class ExegolTUI:
             if choice == o:
                 return o
         logger.critical(f"Unknown error, cannot fetch selected object.")
+
+    @classmethod
+    def multipleSelectFromTable(cls, data: [SelectableInterface], object_type=None,
+                                default=None) -> SelectableInterface:
+        """Return a list of object (implementing SelectableInterface) selected by the user
+        Raise IndexError of the data list is empty."""
+        result = []
+        pool = data.copy()
+        while True:
+            selected = cls.selectFromTable(pool, object_type, default)
+            result.append(selected)
+            pool.remove(selected)
+            if len(pool) == 0:
+                return result
+            elif not Confirm.ask("[blue][?][/blue] Do you want to select another object?",
+                                 choices=["y", "N"],
+                                 show_default=False,
+                                 default=False):
+                return result
 
     @classmethod
     def selectFromList(cls, data: iter, subject="an option", title="Options", default=None) -> str:
