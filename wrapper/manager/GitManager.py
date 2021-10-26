@@ -9,6 +9,7 @@ from wrapper.utils.ExeLog import logger
 class GitManager:
 
     def __init__(self):
+        """Init git local repository object / SDK"""
         path = ConstantConfig.root_path
         logger.debug(f"Loading git at {path}")
         self.__gitRepo: Repo = None
@@ -24,7 +25,6 @@ class GitManager:
                 logger.debug(self.__gitRepo.remotes)
         except InvalidGitRepositoryError:
             logger.warning("Error while loading local git repository. Skipping all git operation.")
-        pass
 
     def getCurrentBranch(self):
         """Get current git branch name"""

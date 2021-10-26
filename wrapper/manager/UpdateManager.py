@@ -1,4 +1,8 @@
+from rich.prompt import Confirm, Prompt
+
+from wrapper.console.TUI import ExegolTUI
 from wrapper.manager.GitManager import GitManager
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.ExeLog import logger
 
@@ -34,25 +38,52 @@ class UpdateManager:
             raise NotImplementedError
 
     @classmethod
-    def updateGit(cls, branch=None):
+    def updateGit(cls):
         """User procedure to update local git repository"""
         # Check if pending change -> cancel
         if not cls.__git.safeCheck():
             logger.error("Aborting git update.")
             return
         # List & Select git branch
-        logger.info(cls.__git.listBranch())
-        # TODO select git branch (need TUI)
+        selected_branch = ExegolTUI.selectFromList(cls.__git.listBranch(),
+                                                   subject="a git branch",
+                                                   title="Branch",
+                                                   default=cls.__git.getCurrentBranch())
         # Checkout new branch
-        if branch is not None:
-            cls.__git.checkout(branch)
+        if selected_branch is not None and selected_branch != cls.__git.getCurrentBranch():
+            cls.__git.checkout(selected_branch)
         # git pull
         cls.__git.update()
 
-    @staticmethod
-    def buildSource():  # TODO
-        # Ask to update git ?
+    @classmethod
+    def buildSource(cls):
+        # Ask to update git
+        if Confirm.ask("[blue][?][/blue] Do you want to update git?",
+                       choices=["Y", "n"],
+                       show_default=False,
+                       default=True):
+            cls.updateGit()
         # Choose tag name
+        build_name = Prompt.ask("[blue][?][/blue] Choice a name for your build",
+                                default="local")  # TODO add blacklist build name
         # Choose dockerfile
+        build_profile = ExegolTUI.selectFromList(cls.__listBuildProfiles(),
+                                                 subject="a build profile",
+                                                 title="Profile",
+                                                 default="stable")
         # Docker Build
-        DockerUtils.buildImage("local")
+        DockerUtils.buildImage(build_name, build_profile)
+
+    @classmethod
+    def __listBuildProfiles(cls):
+        # Default stable profile
+        profiles = {"stable": "Dockerfile"}
+        # List file *.dockerfile is the build context directory
+        docker_files = list(ConstantConfig.build_context_path_obj.glob("*.dockerfile"))
+        for file in docker_files:
+            # Convert every file to the dict format
+            filename = file.name
+            profile_name = filename.replace(".dockerfile", "")
+            profiles[profile_name] = filename
+        logger.debug(f"List docker build profiles : {profiles}")
+        return profiles

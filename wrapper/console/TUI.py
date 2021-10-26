@@ -216,14 +216,23 @@ class ExegolTUI:
         logger.critical(f"Unknown error, cannot fetch selected object.")
 
     @classmethod
-    def selectFromList(cls, data: [str], subject="an option", title="Options", default=None) -> str:
-        """Return a string selected by the user
+    def selectFromList(cls, data: iter, subject="an option", title="Options", default=None) -> str:
+        """if data is list(str): Return a string selected by the user
+        if data is dict: list keys and return corresponding value
         Raise IndexError of the data list is empty."""
         if len(data) == 0:
             logger.warning("No options were found")
             raise IndexError
-        cls.printTable(data, title=title)
+        if type(data) is dict:
+            submit_data = list(data.keys())
+        else:
+            submit_data = data
+        cls.printTable(submit_data, title=title)
         if default is None:
-            default = data[0]
-        choice = Prompt.ask(f"[blue][?][/blue] Select {subject}", default=default, choices=data, show_choices=False)
-        return choice
+            default = submit_data[0]
+        choice = Prompt.ask(f"[blue][?][/blue] Select {subject}", default=default, choices=submit_data,
+                            show_choices=False)
+        if type(data) is dict:
+            return data[choice]
+        else:
+            return choice

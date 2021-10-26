@@ -97,7 +97,7 @@ class DockerUtils:
         """Load or create the common resources volume for exegol containers
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
-        os.makedirs(ConstantConfig.COMMON_SHARE_PATH, exist_ok=True)
+        os.makedirs(ConstantConfig.common_share_path, exist_ok=True)
         try:
             # Check if volume already exist
             volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)
@@ -108,7 +108,7 @@ class DockerUtils:
                 # Docker volume can load data from container image on host's folder creation
                 volume = cls.__client.volumes.create(ConstantConfig.COMMON_SHARE_NAME, driver="local",
                                                      driver_opts={'o': 'bind',
-                                                                  'device': ConstantConfig.COMMON_SHARE_PATH,
+                                                                  'device': ConstantConfig.common_share_path,
                                                                   'type': 'none'})
             except APIError as err:
                 logger.error(f"Error while creating common share docker volume : {err}")
@@ -204,20 +204,22 @@ class DockerUtils:
                 logger.error(f"An error occurred while removing this image : {err}")
 
     @classmethod
-    def buildImage(cls, tag, path=None):
+    def buildImage(cls, tag, build_profile=None):
         """Build a docker image from source"""
         logger.info(f"Building exegol image : {tag}")
-        if path is None:
-            path = ConstantConfig.build_context_path
+        if build_profile is None:
+            build_profile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
-        logger.verbose(f"Creating build context from [gold]{path}[/gold]")
+        logger.verbose(
+            f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with [green][b]{build_profile}[/b][/green]")
         try:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
+            # dockerfile is the Dockerfile filename
             # TODO add error handling
             ExegolTUI.buildDockerImage(
-                cls.__client.api.build(path=path,
-                                       dockerfile='Dockerfile',
+                cls.__client.api.build(path=ConstantConfig.build_context_path,
+                                       dockerfile=build_profile,
                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                        rm=True,
                                        forcerm=True,
