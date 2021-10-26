@@ -132,7 +132,7 @@ class ExegolTUI:
     @staticmethod
     def __buildImageTable(table, data: [ExegolImage]):
         """Building Rich table from a list of ExegolImage"""
-        table.title = "Available images"
+        table.title = "[gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         if verbose_mode:
@@ -176,11 +176,12 @@ class ExegolTUI:
         for container in data:
             if verbose_mode:
                 table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getTextFeatures(), container.config.getTextMounts(debug_mode),
+                              container.config.getTextFeatures(verbose_mode),
+                              container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode), container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getTextFeatures())
+                              container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
     def __buildStringTable(table, data: [str], title: str = "Key"):
@@ -208,7 +209,7 @@ class ExegolTUI:
         cls.printTable(data)
         choices = [obj.getKey() for obj in data]
         if default is None:
-            default = choices[0]  # TODO custom default choice
+            default = choices[0]
         choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
                             show_choices=False)
         for o in data:

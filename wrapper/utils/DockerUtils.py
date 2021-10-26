@@ -37,8 +37,12 @@ class DockerUtils:
         logger.verbose("List of Exegol containers")
         if cls.__containers is None:
             cls.__containers = []
-            # TODO add error handling
-            docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
+            try:
+                docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
+            except APIError as err:
+                logger.debug(err)
+                logger.critical(err.explanation)
+                return
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -85,7 +89,12 @@ class DockerUtils:
     @classmethod
     def getContainer(cls, tag):
         """Get an ExegolContainer from tag name."""
-        container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})  # TODO add error handling
+        try:
+            container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            return
         if container is None or len(container) == 0:
             raise ContainerNotFound
         return ExegolContainer(container[0])
@@ -111,10 +120,12 @@ class DockerUtils:
                                                                   'device': ConstantConfig.common_share_path,
                                                                   'type': 'none'})
             except APIError as err:
-                logger.error(f"Error while creating common share docker volume : {err}")
+                logger.error(f"Error while creating common share docker volume.")
+                logger.debug(err)
+                logger.critical(err.explanation)
                 return None
         except APIError as err:
-            logger.error(f"Unexpected error by Docker SDK : {err}")
+            logger.critical(f"Unexpected error by Docker SDK : {err}")
             return None
         return volume
 
@@ -136,8 +147,13 @@ class DockerUtils:
         """List local docker images already installed.
         Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
-        return cls.__client.images.list(ConstantConfig.IMAGE_NAME + "" if tag is None else ":" + tag,
-                                        filters={"dangling": False})  # TODO add error handling
+        try:
+            return cls.__client.images.list(ConstantConfig.IMAGE_NAME + "" if tag is None else ":" + tag,
+                                            filters={"dangling": False})
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            return
 
     @classmethod
     def __listRemoteImages(cls):
@@ -169,7 +185,6 @@ class DockerUtils:
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
             try:
-                # TODO add error handling
                 ExegolTUI.downloadDockerLayer(
                     cls.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
                                           tag=name,
@@ -182,7 +197,7 @@ class DockerUtils:
                     logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                     logger.debug(f"Error: {err}")
                 else:
-                    logger.error(f"An error occurred while downloading this image : {err}")
+                    logger.critical(f"An error occurred while downloading this image : {err}")
 
     @classmethod
     def removeImage(cls, image: ExegolImage):
@@ -192,7 +207,7 @@ class DockerUtils:
         if tag is None:  # Skip removal if image is not installed locally.
             return
         try:
-            cls.__client.images.remove(image.getFullName(), force=False, noprune=False)  # TODO add error handling
+            cls.__client.images.remove(image.getFullName(), force=False, noprune=False)
             logger.success("Docker image successfully removed.")
         except APIError as err:
             # Handle docker API error code
@@ -201,7 +216,7 @@ class DockerUtils:
             elif err.status_code == 404:
                 logger.error("This image doesn't exist locally. Aborting.")
             else:
-                logger.error(f"An error occurred while removing this image : {err}")
+                logger.critical(f"An error occurred while removing this image : {err}")
 
     @classmethod
     def buildImage(cls, tag, build_profile=None):
@@ -216,7 +231,6 @@ class DockerUtils:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
-            # TODO add error handling
             ExegolTUI.buildDockerImage(
                 cls.__client.api.build(path=ConstantConfig.build_context_path,
                                        dockerfile=build_profile,
@@ -232,4 +246,4 @@ class DockerUtils:
                 logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                 logger.debug(f"Error: {err}")
             else:
-                logger.error(f"An error occurred while building this image : {err}")
+                logger.critical(f"An error occurred while building this image : {err}")

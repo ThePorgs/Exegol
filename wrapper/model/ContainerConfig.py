@@ -234,13 +234,20 @@ class ContainerConfig:
         return self.__ports
 
     def getTextFeatures(self, verbose=False):
-        """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)"""
-        # TODO implement verbose option
-        return f"{getColor(self.__privileged)[0]}Privileged: {':fire:' if self.__privileged else '[red]:cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}" \
-               f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}" \
-               f"Network mode: {'host' if self.__network_host else 'custom'}{os.linesep}" \
-               f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}" \
-               f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
+        """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)
+        Print config only if they are different from their default config (or print everything in verbose mode)"""
+        result = ""
+        if verbose or self.__privileged:
+            result += f"{getColor(self.__privileged)[0]}Privileged: {':fire:' if self.__privileged else '[red]:cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}"
+        if verbose or not self.__enable_gui:
+            result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
+        if verbose or not self.__network_host:
+            result += f"Network mode: {'host' if self.__network_host else 'custom'}{os.linesep}"
+        if verbose or self.__share_timezone:
+            result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
+        if verbose or not self.__common_resources:
+            result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
+        return result
 
     def getTextMounts(self, verbose=False):
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
