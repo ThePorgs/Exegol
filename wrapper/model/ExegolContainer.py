@@ -6,10 +6,11 @@ from docker.models.containers import Container
 from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
+from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ExeLog import logger
 
 
-class ExegolContainer(ExegolContainerTemplate):
+class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __init__(self, docker_container: Container, model: ExegolContainerTemplate = None):
         self.__container: Container = docker_container
@@ -27,7 +28,7 @@ class ExegolContainer(ExegolContainerTemplate):
 
     def __str__(self):
         """Default object text formatter, debug only"""
-        return f"{self.name} - {self.getRawStatus()} - {self.image.getName()} ({self.config})"
+        return f"{self.getRawStatus()} - {super().__str__()}"
 
     def __getState(self):
         """Technical getter of the container status dict"""
@@ -61,6 +62,10 @@ class ExegolContainer(ExegolContainerTemplate):
         """Container's short id getter"""
         return self.__container.short_id
 
+    def getKey(self):
+        """Universal unique key getter (from SelectableInterface)"""
+        return self.name
+
     def start(self):
         """Start the docker container"""
         logger.info(f"Starting container {self.name}")
@@ -82,7 +87,7 @@ class ExegolContainer(ExegolContainerTemplate):
         # result = self.__container.exec_run("zsh", stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
 
-    def exec(self, command, daemon=True):
+    def exec(self, command, as_daemon=True):
         """Execute a command / process on the docker container"""
         if not self.isRunning():
             self.start()
@@ -91,8 +96,8 @@ class ExegolContainer(ExegolContainerTemplate):
         cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(
             command.replace("\"", "\\\"").replace("\'", "\\\'"))
         logger.debug(cmd)
-        stream = self.__container.exec_run(cmd, detach=daemon, stream=not daemon)
-        if daemon:
+        stream = self.__container.exec_run(cmd, detach=as_daemon, stream=not as_daemon)
+        if as_daemon:
             logger.success("Command successfully executed in background")
         else:
             try:

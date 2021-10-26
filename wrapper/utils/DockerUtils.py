@@ -23,9 +23,8 @@ class DockerUtils:
         __client = docker.from_env()
     except DockerException as err:
         logger.error(err)
-        logger.critical(
-            "Unable to connect to docker (from env config). Is docker install on your local machine ? Exiting.")
-        exit(0)
+        logger.critical("Unable to connect to docker (from env config). Is docker install on your local machine ? "
+                        "Exiting.")
     __images = None
     __containers = None
 
@@ -52,7 +51,7 @@ class DockerUtils:
         model.prepare()
         logger.debug(model)
         if model.config.isCommonResourcesEnable():
-            volume = cls.loadCommonVolume()
+            volume = cls.__loadCommonVolume()
             if volume is None:
                 logger.warning("Error while creating common resources volume")
         try:
@@ -60,29 +59,27 @@ class DockerUtils:
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
-                                                    devices=model.config.devices,
-                                                    environment=model.config.envs,
+                                                    devices=model.config.getDevices(),
+                                                    environment=model.config.getEnvs(),
                                                     network_mode=model.config.getNetworkMode(),
-                                                    ports=model.config.ports,
-                                                    privileged=model.config.privileged,
+                                                    ports=model.config.getPorts(),
+                                                    privileged=model.config.getPrivileged(),
                                                     shm_size=model.config.shm_size,
                                                     stdin_open=model.config.interactive,
                                                     tty=model.config.tty,
-                                                    mounts=model.config.mounts,
+                                                    mounts=model.config.getVolumes(),
                                                     remove=temporary,
                                                     working_dir=model.config.getWorkingDir())
         except APIError as err:
-            logger.critical("Error while creating exegol container.")
             logger.error(err.explanation)
             logger.debug(err)
-            logger.info("Exiting")
-            exit(0)
+            logger.critical("Error while creating exegol container. Exiting.")
             return
         if container is not None:
             logger.success("Exegol container successfully created !")
         else:
-            logger.error("Unknown error while creating exegol container. Exiting.")
-            exit(0)
+            logger.critical("Unknown error while creating exegol container. Exiting.")
+            return
         return ExegolContainer(container, model)
 
     @classmethod
@@ -96,7 +93,7 @@ class DockerUtils:
     # # # Volumes Section # # #
 
     @classmethod
-    def loadCommonVolume(cls):
+    def __loadCommonVolume(cls):
         """Load or create the common resources volume for exegol containers
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
@@ -143,7 +140,7 @@ class DockerUtils:
                                         filters={"dangling": False})  # TODO add error handling
 
     @classmethod
-    def __listRemoteImages(cls):  # TODO check if SDK can replace raw request
+    def __listRemoteImages(cls):
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")

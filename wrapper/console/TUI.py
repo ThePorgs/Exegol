@@ -3,12 +3,14 @@ import re
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.prompt import Prompt
 from rich.table import Table
 
 from wrapper.console.ExegolProgress import ExegolProgress
 from wrapper.console.LayerTextColumn import LayerTextColumn
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolImage import ExegolImage
+from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ExeLog import logger, console, ExeLog
 
 
@@ -16,6 +18,7 @@ class ExegolTUI:
 
     @staticmethod
     def downloadDockerLayer(stream, quick_exit=False):
+        """Rich interface for docker image layer download from SDK stream"""
         layers = set()
         layers_downloaded = set()
         layers_extracted = set()
@@ -88,6 +91,7 @@ class ExegolTUI:
 
     @staticmethod
     def buildDockerImage(build_stream):
+        """Rich interface for docker image building from SDK stream"""
         for line in build_stream:
             stream_text = line.get("stream", '')
             if stream_text.strip() != '':
@@ -106,6 +110,7 @@ class ExegolTUI:
 
     @staticmethod
     def printTable(data: list, title: str = None):
+        """Printing Rich table for a list of object"""
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE_DOUBLE_HEAD)
         if len(data) == 0:
@@ -117,6 +122,8 @@ class ExegolTUI:
                 ExegolTUI.__buildImageTable(table, data)
             elif type(data[0]) is ExegolContainer:
                 ExegolTUI.__buildContainerTable(table, data)
+            elif type(data[0]) is str:
+                ExegolTUI.__buildStringTable(table, data, title)
             else:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
@@ -124,7 +131,8 @@ class ExegolTUI:
 
     @staticmethod
     def __buildImageTable(table, data: [ExegolImage]):
-        logger.info("Available images")
+        """Building Rich table from a list of ExegolImage"""
+        table.title = "Available images"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         if verbose_mode:
@@ -149,7 +157,8 @@ class ExegolTUI:
 
     @staticmethod
     def __buildContainerTable(table, data: [ExegolContainer]):
-        logger.info("Available containers")
+        """Building Rich table from a list of ExegolContainer"""
+        table.title = "[gold3][g]Available containers[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(logging.DEBUG)
@@ -167,8 +176,54 @@ class ExegolTUI:
         for container in data:
             if verbose_mode:
                 table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getFeaturesDetails(), container.config.getTextMounts(debug_mode),
+                              container.config.getTextFeatures(), container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode), container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.name, container.getTextStatus(), container.image.getName(),
-                              container.config.getFeaturesDetails())
+                              container.config.getTextFeatures())
+
+    @staticmethod
+    def __buildStringTable(table, data: [str], title: str = "Key"):
+        """Building a simple Rich table from a list of string"""
+        table.title = None
+        # Define columns
+        table.add_column(title)
+        # Load data into the table
+        for string in data:
+            table.add_row(string)
+
+    @classmethod
+    def selectFromTable(cls, data: [SelectableInterface], object_type=None, default=None) -> SelectableInterface:
+        """Return an object (implementing SelectableInterface) selected by the user
+        Raise IndexError of the data list is empty."""
+        if len(data) == 0:
+            if object_type is ExegolImage:
+                logger.warning("No images were found")
+            elif object_type is ExegolContainer:
+                logger.warning("No container were found")
+            else:
+                logger.warning("No container were found")
+            raise IndexError
+        cls.printTable(data)
+        choices = [obj.getKey() for obj in data]
+        if default is None:
+            default = choices[0]  # TODO custom default choice
+        choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
+                            show_choices=False)
+        for o in data:
+            if choice == o:
+                return o
+        logger.critical(f"Unknown error, cannot fetch selected object.")
+
+    @classmethod
+    def selectFromList(cls, data: [str], subject="an option", title="Options", default=None) -> str:
+        """Return a string selected by the user
+        Raise IndexError of the data list is empty."""
+        if len(data) == 0:
+            logger.warning("No options were found")
+            raise IndexError
+        cls.printTable(data, title=title)
+        if default is None:
+            default = data[0]
+        choice = Prompt.ask(f"[blue][?][/blue] Select {subject}", default=default, choices=data, show_choices=False)
+        return choice

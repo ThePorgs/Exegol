@@ -46,8 +46,10 @@ class ExeLog(logging.getLoggerClass()):
         super(ExeLog, self).exception("{}[x]{} {}".format("[red3]", "[/red3]", msg), *args, **kwargs)
 
     def critical(self, msg: Any, *args: Any, **kwargs: Any) -> None:
-        """Change default critical text format with rich color support"""
+        """Change default critical text format with rich color support
+        Add auto exit."""
         super(ExeLog, self).critical("{}[X]{} {}".format("[bold dark_red]", "[/bold dark_red]", msg), *args, **kwargs)
+        exit(1)
 
     def success(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Add success logging method with text format / rich color support"""

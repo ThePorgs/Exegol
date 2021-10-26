@@ -1,10 +1,11 @@
 from docker.models.images import Image
 
+from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
-class ExegolImage:
+class ExegolImage(SelectableInterface):
 
     def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None):
         """Docker image default value"""
@@ -46,6 +47,25 @@ class ExegolImage:
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
+    def update(self):
+        """If this image can be updated, return his name, otherwise return None"""
+        if self.__is_remote:
+            if self.__is_update:
+                logger.warning("This image is already up to date. Skipping.")
+                return None
+            return self.__name
+        else:
+            logger.error("Local images cannot be updated.")  # TODO add build mode
+            return None
+
+    def remove(self):
+        """If this image can be remove, return his name, otherwise return None"""
+        if self.__is_install:
+            return self.__name
+        else:
+            logger.error("This image is not installed locally. Skipping.")
+            return None
+
     def setDockerObject(self, docker_image: Image):
         """Docker object setter. Parse object to setup self configuration."""
         self.__image = docker_image
@@ -59,17 +79,6 @@ class ExegolImage:
         digest = docker_image.attrs["RepoDigests"][0].split(":")[1]
         if self.__digest == digest:
             self.__is_update = True
-
-    @staticmethod
-    def __processSize(size, precision=1):
-        """Text formatter from size number to human readable size."""
-        # https://stackoverflow.com/a/32009595
-        suffixes = ["B", "KB", "MB", "GB", "TB"]
-        suffix_index = 0
-        while size > 1024 and suffix_index < 4:
-            suffix_index += 1  # increment the index of the suffix
-            size = size / 1024.0  # apply the division
-        return "%.*f%s" % (precision, size, suffixes[suffix_index])
 
     @staticmethod
     def mergeImages(remote_images, local_images):
@@ -107,6 +116,17 @@ class ExegolImage:
         results.extend(remote_images)
         return results
 
+    @staticmethod
+    def __processSize(size, precision=1):
+        """Text formatter from size number to human readable size."""
+        # https://stackoverflow.com/a/32009595
+        suffixes = ["B", "KB", "MB", "GB", "TB"]
+        suffix_index = 0
+        while size > 1024 and suffix_index < 4:
+            suffix_index += 1  # increment the index of the suffix
+            size = size / 1024.0  # apply the division
+        return "%.*f%s" % (precision, size, suffixes[suffix_index])
+
     def __eq__(self, other):
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
@@ -137,7 +157,7 @@ class ExegolImage:
         else:
             return "[red]Not installed[/red]"
 
-    def getType(self):
+    def getType(self) -> str:
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
@@ -146,18 +166,22 @@ class ExegolImage:
         if digest is not None:
             self.__digest = digest.split(":")[1]
 
+    def getDigest(self) -> str:
+        """Remote digest getter"""
+        return self.__digest
+
     def __setImageId(self, image_id):
         """Local image id setter"""
         if image_id is not None:
             self.__image_id = image_id.split(":")[1][:12]
 
-    def getDigest(self):
-        """Remote digest getter"""
-        return self.__digest
-
-    def getId(self):
+    def getId(self) -> str:
         """Local id getter"""
         return self.__image_id
+
+    def getKey(self):
+        """Universal unique key getter (from SelectableInterface)"""
+        return self.getName()
 
     def __setRealSize(self, value):
         """On-Disk image size setter"""
@@ -188,22 +212,3 @@ class ExegolImage:
     def getFullName(self):
         """Dockerhub image's full name getter"""
         return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
-
-    def update(self):
-        """If this image can be updated, return his name, otherwise return None"""
-        if self.__is_remote:
-            if self.__is_update:
-                logger.warning("This image is already up to date. Skipping.")
-                return None
-            return self.__name
-        else:
-            logger.error("Local images cannot be updated.")  # TODO add build mode
-            return None
-
-    def remove(self):
-        """If this image can be remove, return his name, otherwise return None"""
-        if self.__is_install:
-            return self.__name
-        else:
-            logger.error("This image is not installed locally. Skipping.")
-            return None

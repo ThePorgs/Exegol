@@ -17,12 +17,12 @@ class ContainerConfig:
         self.__enable_gui = False
         self.__share_timezone = False
         self.__common_resources = False
-        self.network_host = True
-        self.ports = {}
-        self.privileged = False
-        self.mounts = []
-        self.devices = []
-        self.envs = {}
+        self.__network_host = True
+        self.__privileged = False
+        self.__mounts = []
+        self.__devices = []
+        self.__envs = {}
+        self.__ports = {}
         self.interactive = True
         self.tty = True
         self.shm_size = '1G'
@@ -39,18 +39,18 @@ class ContainerConfig:
         self.__parseEnvs(container_config.get("Env", []))
         self.interactive = container_config.get("OpenStdin", True)
         self.__enable_gui = False
-        for env in self.envs:
+        for env in self.__envs:
             if "DISPLAY" in env:
                 self.__enable_gui = True
                 break
 
         # Host Config section
         host_config = container.attrs.get("HostConfig", {})
-        self.privileged = host_config.get("Privileged", False)
-        self.devices = host_config.get("Devices", [])
-        if self.devices is None:
-            self.devices = []
-        logger.debug(f"Load devices : {self.devices}")
+        self.__privileged = host_config.get("Privileged", False)
+        self.__devices = host_config.get("Devices", [])
+        if self.__devices is None:
+            self.__devices = []
+        logger.debug(f"Load devices : {self.__devices}")
 
         # Volumes section
         self.__share_timezone = False
@@ -59,8 +59,8 @@ class ContainerConfig:
 
         # Network section
         network_settings = container.attrs.get("NetworkSettings", {})
-        self.network_host = "host" in network_settings["Networks"]
-        self.ports = network_settings.get("Ports", {})
+        self.__network_host = "host" in network_settings["Networks"]
+        self.__ports = network_settings.get("Ports", {})
 
     def __parseEnvs(self, envs):
         """Parse envs object syntax"""
@@ -68,7 +68,7 @@ class ContainerConfig:
             logger.debug(f"Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
             key, value = env.strip("'").strip('"').split('=')
-            self.envs[key] = value
+            self.__envs[key] = value
 
     def __parseMounts(self, mounts, name):
         """Parse Mounts object"""
@@ -80,11 +80,11 @@ class ContainerConfig:
                 source = f"Docker {share.get('Driver', '')} volume {share.get('Name', 'unknown')}"
             else:
                 source = share.get("Source")
-            self.mounts.append(Mount(source=source,
-                                     target=share.get('Destination'),
-                                     type=share.get('Type', 'volume'),
-                                     read_only=(not share.get("RW", True)),
-                                     propagation=share.get('Propagation', '')))
+            self.__mounts.append(Mount(source=source,
+                                       target=share.get('Destination'),
+                                       type=share.get('Type', 'volume'),
+                                       read_only=(not share.get("RW", True)),
+                                       propagation=share.get('Propagation', '')))
             if "/etc/timezone" in share.get('Destination', ''):
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
@@ -128,6 +128,9 @@ class ContainerConfig:
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
+    def enablePrivileged(self, status=True):
+        self.__privileged = status
+
     def enableCommonVolume(self):
         """Procedure to enable common volume feature"""
         if not self.__common_resources:
@@ -143,7 +146,7 @@ class ContainerConfig:
 
     def prepareShare(self, share_name):
         """Add workspace share before container creation"""
-        for mount in self.mounts:
+        for mount in self.__mounts:
             if mount.get('Target') == '/workspace':
                 # Volume is already prepared
                 return
@@ -154,11 +157,15 @@ class ContainerConfig:
             # TODO when SDK will be ready, change this to a volume to enable auto-remove
             self.addVolume(volume_path, '/workspace')
 
-    def getNetworkMode(self):
+    def getNetworkMode(self) -> str:
         """Network mode, text getter"""
-        return "host" if self.network_host else "bridge"
+        return "host" if self.__network_host else "bridge"
 
-    def getWorkingDir(self):
+    def getPrivileged(self) -> bool:
+        """Privileged getter"""
+        return self.__privileged
+
+    def getWorkingDir(self) -> str:
         """Get default container's default working directory path"""
         return "/workspace"
 
@@ -183,7 +190,11 @@ class ContainerConfig:
         if volume_type == 'bind':
             os.makedirs(host_path, exist_ok=True)
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
-        self.mounts.append(mount)
+        self.__mounts.append(mount)
+
+    def getVolumes(self):
+        """Volume config getter"""
+        return self.__mounts
 
     def addDevice(self, device_source: str, device_dest: str = None, readonly=False, mknod=True):
         """Add a device to the container configuration"""
@@ -194,35 +205,48 @@ class ContainerConfig:
             perm += 'w'
         if mknod:
             perm += 'm'
-        self.devices.append(f"{device_source}:{device_dest}:{perm}")
+        self.__devices.append(f"{device_source}:{device_dest}:{perm}")
+
+    def getDevices(self):
+        """Devices config getter"""
+        return self.__devices
 
     def addEnv(self, key, value):
         """Add an environment variable to the container configuration"""
-        self.envs[key] = value
+        self.__envs[key] = value
+
+    def getEnvs(self):
+        """Envs config getter"""
+        return self.__envs
 
     def addPort(self, port_host, port_container=None, protocol='tcp', host_ip='0.0.0.0'):
         """Add port NAT config, only applicable on bridge network mode."""
-        if self.network_host:
+        if self.__network_host:
             logger.warning(
                 "This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
             logger.warning("Please set network mode to bridge in order to expose specific network ports.")
             return
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
-        self.ports[f"{port_container}/{protocol}"] = [{'HostIp': host_ip, 'HostPort': port_host}]
+        self.__ports[f"{port_container}/{protocol}"] = [{'HostIp': host_ip, 'HostPort': port_host}]
 
-    def getFeaturesDetails(self):
+    def getPorts(self):
+        """Ports config getter"""
+        return self.__ports
+
+    def getTextFeatures(self, verbose=False):
         """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)"""
-        return f"{getColor(self.privileged)[0]}Privileged: {':fire:' if self.privileged else '[red]:cross_mark:[/red]'}{getColor(self.privileged)[1]}{os.linesep}" \
+        # TODO implement verbose option
+        return f"{getColor(self.__privileged)[0]}Privileged: {':fire:' if self.__privileged else '[red]:cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}" \
                f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}" \
-               f"Network mode: {'host' if self.network_host else 'custom'}{os.linesep}" \
+               f"Network mode: {'host' if self.__network_host else 'custom'}{os.linesep}" \
                f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}" \
                f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
 
     def getTextMounts(self, verbose=False):
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
-        for mount in self.mounts:
+        for mount in self.__mounts:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources']:
                 continue
@@ -232,7 +256,7 @@ class ContainerConfig:
     def getTextDevices(self, verbose=False):
         """Text formatter for Devices configurations. The verbose mode show full device configuration."""
         result = ''
-        for device in self.devices:
+        for device in self.__devices:
             if verbose:
                 result += f"{device}{os.linesep}"
             else:
@@ -242,7 +266,7 @@ class ContainerConfig:
     def getTextEnvs(self, verbose=False):
         """Text formatter for Envs configurations. The verbose mode does not exclude technical variables."""
         result = ''
-        for k, v in self.envs.items():
+        for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
             if not verbose and k in ["QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
                 continue
@@ -251,15 +275,15 @@ class ContainerConfig:
 
     def __str__(self):
         """Default object text formatter, debug only"""
-        return f"Privileged: {self.privileged}{os.linesep}" \
+        return f"Privileged: {self.__privileged}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
-               f"Network host: {'host' if self.network_host else 'custom'}{os.linesep}" \
+               f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__common_resources}{os.linesep}" \
-               f"Env ({len(self.envs)}): {self.envs}{os.linesep}" \
-               f"Shares ({len(self.mounts)}): {self.mounts}{os.linesep}" \
-               f"Devices ({len(self.devices)}): {self.devices}"
+               f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
+               f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
+               f"Devices ({len(self.__devices)}): {self.__devices}"
 
     def printConfig(self):
         """Log current object state, debug only"""
