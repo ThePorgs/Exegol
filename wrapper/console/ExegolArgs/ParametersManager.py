@@ -8,3 +8,17 @@ class ParametersManager(metaclass=MetaSingleton):
         self.__actions = [cls() for cls in Command.__subclasses__()]
         self.__parser = Parser(self.__actions)
         self.parameters = self.__parser.get_parameters()
+
+    def populate(self):
+        try:
+            self.parameters.action.populate(self.parameters)
+            self.parameters = self.parameters.action
+        except AttributeError:
+            # TODO Call TUI --> Choose action
+            raise NotImplementedError("Functionality not implemented yet")
+
+    def __getattr__(self, item):
+        try:
+            return getattr(self.parameters, item)
+        except AttributeError as r:
+            print(r)

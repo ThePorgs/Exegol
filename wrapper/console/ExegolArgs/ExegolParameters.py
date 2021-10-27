@@ -66,6 +66,7 @@ class Command:
                         missingOption.append(option["arg"].dest)
         return missingOption
 
+
 class Start(Command):
     """automatically start, resume, create or enter an Exegol container"""
     def __init__(self):
@@ -198,6 +199,9 @@ class Exec(Command):
 
 class Info(Command):
     """print info on containers and local & remote images (name, size, state, ...)"""
+    def __call__(self, *args, **kwargs):
+        print("i execute info")
+        print(self.verbosity)
 
 
 class Version(Command):
