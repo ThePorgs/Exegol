@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Union
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -146,25 +147,13 @@ class ExegolTUI:
             # it will show the download size or the size on disk
             table.add_column("Size")
         table.add_column("Status")
-        local = False
-        # Check if there is at least one local image in non-verbose mode
-        if not verbose_mode:
-            for image in data:
-                if image.isLocal():
-                    local = True
-                    break
-        if verbose_mode or local:
-            table.add_column("Type")
         # Load data into the table
         for image in data:
             if verbose_mode:
                 table.add_row(image.getId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
-                              image.getStatus(), image.getType())
+                              image.getStatus())
             else:
-                if local:
-                    table.add_row(image.getName(), image.getSize(), image.getStatus(), image.getType())
-                else:
-                    table.add_row(image.getName(), image.getSize(), image.getStatus())
+                table.add_row(image.getName(), image.getSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table, data: [ExegolContainer]):
@@ -205,28 +194,50 @@ class ExegolTUI:
             table.add_row(string)
 
     @classmethod
-    def selectFromTable(cls, data: [SelectableInterface], object_type=None, default=None) -> SelectableInterface:
+    def selectFromTable(cls, data: [SelectableInterface], object_type=None, default=None,
+                        allow_None=False) -> Union[SelectableInterface, str]:
         """Return an object (implementing SelectableInterface) selected by the user
+        Return a str when allow_none is true and no object have been selected
         Raise IndexError of the data list is empty."""
+        # Check if there is at least one object in the list
         if len(data) == 0:
             if object_type is ExegolImage:
-                logger.warning("No images were found")
+                logger.warning("No images are installed")
             elif object_type is ExegolContainer:
-                logger.warning("No container were found")
+                logger.warning("No containers have been created yet")
             else:
-                logger.warning("No container were found")
+                # Using container syntax by default
+                logger.warning("No containers have been created yet")
             raise IndexError
         object_type = type(data[0])
+        # Print data list
         cls.printTable(data)
+        # Get a list of every choice available
         choices = [obj.getKey() for obj in data]
+        # If no default have been supplied, using the first one
         if default is None:
             default = choices[0]
-        choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
-                            show_choices=False)
-        for o in data:
-            if choice == o:
-                return o
-        logger.critical(f"Unknown error, cannot fetch selected object.")
+        # When allow_none is enable, disabling choices restriction
+        if allow_None:
+            choices = None
+        while True:
+            choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
+                                show_choices=False)
+            for o in data:
+                if choice == o:
+                    return o
+            if allow_None:
+                object = "container" if object_type is ExegolContainer else "image"
+                action = "create" if object_type is ExegolContainer else "build"
+                if Confirm.ask(
+                        f"[blue][?][/blue] No {object} is available under this name, do you want to {action} it?",
+                        choices=["Y", "n"],
+                        show_default=False,
+                        default=True):
+                    return choice
+                logger.info("[red]Please select one of the available options[/red]")
+            else:
+                logger.critical(f"Unknown error, cannot fetch selected object.")
 
     @classmethod
     def multipleSelectFromTable(cls, data: [SelectableInterface], object_type=None,

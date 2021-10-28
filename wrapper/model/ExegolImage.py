@@ -7,7 +7,8 @@ from wrapper.utils.ExeLog import logger
 
 class ExegolImage(SelectableInterface):
 
-    def __init__(self, name="NONAME", digest=None, image_id=None, size=0, docker_image: Image = None):
+    def __init__(self, name: str = "NONAME", digest: str = None, image_id: str = None, size: int = 0,
+                 docker_image: Image = None):
         """Docker image default value"""
         # Init attributes
         self.__image: Image = docker_image
@@ -47,7 +48,7 @@ class ExegolImage(SelectableInterface):
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
-    def update(self):
+    def updateCheck(self):
         """If this image can be updated, return his name, otherwise return None"""
         if self.__is_remote:
             if self.__is_update:
@@ -58,7 +59,7 @@ class ExegolImage(SelectableInterface):
             logger.error("Local images cannot be updated.")  # TODO add build mode
             return None
 
-    def remove(self):
+    def removeCheck(self):
         """If this image can be remove, return his name, otherwise return None"""
         if self.__is_install:
             return self.__name
@@ -210,7 +211,7 @@ class ExegolImage(SelectableInterface):
         return not self.__is_remote
 
     def getName(self):
-        """Image's name getter"""
+        """Image's tag name getter"""
         return self.__name
 
     def getFullName(self):

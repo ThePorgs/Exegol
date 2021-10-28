@@ -23,7 +23,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         else:
             # Create Exegol container from a newly created docker container with his object template.
             super().__init__(docker_container.name,
-                             config=model.config,
+                             config=ContainerConfig(docker_container),
+                             # Rebuild config from docker object to update workspace path
                              image=model.image)
 
     def __str__(self):
@@ -68,8 +69,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def start(self):
         """Start the docker container"""
-        logger.info(f"Starting container {self.name}")
-        self.__container.start()
+        if not self.isRunning():
+            logger.info(f"Starting container {self.name}")
+            self.__container.start()
 
     def stop(self, timeout=10):
         """Stop the docker container"""

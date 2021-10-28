@@ -1,5 +1,6 @@
-from .ExegolParameters import *
-from .argParsev2 import Parser
+from wrapper.console.cli.actions.Command import Command
+from wrapper.console.cli.argParsev2 import Parser
+from wrapper.utils.ExeLog import logger
 from wrapper.utils.MetaSingleton import MetaSingleton
 
 
@@ -13,7 +14,7 @@ class ParametersManager(metaclass=MetaSingleton):
         try:
             self.parameters.action.populate(self.parameters)
             self.parameters = self.parameters.action
-        except AttributeError:
+        except AttributeError as err:
             # TODO Call TUI --> Choose action
             raise NotImplementedError("Functionality not implemented yet")
 
@@ -21,4 +22,4 @@ class ParametersManager(metaclass=MetaSingleton):
         try:
             return getattr(self.parameters, item)
         except AttributeError as r:
-            print(r)
+            logger.debug(r)

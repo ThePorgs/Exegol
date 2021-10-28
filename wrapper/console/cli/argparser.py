@@ -1,7 +1,9 @@
 import argparse
+
 from rich import print
-from wrapper.utils.MetaSingleton import MetaSingleton
+
 from wrapper.utils.ConstantConfig import ConstantConfig
+from wrapper.utils.MetaSingleton import MetaSingleton
 
 
 class ExegolArgParse(argparse.ArgumentParser):

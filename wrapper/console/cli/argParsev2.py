@@ -1,11 +1,13 @@
 import argparse
-from rich import print
+from logging import CRITICAL
+
+from wrapper.utils.ExeLog import logger
 
 
 class ExegolArgParse(argparse.ArgumentParser):
     def _print_message(self, message, file=None):
         if message:
-            print(message)
+            logger.raw(message, level=CRITICAL, rich_parsing=True)
 
 
 class Parser:
@@ -35,8 +37,8 @@ class Parser:
 
     def __init_parser(self):
         epilog = "[bold green]Examples:[/bold green]\n"
-        for example in self.__examples.keys():
-            epilog += "  {}\t{}\n".format(example, self.__examples[example])
+        for k, v in self.__examples.items():
+            epilog += "  {}\t{}\n".format(k, v)
 
         self.parser = ExegolArgParse(
             description=self.__description,

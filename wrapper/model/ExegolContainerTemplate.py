@@ -6,7 +6,7 @@ from wrapper.model.ExegolImage import ExegolImage
 
 class ExegolContainerTemplate:
 
-    def __init__(self, name: str, config: ContainerConfig, image: ExegolImage = None):
+    def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):
         self.name = name.replace('exegol-', '')
         if not name.startswith("exegol-"):
             self.hostname = 'exegol-' + name

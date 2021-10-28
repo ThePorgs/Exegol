@@ -1,4 +1,4 @@
-class ContainerNotFound(Exception):
+class ObjectNotFound(Exception):
     """Custom exception when a specific container do not exist"""
     pass
 

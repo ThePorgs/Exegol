@@ -11,6 +11,18 @@ class ExeLog(logging.getLoggerClass()):
     VERBOSE = 15
     SUCCESS = 25
 
+    @staticmethod
+    def setVerbosity(verbose, quiet):
+        if quiet:
+            logger.setLevel(logging.CRITICAL)
+        elif verbose == 1:
+            logger.setLevel(ExeLog.VERBOSE)
+        elif verbose >= 2:
+            logger.setLevel(logging.DEBUG)
+        else:
+            # Default INFO
+            logger.setLevel(logging.INFO)
+
     def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default debug text format with rich color support"""
         super(ExeLog, self).debug("{}[D]{} {}".format("[yellow3]", "[/yellow3]", msg), *args, **kwargs)
@@ -21,13 +33,13 @@ class ExeLog(logging.getLoggerClass()):
             self._log(ExeLog.VERBOSE,
                       "{}[V]{} {}".format("[blue]", "[/blue]", msg), args, **kwargs)
 
-    def raw(self, msg: Any, level=VERBOSE) -> None:
+    def raw(self, msg: Any, level=VERBOSE, rich_parsing=False) -> None:
         """Add raw text logging, used for stream printing."""
         if self.isEnabledFor(level):
             if type(msg) is bytes:
                 msg = msg.decode('utf-8', errors="ignore")
             # Raw message are print directly to the console bypassing logging system and auto formatting
-            console.print(msg, end='', markup=False, highlight=False, emoji=False)
+            console.print(msg, end='', markup=rich_parsing, highlight=rich_parsing, emoji=rich_parsing)
 
     def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default info text format with rich color support"""

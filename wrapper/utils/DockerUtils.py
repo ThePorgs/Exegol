@@ -6,7 +6,7 @@ import requests
 from docker.errors import APIError, DockerException, NotFound
 
 from wrapper.console.TUI import ExegolTUI
-from wrapper.exceptions.ExegolExceptions import ContainerNotFound
+from wrapper.exceptions.ExegolExceptions import ObjectNotFound
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
@@ -34,8 +34,8 @@ class DockerUtils:
     def listContainers(cls):
         """List available docker containers.
         Return a list of ExegolContainer"""
-        logger.verbose("List of Exegol containers")
         if cls.__containers is None:
+            logger.verbose("List of Exegol containers")
             cls.__containers = []
             try:
                 docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
@@ -48,7 +48,7 @@ class DockerUtils:
         return cls.__containers
 
     @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate, temporary=False):
+    def createContainer(cls, model: ExegolContainerTemplate, temporary=False) -> ExegolContainer:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
@@ -96,7 +96,7 @@ class DockerUtils:
             logger.critical(err.explanation)
             return
         if container is None or len(container) == 0:
-            raise ContainerNotFound
+            raise ObjectNotFound
         return ExegolContainer(container[0])
 
     # # # Volumes Section # # #
@@ -135,12 +135,33 @@ class DockerUtils:
     def listImages(cls):
         """List available docker images.
         Return a list of ExegolImage"""
-        logger.verbose("List of Exegol images")
         if cls.__images is None:
+            logger.verbose("List of Exegol images")
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)
         return cls.__images
+
+    @classmethod
+    def listInstalledImages(cls):
+        """List installed docker images.
+        Return a list of ExegolImage"""
+        images = cls.listImages()
+        filtered = []
+        for img in images:
+            if img.isInstall():
+                # Selecting only installed image
+                filtered.append(img)
+        return filtered
+
+    @classmethod
+    def getImage(cls, tag):
+        """Get an ExegolImage from tag name."""
+        docker_local_image = cls.__listLocalImages(tag)
+        if docker_local_image is None or len(docker_local_image) == 0:
+            raise ObjectNotFound
+        exegol_image = ExegolImage(docker_image=docker_local_image[0])
+        return exegol_image
 
     @classmethod
     def __listLocalImages(cls, tag=None):
@@ -148,8 +169,8 @@ class DockerUtils:
         Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
-            return cls.__client.images.list(ConstantConfig.IMAGE_NAME + "" if tag is None else ":" + tag,
-                                            filters={"dangling": False})
+            image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
+            return cls.__client.images.list(image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -181,7 +202,7 @@ class DockerUtils:
     def updateImage(cls, image: ExegolImage):
         """Update an ExegolImage"""  # TODO add local image support / move this procedure
         logger.info(f"Updating exegol image : {image.getName()}")
-        name = image.update()
+        name = image.updateCheck()
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
             try:
@@ -203,7 +224,7 @@ class DockerUtils:
     def removeImage(cls, image: ExegolImage):
         """Remove an ExegolImage from disk"""
         logger.info(f"Removing image '{image.getName()}'")
-        tag = image.remove()
+        tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return
         try:
@@ -247,3 +268,10 @@ class DockerUtils:
                 logger.debug(f"Error: {err}")
             else:
                 logger.critical(f"An error occurred while building this image : {err}")
+
+    @classmethod
+    def clearCache(cls):
+        """Remove class's images and containers data cache
+        Only needed if the list as to be updated in the same runtime at a later moment"""
+        cls.__containers = None
+        cls.__images = None

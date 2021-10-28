@@ -1,6 +1,7 @@
 from rich.prompt import Confirm, Prompt
 
 from wrapper.console.TUI import ExegolTUI
+from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.ExeLog import logger
@@ -17,11 +18,11 @@ class UpdateManager:
         return cls.__git
 
     @classmethod
-    def updateImage(cls, tag=None):
+    def updateImage(cls, tag=None) -> ExegolImage:
         """User procedure to build/pull docker image"""
         # List Images
         images = DockerUtils.listImages()
-        selected_image = None
+        selected_image: ExegolImage = None
         # Select image
         if tag is None:
             # Interactive selection
@@ -44,7 +45,10 @@ class UpdateManager:
                            choices=["y", "N"],
                            show_default=False,
                            default=False):
-                cls.buildSource(tag)
+                build_name = cls.buildSource(tag)
+                return DockerUtils.getImage(build_name)
+            return None
+        return selected_image
 
     @classmethod
     def updateGit(cls):
@@ -65,7 +69,7 @@ class UpdateManager:
         cls.__getGit().update()
 
     @classmethod
-    def buildSource(cls, build_name=None):
+    def buildSource(cls, build_name: str = None) -> str:
         # Ask to update git
         if not cls.__getGit().isUpToDate() and Confirm.ask("[blue][?][/blue] Do you want to update git?",
                                                            choices=["Y", "n"],
@@ -86,6 +90,7 @@ class UpdateManager:
                                                  default="stable")
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile)
+        return build_name
 
     @classmethod
     def __listBuildProfiles(cls):

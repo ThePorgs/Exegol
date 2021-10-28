@@ -1,76 +1,15 @@
+from wrapper.console.cli.actions.Command import Command, Option, GroupArgs
+from wrapper.manager.ExegolManager import ExegolManager
+from wrapper.manager.UpdateManager import UpdateManager
 from wrapper.utils.ConstantConfig import ConstantConfig
-
-
-class Option:
-    def __init__(self, *args, dest=None, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-        self.kwargs["dest"] = dest
-        self.dest = dest
-
-
-class GroupArgs:
-    def __init__(self, *options, title=None, description=None, is_global=False):
-        self.title = title
-        self.description = description
-        self.options = options
-        self.is_global = is_global
-
-
-class Command:
-    def __init__(self):
-        self.name = type(self).__name__.lower()
-        self.verify = Option("-k", "--insecure",
-                             dest="verify",
-                             action="store_false",
-                             default=True,
-                             required=False,
-                             help="Allow insecure server connections for web requests (default: False)")
-        self.quiet = Option("-q", "--quiet",
-                            dest="quiet",
-                            action="store_true",
-                            default=False,
-                            help="show no information at all")
-        self.verbosity = Option("-v", "--verbose",
-                                dest="verbosity",
-                                action="count",
-                                default=0,
-                                help="verbosity level (-v for verbose, -vv for debug)")
-
-        self.groupArg = [
-            GroupArgs({"arg": self.verify, "required": False},
-                      {"arg": self.quiet, "required": False},
-                      {"arg": self.verbosity, "required": False},
-                      title="[blue]Optional arguments[/blue]",
-                      is_global=True)
-        ]
-
-    def __call__(self, *args, **kwargs):
-        print("The called command is : ", self.name)
-        print("the object is", type(self).__name__)
-
-    def __repr__(self):
-        return self.name
-
-    def populate(self, args):
-        for arg in vars(args).keys():
-            if arg in self.__dict__:
-                self.__setattr__(arg, vars(args)[arg])
-
-    def check_parameters(self) -> [str]:
-        missingOption = []
-        for groupArg in self.groupArg:
-            for option in groupArg.options:
-                if option["required"]:
-                    if self.__dict__[option["arg"].dest] is None:
-                        missingOption.append(option["arg"].dest)
-        return missingOption
+from wrapper.utils.ExeLog import logger
 
 
 class Start(Command):
     """automatically start, resume, create or enter an Exegol container"""
+
     def __init__(self):
-        #  Standard Args
+        # Standard Args
         self.X11 = Option("-x", "-x11",
                           action="store_true",
                           dest="X11",
@@ -152,11 +91,15 @@ class Start(Command):
                                        title="[blue]Advanced start options[/blue]"))
 
     def __call__(self, *args, **kwargs):
-        print("Call direct dans start, exemple avec x11 :", self.X11)
+        ExegolManager.start()
 
 
 class Stop(Command):
     """stop an Exegol container in a saved state"""
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running stop module")
+        ExegolManager.stop()
 
 
 class Install(Command):
@@ -188,9 +131,18 @@ class Install(Command):
 class Update(Install):
     """update Exegol image (build or pull depending on the chosen update --mode)"""
 
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running update module")
+        UpdateManager.updateImage()  # TODO add tag name from parameter
+
 
 class Remove(Command):
     """remove Exegol image(s) and/or container(s)"""
+
+    # TODO add uninstall
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running remove module")
+        ExegolManager.remove()  # TODO add tag name from parameter
 
 
 class Exec(Command):
@@ -199,11 +151,11 @@ class Exec(Command):
 
 class Info(Command):
     """print info on containers and local & remote images (name, size, state, ...)"""
+
     def __call__(self, *args, **kwargs):
-        print("i execute info")
-        print(self.verbosity)
+        logger.debug("Running info module")
+        ExegolManager.info()
 
 
 class Version(Command):
     """print current version"""
-
