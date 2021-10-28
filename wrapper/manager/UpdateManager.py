@@ -67,10 +67,10 @@ class UpdateManager:
     @classmethod
     def buildSource(cls, build_name=None):
         # Ask to update git
-        if Confirm.ask("[blue][?][/blue] Do you want to update git?",
-                       choices=["Y", "n"],
-                       show_default=False,
-                       default=True):
+        if not cls.__getGit().isUpToDate() and Confirm.ask("[blue][?][/blue] Do you want to update git?",
+                                                           choices=["Y", "n"],
+                                                           show_default=False,
+                                                           default=True):
             cls.updateGit()
         # Choose tag name
         blacklisted_build_name = ["stable"]
