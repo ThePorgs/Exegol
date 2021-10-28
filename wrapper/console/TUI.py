@@ -146,14 +146,25 @@ class ExegolTUI:
             # it will show the download size or the size on disk
             table.add_column("Size")
         table.add_column("Status")
-        table.add_column("Type")
+        local = False
+        # Check if there is at least one local image in non-verbose mode
+        if not verbose_mode:
+            for image in data:
+                if image.isLocal():
+                    local = True
+                    break
+        if verbose_mode or local:
+            table.add_column("Type")
         # Load data into the table
         for image in data:
             if verbose_mode:
                 table.add_row(image.getId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
                               image.getStatus(), image.getType())
             else:
-                table.add_row(image.getName(), image.getSize(), image.getStatus(), image.getType())
+                if local:
+                    table.add_row(image.getName(), image.getSize(), image.getStatus(), image.getType())
+                else:
+                    table.add_row(image.getName(), image.getSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table, data: [ExegolContainer]):

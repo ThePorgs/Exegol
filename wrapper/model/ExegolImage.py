@@ -205,6 +205,10 @@ class ExegolImage(SelectableInterface):
         """Installation status getter"""
         return self.__is_install
 
+    def isLocal(self) -> bool:
+        """Local type getter"""
+        return not self.__is_remote
+
     def getName(self):
         """Image's name getter"""
         return self.__name
