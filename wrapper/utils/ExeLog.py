@@ -8,11 +8,11 @@ from rich.logging import RichHandler
 class ExeLog(logging.getLoggerClass()):
     """Project's Logger custom class"""
     # New logging level
-    VERBOSE = 15
-    SUCCESS = 25
+    VERBOSE: int = 15
+    SUCCESS: int = 25
 
     @staticmethod
-    def setVerbosity(verbose, quiet):
+    def setVerbosity(verbose: int, quiet: bool = False):
         if quiet:
             logger.setLevel(logging.CRITICAL)
         elif verbose == 1:
@@ -89,4 +89,4 @@ logger: ExeLog = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 
 # Global rich console object
-console = Console()
+console: Console = Console()

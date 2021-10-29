@@ -1,3 +1,5 @@
+from typing import Optional, Dict
+
 from rich.prompt import Confirm, Prompt
 
 from wrapper.console.TUI import ExegolTUI
@@ -12,13 +14,14 @@ class UpdateManager:
     __git = None
 
     @classmethod
-    def __getGit(cls):
+    def __getGit(cls) -> GitUtils:
+        """GetUtils local singleton getter"""
         if cls.__git is None:
             cls.__git = GitUtils()
         return cls.__git
 
     @classmethod
-    def updateImage(cls, tag=None) -> ExegolImage:
+    def updateImage(cls, tag: Optional[str] = None) -> Optional[ExegolImage]:
         """User procedure to build/pull docker image"""
         # List Images
         images = DockerUtils.listImages()
@@ -69,12 +72,19 @@ class UpdateManager:
         cls.__getGit().update()
 
     @classmethod
-    def buildSource(cls, build_name: str = None) -> str:
+    def buildSource(cls, build_name: Optional[str] = None) -> str:
+        """build user process :
+        Ask user is he want to update the git source (to get new& updated build profiles),
+        User choice a build name (if not supplied)
+        User select a build profile
+        Start docker image building
+        Return the name of the built image"""
         # Ask to update git
-        if not cls.__getGit().isUpToDate() and Confirm.ask("[blue][?][/blue] Do you want to update git?",
-                                                           choices=["Y", "n"],
-                                                           show_default=False,
-                                                           default=True):
+        if not cls.__getGit().isUpToDate() and Confirm.ask(
+                "[blue][?][/blue] Do you want to update git (in order to update local build profiles)?",
+                choices=["Y", "n"],
+                show_default=False,
+                default=True):
             cls.updateGit()
         # Choose tag name
         blacklisted_build_name = ["stable"]
@@ -93,7 +103,9 @@ class UpdateManager:
         return build_name
 
     @classmethod
-    def __listBuildProfiles(cls):
+    def __listBuildProfiles(cls) -> Dict:
+        """List every build profiles available locally
+        Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
         profiles = {"stable": "Dockerfile"}
         # List file *.dockerfile is the build context directory

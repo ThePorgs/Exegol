@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Optional, Dict
 
 from docker.models.containers import Container
 
@@ -12,9 +13,9 @@ from wrapper.utils.ExeLog import logger
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
-    def __init__(self, docker_container: Container, model: ExegolContainerTemplate = None):
+    def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
         self.__container: Container = docker_container
-        self.__id = docker_container.id
+        self.__id: str = docker_container.id
         if model is None:
             # Create Exegol container from an existing docker container
             super().__init__(docker_container.name,
@@ -31,16 +32,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Default object text formatter, debug only"""
         return f"{self.getRawStatus()} - {super().__str__()}"
 
-    def __getState(self):
+    def __getState(self) -> Dict:
         """Technical getter of the container status dict"""
         self.__container.reload()
         return self.__container.attrs.get("State", {})
 
-    def getRawStatus(self):
+    def getRawStatus(self) -> str:
         """Raw text getter of the container status"""
         return self.__getState().get("Status", "unknown")
 
-    def getTextStatus(self):
+    def getTextStatus(self) -> str:
         """Formatted text getter of the container status"""
         status = self.getRawStatus().lower()
         if status == "unknown":
@@ -51,19 +52,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             return "[green]:play_button: [green]Running"
         return status
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         """Check is the container is running. Return bool."""
         return self.getRawStatus() == "running"
 
-    def getFullId(self):
+    def getFullId(self) -> str:
         """Container's id getter"""
         return self.__id
 
-    def getId(self):
+    def getId(self) -> str:
         """Container's short id getter"""
         return self.__container.short_id
 
-    def getKey(self):
+    def getKey(self) -> str:
         """Universal unique key getter (from SelectableInterface)"""
         return self.name
 
@@ -73,7 +74,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info(f"Starting container {self.name}")
             self.__container.start()
 
-    def stop(self, timeout=10):
+    def stop(self, timeout: int = 10):
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
@@ -89,7 +90,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # result = self.__container.exec_run("zsh", stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
 
-    def exec(self, command, as_daemon=True):
+    def exec(self, command: str, as_daemon: bool = True):
         """Execute a command / process on the docker container"""
         if not self.isRunning():
             self.start()

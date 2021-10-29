@@ -82,7 +82,7 @@ class Start(Command):
                                                    'disabled with the advanced option "--no-default". They can then '
                                                    'be enabled back separately, for example "exegol --no-default '
                                                    '--X11 start"'))
-        self.groupArg.append(GroupArgs({"arg": self.containertag, "required": True},
+        self.groupArg.append(GroupArgs({"arg": self.containertag, "required": False},
                                        {"arg": self.no_default, "required": False},
                                        {"arg": self.privileged, "required": False},
                                        {"arg": self.device, "required": False},
@@ -153,8 +153,7 @@ class Info(Command):
     """print info on containers and local & remote images (name, size, state, ...)"""
 
     def __call__(self, *args, **kwargs):
-        logger.debug("Running info module")
-        ExegolManager.info()
+        return ExegolManager.info
 
 
 class Version(Command):

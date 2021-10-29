@@ -1,6 +1,8 @@
 import os
 import re
+from typing import Optional, List, Dict, Union, Tuple
 
+from docker.models.containers import Container
 from docker.types import Mount
 
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
@@ -11,26 +13,26 @@ from wrapper.utils.ExeLog import logger
 
 class ContainerConfig:
 
-    def __init__(self, container=None):
+    def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
-        self.__enable_gui = False
-        self.__share_timezone = False
-        self.__common_resources = False
-        self.__network_host = True
-        self.__privileged = False
-        self.__mounts = []
-        self.__devices = []
-        self.__envs = {}
-        self.__ports = {}
-        self.interactive = True
-        self.tty = True
-        self.shm_size = '1G'
-        self.__share_cwd = None
-        self.__share_private = None
+        self.__enable_gui: bool = False
+        self.__share_timezone: bool = False
+        self.__common_resources: bool = False
+        self.__network_host: bool = True
+        self.__privileged: bool = False
+        self.__mounts: List[Mount] = []
+        self.__devices: List[str] = []
+        self.__envs: Dict[str, str] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
+        self.interactive: bool = True
+        self.tty: bool = True
+        self.shm_size: str = '1G'
+        self.__share_cwd: Optional[str] = None
+        self.__share_private: Optional[str] = None
         if container is not None:
             self.__parseContainerConfig(container)
 
-    def __parseContainerConfig(self, container):
+    def __parseContainerConfig(self, container: Container):
         """Parse Docker object to setup self configuration"""
         # Container Config section
         container_config = container.attrs.get("Config", {})
@@ -61,7 +63,7 @@ class ContainerConfig:
         self.__network_host = "host" in network_settings["Networks"]
         self.__ports = network_settings.get("Ports", {})
 
-    def __parseEnvs(self, envs):
+    def __parseEnvs(self, envs: List[str]):
         """Parse envs object syntax"""
         for env in envs:
             logger.debug(f"Parsing envs : {env}")
@@ -69,7 +71,7 @@ class ContainerConfig:
             key, value = env.strip("'").strip('"').split('=')
             self.__envs[key] = value
 
-    def __parseMounts(self, mounts, name):
+    def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
         if mounts is None:
             mounts = []
@@ -127,7 +129,7 @@ class ContainerConfig:
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
-    def enablePrivileged(self, status=True):
+    def enablePrivileged(self, status: bool = True):
         self.__privileged = status
 
     def enableCommonVolume(self):
@@ -143,7 +145,7 @@ class ContainerConfig:
         logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
 
-    def prepareShare(self, share_name):
+    def prepareShare(self, share_name: str):
         """Add workspace share before container creation"""
         for mount in self.__mounts:
             if mount.get('Target') == '/workspace':
@@ -168,7 +170,7 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/workspace"
 
-    def getHostWorkspacePath(self):
+    def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
         if self.__share_cwd:
             return self.__share_cwd
@@ -176,26 +178,34 @@ class ContainerConfig:
             return self.__share_private
         return "not found :("
 
-    def getPrivateVolumePath(self):
+    def getPrivateVolumePath(self) -> Optional[str]:
         """Get private volume path (None if not set)"""
         return self.__share_private
 
-    def isCommonResourcesEnable(self):
+    def isCommonResourcesEnable(self) -> bool:
         """Return if the feature 'common resources' is enable in this config"""
         return self.__common_resources
 
-    def addVolume(self, host_path, container_path, read_only=False, volume_type='bind'):
+    def addVolume(self,
+                  host_path: str,
+                  container_path: str,
+                  read_only: bool = False,
+                  volume_type: str = 'bind'):
         """Add a volume to the container configuration"""
         if volume_type == 'bind':
             os.makedirs(host_path, exist_ok=True)
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
-    def getVolumes(self):
+    def getVolumes(self) -> List[Mount]:
         """Volume config getter"""
         return self.__mounts
 
-    def addDevice(self, device_source: str, device_dest: str = None, readonly=False, mknod=True):
+    def addDevice(self,
+                  device_source: str,
+                  device_dest: Optional[str] = None,
+                  readonly: bool = False,
+                  mknod: bool = True):
         """Add a device to the container configuration"""
         if device_dest is None:
             device_dest = device_source
@@ -206,19 +216,23 @@ class ContainerConfig:
             perm += 'm'
         self.__devices.append(f"{device_source}:{device_dest}:{perm}")
 
-    def getDevices(self):
+    def getDevices(self) -> List[str]:
         """Devices config getter"""
         return self.__devices
 
-    def addEnv(self, key, value):
+    def addEnv(self, key: str, value: str):
         """Add an environment variable to the container configuration"""
         self.__envs[key] = value
 
-    def getEnvs(self):
+    def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         return self.__envs
 
-    def addPort(self, port_host, port_container=None, protocol='tcp', host_ip='0.0.0.0'):
+    def addPort(self,
+                port_host: Union[int, str],
+                port_container: Union[int, str],
+                protocol: str = 'tcp',
+                host_ip: str = '0.0.0.0'):
         """Add port NAT config, only applicable on bridge network mode."""
         if self.__network_host:
             logger.warning(
@@ -227,13 +241,13 @@ class ContainerConfig:
             return
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
-        self.__ports[f"{port_container}/{protocol}"] = [{'HostIp': host_ip, 'HostPort': port_host}]
+        self.__ports[f"{port_container}/{protocol}"] = (host_ip, int(port_host))
 
-    def getPorts(self):
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]]:
         """Ports config getter"""
         return self.__ports
 
-    def getTextFeatures(self, verbose=False):
+    def getTextFeatures(self, verbose: bool = False) -> str:
         """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)
         Print config only if they are different from their default config (or print everything in verbose mode)"""
         result = ""
@@ -249,7 +263,7 @@ class ContainerConfig:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
         return result
 
-    def getTextMounts(self, verbose=False):
+    def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
         for mount in self.__mounts:
@@ -259,7 +273,7 @@ class ContainerConfig:
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result
 
-    def getTextDevices(self, verbose=False):
+    def getTextDevices(self, verbose: bool = False) -> str:
         """Text formatter for Devices configurations. The verbose mode show full device configuration."""
         result = ''
         for device in self.__devices:
@@ -269,7 +283,7 @@ class ContainerConfig:
                 result += f"{':right_arrow:'.join(device.split(':')[0:2])}{os.linesep}"
         return result
 
-    def getTextEnvs(self, verbose=False):
+    def getTextEnvs(self, verbose: bool = False) -> str:
         """Text formatter for Envs configurations. The verbose mode does not exclude technical variables."""
         result = ''
         for k, v in self.__envs.items():

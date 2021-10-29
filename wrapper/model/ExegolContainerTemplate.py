@@ -7,13 +7,13 @@ from wrapper.model.ExegolImage import ExegolImage
 class ExegolContainerTemplate:
 
     def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):
-        self.name = name.replace('exegol-', '')
+        self.name: str = name.replace('exegol-', '')
         if not name.startswith("exegol-"):
-            self.hostname = 'exegol-' + name
+            self.hostname: str = 'exegol-' + name
         else:
-            self.hostname = name
-        self.image = image
-        self.config = config
+            self.hostname: str = name
+        self.image: ExegolImage = image
+        self.config: ContainerConfig = config
 
     def __str__(self):
         """Default object text formatter, debug only"""

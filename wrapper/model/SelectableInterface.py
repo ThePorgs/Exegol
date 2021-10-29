@@ -1,5 +1,5 @@
 class SelectableInterface:
-    def getKey(self):
+    def getKey(self) -> str:
         """Universal unique key getter"""
         raise NotImplementedError
 

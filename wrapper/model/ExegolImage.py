@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from docker.models.images import Image
 
 from wrapper.model.SelectableInterface import SelectableInterface
@@ -7,25 +9,29 @@ from wrapper.utils.ExeLog import logger
 
 class ExegolImage(SelectableInterface):
 
-    def __init__(self, name: str = "NONAME", digest: str = None, image_id: str = None, size: int = 0,
-                 docker_image: Image = None):
+    def __init__(self,
+                 name: str = "NONAME",
+                 digest: Optional[str] = None,
+                 image_id: Optional[str] = None,
+                 size: int = 0,
+                 docker_image: Optional[Image] = None):
         """Docker image default value"""
         # Init attributes
         self.__image: Image = docker_image
-        self.__name = name
+        self.__name: str = name
         # Remote image size
-        self.__dl_size = ":question:" if size == 0 else self.__processSize(size)
+        self.__dl_size: str = ":question:" if size == 0 else self.__processSize(size)
         # Local uncompressed image's size
-        self.__disk_size = ":question:"
+        self.__disk_size: str = ":question:"
         # Remote image ID
-        self.__digest = "[bright_black]:question:[/bright_black]"
+        self.__digest: str = "[bright_black]:question:[/bright_black]"
         # Local docker image ID
-        self.__image_id = "[bright_black]Not installed[/bright_black]"
+        self.__image_id: str = "[bright_black]Not installed[/bright_black]"
         # Status
-        self.__is_remote = size > 0
-        self.__is_install = False
-        self.__is_update = False
-        self.__is_discontinued = False
+        self.__is_remote: bool = size > 0
+        self.__is_install: bool = False
+        self.__is_update: bool = False
+        self.__is_discontinued: bool = False
         # Process data
         if docker_image is not None:
             self.__initFromDockerImage()
@@ -48,7 +54,7 @@ class ExegolImage(SelectableInterface):
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
-    def updateCheck(self):
+    def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return his name, otherwise return None"""
         if self.__is_remote:
             if self.__is_update:
@@ -59,7 +65,7 @@ class ExegolImage(SelectableInterface):
             logger.error("Local images cannot be updated.")  # TODO add build mode
             return None
 
-    def removeCheck(self):
+    def removeCheck(self) -> Optional[str]:
         """If this image can be remove, return his name, otherwise return None"""
         if self.__is_install:
             return self.__name
@@ -82,7 +88,7 @@ class ExegolImage(SelectableInterface):
             self.__is_update = True
 
     @staticmethod
-    def mergeImages(remote_images, local_images):
+    def mergeImages(remote_images: List, local_images: List[Image]) -> List:
         """Compare and merge local images and remote images.
         Return a list of ExegolImage."""
         results = []
@@ -118,7 +124,7 @@ class ExegolImage(SelectableInterface):
         return results
 
     @staticmethod
-    def __processSize(size, precision=1):
+    def __processSize(size: int, precision: int = 1) -> str:
         """Text formatter from size number to human readable size."""
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
@@ -145,7 +151,7 @@ class ExegolImage(SelectableInterface):
         return f"{self.__name} - {self.__disk_size} - " + \
                (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
-    def getStatus(self):
+    def getStatus(self) -> str:
         """Formatted text getter of image's status."""
         if not self.__is_remote:
             return "[blue]Local image[/blue]"
@@ -162,7 +168,7 @@ class ExegolImage(SelectableInterface):
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
-    def __setDigest(self, digest):
+    def __setDigest(self, digest: Optional[str]):
         """Remote image digest setter"""
         if digest is not None:
             self.__digest = digest.split(":")[1]
@@ -171,7 +177,7 @@ class ExegolImage(SelectableInterface):
         """Remote digest getter"""
         return self.__digest
 
-    def __setImageId(self, image_id):
+    def __setImageId(self, image_id: Optional[str]):
         """Local image id setter"""
         if image_id is not None:
             self.__image_id = image_id.split(":")[1][:12]
@@ -180,25 +186,25 @@ class ExegolImage(SelectableInterface):
         """Local id getter"""
         return self.__image_id
 
-    def getKey(self):
+    def getKey(self) -> str:
         """Universal unique key getter (from SelectableInterface)"""
         return self.getName()
 
-    def __setRealSize(self, value):
+    def __setRealSize(self, value: int):
         """On-Disk image size setter"""
         self.__disk_size = self.__processSize(value)
 
-    def getRealSize(self):
+    def getRealSize(self) -> str:
         """On-Disk size getter"""
         return self.__disk_size
 
-    def getDownloadSize(self):
+    def getDownloadSize(self) -> str:
         """Remote size getter"""
         if not self.__is_remote:
             return "local"
         return self.__dl_size
 
-    def getSize(self):
+    def getSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
         return self.__disk_size if self.__is_install else self.__dl_size
 
@@ -210,10 +216,10 @@ class ExegolImage(SelectableInterface):
         """Local type getter"""
         return not self.__is_remote
 
-    def getName(self):
+    def getName(self) -> str:
         """Image's tag name getter"""
         return self.__name
 
-    def getFullName(self):
+    def getFullName(self) -> str:
         """Dockerhub image's full name getter"""
         return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"

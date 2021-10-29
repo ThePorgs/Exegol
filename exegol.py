@@ -7,9 +7,9 @@ from wrapper.utils.ExeLog import logger, console, ExeLog
 
 def main():
     # Start Main controller
-    ctrl = ExegolController()
+    ctrl: ExegolController = ExegolController()
     # Get Parameters singleton
-    param = ParametersManager()
+    param: ParametersManager = ParametersManager()
     # Set logger verbosity depending on user input
     ExeLog.setVerbosity(param.verbosity, param.quiet)
     # Executing action selected by user CLI

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Union
+from typing import Union, Optional, List, Dict, Type, Generator
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
@@ -18,7 +18,7 @@ from wrapper.utils.ExeLog import logger, console, ExeLog
 class ExegolTUI:
 
     @staticmethod
-    def downloadDockerLayer(stream, quick_exit=False):
+    def downloadDockerLayer(stream: Generator, quick_exit: bool = False):
         """Rich interface for docker image layer download from SDK stream"""
         layers = set()
         layers_downloaded = set()
@@ -91,7 +91,7 @@ class ExegolTUI:
                     logger.debug(line)
 
     @staticmethod
-    def buildDockerImage(build_stream):
+    def buildDockerImage(build_stream: Generator):
         """Rich interface for docker image building from SDK stream"""
         for line in build_stream:
             stream_text = line.get("stream", '')
@@ -110,7 +110,7 @@ class ExegolTUI:
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
 
     @staticmethod
-    def printTable(data: list, title: str = None):
+    def printTable(data: list, title: Optional[str] = None):
         """Printing Rich table for a list of object"""
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE_DOUBLE_HEAD)
@@ -131,7 +131,7 @@ class ExegolTUI:
         console.print(table)
 
     @staticmethod
-    def __buildImageTable(table, data: [ExegolImage]):
+    def __buildImageTable(table: Table, data: List[ExegolImage]):
         """Building Rich table from a list of ExegolImage"""
         table.title = "[gold3][g]Available images[/g][/gold3]"
         # Define columns
@@ -156,7 +156,7 @@ class ExegolTUI:
                 table.add_row(image.getName(), image.getSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table, data: [ExegolContainer]):
+    def __buildContainerTable(table: Table, data: List[ExegolContainer]):
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -184,7 +184,7 @@ class ExegolTUI:
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
-    def __buildStringTable(table, data: [str], title: str = "Key"):
+    def __buildStringTable(table: Table, data: List[str], title: str = "Key"):
         """Building a simple Rich table from a list of string"""
         table.title = None
         # Define columns
@@ -194,8 +194,11 @@ class ExegolTUI:
             table.add_row(string)
 
     @classmethod
-    def selectFromTable(cls, data: [SelectableInterface], object_type=None, default=None,
-                        allow_None=False) -> Union[SelectableInterface, str]:
+    def selectFromTable(cls,
+                        data: List[SelectableInterface],
+                        object_type: Optional[Type] = None,
+                        default: Optional[str] = None,
+                        allow_None: bool = False) -> Union[SelectableInterface, str]:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
         Raise IndexError of the data list is empty."""
@@ -240,8 +243,10 @@ class ExegolTUI:
                 logger.critical(f"Unknown error, cannot fetch selected object.")
 
     @classmethod
-    def multipleSelectFromTable(cls, data: [SelectableInterface], object_type=None,
-                                default=None) -> SelectableInterface:
+    def multipleSelectFromTable(cls,
+                                data: List[SelectableInterface],
+                                object_type: Type = None,
+                                default: Optional[str] = None) -> SelectableInterface:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""
         result = []
@@ -259,7 +264,11 @@ class ExegolTUI:
                 return result
 
     @classmethod
-    def selectFromList(cls, data: iter, subject="an option", title="Options", default=None) -> str:
+    def selectFromList(cls,
+                       data: Union[Dict, List[str]],
+                       subject: str = "an option",
+                       title: str = "Options",
+                       default: Optional[str] = None) -> str:
         """if data is list(str): Return a string selected by the user
         if data is dict: list keys and return corresponding value
         Raise IndexError of the data list is empty."""

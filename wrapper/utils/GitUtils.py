@@ -1,3 +1,5 @@
+from typing import Optional, List
+
 from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
 
 from wrapper.utils.ConstantConfig import ConstantConfig
@@ -10,11 +12,11 @@ class GitUtils:
 
     def __init__(self):
         """Init git local repository object / SDK"""
-        path = ConstantConfig.root_path
+        path: str = ConstantConfig.root_path
         logger.debug(f"Loading git at {path}")
-        self.__gitRepo: Repo = None
-        self.__gitRemote: Remote = None
-        self.__fetchBranchInfo = None
+        self.__gitRepo: Optional[Repo] = None
+        self.__gitRemote: Optional[Remote] = None
+        self.__fetchBranchInfo: Optional[FetchInfo] = None
         try:
             self.__gitRepo = Repo(path)
             logger.debug("Git repository successfully loaded")
@@ -31,7 +33,7 @@ class GitUtils:
         """Get current git branch name"""
         return str(self.__gitRepo.active_branch)
 
-    def listBranch(self) -> [str]:
+    def listBranch(self) -> List[str]:
         """Return a list of str of all remote git branch available"""
         result = []
         if self.__gitRemote is None:
@@ -49,7 +51,7 @@ class GitUtils:
             logger.warning("Local git have unsaved change. Skipping operation.")
         return not self.__gitRepo.is_dirty()
 
-    def isUpToDate(self, branch: str = None) -> bool:
+    def isUpToDate(self, branch: Optional[str] = None) -> bool:
         """Check if the local git repository is up-to-date.
         This method compare the last commit local and remote first,
         if this commit don't match, check the last 15 previous commit (for dev use cases)."""
@@ -83,24 +85,27 @@ class GitUtils:
         # Check if remote_commit is an ancestor of the last local commit (check if there is local commit ahead)
         return self.__gitRepo.is_ancestor(remote_commit, current_commit)
 
-    def update(self):
+    def update(self) -> bool:
         """Update local git repository within current branch"""
         if not self.safeCheck():
-            return
+            return False
         if self.isUpToDate():
             logger.info("Git branch is already up-to-date.")
-            return
+            return False
         if self.__gitRemote is not None:
             logger.info(f"Updating local git '{self.getCurrentBranch()}'")
             self.__gitRemote.pull()  # TODO need some test, check fast-forward only / try catch ?
             logger.success("Git successfully updated")
+            return True
+        return False
 
-    def checkout(self, branch: str):
+    def checkout(self, branch: str) -> bool:
         """Change local git branch"""
         if not self.safeCheck():
-            return
+            return False
         if branch == self.getCurrentBranch():
             logger.warning(f"Branch '{branch}' is already the current branch")
-            return
+            return False
         self.__gitRepo.heads[branch].checkout()
         logger.success(f"Git successfully checkout to '{branch}'")
+        return True
