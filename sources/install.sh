@@ -297,6 +297,10 @@ function Impacket() {
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
   # Added user filter on findDelegation
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1184.patch | git apply --verbose
+  # Added describeTicket
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
+  # Added self for getST
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump

