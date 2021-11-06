@@ -257,7 +257,7 @@ function Bolt() {
 
 function install_crackmapexec() {
   colorecho "Installing CrackMapExec"
-  apt-get -y install libssl-dev libffi-dev python-dev build-essential python3-winrm python3-venv
+  apt-get -y install libssl-dev libffi-dev python2-dev build-essential python3-winrm python3-venv
   git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
   cd /opt/tools/CrackMapExec
   python3 -m pipx install .
@@ -291,16 +291,16 @@ function Impacket() {
   cd /opt/tools/impacket/
   # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  # rcbd.py in examples
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1108.patch | git apply --verbose
   # Shadow Credentials in ntlmrelayx.py
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
-  # AD CS in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1101.patch | git apply --verbose
-  # Return server time in case of clock skew with KDC
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1133.patch | git apply --verbose
   # Improved searchFilter for GetUserSPNs
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
+  # Added user filter on findDelegation
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1184.patch | git apply --verbose
+  # Added describeTicket
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
+  # Added self for getST
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -887,6 +887,11 @@ function powersploit() {
 function privesccheck() {
   colorecho "Downloading PrivescCheck"
   git -C /opt/resources/windows/ clone https://github.com/itm4n/PrivescCheck
+}
+
+function sharpcollection() {
+  colorecho "Downloading SharpCollection"
+  git -C /opt/resources/windows/ clone https://github.com/Flangvik/SharpCollection
 }
 
 function rubeus() {
@@ -1534,7 +1539,7 @@ function install_peepdf() {
 
 function install_volatility() {
   colorecho "Installing volatility"
-  apt-get -y install pcregrep libpcre++-dev python-dev yara
+  apt-get -y install pcregrep libpcre++-dev python2-dev yara
   git -C /opt/tools/ clone https://github.com/volatilityfoundation/volatility
   cd /opt/tools/volatility
   python -m pip install pycrypto distorm3 pillow openpyxl ujson
@@ -1713,6 +1718,7 @@ function install_manspider() {
   colorecho "Installing MANSPIDER"
   git -C /opt/tools/ clone https://github.com/blacklanternsecurity/MANSPIDER
   fapt antiword
+  fapt tesseract-ocr
   python3 -m pip install man-spider
 }
 
@@ -1721,6 +1727,54 @@ function install_pywsus() {
   git -C /opt/tools/ clone https://github.com/GoSecure/pywsus
   cd /opt/tools/pywsus
   python3 -m pip install -r requirements.txt
+}
+
+function install_ignorant() {
+  colorecho "Installing ignorant"
+  git -C /opt/tools/ clone https://github.com/megadose/ignorant
+  cd /opt/tools/ignorant
+  python3 -m pipx install .
+}
+
+function install_donpapi() {
+  colorecho "Installing DonPAPI"
+  git -C /opt/tools/ clone https://github.com/login-securite/DonPAPI.git
+  python3 -m pip install -r requirements.txt
+}
+
+function install_gau() {
+  colorecho "Installing gau"
+  GO111MODULE=on go get -u -v github.com/lc/gau
+}
+
+function install_webclientservicescanner() {
+  colorecho "Installing webclientservicescanner"
+  git -C /opt/tools/ clone https://github.com/Hackndo/WebclientServiceScanner
+  cd /opt/tools/WebclientServiceScanner
+  python3 -m pipx install .
+}
+
+function install_certipy() {
+  colorecho "Installing Certipy"
+  git -C /opt/tools/ clone https://github.com/ly4k/Certipy
+  cd /opt/tools/Certipy
+  python3 -m pipx install .
+}
+
+function install_eaphammer() {
+  colorecho "Installing EPA hammer"
+  git -C /opt/tools/ clone https://github.com/s0lst1c3/eaphammer
+  cd /opt/tools/eaphammer
+  echo y | ./kali-setup
+}
+
+function download_hashcat_rules() {
+  colorecho "Download hashcat rules"
+  mkdir -p /opt/resources/cracking/hashcat_rules/
+  git -C /opt/resources/cracking/hashcat_rules/ clone https://github.com/NSAKEY/nsa-rules
+  wget -O /opt/resources/cracking/hashcat_rules/hob064.rule https://raw.githubusercontent.com/praetorian-inc/Hob0Rules/master/hob064.rule
+  wget -O /opt/resources/cracking/hashcat_rules/d3adhob0.rule https://raw.githubusercontent.com/praetorian-inc/Hob0Rules/master/d3adhob0.rule
+  wget -O /opt/resources/cracking/hashcat_rules/OneRuleToRuleThemAll.rule https://raw.githubusercontent.com/NotSoSecure/password_cracking_rules/master/OneRuleToRuleThemAll.rule
 }
 
 function install_base() {
@@ -1740,7 +1794,7 @@ function install_base() {
   fapt php                        # Php language
   fapt python2                    # Python 2 language
   fapt python3                    # Python 3 language
-  fapt python-dev                 # Python 2 language (dev version)
+  fapt python2-dev                 # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
   fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
@@ -1767,7 +1821,10 @@ function install_base() {
   fapt vim                        # Text editor
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
+  fapt emacs
   fapt iputils-ping               # Ping binary
+  fapt iproute2                   # Firewall rules
+  fapt openvpn
   arsenal                         # Cheatsheets tool
   mdcat                           # cat markdown files
   bat                             # Beautiful cat
@@ -1872,6 +1929,7 @@ function install_wordlists_tools() {
 # Package dedicated to offline cracking/bruteforcing tools
 function install_cracking_tools() {
   fapt hashcat                    # Password cracker
+  download_hashcat_rules
   install_john                    # Password cracker
   fapt fcrackzip                  # Zip cracker
   fapt pdfcrack                   # PDF cracker
@@ -1943,6 +2001,7 @@ function install_osint_tools() {
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
   gron                            # JSON parser
+  #install_ignorant                # holehe but for phone numbers
 }
 
 # Package dedicated to applicative and active web pentest tools
@@ -2006,6 +2065,7 @@ function install_web_tools() {
   install_tomcatwardeployer       # Apache Tomcat auto WAR deployment & pwning tool
   install_clusterd                # Axis2/JBoss/ColdFusion/Glassfish/Weblogic/Railo scanner
   install_arjun                   # HTTP Parameter Discovery
+  install_gau
 }
 
 # Package dedicated to command & control frameworks
@@ -2092,7 +2152,9 @@ function install_ad_tools() {
   install_targetedKerberoast
   install_pcredz
   install_pywsus
-
+  install_donpapi
+  install_webclientservicescanner
+  install_certipy
 }
 
 # Package dedicated to mobile apps pentest tools
@@ -2155,7 +2217,6 @@ function install_network_tools() {
   fapt nmap                       # Port scanner
   install_autorecon               # External recon tool
   # Sn1per                        # Vulnerability scanner
-  fapt iproute2                   # Firewall rules
   fapt tcpdump                    # Capture TCP traffic
   install_dnschef                 # Python DNS server
   install_rustscan                # Fast port scanner
@@ -2165,6 +2226,7 @@ function install_network_tools() {
   install_chisel                  # Fast TCP/UDP tunnel over HTTP
   install_sshuttle                # Transparent proxy over SSH
   fapt dns2tcp                    # TCP tunnel over DNS
+  install_eaphammer
 }
 
 # Package dedicated to wifi pentest tools
@@ -2273,6 +2335,7 @@ function install_resources() {
   http-put-server
   azurehound
   icmpdoor
+  sharpcollection
 }
 
 # Function used to clean up post-install files

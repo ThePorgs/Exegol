@@ -139,24 +139,24 @@
             "name": ""
         },
         {
-            "name": "Find all computers with Unconstrained Delegation",
+            "name": "Find all systems (users & computers) with Unconstrained Delegation",
             "queryList": [{
                 "final": true,
-                "query": "MATCH (c:Computer {unconstraineddelegation:true}) return c"
+                "query": "MATCH (c {unconstraineddelegation:true}) return c"
             }]
         },
         {
-            "name": "Find computers that allow unconstrained delegation that AREN’T domain controllers.",
+            "name": "Find systems that allow unconstrained delegation that AREN’T domain controllers.",
             "queryList": [{
                 "final": true,
-                "query": "MATCH (c1:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectid ENDS WITH '-516' WITH COLLECT(c1.name) AS domainControllers MATCH (c2:Computer {unconstraineddelegation:true}) WHERE NOT c2.name IN domainControllers RETURN c2"
+                "query": "MATCH (c1:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectid ENDS WITH '-516' WITH COLLECT(c1.name) AS domainControllers MATCH (c2 {unconstraineddelegation:true}) WHERE NOT c2.name IN domainControllers RETURN c2"
             }]
         },
         {
             "name": "(Warning: edits the DB) Mark unconstrained delegation systems as high value targets",
             "queryList": [{
                 "final": true,
-                "query": "MATCH (dc:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectsid ENDS WITH '516' WITH COLLECT(dc) as domainControllers MATCH p = (d:Domain)-[:Contains*1..]->(c:Computer {unconstraineddelegation:true}) WHERE NOT c in domainControllers SET c.highvalue = true RETURN c"
+                "query": "MATCH (c1:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectid ENDS WITH '-516' WITH COLLECT(c1.name) AS domainControllers MATCH (c2 {unconstraineddelegation:true}) WHERE NOT c2.name IN domainControllers SET c2.highvalue = true RETURN c2"
             }]
         },
         {
