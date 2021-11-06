@@ -1,4 +1,4 @@
-from typing import Union, List, Optional
+from typing import Union, List
 
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
@@ -36,9 +36,9 @@ class ExegolManager:
     @classmethod
     def stop(cls):
         logger.info("Stopping exegol")
-        container = cls.__loadOrCreateContainer(must_exist=True)  # TODO add multiple selection
-        if container is not None:
-            container.stop()
+        container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        for c in container:
+            c.stop()
 
     @classmethod
     def uninstall(cls):
@@ -50,13 +50,12 @@ class ExegolManager:
     @classmethod
     def remove(cls):
         logger.info("Removing an exegol container")
-        container = cls.__loadOrCreateContainer(must_exist=True)  # TODO add multiple selection
-        if container is not None:
-            container.remove()
+        containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        for c in containers:
+            c.remove()
 
     @classmethod
     def __loadOrInstallImage(cls,
-                             image_tag: Optional[str] = None,
                              multiple: bool = False,
                              must_exist: bool = False) -> Union[ExegolImage, List[ExegolImage]]:
         """Select / Load (and install) an ExegolImage
@@ -66,7 +65,7 @@ class ExegolManager:
         if cls.__image is not None:
             # Return cache
             return cls.__image
-        # image_tag = None  # TODO add image tag option
+        image_tag = None  # TODO add image tag option
         image_selection = None
         # While an image have not been selected
         while image_selection is None:
@@ -106,7 +105,7 @@ class ExegolManager:
                 # IndexError is raised when no image are available (not applicable when multiple is set, return an empty array)
                 if must_exist:
                     # If there is no image installed, return none
-                    return None
+                    return [] if multiple else None
                 else:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
                     # (only if must_exist is not set)
@@ -117,6 +116,7 @@ class ExegolManager:
                 check_img = [image_selection]
             else:
                 check_img = image_selection
+            assert check_img is not None  # TODO add more check / critical logger (when user say no to building)
             # Check if every image are installed
             for i in range(len(check_img)):
                 if not check_img[i].isInstall():
@@ -141,8 +141,13 @@ class ExegolManager:
         return cls.__image
 
     @classmethod
-    def __loadOrCreateContainer(cls, must_exist: bool = False) -> ExegolContainer:
-        """Select or create an ExegolContainer"""
+    def __loadOrCreateContainer(cls,
+                                multiple: bool = False,
+                                must_exist: bool = False) -> Union[ExegolContainer, List[ExegolContainer]]:
+        """Select one or multipleExegolContainer
+        Or create a new ExegolContainer if no one already exist (and must_exist is not set)
+        When must_exist is set to True, return None if no container exist
+        When multiple is set to True, return a list of ExegolContainer"""
         if cls.__container is not None:
             # Return cache
             return cls.__container
@@ -152,23 +157,30 @@ class ExegolManager:
                 # List all images available
                 containers = DockerUtils.listContainers()
                 # Interactive choice with TUI
-                container = ExegolTUI.selectFromTable(containers, object_type=ExegolContainer,
-                                                      allow_None=not must_exist)
+                if multiple:
+                    container = ExegolTUI.multipleSelectFromTable(containers, object_type=ExegolContainer)
+                else:
+                    container = ExegolTUI.selectFromTable(containers, object_type=ExegolContainer,
+                                                          allow_None=not must_exist)
                 # Check if the user has chosen an existing container
-                if type(container) is ExegolContainer:
+                if type(container) is ExegolContainer or (multiple and type(container) is list):
                     cls.__container = container
                 else:
                     # Otherwise create a new container with the supplied name
                     cls.__container = cls.__createContainer(container)
             else:
                 # Try to find the corresponding container
-                cls.__container = DockerUtils.getContainer(container_tag)
+                container = DockerUtils.getContainer(container_tag)
+                if multiple:
+                    cls.__container = [container]
+                else:
+                    cls.__container = container
         except (ObjectNotFound, IndexError):
             # ObjectNotFound is raised when the container_tag provided by the user does not match any existing container.
             # IndexError is raise when no container exist
             # Create container
             if must_exist:
-                return None
+                return [] if multiple else None
             return cls.__createContainer(container_tag)
         return cls.__container
 

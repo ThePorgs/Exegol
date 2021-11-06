@@ -105,11 +105,18 @@ class ContainerConfig:
                 else:
                     self.__share_cwd = share.get('Source', '')
 
-    def enableGUI(self):
-        """Procedure to enable GUI feature"""
+    @staticmethod
+    def __isGuiAvailable() -> bool:
         if ConstantConfig.windows_host:
             # TODO Investigate X11 sharing on Windows with container
-            logger.warning("Display sharing is not (yet) supported on Windows. Skipping.")
+            logger.warning("Display sharing is not (yet) supported on Windows.")
+            return False
+        return True
+
+    def enableGUI(self):
+        """Procedure to enable GUI feature"""
+        if not self.__isGuiAvailable():
+            logger.error("GUI feature is not available on your environment. Skipping.")
             return
         if not self.__enable_gui:
             self.__enable_gui = True

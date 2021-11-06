@@ -27,8 +27,9 @@ class DockerUtils:
         __client: DockerClient = docker.from_env()
     except DockerException as err:
         logger.error(err)
-        logger.critical("Unable to connect to docker (from env config). Is docker install on your local machine ? "
-                        "Exiting.")
+        logger.critical(
+            "Unable to connect to docker (from env config). Is docker installed and running on your machine? "
+            "Exiting.")
     __images: Optional[List[ExegolImage]] = None
     __containers: Optional[List[ExegolContainer]] = None
 
@@ -101,7 +102,18 @@ class DockerUtils:
             return
         if container is None or len(container) == 0:
             raise ObjectNotFound
-        return ExegolContainer(container[0])
+        selected = None
+        # Filter results with exact name matching
+        for c in container:
+            if c.name == f"exegol-{tag}":
+                # When the right container have been found, select it and stop the search
+                selected = c
+                break
+        if selected is None:
+            # When there is some close container's name
+            # Docker may return some results but none of them correspond to the request
+            raise IndexError
+        return ExegolContainer(selected)
 
     # # # Volumes Section # # #
 
@@ -164,8 +176,8 @@ class DockerUtils:
         docker_local_image = cls.__listLocalImages(tag)
         if docker_local_image is None or len(docker_local_image) == 0:
             raise ObjectNotFound
-        exegol_image = ExegolImage(docker_image=docker_local_image[0])
-        return exegol_image
+        # DockerSDK image search is an exact matching, no need to add more check
+        return ExegolImage(docker_image=docker_local_image[0])
 
     @classmethod
     def __listLocalImages(cls, tag: Optional[str] = None) -> List[Image]:

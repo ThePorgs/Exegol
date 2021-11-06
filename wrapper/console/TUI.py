@@ -230,10 +230,10 @@ class ExegolTUI:
                 if choice == o:
                     return o
             if allow_None:
-                object = "container" if object_type is ExegolContainer else "image"
+                object_name = "container" if object_type is ExegolContainer else "image"
                 action = "create" if object_type is ExegolContainer else "build"
                 if Confirm.ask(
-                        f"[blue][?][/blue] No {object} is available under this name, do you want to {action} it?",
+                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it?",
                         choices=["Y", "n"],
                         show_default=False,
                         default=True):
@@ -251,13 +251,21 @@ class ExegolTUI:
         Raise IndexError of the data list is empty."""
         result = []
         pool = data.copy()
+        if object_type is None and len(pool) > 0:
+            object_type = type(pool[0])
+        if object_type is ExegolContainer:
+            object_subject = "container"
+        elif object_type is ExegolImage:
+            object_subject = "image"
+        else:
+            object_subject = "object"
         while True:
             selected = cls.selectFromTable(pool, object_type, default)
             result.append(selected)
             pool.remove(selected)
             if len(pool) == 0:
                 return result
-            elif not Confirm.ask("[blue][?][/blue] Do you want to select another object?",
+            elif not Confirm.ask(f"[blue][?][/blue] Do you want to select another {object_subject}?",
                                  choices=["y", "N"],
                                  show_default=False,
                                  default=False):
