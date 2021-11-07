@@ -1,6 +1,8 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
+VERSION="3.1.10.dev"
+
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -36,7 +38,8 @@ function filesystem() {
   mkdir -p /opt/resources/windows/
   mkdir -p /opt/resources/linux/
   mkdir -p /opt/resources/mac/
-  mkdir -p /opt/resources/webshells
+  mkdir -p /opt/resources/cracking/
+  mkdir -p /opt/resources/webshells/
   mkdir -p /opt/resources/webshells/PHP/
   mkdir -p /opt/resources/webshells/ASPX/
   mkdir -p /opt/resources/webshells/JSP/
@@ -1779,6 +1782,7 @@ function download_hashcat_rules() {
 
 function install_base() {
   update || exit
+  echo $VERSION > /opt/.exegol_version
   fapt man                        # Most important
   fapt git                        # Git client
   fapt lsb-release
@@ -1821,7 +1825,7 @@ function install_base() {
   fapt vim                        # Text editor
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
-  fapt emacs
+  fapt emacs-nox
   fapt iputils-ping               # Ping binary
   fapt iproute2                   # Firewall rules
   fapt openvpn

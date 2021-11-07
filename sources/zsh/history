@@ -1,5 +1,5 @@
-responder --interface eth0 --analyze
-responder --interface eth0 --NBTNSdomain --wpad --lm
+responder --interface eth0 --analyze --disable-ess
+responder --interface eth0 --NBTNSdomain --wpad --lm --disable-ess
 responder-http-off
 responder-http-on
 responder-smb-off
