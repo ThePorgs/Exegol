@@ -1785,6 +1785,11 @@ function install_vulny_code_static_analysis() {
   git -C /opt/tools/ clone https://github.com/swisskyrepo/Vulny-Code-Static-Analysis
 }
 
+function install_GPOwned() {
+  colorecho "Installing GPOwned"
+  git -C /opt/tools/ clone https://github.com/X-C3LL/GPOwned
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
