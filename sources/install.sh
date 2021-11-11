@@ -1780,6 +1780,11 @@ function download_hashcat_rules() {
   wget -O /opt/resources/cracking/hashcat_rules/OneRuleToRuleThemAll.rule https://raw.githubusercontent.com/NotSoSecure/password_cracking_rules/master/OneRuleToRuleThemAll.rule
 }
 
+function install_vulny_code_static_analysis() {
+  colorecho "Installing Vulny Code Static Analysis"
+  git -C /opt/tools/ clone https://github.com/swisskyrepo/Vulny-Code-Static-Analysis
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2302,6 +2307,11 @@ function install_GUI_tools() {
   fapt xtightvncviewer
   fapt jd-gui                     # Java decompiler
   burp
+}
+
+# Package dedicated to SAST and DAST tools
+function install_code_analysis_tools() {
+  install_vulny_code_static_analysis
 }
 
 # Package dedicated to the download of resources
