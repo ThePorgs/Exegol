@@ -1863,6 +1863,7 @@ function install_base() {
   fapt xz-utils                   # xz (de)compression
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
+  fapt parallel
 }
 
 # Package dedicated to most used offensive tools
