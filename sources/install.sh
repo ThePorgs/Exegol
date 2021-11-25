@@ -1790,6 +1790,24 @@ function install_GPOwned() {
   git -C /opt/tools/ clone https://github.com/X-C3LL/GPOwned
 }
 
+function install_nuclei() {
+  # Vulnerability scanner
+  colorecho "Installing Nuclei"
+  go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+}
+
+function install_prips() {
+  # Print the IP addresses in a given range
+  colorecho "Installing Prips"
+  fapt prips
+}
+
+function install_hakrevdns() {
+  # Reverse DNS lookups
+  colorecho "Installing Hakrevdns"
+  go install github.com/hakluke/hakrevdns@latest
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2081,6 +2099,9 @@ function install_web_tools() {
   install_clusterd                # Axis2/JBoss/ColdFusion/Glassfish/Weblogic/Railo scanner
   install_arjun                   # HTTP Parameter Discovery
   install_gau
+  install_nuclei                  # Vulnerability scanner
+  install_prips                   # Print the IP addresses in a given range
+  install_hakrevdns               # Reverse DNS lookups
 }
 
 # Package dedicated to command & control frameworks
