@@ -309,6 +309,7 @@ function Impacket() {
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
   cp -v /root/sources/grc/conf.getgpppassword /usr/share/grc/conf.getgpppassword
   cp -v /root/sources/grc/conf.rbcd /usr/share/grc/conf.rbcd
+  cp -v /root/sources/grc/conf.describeTicket /usr/share/grc/conf.describeTicket
 }
 
 function bloodhound.py() {
@@ -1810,6 +1811,7 @@ function install_base() {
   fapt python3                    # Python 3 language
   fapt python2-dev                 # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
+  ln -s /usr/bin/python2.7 /usr/bin/python  # fix shit
   fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
   fapt python3-pip                # Pip
@@ -1874,6 +1876,7 @@ function install_base() {
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
   fapt parallel
+  fapt tree
 }
 
 # Package dedicated to most used offensive tools
