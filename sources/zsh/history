@@ -315,4 +315,5 @@ prips 192.168.0.0 192.168.0.255
 prips -i4 192.168.0.10 192.168.0.250
 prips 173.0.84.0/24 | hakrevdns
 nuclei -u https://example.com
+ntpdate -u 192.168.56.101
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

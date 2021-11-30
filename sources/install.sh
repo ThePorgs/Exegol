@@ -2194,6 +2194,7 @@ function install_ad_tools() {
   install_donpapi
   install_webclientservicescanner
   install_certipy
+  npm install ntpsync             # sync local time with remote server
 }
 
 # Package dedicated to mobile apps pentest tools
