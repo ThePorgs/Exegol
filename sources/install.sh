@@ -304,6 +304,8 @@ function Impacket() {
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
   # Added self for getST
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
+  # Added renameMachine.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1224.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -664,6 +666,8 @@ function krbrelayx() {
   colorecho "Installing krbrelayx"
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
+  # Added renameMachine.py
+  curl --location https://github.com/dirkjanm/krbrelayx/pull/20.patch | git apply --verbose
 }
 
 function hakrawler() {
@@ -1795,6 +1799,7 @@ function install_nuclei() {
   # Vulnerability scanner
   colorecho "Installing Nuclei"
   go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+  nuclei -update-templates
 }
 
 function install_prips() {
@@ -1807,6 +1812,16 @@ function install_hakrevdns() {
   # Reverse DNS lookups
   colorecho "Installing Hakrevdns"
   go install github.com/hakluke/hakrevdns@latest
+}
+
+function install_httprobe() {
+  colorecho "Installing httprobe"
+  go get -u -v github.com/tomnomnom/httprobe
+}
+
+function install_httpx() {
+  colorecho "Installing httpx"
+  python3 -m pipx install 'httpx[cli]'
 }
 
 function install_base() {
@@ -2105,6 +2120,8 @@ function install_web_tools() {
   install_nuclei                  # Vulnerability scanner
   install_prips                   # Print the IP addresses in a given range
   install_hakrevdns               # Reverse DNS lookups
+  install_httprobe
+  install_httpx
 }
 
 # Package dedicated to command & control frameworks
