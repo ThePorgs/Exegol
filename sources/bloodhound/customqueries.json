@@ -213,6 +213,13 @@
             }]
         },
         {
+            "name": "Users with adminCount, not sensitive for delegation, not members of Protected Users",
+            "queryList": [{
+                "final": true,
+                "query": "MATCH (u)-[:MemberOf*1..]->(g:Group) WHERE g.objectid =~ \"(?i)S-1-5-.*-525\" WITH COLLECT (u.name) as protectedUsers MATCH p=(u2:User)-[:MemberOf*1..3]->(g2:Group) WHERE u2.admincount=true AND u2.sensitive=false AND NOT u2.name IN protectedUsers RETURN p"
+            }]
+        },
+        {
             "name": ""
         },
         {
