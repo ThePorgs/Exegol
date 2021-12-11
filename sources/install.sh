@@ -1827,13 +1827,14 @@ function install_httpx() {
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
-  echo '# Debian sources' >> /etc/apt/sources.list
-  echo 'deb http://deb.debian.org/debian/ bullseye main' >> /etc/apt/sources.list
-  echo 'deb-src http://deb.debian.org/debian/ bullseye main' >> /etc/apt/sources.list
-  echo 'deb http://security.debian.org/debian-security bullseye-security main contrib' >> /etc/apt/sources.list
-  echo 'deb-src http://security.debian.org/debian-security bullseye-security main contrib' >> /etc/apt/sources.list
-  echo 'deb http://deb.debian.org/debian/ bullseye-updates main contrib' >> /etc/apt/sources.list
-  echo 'deb-src http://deb.debian.org/debian/ bullseye-updates main contrib' >> /etc/apt/sources.list
+  echo '# Debian sources' | tee -a /etc/apt/sources.list
+  echo 'deb http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
+  echo 'deb http://security.debian.org/debian-security bullseye-security main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://security.debian.org/debian-security bullseye-security main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb http://deb.debian.org/debian/ bullseye-updates main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://deb.debian.org/debian/ bullseye-updates main contrib' | tee -a /etc/apt/sources.list
+  apt-get update
   fapt man                        # Most important
   fapt git                        # Git client
   fapt lsb-release
