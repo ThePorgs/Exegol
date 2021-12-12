@@ -1,6 +1,8 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
+VERSION="3.1.10"
+
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -36,7 +38,8 @@ function filesystem() {
   mkdir -p /opt/resources/windows/
   mkdir -p /opt/resources/linux/
   mkdir -p /opt/resources/mac/
-  mkdir -p /opt/resources/webshells
+  mkdir -p /opt/resources/cracking/
+  mkdir -p /opt/resources/webshells/
   mkdir -p /opt/resources/webshells/PHP/
   mkdir -p /opt/resources/webshells/ASPX/
   mkdir -p /opt/resources/webshells/JSP/
@@ -301,11 +304,14 @@ function Impacket() {
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
   # Added self for getST
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
+  # Added renameMachine.py
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1224.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
   cp -v /root/sources/grc/conf.getgpppassword /usr/share/grc/conf.getgpppassword
   cp -v /root/sources/grc/conf.rbcd /usr/share/grc/conf.rbcd
+  cp -v /root/sources/grc/conf.describeTicket /usr/share/grc/conf.describeTicket
 }
 
 function bloodhound.py() {
@@ -660,6 +666,9 @@ function krbrelayx() {
   colorecho "Installing krbrelayx"
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
+  cd /opt/tools/krbrelayx/
+  # Added renameMachine.py
+  curl --location https://github.com/dirkjanm/krbrelayx/pull/20.patch | git apply --verbose
 }
 
 function hakrawler() {
@@ -1777,8 +1786,56 @@ function download_hashcat_rules() {
   wget -O /opt/resources/cracking/hashcat_rules/OneRuleToRuleThemAll.rule https://raw.githubusercontent.com/NotSoSecure/password_cracking_rules/master/OneRuleToRuleThemAll.rule
 }
 
+function install_vulny_code_static_analysis() {
+  colorecho "Installing Vulny Code Static Analysis"
+  git -C /opt/tools/ clone https://github.com/swisskyrepo/Vulny-Code-Static-Analysis
+}
+
+function install_GPOwned() {
+  colorecho "Installing GPOwned"
+  git -C /opt/tools/ clone https://github.com/X-C3LL/GPOwned
+}
+
+function install_nuclei() {
+  # Vulnerability scanner
+  colorecho "Installing Nuclei"
+  go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+  nuclei -update-templates
+}
+
+function install_prips() {
+  # Print the IP addresses in a given range
+  colorecho "Installing Prips"
+  fapt prips
+}
+
+function install_hakrevdns() {
+  # Reverse DNS lookups
+  colorecho "Installing Hakrevdns"
+  go install github.com/hakluke/hakrevdns@latest
+}
+
+function install_httprobe() {
+  colorecho "Installing httprobe"
+  go get -u -v github.com/tomnomnom/httprobe
+}
+
+function install_httpx() {
+  colorecho "Installing httpx"
+  python3 -m pipx install 'httpx[cli]'
+}
+
 function install_base() {
   update || exit
+  echo $VERSION > /opt/.exegol_version
+  echo '# Debian sources' | tee -a /etc/apt/sources.list
+  echo 'deb http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
+  echo 'deb http://security.debian.org/debian-security bullseye-security main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://security.debian.org/debian-security bullseye-security main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb http://deb.debian.org/debian/ bullseye-updates main contrib' | tee -a /etc/apt/sources.list
+  echo 'deb-src http://deb.debian.org/debian/ bullseye-updates main contrib' | tee -a /etc/apt/sources.list
+  apt-get update
   fapt man                        # Most important
   fapt git                        # Git client
   fapt lsb-release
@@ -1794,8 +1851,10 @@ function install_base() {
   fapt php                        # Php language
   fapt python2                    # Python 2 language
   fapt python3                    # Python 3 language
-  fapt python2-dev                 # Python 2 language (dev version)
+  fapt python2-dev                # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
+  fapt python3.9-venv
+  ln -s /usr/bin/python2.7 /usr/bin/python  # fix shit
   fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
   fapt python3-pip                # Pip
@@ -1821,7 +1880,7 @@ function install_base() {
   fapt vim                        # Text editor
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
-  fapt emacs
+  fapt emacs-nox
   fapt iputils-ping               # Ping binary
   fapt iproute2                   # Firewall rules
   fapt openvpn
@@ -1859,6 +1918,8 @@ function install_base() {
   fapt xz-utils                   # xz (de)compression
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
   install_pipx
+  fapt parallel
+  fapt tree
 }
 
 # Package dedicated to most used offensive tools
@@ -2066,6 +2127,11 @@ function install_web_tools() {
   install_clusterd                # Axis2/JBoss/ColdFusion/Glassfish/Weblogic/Railo scanner
   install_arjun                   # HTTP Parameter Discovery
   install_gau
+  install_nuclei                  # Vulnerability scanner
+  install_prips                   # Print the IP addresses in a given range
+  install_hakrevdns               # Reverse DNS lookups
+  install_httprobe
+  install_httpx
 }
 
 # Package dedicated to command & control frameworks
@@ -2155,6 +2221,7 @@ function install_ad_tools() {
   install_donpapi
   install_webclientservicescanner
   install_certipy
+  npm install ntpsync             # sync local time with remote server
 }
 
 # Package dedicated to mobile apps pentest tools
@@ -2297,6 +2364,11 @@ function install_GUI_tools() {
   fapt xtightvncviewer
   fapt jd-gui                     # Java decompiler
   burp
+}
+
+# Package dedicated to SAST and DAST tools
+function install_code_analysis_tools() {
+  install_vulny_code_static_analysis
 }
 
 # Package dedicated to the download of resources

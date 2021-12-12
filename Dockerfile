@@ -33,6 +33,7 @@ RUN /root/sources/install.sh install_steganography_tools
 RUN /root/sources/install.sh install_reverse_tools
 RUN /root/sources/install.sh install_crypto_tools
 RUN /root/sources/install.sh install_GUI_tools
+RUN /root/sources/install.sh install_code_analysis_tools
 
 RUN /root/sources/install.sh install_resources
 RUN /root/sources/install.sh install_clean
