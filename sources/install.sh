@@ -1850,8 +1850,9 @@ function install_base() {
   fapt php                        # Php language
   fapt python2                    # Python 2 language
   fapt python3                    # Python 3 language
-  fapt python2-dev                 # Python 2 language (dev version)
+  fapt python2-dev                # Python 2 language (dev version)
   fapt python3-dev                # Python 3 language (dev version)
+  fapt python3.9-venv
   ln -s /usr/bin/python2.7 /usr/bin/python  # fix shit
   fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
