@@ -667,8 +667,6 @@ function krbrelayx() {
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
   cd /opt/tools/krbrelayx/
-  # Added renameMachine.py
-  curl --location https://github.com/dirkjanm/krbrelayx/pull/20.patch | git apply --verbose
 }
 
 function hakrawler() {
