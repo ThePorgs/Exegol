@@ -1958,6 +1958,12 @@ function install_most_used_tools() {
   fapt mimikatz                   # AD vulnerability exploiter
   fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
   fapt smbmap                     # Allows users to enumerate samba share drives across an entire domain
+  install_nuclei                  # Vulnerability scanner
+  evilwinrm                       # WinRM shell
+  install_john                    # Password cracker
+  fapt hashcat                    # Password cracker
+  download_hashcat_rules
+  fapt fcrackzip                  # Zip cracker
 }
 
 # Package dedicated to offensive miscellaneous tools
