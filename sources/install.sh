@@ -420,7 +420,7 @@ function install_subfinder() {
 
 function install_gobuster() {
   colorecho "Installing gobuster"
-  go get -u -v github.com/OJ/gobuster
+  go install github.com/OJ/gobuster/v3@latest
 }
 
 function install_kiterunner() {
