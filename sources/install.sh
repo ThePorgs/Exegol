@@ -1825,6 +1825,25 @@ function install_httpx() {
   python3 -m pipx install 'httpx[cli]'
 }
 
+function install_tor() {
+  colorecho "Installing tor"
+  mkdir /opt/tools/tor
+  cd /opt/tools/tor
+  wget https://dist.torproject.org/tor-0.4.3.7.tar.gz
+  tar xf tor-0.4.3.7.tar.gz
+  cd tor-0.4.3.7
+  apt install libevent-dev
+  ./configure
+  make install
+}
+
+function install_pwndb() {
+  colorecho "Installing pwndb"
+  git -C /opt/tools/ clone https://github.com/davidtavarez/pwndb.git
+  cd /opt/tools/pwndb
+  chmod +x pwndb.py
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2057,9 +2076,10 @@ function install_osint_tools() {
   OSRFramework                    # OSRFramework, the Open Sources Research Framework
   #Dark
   apt-get update
-  fapt tor                        # Tor proxy
+  install_tor					  # Tor proxy
   fapt torbrowser-launcher        # Tor browser
   onionsearch                     # OnionSearch is a script that scrapes urls on different .onion search engines.
+  install_pwndb					  # No need to say more, no ? Be responsible with this tool please !
   #Github
   githubemail                     # Retrieve a GitHub user's email even if it's not public
   #Other
