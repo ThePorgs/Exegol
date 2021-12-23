@@ -542,9 +542,11 @@ function pykek() {
 
 function install_autorecon() {
   colorecho "Installing autorecon"
+  apt-get -y install wkhtmltopdf oscanner tnscmd10g
   git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
   cd /opt/tools/AutoRecon/
   python3 -m pip install -r requirements.txt
+  chmod +x /opt/tools/AutoRecon/autorecon.py
 }
 
 function install_simplyemail() {
