@@ -7,6 +7,7 @@ from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
+# Class of an exegol image
 class ExegolImage(SelectableInterface):
 
     def __init__(self,

@@ -15,6 +15,7 @@ from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ExeLog import logger, console, ExeLog
 
 
+# Class gathering different methods of Terminal User Interface (or TUI)
 class ExegolTUI:
 
     @staticmethod

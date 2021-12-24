@@ -1,3 +1,4 @@
+import logging
 from typing import Union, List
 
 from wrapper.console.TUI import ExegolTUI
@@ -8,10 +9,12 @@ from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
+from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.ExeLog import logger
 
 
+# Main procedure of exegol
 class ExegolManager:
     __container = None
     __image = None
@@ -19,6 +22,7 @@ class ExegolManager:
     @staticmethod
     def info():
         """Print a list of available images and containers on the current host"""
+        ExegolManager.banner()
         # List and print images
         images = DockerUtils.listImages()
         ExegolTUI.printTable(images)
@@ -32,6 +36,13 @@ class ExegolManager:
         container = cls.__loadOrCreateContainer()
         container.start()
         container.spawnShell()
+
+    @classmethod
+    def exec(cls):
+        logger.info("Starting exegol")
+        container = cls.__loadOrCreateContainer()
+        raise NotImplementedError
+        # container.exec()
 
     @classmethod
     def stop(cls):
@@ -53,6 +64,21 @@ class ExegolManager:
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         for c in containers:
             c.remove()
+
+    @classmethod
+    def banner(cls):
+        banner = f"""
+     _____                      _ 
+    |  ___|                    | |
+    | |_____  _____  __ _  ___ | |
+    |  __|\ \/ / _ \/ _` |/ _ \| |
+    | |___ >  <  __/ (_| | (_) | |
+    \____|/_/\_\___|\__, |\___/|_|
+                    __/ |        
+                   |___/      v{ConstantConfig.version}
+
+"""
+        logger.raw(banner, level=logging.INFO)
 
     @classmethod
     def __loadOrInstallImage(cls,

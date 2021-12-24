@@ -15,8 +15,9 @@ class ParametersManager(metaclass=MetaSingleton):
             self.parameters.action.populate(self.parameters)
             self.parameters = self.parameters.action
         except AttributeError as err:
-            # TODO Call TUI --> Choose action
-            raise NotImplementedError("Functionality not implemented yet")
+            # Catch missing "action" parameter en CLI
+            self.__parser.parser.print_help()
+            exit(0)
 
     def __getattr__(self, item):
         try:

@@ -10,6 +10,7 @@ from wrapper.utils.ExeLog import logger
 from wrapper.utils.GitUtils import GitUtils
 
 
+# Procedure class for updating the exegol tool and docker images
 class UpdateManager:
     __git = None
 

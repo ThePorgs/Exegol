@@ -4,7 +4,9 @@ from logging import CRITICAL
 from wrapper.utils.ExeLog import logger
 
 
+# Argparse overriding
 class ExegolArgParse(argparse.ArgumentParser):
+    # Using Exelog to print built-in parser message
     def _print_message(self, message, file=None):
         if message:
             logger.raw(message, level=CRITICAL, rich_parsing=True)
@@ -31,6 +33,7 @@ class Parser:
 
         self.__actions = actions
 
+        self.parser = None
         self.__init_parser()
         self.__set_positionals()
         self.__set_options(self.parser)

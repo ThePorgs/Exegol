@@ -20,6 +20,7 @@ from wrapper.utils.ExeLog import logger
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
+# Utility class between exegol and the Docker SDK
 class DockerUtils:
     try:
         # Connect Docker SDK to the local docker instance.

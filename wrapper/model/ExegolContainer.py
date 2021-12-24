@@ -11,6 +11,7 @@ from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ExeLog import logger
 
 
+# Class of an existing exegol container
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):

@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 
+# Customized logging class
 class ExeLog(logging.getLoggerClass()):
     """Project's Logger custom class"""
     # New logging level

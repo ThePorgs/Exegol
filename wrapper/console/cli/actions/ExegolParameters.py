@@ -1,111 +1,41 @@
-from wrapper.console.cli.actions.Command import Command, Option, GroupArgs
+from wrapper.console.cli.actions.Command import Command
+from wrapper.console.cli.actions.GenericParameters import *
 from wrapper.manager.ExegolManager import ExegolManager
 from wrapper.manager.UpdateManager import UpdateManager
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
-class Start(Command):
-    """automatically start, resume, create or enter an Exegol container"""
+class Start(Command, ContainerCreation):
+    """Automatically create, start / resume and enter an Exegol container"""
 
     def __init__(self):
-        # Standard Args
-        self.X11 = Option("-x", "-x11",
-                          action="store_true",
-                          dest="X11",
-                          help="enable display sharing to run GUI-based applications")
-        self.host_timezones = Option("--host-timezones",
-                                     action="store_true",
-                                     dest="host_timezones",
-                                     help="let the container share the host's timezones configuration"
-                                     )
-        self.host_network = Option("--host-network",
-                                   action="store_true",
-                                   dest="host_network",
-                                   help="let the container share the host's timezones configuration")
-        self.bind_resources = Option("--bind-resources",
-                                     action="store_true",
-                                     dest="bind_resources",
-                                     help=f"mount the /opt/resources of the container in a subdirectory of host\'s {ConstantConfig.root_path + '/shared-resources'}", )
-        self.shell = Option("-s", "--shell",
-                            dest="shell",
-                            action="store",
-                            choices={"zsh", "bash", "tmux"},
-                            default="zsh",
-                            help="select shell to start when entering Exegol (Default: zsh)")
-        self.exec = Option("-e", "--exec",
-                           dest="exec",
-                           action="store",
-                           help="execute a command on exegol container")
-
-        # Advanced args
-
-        self.containertag = Option("-t", "--container-tag",
-                                   dest="containertag",
-                                   action="store",
-                                   help="tag to use in the container name")
-        self.no_default = Option("--no-default",
-                                 dest="no_default",
-                                 action="store_true",
-                                 default=False,
-                                 help="disable the default start options (e.g. --X11, --host-network)")
-        self.privileged = Option("--privileged",
-                                 dest="privileged",
-                                 action="store_true",
-                                 default=False,
-                                 help="(dangerous) give extended privileges at the container creation (e.g. needed to "
-                                      "mount things, to use wifi or bluetooth)")
-        self.device = Option("-d", "--device",
-                             dest="device",
-                             action="store",
-                             help="add a host device at the container creation")
-        self.custom_options = Option("-c", "--custom-options",
-                                     dest="custom_options",
-                                     action="store",
-                                     default="",
-                                     help="specify custom options for the container creation")
-        self.mount_current_dir = Option("-cwd", "--cwd-mount",
-                                        dest="mount_current_dir",
-                                        action="store_true",
-                                        help="mount current dir to container's /workspace")
-
-        super().__init__()
-
-        self.groupArg.append(GroupArgs({"arg": self.X11, "required": False},
-                                       {"arg": self.host_network, "required": False},
-                                       {"arg": self.host_timezones, "required": False},
-                                       {"arg": self.bind_resources, "required": False},
-                                       {"arg": self.shell, "required": False},
-                                       {"arg": self.exec, "required": False},
-                                       title="[blue]Default start options[/blue]",
-                                       description='The following options are enabled by default. They can all be '
-                                                   'disabled with the advanced option "--no-default". They can then '
-                                                   'be enabled back separately, for example "exegol --no-default '
-                                                   '--X11 start"'))
-        self.groupArg.append(GroupArgs({"arg": self.containertag, "required": False},
-                                       {"arg": self.no_default, "required": False},
-                                       {"arg": self.privileged, "required": False},
-                                       {"arg": self.device, "required": False},
-                                       {"arg": self.custom_options, "required": False},
-                                       {"arg": self.mount_current_dir, "required": False},
-                                       title="[blue]Advanced start options[/blue]"))
+        Command.__init__(self)
+        ContainerCreation.__init__(self, self.groupArg)
 
     def __call__(self, *args, **kwargs):
-        ExegolManager.start()
+        return ExegolManager.start
 
 
-class Stop(Command):
-    """stop an Exegol container in a saved state"""
+class Stop(Command, ContainerSelector):
+    """Stop an Exegol container in a saved state"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ContainerSelector.__init__(self, self.groupArg)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running stop module")
-        ExegolManager.stop()
+        return ExegolManager.stop
 
 
-class Install(Command):
-    """install Exegol image (build or pull depending on the chosen install --mode)"""
+class Install(Command, ImageSelector):
+    """Install Exegol image (build or pull depending on the chosen install --mode)"""
 
     def __init__(self):
+        Command.__init__(self)
+        ImageSelector.__init__(self, self.groupArg)
+
         modes = {
             "release": "(default) downloads a pre-built image (from DockerHub) (faster)",
             "sources": f"builds from the local sources in {ConstantConfig.root_path} (pull from GitHub then docker "
@@ -122,39 +52,78 @@ class Install(Command):
                            default="release",
                            help=modes_help)
 
-        super().__init__()
-
         self.groupArg.append(GroupArgs({"arg": self.mode, "required": False},
                                        title="[blue]Install/update options[/blue]"))
 
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running install module")
+        return UpdateManager.updateImage
 
-class Update(Install):
-    """update Exegol image (build or pull depending on the chosen update --mode)"""
+
+class Update(Command):
+    """Update Exegol image (build or pull depending on the chosen update --mode)"""
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
-        UpdateManager.updateImage()  # TODO add tag name from parameter
+        return UpdateManager.updateImage
 
 
-class Remove(Command):
-    """remove Exegol image(s) and/or container(s)"""
+class Uninstall(Command):
+    """Remove Exegol image(s)"""
 
-    # TODO add uninstall
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running uninstall module")
+        return ExegolManager.uninstall
+
+
+class Remove(Command, ContainerSelector):
+    """Remove Exegol container(s)"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ContainerSelector.__init__(self, self.groupArg)
+
     def __call__(self, *args, **kwargs):
         logger.debug("Running remove module")
-        ExegolManager.remove()  # TODO add tag name from parameter
+        return ExegolManager.remove
 
 
-class Exec(Command):
-    """execute a command on an Exegol container"""
+class Exec(Command, ContainerStart):
+    """Execute a command on an Exegol container"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ContainerStart.__init__(self, self.groupArg)
+
+        self.exec = Option("-e", "--exec",
+                           dest="exec",
+                           action="store",
+                           help="Execute a single command in the exegol container")
+        self.daemon = Option("-d", "--daemon",
+                             action="store_true",
+                             dest="daemon",
+                             default=False,
+                             help="Executes the command as a daemon (default: False)")
+
+        # Create group parameter for container selection
+        self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
+                                       {"arg": self.daemon, "required": False},
+                                       title="[blue]Exec options[/blue]",
+                                       description='Command execution options in Exegol'))
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
 
 
 class Info(Command):
-    """print info on containers and local & remote images (name, size, state, ...)"""
+    """Print info on containers and local & remote images (name, size, state, ...)"""
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.info
 
 
 class Version(Command):
-    """print current version"""
+    """Print current Exegol banner & version"""
+
+    def __call__(self, *args, **kwargs):
+        return ExegolManager.banner

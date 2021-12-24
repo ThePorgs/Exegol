@@ -5,7 +5,8 @@ class Option:
     def __init__(self, *args, dest=None, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.kwargs["dest"] = dest
+        if dest is not None:
+            self.kwargs["dest"] = dest
         self.dest = dest
 
 
@@ -30,12 +31,12 @@ class Command:
                             dest="quiet",
                             action="store_true",
                             default=False,
-                            help="show no information at all")
+                            help="Show no information at all")
         self.verbosity = Option("-v", "--verbose",
                                 dest="verbosity",
                                 action="count",
                                 default=0,
-                                help="verbosity level (-v for verbose, -vv for debug)")
+                                help="Verbosity level (-v for verbose, -vv for debug)")
 
         self.groupArg = [
             GroupArgs({"arg": self.verify, "required": False},

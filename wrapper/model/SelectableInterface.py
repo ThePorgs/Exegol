@@ -1,3 +1,4 @@
+# Generic class used to select objects in the user TUI
 class SelectableInterface:
     def getKey(self) -> str:
         """Universal unique key getter"""

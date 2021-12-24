@@ -1,3 +1,4 @@
+# Generic singleton class
 class MetaSingleton(type):
     __instances = {}
 

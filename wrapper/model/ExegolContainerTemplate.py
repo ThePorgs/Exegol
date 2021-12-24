@@ -4,6 +4,7 @@ from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolImage import ExegolImage
 
 
+# Class template used to create a new container
 class ExegolContainerTemplate:
 
     def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):

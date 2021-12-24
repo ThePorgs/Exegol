@@ -8,6 +8,7 @@ from wrapper.utils.ExeLog import logger
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
 
+# Utility class between exegol and the Git SDK
 class GitUtils:
 
     def __init__(self):

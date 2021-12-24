@@ -2,7 +2,10 @@ import platform
 from pathlib import Path
 
 
+# Constant parameter list
 class ConstantConfig:
+    # Exegol Version
+    version: str = "4.0-dev"
     # OS Dir full root path of exegol project
     __root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
     # OS root path str of the exegol project source
@@ -19,3 +22,4 @@ class ConstantConfig:
     common_share_path: str = str(__root_path_obj.joinpath("shared-resources"))
     # Current plateforme
     windows_host: bool = platform.system() == "Windows" or "microsoft" in platform.release()
+    windows_release: str = platform.win32_ver()[1]

@@ -11,6 +11,7 @@ from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
+# Configuration class of an exegol container
 class ContainerConfig:
 
     def __init__(self, container: Optional[Container] = None):

@@ -1,6 +1,7 @@
 from rich.progress import Progress, Task, TaskID
 
 
+# Addition of a practical function to Rich Progress
 class ExegolProgress(Progress):
 
     def getTask(self, task_id: TaskID) -> Task:

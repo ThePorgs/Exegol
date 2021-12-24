@@ -1,3 +1,4 @@
+# Exceptions specific to the successful operation of exegol
 class ObjectNotFound(Exception):
     """Custom exception when a specific container do not exist"""
     pass
