@@ -166,6 +166,10 @@ class ContainerConfig:
             # TODO when SDK will be ready, change this to a volume to enable auto-remove
             self.addVolume(volume_path, '/workspace')
 
+    def setNetworkMode(self, host_mode: bool):
+        """Set container's network mode, true for host, false for bridge"""
+        self.__network_host = host_mode
+
     def getNetworkMode(self) -> str:
         """Network mode, text getter"""
         return "host" if self.__network_host else "bridge"
@@ -204,6 +208,27 @@ class ContainerConfig:
             os.makedirs(host_path, exist_ok=True)
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
+
+    def addRawVolume(self, volume_string):
+        logger.debug(f"Parsing raw volume config: {volume_string}")
+        parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
+                           volume_string)
+        if parsing:
+            host_path = parsing.group(1)
+            container_path = parsing.group(4)
+            mode = parsing.group(7)
+            if mode is None or mode == "rw":
+                readonly = False
+            elif mode == "ro":
+                readonly = True
+            else:
+                logger.error(f"Error on volume config, mode: {mode} not recognized.")
+                readonly = False
+            logger.debug(
+                f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
+            self.addVolume(host_path, container_path, readonly)
+        else:
+            logger.error(f"Volume '{volume_string}' cannot be parsed. Skipping the volume.")
 
     def getVolumes(self) -> List[Mount]:
         """Volume config getter"""

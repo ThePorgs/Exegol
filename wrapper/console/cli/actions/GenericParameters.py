@@ -7,7 +7,7 @@ class ContainerSelector:
 
     def __init__(self, groupArg):
         # Create container selector arguments
-        self.containertag = Option("-t", "--container-tag",
+        self.containertag = Option("-c", "--container-tag",
                                    dest="containertag",
                                    action="store",
                                    help="Tag used to target an Exegol container")
@@ -33,11 +33,12 @@ class ImageSelector:
 
 
 # Generic parameter class for container start
-class ContainerStart(ContainerSelector):
+class ContainerStart(ContainerSelector, ImageSelector):
 
     def __init__(self, groupArg):
         # Init parents : ContainerSelector
-        super().__init__(groupArg)
+        ContainerSelector.__init__(self, groupArg)
+        ImageSelector.__init__(self, groupArg)
 
         # Create container start / exec arguments
         self.shell = Option("-s", "--shell",
@@ -62,61 +63,54 @@ class ContainerCreation(ContainerStart, ImageSelector):
         super().__init__(groupArg)
 
         # Standard Args
-        self.X11 = Option("-x", "-x11",
-                          action="store_true",
+        self.mount_current_dir = Option("-cwd", "--cwd-mount",
+                                        dest="mount_current_dir",
+                                        action="store_true",
+                                        help="Share the current working directory to container's /workspace")
+        self.X11 = Option("-x", "--disable-x11",
+                          action="store_false",
                           dest="X11",
-                          help="enable display sharing to run GUI-based applications")
-        self.host_timezones = Option("--host-timezones",
-                                     action="store_true",
-                                     dest="host_timezones",
-                                     help="let the container share the host's timezones configuration")
-        self.host_network = Option("--host-network",
-                                   action="store_true",
-                                   dest="host_network",
-                                   help="let the container share the host's timezones configuration")
-        self.bind_resources = Option("--bind-resources",
-                                     action="store_true",
-                                     dest="bind_resources",
-                                     help=f"mount the /opt/resources of the container in a subdirectory of host\'s {ConstantConfig.root_path + '/shared-resources'}", )
+                          help="Disable display sharing to run GUI-based applications (default: enable)")
+        self.common_resources = Option("--disable-common-resources",
+                                       action="store_false",
+                                       dest="common_resources",
+                                       help=f"Mount the common exegol resources (/opt/resources) from the host ({ConstantConfig.root_path_obj.joinpath('shared-resources')}) (default: enable)")
+        self.volumes = Option("--volume",
+                              action="append",
+                              default=[],
+                              dest="volumes",
+                              help="Share a new volume between host and exegol (format: /host/path/:/exegol/mount/)")
 
         # Advanced args
-        self.no_default = Option("--no-default",
-                                 dest="no_default",
-                                 action="store_true",
-                                 default=False,
-                                 help="disable the default start options (e.g. --X11, --host-network)")
         self.privileged = Option("--privileged",
                                  dest="privileged",
                                  action="store_true",
                                  default=False,
                                  help="(dangerous) give extended privileges at the container creation (e.g. needed to "
                                       "mount things, to use wifi or bluetooth)")
-        self.device = Option("-d", "--device",
-                             dest="device",
-                             action="store",
-                             help="add a host device at the container creation")
-        self.custom_options = Option("-c", "--custom-options",
-                                     dest="custom_options",
-                                     action="store",
-                                     default="",
-                                     help="specify custom options for the container creation")
-        self.mount_current_dir = Option("-cwd", "--cwd-mount",
-                                        dest="mount_current_dir",
-                                        action="store_true",
-                                        help="mount current dir to container's /workspace")
+        self.devices = Option("-d", "--device",
+                              dest="devices",
+                              default=[],
+                              action="append",
+                              help="Add a host device at the container creation")
+        self.share_timezone = Option("--disable-shared-timezones",
+                                     action="store_false",
+                                     default=True,
+                                     dest="share_timezone",
+                                     help="Share the time and timezone configuration of the host with exegol. (default: enable)")
+        self.host_network = Option("--disable-shared-network",
+                                   action="store_false",
+                                   dest="host_network",
+                                   help="Share the host's network interfaces with exegol. (default: enable)")
 
-        groupArg.append(GroupArgs({"arg": self.X11, "required": False},
-                                  {"arg": self.host_network, "required": False},
-                                  {"arg": self.host_timezones, "required": False},
-                                  {"arg": self.bind_resources, "required": False},
-                                  title="[blue]Default container options[/blue]",
-                                  description='The following options are enabled by default. They can all be '
-                                              'disabled with the advanced option "--no-default". They can then '
-                                              'be enabled back separately, for example "exegol --no-default '
-                                              '--X11 start"'))
-        groupArg.append(GroupArgs({"arg": self.no_default, "required": False},
-                                  {"arg": self.privileged, "required": False},
-                                  {"arg": self.device, "required": False},
-                                  {"arg": self.custom_options, "required": False},
+        groupArg.append(GroupArgs({"arg": self.common_resources, "required": False},
+                                  {"arg": self.X11, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
+                                  {"arg": self.volumes, "required": False},
+                                  title="[blue]Default container options[/blue]"))
+
+        groupArg.append(GroupArgs({"arg": self.privileged, "required": False},
+                                  {"arg": self.devices, "required": False},
+                                  {"arg": self.host_network, "required": False},
+                                  {"arg": self.share_timezone, "required": False},
                                   title="[blue]Advanced container options[/blue]"))

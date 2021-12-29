@@ -91,7 +91,7 @@ class ExegolManager:
         if cls.__image is not None:
             # Return cache
             return cls.__image
-        image_tag = None  # TODO add image tag option
+        image_tag = ParametersManager().imagetag
         image_selection = None
         # While an image have not been selected
         while image_selection is None:
@@ -216,6 +216,21 @@ class ExegolManager:
         logger.info("Creating new exegol container")
         # Create default exegol config
         config = ContainerConfig()
-        # TODO enable features depending on user input
+        # Container configuration from user CLI options
+        if ParametersManager().X11:
+            config.enableGUI()
+        if ParametersManager().share_timezone:
+            config.enableSharedTimezone()
+        config.setNetworkMode(ParametersManager().host_network)
+        if ParametersManager().common_resources:
+            config.enableCommonVolume()
+        if ParametersManager().mount_current_dir:
+            config.enableCwdShare()
+        if ParametersManager().privileged:
+            config.enablePrivileged()
+        for volume in ParametersManager().volumes:
+            config.addRawVolume(volume)
+        for device in ParametersManager().devices:
+            config.addDevice(device)
         model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
         return DockerUtils.createContainer(model)
