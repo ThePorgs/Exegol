@@ -1846,13 +1846,18 @@ function install_pwndb() {
   chmod +x pwndb.py
 }
 
-function install_robotstester()  {
+function install_robotstester() {
   # This Python script can enumerate all URLs present in robots.txt files, and test whether they can be accessed or not.
   # https://github.com/p0dalirius/robotstester
   colorecho "Installing Robotstester"
   git -C /opt/tools/ clone https://github.com/p0dalirius/robotstester.git
   cd /opt/tools/robotstester
   python3 setup.py install
+}
+
+function install_shadowcoerce() {
+  colorecho "Installing ShadowCoerce PoC"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/ShadowCoerce
 }
 
 function install_base() {
@@ -2260,6 +2265,7 @@ function install_ad_tools() {
   install_webclientservicescanner
   install_certipy
   npm install ntpsync             # sync local time with remote server
+  install_shadowcoerce
 }
 
 # Package dedicated to mobile apps pentest tools
