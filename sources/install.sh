@@ -1844,6 +1844,15 @@ function install_pwndb() {
   chmod +x pwndb.py
 }
 
+function install_robotstester()  {
+  # This Python script can enumerate all URLs present in robots.txt files, and test whether they can be accessed or not.
+  # https://github.com/p0dalirius/robotstester
+  colorecho "Installing Robotstester"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/robotstester.git
+  cd /opt/tools/robotstester
+  python3 setup.py install
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2158,6 +2167,7 @@ function install_web_tools() {
   install_hakrevdns               # Reverse DNS lookups
   install_httprobe
   install_httpx
+  install_robotstester            # Robots.txt scanner
 }
 
 # Package dedicated to command & control frameworks
