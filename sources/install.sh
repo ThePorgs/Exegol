@@ -1701,6 +1701,8 @@ function install_androguard() {
 
 function install_petitpotam() {
   colorecho "Installing PetitPotam"
+  git -C /opt/tools/ clone https://github.com/ly4k/PetitPotam
+  mv /opt/tools/PetitPotam /opt/tools/PetitPotam_alt
   git -C /opt/tools/ clone https://github.com/topotam/PetitPotam
 }
 
