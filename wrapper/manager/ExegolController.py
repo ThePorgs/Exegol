@@ -14,10 +14,11 @@ class ExegolController(metaclass=MetaSingleton):
         self.__action = self.__parameters.parameters
 
     def call_action(self):
-        if len(self.__action.check_parameters()) == 0:
+        missing_params = self.__action.check_parameters()
+        if len(missing_params) == 0:
             # Fetch operation function
             main_action = self.__action()
             # Execute selected function
             main_action()
         else:
-            logger.error("Call TUI to fix missing parameters")
+            logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")

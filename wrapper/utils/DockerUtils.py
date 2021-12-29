@@ -10,6 +10,7 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 
 from wrapper.console.TUI import ExegolTUI
+from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ObjectNotFound
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
@@ -201,7 +202,7 @@ class DockerUtils:
         try:
             remote_images_request = requests.get(
                 url="https://hub.docker.com/v2/repositories/{}/tags".format(ConstantConfig.IMAGE_NAME),
-                timeout=(5, 10), verify=True)  # TODO add verify as optional
+                timeout=(5, 10), verify=ParametersManager().verify)
         except requests.exceptions.ConnectionError as err:
             logger.warning("Connection Error: you probably have no internet, skipping online queries")
             logger.debug(f"Error: {err}")

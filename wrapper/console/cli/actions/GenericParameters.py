@@ -50,9 +50,9 @@ class ContainerStart(ContainerSelector, ImageSelector):
 
         # Create group parameter for container selection
         groupArg.append(GroupArgs({"arg": self.shell, "required": False},
-                                  title="[blue]Advanced start options[/blue]",
-                                  description='These options are available to customize the startup options '
-                                              'of the container'))
+                                  title="[blue]Advanced start options[/blue]"))
+        #  description='These options are available to customize the startup options of the container'))
+        # TODO fix argparse: description add group duplication with -h
 
 
 # Generic parameter class for container creation

@@ -41,8 +41,8 @@ class ExegolManager:
     def exec(cls):
         logger.info("Starting exegol")
         container = cls.__loadOrCreateContainer()
-        raise NotImplementedError
-        # container.exec()
+        container.exec(command=ParametersManager().exec,
+                       as_daemon=ParametersManager().daemon)
 
     @classmethod
     def stop(cls):

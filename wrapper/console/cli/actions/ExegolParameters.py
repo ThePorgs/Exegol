@@ -60,16 +60,24 @@ class Install(Command, ImageSelector):
         return UpdateManager.updateImage
 
 
-class Update(Command):
+class Update(Command, ImageSelector):
     """Update Exegol image (build or pull depending on the chosen update --mode)"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ImageSelector.__init__(self, self.groupArg)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
         return UpdateManager.updateImage
 
 
-class Uninstall(Command):
+class Uninstall(Command, ImageSelector):
     """Remove Exegol image(s)"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ImageSelector.__init__(self, self.groupArg)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running uninstall module")
@@ -99,20 +107,20 @@ class Exec(Command, ContainerStart):
                            dest="exec",
                            action="store",
                            help="Execute a single command in the exegol container")
-        self.daemon = Option("-d", "--daemon",
+        self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
-                             default=False,
-                             help="Executes the command as a daemon (default: False)")
+                             help="Executes the command in background as a daemon (default: False)")
 
         # Create group parameter for container selection
-        self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
+        self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},
                                        {"arg": self.daemon, "required": False},
                                        title="[blue]Exec options[/blue]",
                                        description='Command execution options in Exegol'))
 
     def __call__(self, *args, **kwargs):
-        raise NotImplementedError
+        logger.debug("Running exec module")
+        return ExegolManager.exec
 
 
 class Info(Command):

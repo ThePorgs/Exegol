@@ -4,6 +4,7 @@ from typing import Optional, Dict
 
 from docker.models.containers import Container
 
+from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
@@ -86,7 +87,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
-        os.system("docker exec -ti {} {}".format(self.getFullId(), "zsh"))  # TODO Add shell option
+        os.system("docker exec -ti {} {}".format(self.getFullId(), ParametersManager().shell))
         # Docker SDK dont support (yet) stdin properly
         # result = self.__container.exec_run("zsh", stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
@@ -96,6 +97,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.isRunning():
             self.start()
         logger.info("Executing command on Exegol")
+        if logger.getEffectiveLevel() > logger.VERBOSE:
+            logger.info("Hint: use verbose mode to see command output (-v).")
         # TODO fix ' char eval bug
         cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(
             command.replace("\"", "\\\"").replace("\'", "\\\'"))
