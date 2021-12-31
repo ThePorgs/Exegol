@@ -90,10 +90,15 @@ class Exec(Command, ContainerStart):
                              action="store_true",
                              dest="daemon",
                              help="Executes the command in background as a daemon (default: False)")
+        self.tmp = Option("--tmp",
+                          action="store_true",
+                          dest="tmp",
+                          help="Created a temporary container to execute the command (default: False)")
 
         # Create group parameter for container selection
         self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},
                                        {"arg": self.daemon, "required": False},
+                                       {"arg": self.tmp, "required": False},
                                        title="[blue]Exec options[/blue]",
                                        description='Command execution options in Exegol'))
 

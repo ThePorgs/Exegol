@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import Optional, List, Dict, Union, Tuple
 
 from docker.models.containers import Container
@@ -93,10 +94,12 @@ class ContainerConfig:
                 self.__common_resources = True
             elif "/workspace" in share.get('Destination', ''):
                 src = share.get('Source', '')
+                src_path = Path(src)
                 logger.debug(f"Loading workspace volume source : {src}")
-                if src.endswith(f"shared-data-volumes/{name}"):
+                if src_path.name == name and src_path.parent == ConstantConfig.private_volume_path:
                     # Check if path is from Windows Docker Desktop
-                    matches = re.match(r"^/run/desktop/mnt/host/[a-z](/.*)$", src, re.IGNORECASE)
+                    matches = re.match(r"^/run/desktop/mnt/host/[a-z](/.*)$", src,
+                                       re.IGNORECASE)  # TODO review PATH management
                     if matches:
                         # Convert Windows Docker-VM style volume path to local OS path
                         self.__share_private = os.path.abspath(matches.group(1))

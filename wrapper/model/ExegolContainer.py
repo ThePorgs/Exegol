@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import Optional, Dict
 
+from docker.errors import NotFound
 from docker.models.containers import Container
 
 from wrapper.console.cli.ParametersManager import ParametersManager
@@ -121,8 +122,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Stop and remove the docker container"""
         self.stop(2)
         logger.info(f"Removing container {self.name}")
-        self.__container.remove()
-        logger.success(f"Container {self.name} successfully removed.")
+        try:
+            self.__container.remove()
+            logger.success(f"Container {self.name} successfully removed.")
+        except NotFound:
+            logger.error(
+                f"The container {self.name} has already been removed (probably created as a temporary container).")
         self.__removeVolume()
 
     def __removeVolume(self):

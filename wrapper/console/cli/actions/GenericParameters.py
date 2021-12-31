@@ -46,7 +46,7 @@ class ContainerStart(ContainerSelector, ImageSelector):
                             action="store",
                             choices={"zsh", "bash", "tmux"},
                             default="zsh",
-                            help="Select an environment to spawn at shell startup (Default: zsh)")
+                            help="Select a shell environment to launch at startup (Default: zsh)")
 
         # Create group parameter for container selection
         groupArg.append(GroupArgs({"arg": self.shell, "required": False},

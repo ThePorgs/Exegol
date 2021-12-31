@@ -43,6 +43,8 @@ class ExegolManager:
         container = cls.__loadOrCreateContainer()
         container.exec(command=ParametersManager().exec,
                        as_daemon=ParametersManager().daemon)
+        if ParametersManager().tmp and not ParametersManager().daemon:
+            container.stop(2)  # TODO upgrade exec tmp / daemon to entrypoint command
 
     @classmethod
     def stop(cls):
@@ -254,7 +256,7 @@ class ExegolManager:
     @classmethod
     def __createContainer(cls, name: str) -> ExegolContainer:
         """Create an ExegolContainer"""
-        logger.info("Creating new exegol container")
+        logger.verbose("Configuring new exegol container")
         # Create default exegol config
         config = ContainerConfig()
         # Container configuration from user CLI options
@@ -270,11 +272,15 @@ class ExegolManager:
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.enablePrivileged()
-        assert ParametersManager().volumes is not None
-        for volume in ParametersManager().volumes:
-            config.addRawVolume(volume)
-        assert ParametersManager().devices is not None
-        for device in ParametersManager().devices:
-            config.addDevice(device)
+        if ParametersManager().volumes is not None:
+            for volume in ParametersManager().volumes:
+                config.addRawVolume(volume)
+        if ParametersManager().devices is not None:
+            for device in ParametersManager().devices:
+                config.addDevice(device)
         model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
-        return DockerUtils.createContainer(model)
+
+        temporary = ParametersManager().tmp
+        if temporary is None:
+            temporary = False
+        return DockerUtils.createContainer(model, temporary)
