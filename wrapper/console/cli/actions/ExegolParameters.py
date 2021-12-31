@@ -1,8 +1,6 @@
 from wrapper.console.cli.actions.Command import Command
 from wrapper.console.cli.actions.GenericParameters import *
 from wrapper.manager.ExegolManager import ExegolManager
-from wrapper.manager.UpdateManager import UpdateManager
-from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
@@ -30,38 +28,19 @@ class Stop(Command, ContainerSelector):
 
 
 class Install(Command, ImageSelector):
-    """Install Exegol image (build or pull depending on the chosen install --mode)"""
+    """Install or build Exegol image (build or pull depending on the chosen install --mode)"""
 
     def __init__(self):
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArg)
 
-        modes = {
-            "release": "(default) downloads a pre-built image (from DockerHub) (faster)",
-            "sources": f"builds from the local sources in {ConstantConfig.root_path} (pull from GitHub then docker "
-                       f"build, local edits won't be overwritten) "
-        }
-
-        modes_help = ""
-        for mode in modes.keys():
-            modes_help += f"{mode}\t\t{modes[mode]}\n"
-        self.mode = Option("-m", "--mode",
-                           dest="mode",
-                           action="store",
-                           choices=modes.keys(),
-                           default="release",
-                           help=modes_help)
-
-        self.groupArg.append(GroupArgs({"arg": self.mode, "required": False},
-                                       title="[blue]Install/update options[/blue]"))
-
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
-        return UpdateManager.updateImage
+        return ExegolManager.install
 
 
 class Update(Command, ImageSelector):
-    """Update Exegol image (build or pull depending on the chosen update --mode)"""
+    """Update or install an Exegol image (build or pull depending on the chosen update --mode)"""
 
     def __init__(self):
         Command.__init__(self)
@@ -69,7 +48,7 @@ class Update(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
-        return UpdateManager.updateImage
+        return ExegolManager.update
 
 
 class Uninstall(Command, ImageSelector):

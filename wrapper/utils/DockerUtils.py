@@ -165,16 +165,23 @@ class DockerUtils:
         """List installed docker images.
         Return a list of ExegolImage"""
         images = cls.listImages()
-        filtered = []
-        for img in images:
-            if img.isInstall():
-                # Selecting only installed image
-                filtered.append(img)
-        return filtered
+        # Selecting only installed image
+        return [img for img in images if img.isInstall()]
 
     @classmethod
     def getImage(cls, tag: str) -> ExegolImage:
         """Get an ExegolImage from tag name."""
+        # Fetch every images available
+        images = cls.listImages()
+        # Find a match
+        for i in images:
+            if i.getName() == tag:
+                return i
+        raise ObjectNotFound
+
+    @classmethod
+    def getInstalledImage(cls, tag: str) -> ExegolImage:
+        """Get an already installed ExegolImage from tag name."""
         docker_local_image = cls.__listLocalImages(tag)
         if docker_local_image is None or len(docker_local_image) == 0:
             raise ObjectNotFound
@@ -234,8 +241,8 @@ class DockerUtils:
                 # TODO remove old image version ? /!\ Collision with existing containers
             except APIError as err:
                 if err.status_code == 500:
-                    logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                     logger.debug(f"Error: {err}")
+                    logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                 else:
                     logger.critical(f"An error occurred while downloading this image : {err}")
         return False

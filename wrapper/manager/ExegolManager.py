@@ -52,6 +52,14 @@ class ExegolManager:
             c.stop()
 
     @classmethod
+    def install(cls):
+        UpdateManager.updateImage(install_mode=True)
+
+    @classmethod
+    def update(cls):
+        UpdateManager.updateImage()
+
+    @classmethod
     def uninstall(cls):
         logger.info("Uninstalling an exegol image")
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
@@ -97,36 +105,22 @@ class ExegolManager:
         while image_selection is None:
             try:
                 if image_tag is None:
-                    # List all images available
-                    images = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
-                    # Interactive choice with TUI
-                    if multiple:
-                        # When multiple is set, allow user to select multiple objects
-                        image_selection = ExegolTUI.multipleSelectFromTable(images, object_type=ExegolImage)
-                    else:
-                        image_selection = ExegolTUI.selectFromTable(images, object_type=ExegolImage,
-                                                                    allow_None=not must_exist)
-                    # Check if the user has chosen an existing image
-                    if type(image_selection) is str:
-                        # Otherwise create a new image with the supplied name (on the next loop)
-                        image_tag = image_selection
-                        raise ObjectNotFound
+                    # Interactive (TUI) image selection
+                    image_selection = cls.__interactiveImageSelection(multiple, must_exist)
                 else:
-                    # Select image by tag name
-                    image_selection = DockerUtils.getImage(image_tag)
+                    # Select image by tag name (non-interactive)
+                    image_selection = DockerUtils.getInstalledImage(image_tag)
             except ObjectNotFound:
                 # ObjectNotFound is raised when the image_tag provided by the user does not match any existing image.
                 if image_tag is not None:
-                    # Only print this warning when the image name have been interactively selected
                     logger.warning(f"The image named '{image_tag}', has not been found.")
-                # If the user's selected image have not been found, offer the choice to build a local image at this name
+                # If the user's selected image have not been found,
+                # offer to build a local image with this name
                 # (only if must_exist is not set)
                 if not must_exist:
                     image_selection = UpdateManager.updateImage(image_tag)
-                image_tag = None
                 # Allow the user to interactively select another installed image
-                if must_exist:
-                    continue
+                image_tag = None
             except IndexError:
                 # IndexError is raised when no image are available (not applicable when multiple is set, return an empty array)
                 if must_exist:
@@ -137,34 +131,81 @@ class ExegolManager:
                     # (only if must_exist is not set)
                     image_selection = UpdateManager.updateImage(image_tag)
                     image_tag = None
-            # Check if multiple image have been selected
-            if type(image_selection) is ExegolImage:
-                check_img = [image_selection]
-            else:
-                check_img = image_selection
-            assert check_img is not None  # TODO add more check / critical logger (when user say no to building)
+            # Checks if an image has been selected
+            if image_selection is None:
+                # If not, retry the selection
+                logger.error("No image has been selected.")
+                continue
+
             # Check if every image are installed
-            for i in range(len(check_img)):
-                if not check_img[i].isInstall():
-                    # When the user parameter specify an uninstalled image, allow him to interactively choose an another image
-                    if must_exist:
-                        logger.error(f"The selected image '{check_img[i].getName()}' is not installed.")
-                        # If one of the image is not install, restart the selection
-                        image_selection = None
-                        image_tag = None
-                    else:
-                        # Check if the selected image is installed and install it
-                        logger.warning("The selected image is not installed.")
-                        # Download remote image
-                        DockerUtils.updateImage(check_img[i])
-                        # Select installed image
-                        check_img[i] = DockerUtils.getImage(check_img[i].getName())
-            # Depending on multiple, return ExegolImage or an array of ExegolImage
-            if not multiple:
-                cls.__image = check_img[0]
-            else:
-                cls.__image = check_img
+            install_status, checked_images = cls.__checkImageInstallationStatus(image_selection, must_exist)
+            if not install_status:
+                # If one of the image is not install where it supposed to, restart the selection
+                # allowing him to interactively choose another image
+                image_selection, image_tag = None, None
+                continue
+
+            cls.__image = checked_images
         return cls.__image
+
+    @classmethod
+    def __checkImageInstallationStatus(cls, image_selection, must_exist: bool = False) -> bool:
+        """Checks if the selected images are installed and ready for use.
+        returns false if the images are supposed to be already installed."""
+        # Checks if one or more images have been selected and unifies the format into a list.
+        reverse_type = False
+        if type(image_selection) is ExegolImage:
+            check_img = [image_selection]
+            # Tag of the operation to reverse it before the return
+            reverse_type = True
+        else:
+            check_img = image_selection
+
+        # Check if every image are installed
+        for i in range(len(check_img)):
+            if not check_img[i].isInstall():
+                # Is must_exist is set, every image are supposed to be already installed
+                if must_exist:
+                    logger.error(f"The selected image '{check_img[i].getName()}' is not installed.")
+                    # If one of the image is not install, return False to restart the selection
+                    return False, None
+                else:
+                    # Check if the selected image is installed and install it
+                    logger.warning("The selected image is not installed.")
+                    # Download remote image
+                    if DockerUtils.updateImage(check_img[i]):
+                        # Select installed image
+                        check_img[i] = DockerUtils.getInstalledImage(check_img[i].getName())
+                    else:
+                        logger.error("This image cannot be installed.")
+                        return False, None
+
+        if reverse_type:
+            # Restoration of the original type
+            return True, check_img[0]
+        return True, check_img
+
+    @classmethod
+    def __interactiveImageSelection(cls,
+                                    multiple: bool = False,
+                                    must_exist: bool = False) -> Union[ExegolImage, List[ExegolImage]]:
+        """Interactive Image selection process"""
+        # List all images available
+        images = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+        # Interactive choice with TUI
+        if multiple:
+            # When multiple is set, allow user to select multiple objects
+            image_selection = ExegolTUI.multipleSelectFromTable(images, object_type=ExegolImage)
+        else:
+            image_selection = ExegolTUI.selectFromTable(images, object_type=ExegolImage,
+                                                        allow_None=not must_exist)
+            # Check if the user has chosen an existing image
+            if type(image_selection) is str:
+                # Otherwise, create a new image with the supplied name (on the exception catch)
+                image_tag = image_selection
+                # Calling buildAndLoad directly, no need to ask confirmation, already done by TUI.
+                image_selection = UpdateManager.buildAndLoad(image_tag)
+        return image_selection
 
     @classmethod
     def __loadOrCreateContainer(cls,
@@ -217,6 +258,7 @@ class ExegolManager:
         # Create default exegol config
         config = ContainerConfig()
         # Container configuration from user CLI options
+        # TODO exec case without config
         if ParametersManager().X11:
             config.enableGUI()
         if ParametersManager().share_timezone:
@@ -228,8 +270,10 @@ class ExegolManager:
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.enablePrivileged()
+        assert ParametersManager().volumes is not None
         for volume in ParametersManager().volumes:
             config.addRawVolume(volume)
+        assert ParametersManager().devices is not None
         for device in ParametersManager().devices:
             config.addDevice(device)
         model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())

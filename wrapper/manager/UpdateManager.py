@@ -3,6 +3,8 @@ from typing import Optional, Dict
 from rich.prompt import Confirm, Prompt
 
 from wrapper.console.TUI import ExegolTUI
+from wrapper.console.cli.ParametersManager import ParametersManager
+from wrapper.exceptions.ExegolExceptions import ObjectNotFound
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
@@ -22,37 +24,45 @@ class UpdateManager:
         return cls.__git
 
     @classmethod
-    def updateImage(cls, tag: Optional[str] = None) -> Optional[ExegolImage]:
+    def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
         """User procedure to build/pull docker image"""
         # List Images
-        images = DockerUtils.listImages()
-        selected_image: ExegolImage = None
+        image_args = ParametersManager().imagetag
         # Select image
+        if image_args is not None and tag is None:
+            tag = image_args
         if tag is None:
             # Interactive selection
-            selected_image = ExegolTUI.selectFromTable(images)
+            selected_image = ExegolTUI.selectFromTable(DockerUtils.listImages(), allow_None=install_mode)
         else:
-            # Find image by name
-            for img in images:
-                if img.getName() == tag:
-                    selected_image = img
-                    break
+            try:
+                # Find image by name
+                selected_image = DockerUtils.getImage(tag)
+            except ObjectNotFound:
+                # If the image do not exist, ask to build it
+                return cls.__askToBuild(tag)
 
-        if selected_image is not None:
-            # Update
+        if selected_image is not None and type(selected_image) is ExegolImage:
+            # Update existing ExegolImage
             DockerUtils.updateImage(selected_image)
+        elif type(selected_image) is str:
+            # Build a new image using TUI selected name, confirmation has already been requested by TUI
+            return cls.buildAndLoad(selected_image)
         else:
-            # Install / build image
-            logger.warning(f"There is no image with the name: {tag}")
-            # Ask confirm to build ?
-            if Confirm.ask("[blue][?][/blue] Do you want to build locally a custom image?",
-                           choices=["y", "N"],
-                           show_default=False,
-                           default=False):
-                build_name = cls.buildSource(tag)
-                return DockerUtils.getImage(build_name)
-            return None
+            # Unknown use case
+            logger.critical(f"Unknown selected image type: {type(selected_image)}. Exiting.")
         return selected_image
+
+    @classmethod
+    def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
+        """Build confirmation process and image building"""
+        # Need confirmation from the user before starting building.
+        if Confirm.ask("[blue][?][/blue] Do you want to build locally a custom image?",
+                       choices=["y", "N"],
+                       show_default=False,
+                       default=False):
+            return cls.buildAndLoad(tag)
+        return None
 
     @classmethod
     def updateGit(cls):
@@ -102,6 +112,11 @@ class UpdateManager:
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile)
         return build_name
+
+    @classmethod
+    def buildAndLoad(cls, tag: str):
+        build_name = cls.buildSource(tag)
+        return DockerUtils.getInstalledImage(build_name)
 
     @classmethod
     def __listBuildProfiles(cls) -> Dict:

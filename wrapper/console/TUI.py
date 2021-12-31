@@ -214,6 +214,8 @@ class ExegolTUI:
                 logger.warning("No containers have been created yet")
             raise IndexError
         object_type = type(data[0])
+        object_name = "container" if object_type is ExegolContainer else "image"
+        action = "create" if object_type is ExegolContainer else "build"
         # Print data list
         cls.printTable(data)
         # Get a list of every choice available
@@ -224,6 +226,7 @@ class ExegolTUI:
         # When allow_none is enable, disabling choices restriction
         if allow_None:
             choices = None
+            logger.info(f"You can use a name that does not already exist to {action} a new {object_name}")
         while True:
             choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
                                 show_choices=False)
@@ -231,15 +234,13 @@ class ExegolTUI:
                 if choice == o:
                     return o
             if allow_None:
-                object_name = "container" if object_type is ExegolContainer else "image"
-                action = "create" if object_type is ExegolContainer else "build"
                 if Confirm.ask(
                         f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it?",
                         choices=["Y", "n"],
                         show_default=False,
                         default=True):
                     return choice
-                logger.info("[red]Please select one of the available options[/red]")
+                logger.info(f"[red]Please select one of the available {object_name}s[/red]")
             else:
                 logger.critical(f"Unknown error, cannot fetch selected object.")
 
