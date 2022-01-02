@@ -55,7 +55,8 @@ class DockerUtils:
         return cls.__containers
 
     @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
+    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False,
+                        command: str = None) -> ExegolContainer:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
@@ -67,6 +68,7 @@ class DockerUtils:
                 logger.warning("Error while creating common resources volume")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
+                                                    command=command,
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,

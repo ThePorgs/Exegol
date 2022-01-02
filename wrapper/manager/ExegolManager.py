@@ -1,4 +1,6 @@
+import binascii
 import logging
+import os
 from typing import Union, List
 
 from wrapper.console.TUI import ExegolTUI
@@ -40,11 +42,18 @@ class ExegolManager:
     @classmethod
     def exec(cls):
         logger.info("Starting exegol")
-        container = cls.__loadOrCreateContainer()
-        container.exec(command=ParametersManager().exec,
-                       as_daemon=ParametersManager().daemon)
-        if ParametersManager().tmp and not ParametersManager().daemon:
-            container.stop(2)  # TODO upgrade exec tmp / daemon to entrypoint command
+        if ParametersManager().tmp:
+            container = cls.createTmpContainer()
+            if not ParametersManager().daemon:
+                container.exec(command=ParametersManager().exec,
+                               as_daemon=False)
+                container.stop(2)
+            else:
+                logger.success(f"Command executed as entrypoint of the container {container.hostname}")
+        else:
+            container = cls.__loadOrCreateContainer()
+            container.exec(command=ParametersManager().exec,
+                           as_daemon=ParametersManager().daemon)
 
     @classmethod
     def stop(cls):
@@ -257,13 +266,11 @@ class ExegolManager:
         return user_selection
 
     @classmethod
-    def __createContainer(cls, name: str) -> ExegolContainer:
-        """Create an ExegolContainer"""
-        logger.verbose("Configuring new exegol container")
+    def __prepareContainerConfig(cls):
+        """Create Exegol configuration with user input"""
         # Create default exegol config
         config = ContainerConfig()
         # Container configuration from user CLI options
-        # TODO exec case without config
         if ParametersManager().X11:
             config.enableGUI()
         if ParametersManager().share_timezone:
@@ -281,9 +288,31 @@ class ExegolManager:
         if ParametersManager().devices is not None:
             for device in ParametersManager().devices:
                 config.addDevice(device)
+        return config
+
+    @classmethod
+    def __createContainer(cls, name: str) -> ExegolContainer:
+        """Create an ExegolContainer"""
+        logger.verbose("Configuring new exegol container")
+        # Create exegol config
+        config = cls.__prepareContainerConfig()
         model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
 
-        temporary = ParametersManager().tmp
-        if temporary is None:
-            temporary = False
-        return DockerUtils.createContainer(model, temporary)
+        return DockerUtils.createContainer(model)
+
+    @classmethod
+    def createTmpContainer(cls) -> ExegolContainer:
+        """Create a temporary ExegolContainer with custom entrypoint"""
+        logger.verbose("Configuring new exegol container")
+        # Create exegol config
+        config = cls.__prepareContainerConfig()
+        # Workspace must be disabled for temporary container because host directory is never deleted
+        config.disableDefaultWorkspace()
+        name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
+        model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
+
+        entrypoint = None
+        if ParametersManager().daemon:
+            entrypoint = ParametersManager().exec
+            # TODO parse the command for zsh aliases support on entrypoint
+        return DockerUtils.createContainer(model, temporary=True, command=entrypoint)

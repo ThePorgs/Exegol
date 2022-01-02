@@ -75,17 +75,17 @@ class Remove(Command, ContainerSelector):
         return ExegolManager.remove
 
 
-class Exec(Command, ContainerStart):
+class Exec(Command, ContainerCreation):
     """Execute a command on an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
-        ContainerStart.__init__(self, self.groupArg)
+        ContainerCreation.__init__(self, self.groupArg)
 
         self.exec = Option("-e", "--exec",
                            dest="exec",
                            action="store",
-                           help="Execute a single command in the exegol container")
+                           help="Execute a single command in the exegol container. If --tmp is set, this command will be executed via the container entrypoint command.")
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
@@ -93,7 +93,7 @@ class Exec(Command, ContainerStart):
         self.tmp = Option("--tmp",
                           action="store_true",
                           dest="tmp",
-                          help="Created a temporary container to execute the command (default: False)")
+                          help="Created a dedicated and temporary container to execute the command (default: False)")
 
         # Create group parameter for container selection
         self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},

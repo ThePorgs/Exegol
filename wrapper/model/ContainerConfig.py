@@ -32,6 +32,7 @@ class ContainerConfig:
         self.shm_size: str = '1G'
         self.__share_cwd: Optional[str] = None
         self.__share_private: Optional[str] = None
+        self.__disable_workspace = False
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -78,6 +79,7 @@ class ContainerConfig:
         """Parse Mounts object"""
         if mounts is None:
             mounts = []
+        self.__disable_workspace = True
         for share in mounts:
             logger.debug(f"Parsing mount : {share}")
             src_path = None
@@ -109,6 +111,7 @@ class ContainerConfig:
                 self.__common_resources = True
             elif "/workspace" in share.get('Destination', ''):
                 logger.debug(f"Loading workspace volume source : {src_path}")
+                self.__disable_workspace = False
                 if src_path is not None and src_path.name == name and src_path.parent.name == "shared-data-volumes":
                     self.__share_private = source
                 else:
@@ -161,6 +164,11 @@ class ContainerConfig:
         logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
 
+    def disableDefaultWorkspace(self):
+        # If a custom workspace is not define, disable workspace
+        if self.__share_cwd is None:
+            self.__disable_workspace = True
+
     def prepareShare(self, share_name: str):
         """Add workspace share before container creation"""
         for mount in self.__mounts:
@@ -169,6 +177,9 @@ class ContainerConfig:
                 return
         if self.__share_cwd is not None:
             self.addVolume(self.__share_cwd, '/workspace')
+        elif self.__disable_workspace:
+            # Skip default volume workspace if disabled
+            return
         else:
             volume_path = str(ConstantConfig.private_volume_path.joinpath(share_name))
             # TODO when SDK will be ready, change this to a volume to enable auto-remove
@@ -176,6 +187,8 @@ class ContainerConfig:
 
     def setNetworkMode(self, host_mode: bool):
         """Set container's network mode, true for host, false for bridge"""
+        if host_mode is None:
+            host_mode = True
         self.__network_host = host_mode
 
     def getNetworkMode(self) -> str:
@@ -188,7 +201,7 @@ class ContainerConfig:
 
     def getWorkingDir(self) -> str:
         """Get default container's default working directory path"""
-        return "/workspace"
+        return "/" if self.__disable_workspace else "/workspace"
 
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
