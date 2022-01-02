@@ -128,6 +128,7 @@ class ExegolManager:
                 # (raised from TUI interactive selection)
                 if must_exist:
                     # If there is no image installed, return none
+                    logger.error("No images were found")
                     return [] if multiple else None
                 else:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
@@ -216,6 +217,7 @@ class ExegolManager:
             # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
+                logger.error("Container not found")
                 return [] if multiple else None
             return cls.__createContainer(container_tag)
         return cls.__container

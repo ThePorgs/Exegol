@@ -228,8 +228,10 @@ class ExegolTUI:
             choices = None
             logger.info(f"You can use a name that does not already exist to {action} a new {object_name}")
         while True:
-            choice = Prompt.ask("[blue][?][/blue] Select an object by his name", default=default, choices=choices,
-                                show_choices=False)
+            choice = Prompt.ask(
+                f"[blue][?][/blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",
+                default=default, choices=choices,
+                show_choices=False)
             for o in data:
                 if choice == o:
                     return o

@@ -213,7 +213,10 @@ class ContainerConfig:
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration"""
         if volume_type == 'bind':
-            os.makedirs(host_path, exist_ok=True)
+            try:
+                os.makedirs(host_path, exist_ok=True)
+            except FileExistsError:
+                pass
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
@@ -298,7 +301,7 @@ class ContainerConfig:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
             result += f"Network mode: {'host' if self.__network_host else 'custom'}{os.linesep}"
-        if verbose or self.__share_timezone:
+        if verbose or not self.__share_timezone:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
         if verbose or not self.__common_resources:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
