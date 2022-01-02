@@ -97,25 +97,24 @@ class DockerUtils:
     def getContainer(cls, tag: str) -> ExegolContainer:
         """Get an ExegolContainer from tag name."""
         try:
+            # Fetch potential container match from DockerSDK
             container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
             return
+        # Check if there is at least 1 result. If no container was found, raise ObjectNotFound.
         if container is None or len(container) == 0:
             raise ObjectNotFound
-        selected = None
         # Filter results with exact name matching
         for c in container:
             if c.name == f"exegol-{tag}":
                 # When the right container have been found, select it and stop the search
-                selected = c
-                break
-        if selected is None:
-            # When there is some close container's name
-            # Docker may return some results but none of them correspond to the request
-            raise IndexError
-        return ExegolContainer(selected)
+                return ExegolContainer(c)
+        # When there is some close container's name,
+        # docker may return some results but none of them correspond to the request.
+        # In this case, ObjectNotFound is raised
+        raise ObjectNotFound
 
     # # # Volumes Section # # #
 

@@ -17,6 +17,7 @@ from wrapper.utils.ExeLog import logger
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
+        logger.debug(f"== Loading container : {docker_container.name}")
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
         if model is None:

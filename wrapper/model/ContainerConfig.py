@@ -1,6 +1,7 @@
+import logging
 import os
 import re
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Optional, List, Dict, Union, Tuple
 
 from docker.models.containers import Container
@@ -79,10 +80,24 @@ class ContainerConfig:
             mounts = []
         for share in mounts:
             logger.debug(f"Parsing mount : {share}")
+            src_path = None
             if share.get('Type', 'volume') == "volume":
-                source = f"Docker {share.get('Driver', '')} volume {share.get('Name', 'unknown')}"
+                source = f"Docker {share.get('Driver', '')} volume '{share.get('Name', 'unknown')}'"
             else:
                 source = share.get("Source")
+                # Check if path is from Windows Docker Desktop
+                matches = re.match(r"^/run/desktop/mnt/host/([a-z])(/.*)$", source, re.IGNORECASE)
+                if matches:
+                    # Convert Windows Docker-VM style volume path to local OS path
+                    src_path = Path(f"{matches.group(1).upper()}:{matches.group(2)}")
+                    logger.debug(f"Windows style detected : {src_path}")
+                else:
+                    # Remove docker mount path if exist
+                    src_path = PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
+                # When debug is disabled, exegol print resolved windows path of mounts
+                if logger.getEffectiveLevel() > logging.DEBUG:
+                    source = str(src_path)
+
             self.__mounts.append(Mount(source=source,
                                        target=share.get('Destination'),
                                        type=share.get('Type', 'volume'),
@@ -93,21 +108,11 @@ class ContainerConfig:
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__common_resources = True
             elif "/workspace" in share.get('Destination', ''):
-                src = share.get('Source', '')
-                src_path = Path(src)
-                logger.debug(f"Loading workspace volume source : {src}")
-                if src_path.name == name and src_path.parent == ConstantConfig.private_volume_path:
-                    # Check if path is from Windows Docker Desktop
-                    matches = re.match(r"^/run/desktop/mnt/host/[a-z](/.*)$", src,
-                                       re.IGNORECASE)  # TODO review PATH management
-                    if matches:
-                        # Convert Windows Docker-VM style volume path to local OS path
-                        self.__share_private = os.path.abspath(matches.group(1))
-                        logger.debug(f"Windows style detected : {self.__share_private}")
-                    else:
-                        self.__share_private = src
+                logger.debug(f"Loading workspace volume source : {src_path}")
+                if src_path is not None and src_path.name == name and src_path.parent.name == "shared-data-volumes":
+                    self.__share_private = source
                 else:
-                    self.__share_cwd = share.get('Source', '')
+                    self.__share_cwd = source
 
     @staticmethod
     def __isGuiAvailable() -> bool:

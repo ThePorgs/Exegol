@@ -1,5 +1,7 @@
 import os
 
+from rich.prompt import Prompt
+
 from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolImage import ExegolImage
 
@@ -8,11 +10,13 @@ from wrapper.model.ExegolImage import ExegolImage
 class ExegolContainerTemplate:
 
     def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):
+        if name is None:
+            name = Prompt.ask("Enter the name of your new exegol container", default="default")
         self.name: str = name.replace('exegol-', '')
-        if not name.startswith("exegol-"):
-            self.hostname: str = 'exegol-' + name
-        else:
+        if name.startswith("exegol-"):
             self.hostname: str = name
+        else:
+            self.hostname: str = 'exegol-' + name
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
 

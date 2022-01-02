@@ -84,7 +84,7 @@ class ExegolManager:
     |  __|\ \/ / _ \/ _` |/ _ \| |
     | |___ >  <  __/ (_| | (_) | |
     \____|/_/\_\___|\__, |\___/|_|
-                    __/ |        
+                    __/ /        
                    |___/      v{ConstantConfig.version}
 
 """
@@ -108,7 +108,7 @@ class ExegolManager:
             try:
                 if image_tag is None:
                     # Interactive (TUI) image selection
-                    image_selection = cls.__interactiveImageSelection(multiple, must_exist)
+                    image_selection = cls.__interactiveSelection(ExegolImage, multiple, must_exist)
                 else:
                     # Select image by tag name (non-interactive)
                     image_selection = DockerUtils.getInstalledImage(image_tag)
@@ -125,6 +125,7 @@ class ExegolManager:
                 image_tag = None
             except IndexError:
                 # IndexError is raised when no image are available (not applicable when multiple is set, return an empty array)
+                # (raised from TUI interactive selection)
                 if must_exist:
                     # If there is no image installed, return none
                     return [] if multiple else None
@@ -188,28 +189,6 @@ class ExegolManager:
         return True, check_img
 
     @classmethod
-    def __interactiveImageSelection(cls,
-                                    multiple: bool = False,
-                                    must_exist: bool = False) -> Union[ExegolImage, List[ExegolImage]]:
-        """Interactive Image selection process"""
-        # List all images available
-        images = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
-        # Interactive choice with TUI
-        if multiple:
-            # When multiple is set, allow user to select multiple objects
-            image_selection = ExegolTUI.multipleSelectFromTable(images, object_type=ExegolImage)
-        else:
-            image_selection = ExegolTUI.selectFromTable(images, object_type=ExegolImage,
-                                                        allow_None=not must_exist)
-            # Check if the user has chosen an existing image
-            if type(image_selection) is str:
-                # Otherwise, create a new image with the supplied name (on the exception catch)
-                image_tag = image_selection
-                # Calling buildAndLoad directly, no need to ask confirmation, already done by TUI.
-                image_selection = UpdateManager.buildAndLoad(image_tag)
-        return image_selection
-
-    @classmethod
     def __loadOrCreateContainer(cls,
                                 multiple: bool = False,
                                 must_exist: bool = False) -> Union[ExegolContainer, List[ExegolContainer]]:
@@ -223,20 +202,8 @@ class ExegolManager:
         container_tag = ParametersManager().containertag
         try:
             if container_tag is None:
-                # List all images available
-                containers = DockerUtils.listContainers()
-                # Interactive choice with TUI
-                if multiple:
-                    container = ExegolTUI.multipleSelectFromTable(containers, object_type=ExegolContainer)
-                else:
-                    container = ExegolTUI.selectFromTable(containers, object_type=ExegolContainer,
-                                                          allow_None=not must_exist)
-                # Check if the user has chosen an existing container
-                if type(container) is ExegolContainer or (multiple and type(container) is list):
-                    cls.__container = container
-                else:
-                    # Otherwise create a new container with the supplied name
-                    cls.__container = cls.__createContainer(container)
+                # Interactive container selection
+                cls.__container = cls.__interactiveSelection(ExegolContainer, multiple, must_exist)
             else:
                 # Try to find the corresponding container
                 container = DockerUtils.getContainer(container_tag)
@@ -246,12 +213,46 @@ class ExegolManager:
                     cls.__container = container
         except (ObjectNotFound, IndexError):
             # ObjectNotFound is raised when the container_tag provided by the user does not match any existing container.
-            # IndexError is raise when no container exist
+            # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
                 return [] if multiple else None
             return cls.__createContainer(container_tag)
         return cls.__container
+
+    @classmethod
+    def __interactiveSelection(cls,
+                               object_type: type,
+                               multiple: bool = False,
+                               must_exist: bool = False) -> \
+            Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]:
+        """Interactive object selection process, depending on object_type.
+        object_type can be ExegolImage or ExegolContainer."""
+        # Object listing depending on the type
+        if object_type is ExegolContainer:
+            # List all images available
+            object_list = DockerUtils.listContainers()
+        elif object_type is ExegolImage:
+            # List all images available
+            object_list = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+        else:
+            logger.critical("Unknown object type during interactive selection. Exiting.")
+            raise Exception
+        # Interactive choice with TUI
+        if multiple:
+            user_selection = ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
+        else:
+            user_selection = ExegolTUI.selectFromTable(object_list, object_type=object_type,
+                                                       allow_None=not must_exist)
+            # Check if the user has chosen an existing object
+            if type(user_selection) is str:
+                # Otherwise, create a new object with the supplied name
+                if object_type is ExegolContainer:
+                    user_selection = cls.__createContainer(user_selection)
+                else:
+                    # Calling buildAndLoad directly, no need to ask confirmation, already done by TUI.
+                    user_selection = UpdateManager.buildAndLoad(user_selection)
+        return user_selection
 
     @classmethod
     def __createContainer(cls, name: str) -> ExegolContainer:
