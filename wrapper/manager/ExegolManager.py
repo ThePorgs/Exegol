@@ -45,15 +45,13 @@ class ExegolManager:
         if ParametersManager().tmp:
             container = cls.createTmpContainer()
             if not ParametersManager().daemon:
-                container.exec(command=ParametersManager().exec,
-                               as_daemon=False)
+                container.exec(command=ParametersManager().exec, as_daemon=False)
                 container.stop(2)
             else:
                 logger.success(f"Command executed as entrypoint of the container {container.hostname}")
         else:
             container = cls.__loadOrCreateContainer()
-            container.exec(command=ParametersManager().exec,
-                           as_daemon=ParametersManager().daemon)
+            container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
 
     @classmethod
     def stop(cls):
@@ -151,7 +149,7 @@ class ExegolManager:
                 continue
 
             # Check if every image are installed
-            install_status, checked_images = cls.__checkImageInstallationStatus(image_selection, must_exist)
+            install_status, checked_images = cls.__checkImageInstallationStatus(image_selection, multiple, must_exist)
             if not install_status:
                 # If one of the image is not install where it supposed to, restart the selection
                 # allowing him to interactively choose another image
@@ -162,7 +160,7 @@ class ExegolManager:
         return cls.__image
 
     @classmethod
-    def __checkImageInstallationStatus(cls, image_selection, must_exist: bool = False) -> bool:
+    def __checkImageInstallationStatus(cls, image_selection, multiple: bool = False, must_exist: bool = False) -> bool:
         """Checks if the selected images are installed and ready for use.
         returns false if the images are supposed to be already installed."""
         # Checks if one or more images have been selected and unifies the format into a list.
@@ -193,7 +191,7 @@ class ExegolManager:
                         logger.error("This image cannot be installed.")
                         return False, None
 
-        if reverse_type:
+        if reverse_type and not multiple:
             # Restoration of the original type
             return True, check_img[0]
         return True, check_img
