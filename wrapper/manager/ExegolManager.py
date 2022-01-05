@@ -67,6 +67,7 @@ class ExegolManager:
 
     @classmethod
     def update(cls):
+        UpdateManager.updateGit()
         UpdateManager.updateImage()
 
     @classmethod
