@@ -32,35 +32,13 @@ class ImageSelector:
                                   title="[blue]Image selection options[/blue]"))
 
 
-# Generic parameter class for container start
-class ContainerStart(ContainerSelector, ImageSelector):
-
-    def __init__(self, groupArg):
-        # Init parents : ContainerSelector
-        ContainerSelector.__init__(self, groupArg)
-        ImageSelector.__init__(self, groupArg)
-
-        # Create container start / exec arguments
-        self.shell = Option("-s", "--shell",
-                            dest="shell",
-                            action="store",
-                            choices={"zsh", "bash", "tmux"},
-                            default="zsh",
-                            help="Select a shell environment to launch at startup (Default: zsh)")
-
-        # Create group parameter for container selection
-        groupArg.append(GroupArgs({"arg": self.shell, "required": False},
-                                  title="[blue]Advanced start options[/blue]"))
-        #  description='These options are available to customize the startup options of the container'))
-        # TODO fix argparse: description add group duplication with -h
-
-
 # Generic parameter class for container creation
-class ContainerCreation(ContainerStart, ImageSelector):
+class ContainerCreation(ContainerSelector, ImageSelector):
 
     def __init__(self, groupArg):
         # Init parents : ContainerStart > ContainerSelector
-        super().__init__(groupArg)
+        ContainerSelector.__init__(self, groupArg)
+        ImageSelector.__init__(self, groupArg)
 
         # Standard Args
         self.mount_current_dir = Option("-cwd", "--cwd-mount",
@@ -107,7 +85,7 @@ class ContainerCreation(ContainerStart, ImageSelector):
                                   {"arg": self.X11, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.volumes, "required": False},
-                                  title="[blue]Default container options[/blue]"))
+                                  title="[blue]Main container options[/blue]"))
 
         groupArg.append(GroupArgs({"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},

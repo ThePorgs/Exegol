@@ -1,5 +1,6 @@
 from typing import Optional, List
 
+from docker.models.containers import Container
 from docker.models.images import Image
 
 from wrapper.model.SelectableInterface import SelectableInterface
@@ -43,7 +44,7 @@ class ExegolImage(SelectableInterface):
         logger.debug("└── {}\t→ ({}) {}".format(self.__name, self.getType(), self.__digest))
 
     def __initFromDockerImage(self):
-        """Parse Docker object to setup self configuration on creation."""
+        """Parse Docker object to set up self configuration on creation."""
         # If docker object exist, image is already installed
         self.__is_install = True
         # Set init values from docker object
@@ -61,6 +62,13 @@ class ExegolImage(SelectableInterface):
         if self.__is_remote:
             self.__setDigest(self.__image.attrs["RepoDigests"][0])
 
+    def syncContainer(self, container: Container):
+        """Synchronization between the container and the image.
+        If the image has been updated, the tag is lost,
+        but it is saved in the properties of the container that still uses it."""
+        if self.isLocked():
+            self.__name = f'[italic]{container.attrs["Config"]["Image"].split(":")[1]} (deprecated)[/italic]'
+
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return his name, otherwise return None"""
         if self.__is_remote:
@@ -73,7 +81,7 @@ class ExegolImage(SelectableInterface):
             return None
 
     def removeCheck(self) -> Optional[str]:
-        """If this image can be remove, return his name, otherwise return None"""
+        """If this image can be removed, return his name, otherwise return None"""
         if self.__is_install:
             return self.__name
         else:
@@ -81,7 +89,7 @@ class ExegolImage(SelectableInterface):
             return None
 
     def setDockerObject(self, docker_image: Image):
-        """Docker object setter. Parse object to setup self configuration."""
+        """Docker object setter. Parse object to set up self configuration."""
         self.__image = docker_image
         # When a docker image exist, image is locally installed
         self.__is_install = True
@@ -89,7 +97,7 @@ class ExegolImage(SelectableInterface):
         self.__setRealSize(self.__image.attrs["Size"])
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
-        # Check if local image is sync with remote digest id (check up to date status)
+        # Check if local image is sync with remote digest id (check up-to-date status)
         digest = docker_image.attrs["RepoDigests"][0].split(":")[1]
         if self.__digest == digest:
             self.__is_update = True
@@ -136,7 +144,7 @@ class ExegolImage(SelectableInterface):
 
     @staticmethod
     def __processSize(size: int, precision: int = 1) -> str:
-        """Text formatter from size number to human readable size."""
+        """Text formatter from size number to human-readable size."""
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0

@@ -122,10 +122,14 @@ class DockerUtils:
 
     @classmethod
     def __loadCommonVolume(cls) -> Volume:
-        """Load or create the common resources volume for exegol containers
+        """Load or create the common resource volume for exegol containers
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
-        os.makedirs(ConstantConfig.common_share_path, exist_ok=True)
+        try:
+            os.makedirs(ConstantConfig.common_share_path, exist_ok=True)
+        except PermissionError:
+            logger.error("Unable to create the shared resource folder on the filesystem locally.")
+            logger.critical(f"Insufficient permission to create the folder: {ConstantConfig.common_share_path}")
         try:
             # Check if volume already exist
             volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)

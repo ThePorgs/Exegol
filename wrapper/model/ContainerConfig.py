@@ -216,7 +216,7 @@ class ContainerConfig:
         return self.__share_private
 
     def isCommonResourcesEnable(self) -> bool:
-        """Return if the feature 'common resources' is enable in this config"""
+        """Return if the feature 'common resources' is enabled in this config"""
         return self.__common_resources
 
     def addVolume(self,
@@ -228,7 +228,11 @@ class ContainerConfig:
         if volume_type == 'bind':
             try:
                 os.makedirs(host_path, exist_ok=True)
+            except PermissionError:
+                logger.error("Unable to create the volume folder on the filesystem locally.")
+                logger.critical(f"Insufficient permission to create the folder: {host_path}")
             except FileExistsError:
+                # The volume targets a file that already exists on the file system
                 pass
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
@@ -325,7 +329,8 @@ class ContainerConfig:
         result = ''
         for mount in self.__mounts:
             # Blacklist technical mount
-            if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources']:
+            if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
+                                                       '/etc/timezone']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result

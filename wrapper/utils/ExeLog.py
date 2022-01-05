@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any
 
 from rich.console import Console
@@ -69,6 +70,9 @@ class ExeLog(logging.getLoggerClass()):
         if self.isEnabledFor(ExeLog.SUCCESS):
             self._log(ExeLog.SUCCESS,
                       "{}[+]{} {}".format("[bold green]", "[/bold green]", msg), args, **kwargs)
+
+    def empty_line(self) -> None:
+        self.raw(os.linesep, level=logging.INFO)
 
 
 # Main logging default config

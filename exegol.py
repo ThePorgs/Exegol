@@ -20,6 +20,7 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
+        logger.empty_line()
         logger.info("Exiting")
     except Exception:
         console.print_exception(show_locals=True)

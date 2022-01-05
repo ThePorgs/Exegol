@@ -25,6 +25,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(docker_image=docker_container.image))
+            self.image.syncContainer(docker_container)
         else:
             # Create Exegol container from a newly created docker container with his object template.
             super().__init__(docker_container.name,

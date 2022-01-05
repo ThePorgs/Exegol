@@ -11,6 +11,18 @@ class Start(Command, ContainerCreation):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArg)
 
+        # Create container start / exec arguments
+        self.shell = Option("-s", "--shell",
+                            dest="shell",
+                            action="store",
+                            choices={"zsh", "bash", "tmux"},
+                            default="zsh",
+                            help="Select a shell environment to launch at startup (Default: zsh)")
+
+        # Create group parameter for container selection
+        self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
+                                       title="[blue]Start options[/blue]"))
+
     def __call__(self, *args, **kwargs):
         return ExegolManager.start
 
@@ -52,7 +64,7 @@ class Update(Command, ImageSelector):
 
 
 class Uninstall(Command, ImageSelector):
-    """Remove Exegol image(s)"""
+    """Remove Exegol [default not bold]image(s)[/default not bold]"""
 
     def __init__(self):
         Command.__init__(self)
@@ -64,7 +76,7 @@ class Uninstall(Command, ImageSelector):
 
 
 class Remove(Command, ContainerSelector):
-    """Remove Exegol container(s)"""
+    """Remove Exegol [default not bold]container(s)[/default not bold]"""
 
     def __init__(self):
         Command.__init__(self)

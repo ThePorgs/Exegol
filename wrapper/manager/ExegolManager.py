@@ -28,6 +28,7 @@ class ExegolManager:
         # List and print images
         images = DockerUtils.listImages()
         ExegolTUI.printTable(images)
+        logger.empty_line()
         # List and print containers
         containers = DockerUtils.listContainers()
         ExegolTUI.printTable(containers)

@@ -229,7 +229,8 @@ class ExegolTUI:
         # When allow_none is enable, disabling choices restriction
         if allow_None:
             choices = None
-            logger.info(f"You can use a name that does not already exist to {action} a new {object_name}")
+            logger.info(
+                f"You can use a name that does not already exist to {action} a new {object_name}{' from local sources' if object_type is ExegolImage else ''}")
         while True:
             choice = Prompt.ask(
                 f"[blue][?][/blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",

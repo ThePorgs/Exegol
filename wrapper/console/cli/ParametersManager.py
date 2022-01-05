@@ -14,7 +14,7 @@ class ParametersManager(metaclass=MetaSingleton):
         try:
             self.parameters.action.populate(self.parameters)
             self.parameters = self.parameters.action
-        except AttributeError as err:
+        except AttributeError:
             # Catch missing "action" parameter en CLI
             self.__parser.parser.print_help()
             exit(0)

@@ -20,6 +20,6 @@ class ConstantConfig:
     # Docker common share volume name
     COMMON_SHARE_NAME: str = "exegol-shared-resources"
     common_share_path: str = str(root_path_obj.joinpath("shared-resources"))
-    # Current plateforme
+    # Current platform
     windows_host: bool = platform.system() == "Windows" or "microsoft" in platform.release()
     windows_release: str = platform.win32_ver()[1]

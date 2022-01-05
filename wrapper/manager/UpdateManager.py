@@ -123,7 +123,7 @@ class UpdateManager:
         """List every build profiles available locally
         Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
-        profiles = {"stable": "Dockerfile"}
+        profiles = {"full": "Dockerfile"}
         # List file *.dockerfile is the build context directory
         docker_files = list(ConstantConfig.build_context_path_obj.glob("*.dockerfile"))
         for file in docker_files:
