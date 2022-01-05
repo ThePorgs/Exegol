@@ -17,11 +17,11 @@ class Start(Command, ContainerCreation):
                             action="store",
                             choices={"zsh", "bash", "tmux"},
                             default="zsh",
-                            help="Select a shell environment to launch at startup (Default: zsh)")
+                            help="Select a shell environment to launch at startup (Default: [blue]zsh[/blue])")
 
         # Create group parameter for container selection
         self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
-                                       title="[blue]Start options[/blue]"))
+                                       title="[cyan]Start specific options[/cyan]"))
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.start
@@ -101,17 +101,17 @@ class Exec(Command, ContainerCreation):
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
-                             help="Executes the command in background as a daemon (default: False)")
+                             help="Executes the command in background as a daemon (default: [red bold not italic]False[/red bold not italic])")
         self.tmp = Option("--tmp",
                           action="store_true",
                           dest="tmp",
-                          help="Created a dedicated and temporary container to execute the command (default: False)")
+                          help="Created a dedicated and temporary container to execute the command (default: [red bold not italic]False[/red bold not italic])")
 
         # Create group parameter for container selection
         self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},
                                        {"arg": self.daemon, "required": False},
                                        {"arg": self.tmp, "required": False},
-                                       title="[blue]Exec options[/blue]",
+                                       title="[cyan]Exec specific options[/cyan]",
                                        description='Command execution options in Exegol'))
 
     def __call__(self, *args, **kwargs):
