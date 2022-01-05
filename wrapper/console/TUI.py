@@ -1,4 +1,3 @@
-import logging
 import re
 from typing import Union, Optional, List, Dict, Type, Generator
 
@@ -105,7 +104,7 @@ class ExegolTUI:
                         re.match(r"^Successfully tagged ", stream_text):
                     logger.verbose(stream_text.rstrip())
                 else:
-                    logger.raw(stream_text, level=logging.DEBUG)
+                    logger.raw(stream_text, level=ExeLog.ADVANCED)
             if ': FROM ' in stream_text:
                 logger.info("Downloading docker image")
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
@@ -137,7 +136,7 @@ class ExegolTUI:
         table.title = "[gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
-        debug_mode = logger.isEnabledFor(logging.DEBUG)
+        debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
@@ -165,7 +164,7 @@ class ExegolTUI:
         table.title = "[gold3][g]Available containers[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
-        debug_mode = logger.isEnabledFor(logging.DEBUG)
+        debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Container tag")

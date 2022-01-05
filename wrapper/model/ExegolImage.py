@@ -52,7 +52,7 @@ class ExegolImage(SelectableInterface):
             self.__name = self.__image.attrs["RepoTags"][0].split(':')[1]
         else:
             # If tag is <none>, use default value
-            self.__name = "<none>"
+            self.__name = "<none>"  # TODO find attached container
             self.__must_be_removed = True
         self.__setRealSize(self.__image.attrs["Size"])
         # Set local image ID

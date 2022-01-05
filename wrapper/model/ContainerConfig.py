@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 from pathlib import Path, PurePosixPath
@@ -10,7 +9,7 @@ from docker.types import Mount
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
 from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.ExeLog import logger
+from wrapper.utils.ExeLog import logger, ExeLog
 
 
 # Configuration class of an exegol container
@@ -97,7 +96,7 @@ class ContainerConfig:
                     # Remove docker mount path if exist
                     src_path = PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
                 # When debug is disabled, exegol print resolved windows path of mounts
-                if logger.getEffectiveLevel() > logging.DEBUG:
+                if logger.getEffectiveLevel() > ExeLog.ADVANCED:
                     source = str(src_path)
 
             self.__mounts.append(Mount(source=source,

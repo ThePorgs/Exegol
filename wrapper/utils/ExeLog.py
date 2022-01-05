@@ -10,8 +10,9 @@ from rich.logging import RichHandler
 class ExeLog(logging.getLoggerClass()):
     """Project's Logger custom class"""
     # New logging level
-    VERBOSE: int = 15
     SUCCESS: int = 25
+    VERBOSE: int = 15
+    ADVANCED: int = 13
 
     @staticmethod
     def setVerbosity(verbose: int, quiet: bool = False):
@@ -19,7 +20,9 @@ class ExeLog(logging.getLoggerClass()):
             logger.setLevel(logging.CRITICAL)
         elif verbose == 1:
             logger.setLevel(ExeLog.VERBOSE)
-        elif verbose >= 2:
+        elif verbose == 2:
+            logger.setLevel(ExeLog.ADVANCED)
+        elif verbose >= 3:
             logger.setLevel(logging.DEBUG)
         else:
             # Default INFO
@@ -28,6 +31,12 @@ class ExeLog(logging.getLoggerClass()):
     def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default debug text format with rich color support"""
         super(ExeLog, self).debug("{}[D]{} {}".format("[yellow3]", "[/yellow3]", msg), *args, **kwargs)
+
+    def advanced(self, msg: Any, *args: Any, **kwargs: Any) -> None:
+        """Add advanced logging method with text format / rich color support"""
+        if self.isEnabledFor(ExeLog.ADVANCED):
+            self._log(ExeLog.ADVANCED,
+                      "{}[A]{} {}".format("[yellow3]", "[/yellow3]", msg), args, **kwargs)
 
     def verbose(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Add verbose logging method with text format / rich color support"""
@@ -82,6 +91,7 @@ logging.setLoggerClass(ExeLog)
 # Add new level to the logging config
 logging.addLevelName(ExeLog.VERBOSE, "VERBOSE")
 logging.addLevelName(ExeLog.SUCCESS, "SUCCESS")
+logging.addLevelName(ExeLog.ADVANCED, "ADVANCED")
 # Logging setup using RichHandler and minimalist text format
 logging.basicConfig(
     format="%(message)s",
