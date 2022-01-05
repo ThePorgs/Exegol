@@ -113,7 +113,7 @@ class ExegolTUI:
     def printTable(data: list, title: Optional[str] = None):
         """Printing Rich table for a list of object"""
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
-                      box=box.SQUARE_DOUBLE_HEAD)
+                      box=box.SQUARE, title_justify="left")
         if len(data) == 0:
             logger.info("No data supplied")
             # TODO handle no data
@@ -133,7 +133,7 @@ class ExegolTUI:
     @staticmethod
     def __buildImageTable(table: Table, data: List[ExegolImage]):
         """Building Rich table from a list of ExegolImage"""
-        table.title = "[gold3][g]Available images[/g][/gold3]"
+        table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
@@ -161,7 +161,7 @@ class ExegolTUI:
     @staticmethod
     def __buildContainerTable(table: Table, data: List[ExegolContainer]):
         """Building Rich table from a list of ExegolContainer"""
-        table.title = "[gold3][g]Available containers[/g][/gold3]"
+        table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)

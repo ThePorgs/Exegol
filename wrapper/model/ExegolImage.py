@@ -67,7 +67,7 @@ class ExegolImage(SelectableInterface):
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
-            self.__name = f'[italic]{container.attrs["Config"]["Image"].split(":")[1]} (deprecated)[/italic]'
+            self.__name = f'{container.attrs["Config"]["Image"].split(":")[1]} [italic bright_black](deprecated)[/italic bright_black]'
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return his name, otherwise return None"""
@@ -175,15 +175,15 @@ class ExegolImage(SelectableInterface):
         if not self.__is_remote:
             return "[blue]Local image[/blue]"
         elif self.__must_be_removed:
-            return "[bright_black]Must be removed[/bright_black]"
+            return "[red]Must be removed[/red]"
         elif self.__is_discontinued:
-            return "[bright_black]Discontinued[/bright_black]"
+            return "[red]Discontinued[/red]"
         elif self.__is_update:
             return "[green]Up to date[/green]"
         elif self.__is_install:
-            return "[orange3]Need update[/orange3]"
+            return "[orange3]Update available[/orange3]"
         else:
-            return "[red]Not installed[/red]"
+            return "[bright_black]Not installed[/bright_black]"
 
     def getType(self) -> str:
         """Image type getter"""

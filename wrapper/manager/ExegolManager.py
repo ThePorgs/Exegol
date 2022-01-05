@@ -24,7 +24,7 @@ class ExegolManager:
     @staticmethod
     def info():
         """Print a list of available images and containers on the current host"""
-        ExegolManager.banner()
+        ExegolManager.print_version()
         # List and print images
         images = DockerUtils.listImages()
         ExegolTUI.printTable(images)
@@ -85,19 +85,9 @@ class ExegolManager:
             c.remove()
 
     @classmethod
-    def banner(cls):
-        banner = f"""
-     _____                      _ 
-    |  ___|                    | |
-    | |_____  _____  __ _  ___ | |
-    |  __|\ \/ / _ \/ _` |/ _ \| |
-    | |___ >  <  __/ (_| | (_) | |
-    \____|/_/\_\___|\__, |\___/|_|
-                    __/ /        
-                   |___/      v{ConstantConfig.version}
-
-"""
-        logger.raw(banner, level=logging.INFO)
+    def print_version(cls):
+        logger.info(f"Exegol is currently in version [default not bold]v{ConstantConfig.version}[/default not bold]")
+        logger.empty_line()
 
     @classmethod
     def __loadOrInstallImage(cls,
