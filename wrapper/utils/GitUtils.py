@@ -21,7 +21,6 @@ class GitUtils:
         try:
             self.__gitRepo = Repo(path)
             logger.debug("Git repository successfully loaded")
-            logger.success(f"Current git branch : {self.getCurrentBranch()}")
             if len(self.__gitRepo.remotes) > 0:
                 self.__gitRemote = self.__gitRepo.remotes['origin']
             else:
@@ -49,13 +48,12 @@ class GitUtils:
         if self.__gitRepo is None:
             return False
         if self.__gitRepo.is_dirty():
-            logger.warning("Local git have unsaved change. Skipping operation.")
+            logger.warning("Local git have unsaved change. Skipping source update.")
         return not self.__gitRepo.is_dirty()
 
     def isUpToDate(self, branch: Optional[str] = None) -> bool:
         """Check if the local git repository is up-to-date.
-        This method compare the last commit local and remote first,
-        if this commit don't match, check the last 15 previous commit (for dev use cases)."""
+        This method compare the last commit local and the ancestor."""
         if branch is None:
             branch = self.getCurrentBranch()
         # Get last local commit

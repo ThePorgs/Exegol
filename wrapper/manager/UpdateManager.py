@@ -67,10 +67,12 @@ class UpdateManager:
     @classmethod
     def updateGit(cls):
         """User procedure to update local git repository"""
+        logger.info("Updating Exegol local source code")
         # Check if pending change -> cancel
         if not cls.__getGit().safeCheck():
             logger.error("Aborting git update.")
             return
+        logger.info(f"Current git branch : {cls.__getGit().getCurrentBranch()}")
         # List & Select git branch
         selected_branch = ExegolTUI.selectFromList(cls.__getGit().listBranch(),
                                                    subject="a git branch",
@@ -107,8 +109,7 @@ class UpdateManager:
         # Choose dockerfile
         build_profile = ExegolTUI.selectFromList(cls.__listBuildProfiles(),
                                                  subject="a build profile",
-                                                 title="Profile",
-                                                 default="stable")
+                                                 title="Profile")
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile)
         return build_name
