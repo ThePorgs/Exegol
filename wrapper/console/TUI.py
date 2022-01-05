@@ -137,6 +137,7 @@ class ExegolTUI:
         table.title = "[gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
+        debug_mode = logger.isEnabledFor(logging.DEBUG)
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
@@ -150,6 +151,8 @@ class ExegolTUI:
         table.add_column("Status")
         # Load data into the table
         for image in data:
+            if image.isLocked() and not debug_mode:
+                continue
             if verbose_mode:
                 table.add_row(image.getId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
                               image.getStatus())

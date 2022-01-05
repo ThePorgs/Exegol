@@ -33,6 +33,7 @@ class ExegolImage(SelectableInterface):
         self.__is_install: bool = False
         self.__is_update: bool = False
         self.__is_discontinued: bool = False
+        self.__must_be_removed: bool = False
         # Process data
         if docker_image is not None:
             self.__initFromDockerImage()
@@ -46,7 +47,12 @@ class ExegolImage(SelectableInterface):
         # If docker object exist, image is already installed
         self.__is_install = True
         # Set init values from docker object
-        self.__name = self.__image.attrs["RepoTags"][0].split(':')[1]
+        if len(self.__image.attrs["RepoTags"]) > 0:
+            self.__name = self.__image.attrs["RepoTags"][0].split(':')[1]
+        else:
+            # If tag is <none>, use default value
+            self.__name = "<none>"
+            self.__must_be_removed = True
         self.__setRealSize(self.__image.attrs["Size"])
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
@@ -96,7 +102,11 @@ class ExegolImage(SelectableInterface):
         logger.debug("Merging remote and local images")
         for local_img in local_images:
             # Load variables
-            name, tag = local_img.attrs["RepoTags"][0].split(':')
+            if len(local_img.attrs["RepoTags"]) > 0:
+                name, tag = local_img.attrs["RepoTags"][0].split(':')
+            else:
+                # If tag is <none>, use default value
+                name, tag = ConstantConfig.IMAGE_NAME, "<none>"
             logger.debug("- {}".format(tag))
             # Check if custom build
             if len(local_img.attrs["RepoDigests"]) == 0:
@@ -156,6 +166,8 @@ class ExegolImage(SelectableInterface):
         """Formatted text getter of image's status."""
         if not self.__is_remote:
             return "[blue]Local image[/blue]"
+        elif self.__must_be_removed:
+            return "[bright_black]Must be removed[/bright_black]"
         elif self.__is_discontinued:
             return "[bright_black]Discontinued[/bright_black]"
         elif self.__is_update:
@@ -216,6 +228,10 @@ class ExegolImage(SelectableInterface):
     def isLocal(self) -> bool:
         """Local type getter"""
         return not self.__is_remote
+
+    def isLocked(self) -> bool:
+        """Current image is locked and must be removed getter"""
+        return self.__must_be_removed
 
     def getName(self) -> str:
         """Image's tag name getter"""
