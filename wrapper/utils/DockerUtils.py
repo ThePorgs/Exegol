@@ -42,7 +42,7 @@ class DockerUtils:
         """List available docker containers.
         Return a list of ExegolContainer"""
         if cls.__containers is None:
-            logger.verbose("List of Exegol containers")
+            logger.verbose("Listing local Exegol containers")
             cls.__containers = []
             try:
                 docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
@@ -160,7 +160,7 @@ class DockerUtils:
         """List available docker images.
         Return a list of ExegolImage"""
         if cls.__images is None:
-            logger.verbose("List of Exegol images")
+            logger.verbose("Listing local and remote Exegol images")
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)

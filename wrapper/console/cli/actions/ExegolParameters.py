@@ -21,7 +21,7 @@ class Start(Command, ContainerCreation):
 
         # Create group parameter for container selection
         self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
-                                       title="[cyan]Start specific options[/cyan]"))
+                                       title="[bold cyan]Start[/bold cyan] [blue]specific options[/blue]"))
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.start
@@ -40,7 +40,7 @@ class Stop(Command, ContainerSelector):
 
 
 class Install(Command, ImageSelector):
-    """Install or build Exegol image (build or pull depending on the chosen install --mode)"""
+    """Install or build Exegol image"""
 
     def __init__(self):
         Command.__init__(self)
@@ -52,7 +52,7 @@ class Install(Command, ImageSelector):
 
 
 class Update(Command, ImageSelector):
-    """Update or install an Exegol image (build or pull depending on the chosen update --mode)"""
+    """Update an Exegol image"""
 
     def __init__(self):
         Command.__init__(self)
@@ -111,8 +111,7 @@ class Exec(Command, ContainerCreation):
         self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},
                                        {"arg": self.daemon, "required": False},
                                        {"arg": self.tmp, "required": False},
-                                       title="[cyan]Exec specific options[/cyan]",
-                                       description='Command execution options in Exegol'))
+                                       title="[bold cyan]Exec[/bold cyan] [blue]specific options[/blue]"))
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running exec module")

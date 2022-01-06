@@ -53,7 +53,7 @@ class Parser(metaclass=MetaSingleton):
         }
         self.__options = [
             {
-                "title": "[blue]Optional arguments[/blue]",
+                "title": "[blue]Main arguments[/blue]",
                 "description": "",
                 "options": [
                     {

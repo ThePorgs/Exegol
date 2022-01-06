@@ -10,7 +10,7 @@ from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.SelectableInterface import SelectableInterface
-from wrapper.utils.ExeLog import logger
+from wrapper.utils.ExeLog import logger, console
 
 
 # Class of an existing exegol container
@@ -83,7 +83,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
-            self.__container.stop(timeout=timeout)
+            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="white") as status:
+                self.__container.stop(timeout=timeout)
 
     def spawnShell(self):
         """Spawn a shell on the docker container"""
@@ -122,7 +123,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def remove(self):
         """Stop and remove the docker container"""
-        self.stop(2)
+        self.stop(timeout=2)
         logger.info(f"Removing container {self.name}")
         try:
             self.__container.remove()

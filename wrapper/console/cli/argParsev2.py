@@ -16,17 +16,17 @@ class Parser:
     __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
                     "your machine."
     __examples = {
-        "install (↓ ~15GB max)": "exegol install",
-        "check image updates": "exegol info",
-        "get a shell\t": "exegol start",
-        "run as daemon\t": "exegol exec -e bloodhound",
-        "get a tmux shell": "exegol --shell tmux start",
-        "use wifi/bluetooth": "exegol --privileged start",
-        "use a Proxmark": "exegol --device /dev/ttyACM0 start",
-        "use a LOGITacker": "exegol --device /dev/ttyACM0 start",
-        "use an ACR122u": "exegol --device /dev/bus/usb/ start",
-        "use an HackRF One": "exegol --device /dev/bus/usb/ start",
-        "use an Crazyradio PA": "exegol --device /dev/bus/usb/ start",
+        "install (↓ ~25GB max)":    "exegol install",
+        "check image updates":      "exegol info",
+        "get a shell\t":            "exegol start",
+        "run as daemon\t":          "exegol exec -e bloodhound",
+        "get a tmux shell":         "exegol start --shell tmux",
+        "use wifi/bluetooth":       "exegol start --privileged",
+        "use a Proxmark":           "exegol start --device /dev/ttyACM0",
+        "use a LOGITacker":         "exegol start --device /dev/ttyACM0",
+        "use an ACR122u":           "exegol start --device /dev/bus/usb/",
+        "use an HackRF One":        "exegol start --device /dev/bus/usb/",
+        "use an Crazyradio PA":     "exegol start --device /dev/bus/usb/",
     }
 
     def __init__(self, actions):
@@ -39,7 +39,7 @@ class Parser:
         self.__set_options(self.parser)
 
     def __init_parser(self):
-        epilog = "[bold green]Examples:[/bold green]\n"
+        epilog = "[green]Examples:[/green]\n"
         for k, v in self.__examples.items():
             epilog += "  {}\t{}\n".format(k, v)
 
@@ -50,7 +50,7 @@ class Parser:
         )
 
     def __set_positionals(self):
-        self.parser._positionals.title = "[bold green]Required arguments[/bold green]"
+        self.parser._positionals.title = "[green]Required arguments[/green]"
         self.subParser = self.parser.add_subparsers(help="Commands help")
         for action in self.__actions:
             sp = self.subParser.add_parser(action.name, help=action.__doc__)

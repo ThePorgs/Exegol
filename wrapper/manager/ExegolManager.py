@@ -47,7 +47,7 @@ class ExegolManager:
             container = cls.createTmpContainer()
             if not ParametersManager().daemon:
                 container.exec(command=ParametersManager().exec, as_daemon=False)
-                container.stop(2)
+                container.stop(timeout=2)
             else:
                 logger.success(f"Command executed as entrypoint of the container {container.hostname}")
         else:
@@ -59,7 +59,7 @@ class ExegolManager:
         logger.info("Stopping exegol")
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         for c in container:
-            c.stop()
+            c.stop(timeout=2)
 
     @classmethod
     def install(cls):

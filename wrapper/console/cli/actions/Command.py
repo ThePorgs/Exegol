@@ -26,7 +26,7 @@ class Command:
                              action="store_false",
                              default=True,
                              required=False,
-                             help="Allow insecure server connections for web requests (default: [red bold not italic]False[/red bold not italic])")
+                             help="Allow insecure server connections for web requests, e.g. when fetching info from DockerHub (default: [red bold not italic]False[/red bold not italic])")
         self.quiet = Option("-q", "--quiet",
                             dest="quiet",
                             action="store_true",

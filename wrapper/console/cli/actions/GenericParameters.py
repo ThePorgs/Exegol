@@ -7,6 +7,7 @@ class ContainerSelector:
 
     def __init__(self, groupArg):
         # Create container selector arguments
+        # TODO : switch to a positional argument
         self.containertag = Option("-c", "--container-tag",
                                    dest="containertag",
                                    action="store",
@@ -22,6 +23,7 @@ class ImageSelector:
 
     def __init__(self, groupArg):
         # Create image selector arguments
+        # TODO : switch to a positional argument
         self.imagetag = Option("-i", "--image-tag",
                                dest="imagetag",
                                action="store",
@@ -40,14 +42,14 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         ContainerSelector.__init__(self, groupArg)
         ImageSelector.__init__(self, groupArg)
 
+        self.X11 = Option("--disable-X11",
+                          action="store_false",
+                          dest="X11",
+                          help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.common_resources = Option("--disable-common-resources",
                                        action="store_false",
                                        dest="common_resources",
                                        help=f"Disable the mount of the common exegol resources (/opt/resources) from the host ({ConstantConfig.root_path_obj.joinpath('shared-resources')}) (default: [green]Enabled[/green])")
-        self.X11 = Option("--disable-x11",
-                          action="store_false",
-                          dest="X11",
-                          help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.host_network = Option("--disable-shared-network",
                                    action="store_false",
                                    dest="host_network",
@@ -78,8 +80,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
 
-        groupArg.append(GroupArgs({"arg": self.common_resources, "required": False},
-                                  {"arg": self.X11, "required": False},
+        groupArg.append(GroupArgs({"arg": self.X11, "required": False},
+                                  {"arg": self.common_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
