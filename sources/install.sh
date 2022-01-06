@@ -1860,6 +1860,11 @@ function install_shadowcoerce() {
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/ShadowCoerce
 }
 
+function install_pwncat() {
+  colorecho "Installing pwncat"
+  python3 -m pipx install pwncat-cs
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2182,6 +2187,7 @@ function install_c2_tools() {
   Empire                          # Exploit framework
   fapt metasploit-framework       # Offensive framework
   install_routersploit            # Exploitation Framework for Embedded Devices
+  install_pwncat                  # netcat and rlwrap on steroids to handle revshells, automates a few things too
   # TODO: add Silentrinity
   # TODO: add starkiller
   # TODO: add beef-xss
