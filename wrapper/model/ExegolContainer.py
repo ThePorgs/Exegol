@@ -139,6 +139,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
             try:
+                # TODO : add a check, if volume_path is not empty, ask the user for confirmation (default to Not delete)
                 shutil.rmtree(volume_path)
                 logger.success("Private workspace volume removed successfully")
             except PermissionError:

@@ -86,7 +86,7 @@ class ExegolManager:
 
     @classmethod
     def print_version(cls):
-        logger.info(f"Exegol is currently in version [default not bold]v{ConstantConfig.version}[/default not bold]")
+        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}", markup=True)
         logger.empty_line()
 
     @classmethod

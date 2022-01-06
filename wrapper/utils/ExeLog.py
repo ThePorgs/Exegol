@@ -44,13 +44,17 @@ class ExeLog(logging.getLoggerClass()):
             self._log(ExeLog.VERBOSE,
                       "{}[V]{} {}".format("[blue]", "[/blue]", msg), args, **kwargs)
 
-    def raw(self, msg: Any, level=VERBOSE, rich_parsing=False) -> None:
+    def raw(self, msg: Any, level=VERBOSE, markup=False, highlight=False, emoji=False, rich_parsing=False) -> None:
         """Add raw text logging, used for stream printing."""
+        if rich_parsing:
+            markup = True
+            highlight = True
+            emoji = True
         if self.isEnabledFor(level):
             if type(msg) is bytes:
                 msg = msg.decode('utf-8', errors="ignore")
             # Raw message are print directly to the console bypassing logging system and auto formatting
-            console.print(msg, end='', markup=rich_parsing, highlight=rich_parsing, emoji=rich_parsing)
+            console.print(msg, end='', markup=markup, highlight=highlight, emoji=emoji)
 
     def info(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default info text format with rich color support"""

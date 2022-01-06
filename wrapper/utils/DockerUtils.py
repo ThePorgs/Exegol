@@ -50,6 +50,7 @@ class DockerUtils:
                 logger.debug(err)
                 logger.critical(err.explanation)
                 return
+            logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(docker_containers)}{os.linesep}", markup=True)
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers

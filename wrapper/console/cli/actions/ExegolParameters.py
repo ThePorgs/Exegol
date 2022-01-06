@@ -127,7 +127,7 @@ class Info(Command):
 
 
 class Version(Command):
-    """Print current Exegol banner & version"""
+    """Print current Exegol version"""
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.print_version

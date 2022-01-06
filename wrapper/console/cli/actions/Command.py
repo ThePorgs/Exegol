@@ -36,7 +36,7 @@ class Command:
                                 dest="verbosity",
                                 action="count",
                                 default=0,
-                                help="Verbosity level (-v for verbose, -vv for debug)")
+                                help="Verbosity level (-v for verbose, -vv for advanced, -vvv for debug)")
 
         self.groupArg = [
             GroupArgs({"arg": self.verify, "required": False},

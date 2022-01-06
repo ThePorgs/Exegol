@@ -115,7 +115,7 @@ class ExegolTUI:
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE, title_justify="left")
         if len(data) == 0:
-            logger.info("No data supplied")
+            logger.debug("No data supplied")
             # TODO handle no data
             return
         else:
@@ -272,6 +272,7 @@ class ExegolTUI:
             pool.remove(selected)
             if len(pool) == 0:
                 return result
+            # TODO : "N" is not interpreted as valid choice as internal rich choices are "y" and "n" in lowercase
             elif not Confirm.ask(f"[blue][?][/blue] Do you want to select another {object_subject}?",
                                  choices=["y", "N"],
                                  show_default=False,
