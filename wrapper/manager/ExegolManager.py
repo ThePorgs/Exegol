@@ -86,8 +86,7 @@ class ExegolManager:
 
     @classmethod
     def print_version(cls):
-        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}", markup=True)
-        logger.empty_line()
+        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}", level=logging.INFO, markup=True)
 
     @classmethod
     def __loadOrInstallImage(cls,
