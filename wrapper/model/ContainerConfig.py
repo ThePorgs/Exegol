@@ -54,7 +54,10 @@ class ContainerConfig:
         self.__devices = host_config.get("Devices", [])
         if self.__devices is None:
             self.__devices = []
+        for device in self.__devices:
+            logger.info(f"Shared host device: {device['PathOnHost']}")
         logger.debug(f"Load devices : {self.__devices}")
+
 
         # Volumes section
         self.__share_timezone = False

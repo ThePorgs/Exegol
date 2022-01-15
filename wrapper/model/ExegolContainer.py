@@ -83,7 +83,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
-            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="white") as status:
+            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue") as status:
                 self.__container.stop(timeout=timeout)
 
     def spawnShell(self):
