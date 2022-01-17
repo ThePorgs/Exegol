@@ -42,7 +42,11 @@ class ExegolTUI:
             task_layers_extract = progress.add_task("[bold gold1]Extracting layers...", total=0, start=False)
             for line in stream:  # Receiving stream from docker API
                 status = line.get("status", '')
+                error = line.get("error", '')
                 layer_id = line.get("id")
+                if error != "":
+                    logger.error(f"Docker download error: {error}")
+                    logger.critical(f"An error occurred during the image download. Exiting.")
                 if status == "Pulling fs layer":  # Identify new layer to download
                     layers.add(layer_id)
                     progress.update(task_layers_download, total=len(layers))
@@ -95,6 +99,11 @@ class ExegolTUI:
         """Rich interface for docker image building from SDK stream"""
         for line in build_stream:
             stream_text = line.get("stream", '')
+            error_text = line.get("error", '')
+            if error_text != "":
+                logger.error(f"Docker build error: {error_text}")
+                logger.critical(
+                    f"An error occurred during the image build (code: {line.get('errorDetail', {}).get('code', '?')}). Exiting.")
             if stream_text.strip() != '':
                 if "Step" in stream_text:
                     logger.info(stream_text.rstrip())

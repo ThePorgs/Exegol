@@ -35,6 +35,7 @@ class ExegolImage(SelectableInterface):
         self.__is_update: bool = False
         self.__is_discontinued: bool = False
         self.__must_be_removed: bool = False
+        self.__custom_status: str = ""
         # Process data
         if docker_image is not None:
             self.__initFromDockerImage()
@@ -136,7 +137,10 @@ class ExegolImage(SelectableInterface):
             if not found:
                 # Matching image not found
                 new_image = ExegolImage(docker_image=local_img)
-                new_image.__is_discontinued = True
+                if len(remote_images) == 0:
+                    new_image.setCustomStatus("[bright_black]Unknown[/bright_black]")
+                else:
+                    new_image.__is_discontinued = True
                 results.append(new_image)
         # Add remaining remote image
         results.extend(remote_images)
@@ -170,9 +174,15 @@ class ExegolImage(SelectableInterface):
         return f"{self.__name} - {self.__disk_size} - " + \
                (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
+    def setCustomStatus(self, status: str):
+        """Manual image's status overwrite"""
+        self.__custom_status = status
+
     def getStatus(self) -> str:
         """Formatted text getter of image's status."""
-        if not self.__is_remote:
+        if self.__custom_status != "":
+            return self.__custom_status
+        elif not self.__is_remote:
             return "[blue]Local image[/blue]"
         elif self.__must_be_removed:
             return "[red]Must be removed[/red]"

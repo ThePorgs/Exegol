@@ -294,7 +294,6 @@ class DockerUtils:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
-            # TODO handle build error
             ExegolTUI.buildDockerImage(
                 cls.__client.api.build(path=ConstantConfig.build_context_path,
                                        dockerfile=build_profile,
