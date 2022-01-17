@@ -65,7 +65,6 @@ class ContainerConfig:
         devices = host_config.get("Devices", [])
         if devices is not None:
             for device in devices:
-                logger.info(f"Shared host device: {device.get('PathOnHost', '?')}")
                 self.__devices.append(
                     f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
         logger.debug(f"Load devices : {self.__devices}")
@@ -195,19 +194,64 @@ class ContainerConfig:
         # Add tun device, this device is needed to create VPN tunnels
         self.addDevice("/dev/net/tun")
         # Sharing VPN configuration with the container
+        ovpn_parameters = self.__prepareVpnVolumes()
+        # Execution of the VPN daemon at container startup
+        if ovpn_parameters is not None:
+            self.setContainerCommand(
+                f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")
+
+    def __prepareVpnVolumes(self) -> Optional[str]:
+        """Volumes must be prepared to share OpenVPN configuration files with the container.
+        Depending on the user's settings, different configurations can be applied.
+        With or without username / password authentication via auth-user-pass.
+        OVPN config file directly supplied or a config directory,
+        the directory feature is useful when the configuration depends on multiple file like certificate, keys etc."""
+        ovpn_parameters = []
+
+        # VPN Auth creds file
+        input_vpn_auth = ParametersManager().vpn_auth
+        vpn_auth = None
+        if input_vpn_auth is not None:
+            vpn_auth = Path(input_vpn_auth)
+
+        if vpn_auth is not None:
+            if vpn_auth.is_file():
+                logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
+                self.addVolume(str(vpn_auth.absolute()), "/vpn/auth/creds.txt", read_only=True)
+                ovpn_parameters.append("--auth-user-pass /vpn/auth/creds.txt")
+            else:
+                # Supply a directory instead of a file for VPN authentication is not supported.
+                logger.critical(
+                    f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
+
+        # VPN config path
         vpn_path = Path(ParametersManager().vpn)
+
         logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
         self.__vpn_name = vpn_path.name
         if vpn_path.is_file():
-            self.addVolume(str(vpn_path.absolute()), "/vpn/config.ovpn", read_only=True)
+            # Configure VPN with single file
+            self.addVolume(str(vpn_path.absolute()), "/vpn/config/client.ovpn", read_only=True)
+            ovpn_parameters.append("--config /vpn/config/client.ovpn")
         else:
-            # When VPN is dir
-            logger.info(
-                "Folder detected for VPN configuration, only the config.ovpn file will be automatically launched when the container starts.")
-            self.addVolume(str(vpn_path.absolute()), "/vpn")
-        # Execution of the VPN daemon at container startup
-        # TODO add --auth-user-pass file
-        self.setContainerCommand("bash -c 'openvpn /vpn/config.ovpn | tee /var/log/vpn.log; bash'")
+            # Configure VPN with directory
+            logger.verbose(
+                "Folder detected for VPN configuration. only the first *.ovpn file will be automatically launched when the container starts.")
+            self.addVolume(str(vpn_path.absolute()), "/vpn/config", read_only=True)
+            vpn_filename = None
+            # Try to find the config file in order to configure the autostart command of the container
+            for file in vpn_path.glob('*.ovpn'):
+                logger.info(f"Using VPN config: {file}")
+                # Get filename only to match the future container path
+                vpn_filename = file.name
+                ovpn_parameters.append(f"--config /vpn/config/{vpn_filename}")
+                # If there is multiple match, only the first one is selected
+                break
+            if vpn_filename is None:
+                logger.error("No *.ovpn files were detected. The VPN autostart will not work.")
+                return None
+
+        return ' '.join(ovpn_parameters)
 
     def disableDefaultWorkspace(self):
         """Allows you to disable the default workspace volume"""

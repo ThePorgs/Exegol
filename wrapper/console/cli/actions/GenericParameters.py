@@ -63,7 +63,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                         dest="mount_current_dir",
                                         action="store_true",
                                         help="Share the current working directory to container's /workspace")
-        self.volumes = Option("--volume",
+        self.volumes = Option("-V", "--volume",
                               action="append",
                               default=[],
                               dest="volumes",
@@ -79,15 +79,20 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
+
         self.vpn = Option("--vpn",
                           dest="vpn",
                           default=None,
                           action="store",
                           help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)")
+        self.vpn_auth = Option("--vpn-auth",
+                               dest="vpn_auth",
+                               default=None,
+                               action="store",
+                               help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
         groupArg.append(GroupArgs({"arg": self.X11, "required": False},
                                   {"arg": self.common_resources, "required": False},
-                                  {"arg": self.vpn, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
@@ -95,3 +100,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   title="[blue]Container creation options[/blue]"))
+
+        groupArg.append(GroupArgs({"arg": self.vpn, "required": False},
+                                  {"arg": self.vpn_auth, "required": False},
+                                  title="[blue]Container VPN options[/blue]"))

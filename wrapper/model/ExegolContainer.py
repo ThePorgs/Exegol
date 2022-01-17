@@ -91,6 +91,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def spawnShell(self):
         """Spawn a shell on the docker container"""
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
+        for device in self.config.getDevices():
+            logger.info(f"Shared host device: {device.split(':')[0]}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
         # If GUI enable, allow X11 access on host ACL
         if self.config.isGUIEnable():
