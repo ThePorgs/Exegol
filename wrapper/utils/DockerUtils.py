@@ -63,8 +63,7 @@ class DockerUtils:
         logger.info("Creating new exegol container")
         model.prepare()
         if command is not None:
-            # Overwriting container starting command
-            # TODO review command overwriting
+            # Overwriting container starting command, shouldn't be used, prefer using config.setContainerCommand()
             model.config.setContainerCommand(command)
         logger.debug(model)
         if model.config.isCommonResourcesEnable():

@@ -297,13 +297,14 @@ class ExegolManager:
         logger.verbose("Configuring new exegol container")
         # Create exegol config
         config = cls.__prepareContainerConfig()
+        # When container exec a command as a daemon, the execution must be set on the container's entrypoint
+        if ParametersManager().daemon:
+            # Using formatShellCommand to support zsh aliases
+            cmd = ExegolContainer.formatShellCommand(ParametersManager().exec)
+            config.setContainerCommand(cmd)
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
         model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
 
-        entrypoint = None
-        if ParametersManager().daemon:
-            entrypoint = ParametersManager().exec
-            # TODO parse the command for zsh aliases support on entrypoint
-        return DockerUtils.createContainer(model, temporary=True, command=entrypoint)
+        return DockerUtils.createContainer(model, temporary=True)

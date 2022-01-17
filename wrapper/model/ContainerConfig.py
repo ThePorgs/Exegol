@@ -242,7 +242,8 @@ class ContainerConfig:
         self.__network_host = host_mode
 
     def setContainerCommand(self, cmd: str):
-        """Set container's entrypoint command on creation"""
+        """Set the entrypoint command of the container. This command is executed at each startup.
+        This parameter is applied to the container at creation."""
         self.__container_command = cmd
 
     def __addCapability(self, cap_string):

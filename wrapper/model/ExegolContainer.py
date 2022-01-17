@@ -1,3 +1,4 @@
+import base64
 import os
 import shutil
 from typing import Optional, Dict
@@ -97,7 +98,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         os.system("docker exec -ti {} {}".format(self.getFullId(), ParametersManager().shell))
         # Docker SDK dont support (yet) stdin properly
-        # result = self.__container.exec_run("zsh", stdout=True, stderr=True, stdin=True, tty=True)
+        # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
 
     def exec(self, command: str, as_daemon: bool = True):
@@ -107,10 +108,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         logger.info("Executing command on Exegol")
         if logger.getEffectiveLevel() > logger.VERBOSE:
             logger.info("Hint: use verbose mode to see command output (-v).")
-        # TODO fix ' char eval bug
-        cmd = "zsh -c \"source /opt/.zsh_aliases; eval \'{}\'\"".format(
-            command.replace("\"", "\\\"").replace("\'", "\\\'"))
-        logger.debug(cmd)
+        cmd = self.formatShellCommand(command)
         stream = self.__container.exec_run(cmd, detach=as_daemon, stream=not as_daemon)
         if as_daemon:
             logger.success("Command successfully executed in background")
@@ -124,6 +122,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except KeyboardInterrupt:
                 logger.info("Detaching process logging")
                 logger.warning("Exiting this command do NOT stop the process in the container")
+
+    @staticmethod
+    def formatShellCommand(command: str):
+        """Generic method to format a shell command and support zsh aliases"""
+        # Using base64 to escape special characters
+        cmd_b64 = base64.b64encode(command.encode('utf-8')).decode('utf-8')
+        # Load zsh aliases and call eval to force aliases interpretation
+        cmd = f'zsh -c "source /opt/.zsh_aliases; eval $(echo {cmd_b64} | base64 -d)"'
+        logger.debug(f"Formatting zsh command: {cmd}")
+        return cmd
 
     def remove(self):
         """Stop and remove the docker container"""
