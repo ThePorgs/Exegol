@@ -57,10 +57,11 @@ class UpdateManager:
     def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
         """Build confirmation process and image building"""
         # Need confirmation from the user before starting building.
-        if Confirm.ask("[blue][?][/blue] Do you want to build locally a custom image?",
-                       choices=["y", "N"],
-                       show_default=False,
-                       default=False):
+        if Confirm.ask(
+                "[blue][?][/blue] Do you want to build locally a custom image? [bright_magenta]\[y/N][/bright_magenta]",
+                show_default=False,
+                show_choices=False,
+                default=False):
             return cls.buildAndLoad(tag)
         return None
 
@@ -72,15 +73,17 @@ class UpdateManager:
         if not cls.__getGit().safeCheck():
             logger.error("Aborting git update.")
             return
-        logger.info(f"Current git branch : {cls.__getGit().getCurrentBranch()}")
-        # List & Select git branch
-        selected_branch = ExegolTUI.selectFromList(cls.__getGit().listBranch(),
-                                                   subject="a git branch",
-                                                   title="Branch",
-                                                   default=cls.__getGit().getCurrentBranch())
-        # Checkout new branch
-        if selected_branch is not None and selected_branch != cls.__getGit().getCurrentBranch():
-            cls.__getGit().checkout(selected_branch)
+        current_branch = cls.__getGit().getCurrentBranch()
+        if current_branch != "master":
+            logger.info(f"Current git branch : {current_branch}")
+            # List & Select git branch
+            selected_branch = ExegolTUI.selectFromList(cls.__getGit().listBranch(),
+                                                       subject="a git branch",
+                                                       title="Branch",
+                                                       default=current_branch)
+            # Checkout new branch
+            if selected_branch is not None and selected_branch != current_branch:
+                cls.__getGit().checkout(selected_branch)
         # git pull
         cls.__getGit().update()
 
@@ -94,8 +97,8 @@ class UpdateManager:
         Return the name of the built image"""
         # Ask to update git
         if not cls.__getGit().isUpToDate() and Confirm.ask(
-                "[blue][?][/blue] Do you want to update git (in order to update local build profiles)?",
-                choices=["Y", "n"],
+                "[blue][?][/blue] Do you want to update git (in order to update local build profiles)? [bright_magenta][Y/n][/bright_magenta]",
+                show_choices=False,
                 show_default=False,
                 default=True):
             cls.updateGit()

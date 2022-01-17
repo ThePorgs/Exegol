@@ -240,8 +240,8 @@ class ExegolTUI:
                     return o
             if allow_None:
                 if Confirm.ask(
-                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it?",
-                        choices=["Y", "n"],
+                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it? [bright_magenta][Y/n][/bright_magenta]",
+                        show_choices=False,
                         show_default=False,
                         default=True):
                     return choice
@@ -272,11 +272,11 @@ class ExegolTUI:
             pool.remove(selected)
             if len(pool) == 0:
                 return result
-            # TODO : "N" is not interpreted as valid choice as internal rich choices are "y" and "n" in lowercase
-            elif not Confirm.ask(f"[blue][?][/blue] Do you want to select another {object_subject}?",
-                                 choices=["y", "N"],
-                                 show_default=False,
-                                 default=False):
+            elif not Confirm.ask(
+                    f"[blue][?][/blue] Do you want to select another {object_subject}? [bright_magenta]\[y/N][/bright_magenta]",
+                    show_choices=False,
+                    show_default=False,
+                    default=False):
                 return result
 
     @classmethod

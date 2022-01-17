@@ -5,8 +5,10 @@ from typing import Optional, List, Dict, Union, Tuple
 
 from docker.models.containers import Container
 from docker.types import Mount
+from rich.prompt import Confirm
 
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
+from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger, ExeLog
@@ -24,6 +26,8 @@ class ContainerConfig:
         self.__privileged: bool = False
         self.__mounts: List[Mount] = []
         self.__devices: List[str] = []
+        self.__capabilities: List[str] = []
+        self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
         self.interactive: bool = True
@@ -31,7 +35,9 @@ class ContainerConfig:
         self.shm_size: str = '1G'
         self.__share_cwd: Optional[str] = None
         self.__share_private: Optional[str] = None
-        self.__disable_workspace = False
+        self.__disable_workspace: bool = False
+        self.__container_command: str = "bash"
+        self.__vpn_name: str = None
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -51,13 +57,18 @@ class ContainerConfig:
         # Host Config section
         host_config = container.attrs.get("HostConfig", {})
         self.__privileged = host_config.get("Privileged", False)
-        self.__devices = host_config.get("Devices", [])
-        if self.__devices is None:
-            self.__devices = []
+        caps = host_config.get("CapAdd", [])
+        if caps is not None:
+            self.__capabilities = caps
+        logger.debug(f"Capabilities : {self.__capabilities}")
+        devices = host_config.get("Devices", [])
+        if devices is not None:
+            for device in devices:
+                self.__devices.append(
+                    f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
         for device in self.__devices:
             logger.info(f"Shared host device: {device['PathOnHost']}")
         logger.debug(f"Load devices : {self.__devices}")
-
 
         # Volumes section
         self.__share_timezone = False
@@ -118,6 +129,9 @@ class ContainerConfig:
                     self.__share_private = source
                 else:
                     self.__share_cwd = source
+            elif "/vpn" in share.get('Destination', ''):
+                self.__vpn_name = src_path.name
+                logger.debug(f"Loading VPN config: {self.__vpn_name}")
 
     @staticmethod
     def __isGuiAvailable() -> bool:
@@ -142,8 +156,7 @@ class ContainerConfig:
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
         if ConstantConfig.windows_host:
-            logger.warning("Timezone sharing is not (yet) supported on Windows. Skipping.")
-            return
+            logger.warning("Timezone sharing is inconsistent on Windows. May be inaccurate.")
         if not self.__share_timezone:
             self.__share_timezone = True
             logger.verbose("Config : Enabling host timezones")
@@ -151,6 +164,7 @@ class ContainerConfig:
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
     def enablePrivileged(self, status: bool = True):
+        """Set container as privileged"""
         self.__privileged = status
 
     def enableCommonVolume(self):
@@ -166,7 +180,42 @@ class ContainerConfig:
         logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
 
+    def enableVPN(self):
+        """Configure a VPN profile for container startup"""
+        # Check host mode : custom (allows you to isolate the VPN connection from the host's network)
+        if self.__network_host:
+            logger.warning("Using the host network mode with a VPN profile is not recommended.")
+            if not Confirm.ask(
+                    f"[blue][?][/blue] Are you sure you want to configure a VPN container based on the host's network? [bright_magenta]\[y/N][/bright_magenta]",
+                    default=False,
+                    show_choices=False,
+                    show_default=False):
+                logger.info("Changing network mode to custom")
+                self.setNetworkMode(False)
+        # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
+        self.__addCapability("NET_ADMIN")
+        if not self.__network_host:
+            # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
+            self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
+        # Add tun device, this device is needed to create VPN tunnels
+        self.addDevice("/dev/net/tun")
+        # Sharing VPN configuration with the container
+        vpn_path = Path(ParametersManager().vpn)
+        logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+        self.__vpn_name = vpn_path.name
+        if vpn_path.is_file():
+            self.addVolume(str(vpn_path.absolute()), "/vpn/config.ovpn", read_only=True)
+        else:
+            # When VPN is dir
+            logger.info(
+                "Folder detected for VPN configuration, only the config.ovpn file will be automatically launched when the container starts.")
+            self.addVolume(str(vpn_path.absolute()), "/vpn")
+        # Execution of the VPN daemon at container startup
+        # TODO add --auth-user-pass file
+        self.setContainerCommand("bash -c 'openvpn /vpn/config.ovpn | tee /var/log/vpn.log; bash'")
+
     def disableDefaultWorkspace(self):
+        """Allows you to disable the default workspace volume"""
         # If a custom workspace is not define, disable workspace
         if self.__share_cwd is None:
             self.__disable_workspace = True
@@ -193,6 +242,24 @@ class ContainerConfig:
             host_mode = True
         self.__network_host = host_mode
 
+    def setContainerCommand(self, cmd: str):
+        """Set container's entrypoint command on creation"""
+        self.__container_command = cmd
+
+    def __addCapability(self, cap_string):
+        """Add a linux capability to the container"""
+        if cap_string in self.__capabilities:
+            logger.warning("Capability already setup. Skipping.")
+            return
+        self.__capabilities.append(cap_string)
+
+    def __addSysctl(self, sysctl_key, config):
+        """Add a linux sysctl to the container"""
+        if sysctl_key in self.__sysctls.keys():
+            logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
+            return
+        self.__sysctls[sysctl_key] = config
+
     def getNetworkMode(self) -> str:
         """Network mode, text getter"""
         return "host" if self.__network_host else "bridge"
@@ -201,9 +268,21 @@ class ContainerConfig:
         """Privileged getter"""
         return self.__privileged
 
+    def getCapabilities(self) -> List[str]:
+        """Capabilities getter"""
+        return self.__capabilities
+
+    def getSysctls(self) -> Dict[str, str]:
+        """Sysctl custom rules getter"""
+        return self.__sysctls
+
     def getWorkingDir(self) -> str:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
+
+    def getContainerCommand(self) -> str:
+        """Get container entrypoint path"""
+        return self.__container_command
 
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
@@ -324,6 +403,8 @@ class ContainerConfig:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
         if verbose or not self.__common_resources:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
+        if self.__vpn_name is not None:
+            result += f"VPN: {self.__vpn_name}{os.linesep}"
         return result
 
     def getTextMounts(self, verbose: bool = False) -> str:
@@ -344,7 +425,11 @@ class ContainerConfig:
             if verbose:
                 result += f"{device}{os.linesep}"
             else:
-                result += f"{':right_arrow:'.join(device.split(':')[0:2])}{os.linesep}"
+                src, dest = device.split(':')[:2]
+                if src == dest:
+                    result += f"{src}{os.linesep}"
+                else:
+                    result += f"{src}:right_arrow:{dest}{os.linesep}"
         return result
 
     def getTextEnvs(self, verbose: bool = False) -> str:
@@ -360,6 +445,8 @@ class ContainerConfig:
     def __str__(self):
         """Default object text formatter, debug only"""
         return f"Privileged: {self.__privileged}{os.linesep}" \
+               f"Capabilities: {self.__capabilities}{os.linesep}" \
+               f"Sysctls: {self.__sysctls}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
                f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
@@ -367,7 +454,8 @@ class ContainerConfig:
                f"Common resources: {self.__common_resources}{os.linesep}" \
                f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
                f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
-               f"Devices ({len(self.__devices)}): {self.__devices}"
+               f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \
+               f"VPN: {self.__vpn_name}"
 
     def printConfig(self):
         """Log current object state, debug only"""

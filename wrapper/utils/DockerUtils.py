@@ -62,6 +62,10 @@ class DockerUtils:
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
         model.prepare()
+        if command is not None:
+            # Overwriting container starting command
+            # TODO review command overwriting
+            model.config.setContainerCommand(command)
         logger.debug(model)
         if model.config.isCommonResourcesEnable():
             volume = cls.__loadCommonVolume()
@@ -69,7 +73,7 @@ class DockerUtils:
                 logger.warning("Error while creating common resources volume")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
-                                                    command=command,
+                                                    command=model.config.getContainerCommand(),
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
@@ -78,14 +82,17 @@ class DockerUtils:
                                                     network_mode=model.config.getNetworkMode(),
                                                     ports=model.config.getPorts(),
                                                     privileged=model.config.getPrivileged(),
+                                                    cap_add=model.config.getCapabilities(),
+                                                    sysctls=model.config.getSysctls(),
                                                     shm_size=model.config.shm_size,
                                                     stdin_open=model.config.interactive,
                                                     tty=model.config.tty,
                                                     mounts=model.config.getVolumes(),
                                                     remove=temporary,
+                                                    auto_remove=temporary,
                                                     working_dir=model.config.getWorkingDir())
         except APIError as err:
-            logger.error(err.explanation)
+            logger.error(err.explanation.decode('utf-8') if type(err.explanation) is bytes else err.explanation)
             logger.debug(err)
             logger.critical("Error while creating exegol container. Exiting.")
             return
@@ -287,6 +294,7 @@ class DockerUtils:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
+            # TODO handle build error
             ExegolTUI.buildDockerImage(
                 cls.__client.api.build(path=ConstantConfig.build_context_path,
                                        dockerfile=build_profile,

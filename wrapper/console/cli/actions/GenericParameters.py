@@ -79,9 +79,15 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
+        self.vpn = Option("--vpn",
+                          dest="vpn",
+                          default=None,
+                          action="store",
+                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/")
 
         groupArg.append(GroupArgs({"arg": self.X11, "required": False},
                                   {"arg": self.common_resources, "required": False},
+                                  {"arg": self.vpn, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},

@@ -277,6 +277,8 @@ class ExegolManager:
         if ParametersManager().devices is not None:
             for device in ParametersManager().devices:
                 config.addDevice(device)
+        if ParametersManager().vpn is not None:
+            config.enableVPN()
         return config
 
     @classmethod
