@@ -5,6 +5,7 @@ from typing import Optional, Dict
 
 from docker.errors import NotFound
 from docker.models.containers import Container
+from rich.prompt import Confirm
 
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.model.ContainerConfig import ContainerConfig
@@ -152,10 +153,24 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
             try:
-                # TODO : add a check, if volume_path is not empty, ask the user for confirmation (default to Not delete)
+                if os.listdir(volume_path):
+                    # Directory is not empty
+                    if not Confirm.ask(
+                            f"[blue][?][/blue] Workspace {volume_path} is not empty, do you want to delete it? [bright_magenta]\[y/N][/bright_magenta]",
+                            show_choices=False,
+                            show_default=False,
+                            default=False):
+                        # User can choose not to delete the workspace on the host
+                        return
                 shutil.rmtree(volume_path)
                 logger.success("Private workspace volume removed successfully")
             except PermissionError:
                 logger.warning(f"I don't have the rights to remove {volume_path} (do it yourself)")
             except Exception as err:
                 logger.error(err)
+        else:
+            # Check if container workspace is a WSL volume or a custom one
+            path = self.config.getHostWorkspacePath()
+            if path.startswith('/wsl/') or path.startswith('\\wsl\\'):
+                # Docker volume defines from WSL don't return the real path, they cannot be automatically removed
+                logger.warning("Warning: WSL workspace directory cannot be removed automatically.")

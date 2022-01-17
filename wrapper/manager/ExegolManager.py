@@ -86,7 +86,12 @@ class ExegolManager:
 
     @classmethod
     def print_version(cls):
-        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}", level=logging.INFO, markup=True)
+        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}",
+                   level=logging.INFO, markup=True)
+        logger.debug(f"Host: {'Windows' if ConstantConfig.windows_host else 'Linux'}")
+        if ConstantConfig.windows_host:
+            logger.debug(f"Environment: {'WSL' if ConstantConfig.wsl_environment else 'Windows'}")
+            logger.debug(f"Windows release: {ConstantConfig.windows_release}")
 
     @classmethod
     def __loadOrInstallImage(cls,

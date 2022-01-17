@@ -1,6 +1,6 @@
 import os
 import re
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Optional, List, Dict, Union, Tuple
 
 from docker.models.containers import Container
@@ -10,6 +10,7 @@ from rich.prompt import Confirm
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
+from wrapper.utils import FsUtils
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger, ExeLog
 
@@ -99,15 +100,8 @@ class ContainerConfig:
                 source = f"Docker {share.get('Driver', '')} volume '{share.get('Name', 'unknown')}'"
             else:
                 source = share.get("Source")
-                # Check if path is from Windows Docker Desktop
-                matches = re.match(r"^/run/desktop/mnt/host/([a-z])(/.*)$", source, re.IGNORECASE)
-                if matches:
-                    # Convert Windows Docker-VM style volume path to local OS path
-                    src_path = Path(f"{matches.group(1).upper()}:{matches.group(2)}")
-                    logger.debug(f"Windows style detected : {src_path}")
-                else:
-                    # Remove docker mount path if exist
-                    src_path = PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
+                src_path = FsUtils.parseDockerVolumePath(source)
+
                 # When debug is disabled, exegol print resolved windows path of mounts
                 if logger.getEffectiveLevel() > ExeLog.ADVANCED:
                     source = str(src_path)
@@ -125,9 +119,11 @@ class ContainerConfig:
                 logger.debug(f"Loading workspace volume source : {src_path}")
                 self.__disable_workspace = False
                 if src_path is not None and src_path.name == name and src_path.parent.name == "shared-data-volumes":
-                    self.__share_private = source
+                    logger.debug("Private workspace detected")
+                    self.__share_private = str(src_path)
                 else:
-                    self.__share_cwd = source
+                    logger.debug("Custom workspace detected")
+                    self.__share_cwd = str(src_path)
             elif "/vpn" in share.get('Destination', ''):
                 self.__vpn_name = src_path.name
                 logger.debug(f"Loading VPN config: {self.__vpn_name}")
@@ -287,14 +283,14 @@ class ContainerConfig:
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
         if self.__share_cwd:
-            return self.__share_cwd
+            return FsUtils.resolvStrPath(self.__share_cwd)
         elif self.__share_private:
-            return self.__share_private
+            return FsUtils.resolvStrPath(self.__share_private)
         return "not found :("
 
     def getPrivateVolumePath(self) -> Optional[str]:
         """Get private volume path (None if not set)"""
-        return self.__share_private
+        return FsUtils.resolvStrPath(self.__share_private)
 
     def isCommonResourcesEnable(self) -> bool:
         """Return if the feature 'common resources' is enabled in this container config"""
