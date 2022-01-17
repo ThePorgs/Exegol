@@ -296,8 +296,12 @@ class ContainerConfig:
         return self.__share_private
 
     def isCommonResourcesEnable(self) -> bool:
-        """Return if the feature 'common resources' is enabled in this config"""
+        """Return if the feature 'common resources' is enabled in this container config"""
         return self.__common_resources
+
+    def isGUIEnable(self) -> bool:
+        """Return if the feature 'GUI' is enabled in this container config"""
+        return self.__enable_gui
 
     def addVolume(self,
                   host_path: str,

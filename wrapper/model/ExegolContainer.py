@@ -90,6 +90,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Spawn a shell on the docker container"""
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
+        # If GUI enable, allow X11 access on host ACL
+        if self.config.isGUIEnable():
+            logger.debug(f"Adding xhost ACL to local:{self.hostname}")
+            os.system(f"xhost +local:{self.hostname} > /dev/null")
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         os.system("docker exec -ti {} {}".format(self.getFullId(), ParametersManager().shell))
         # Docker SDK dont support (yet) stdin properly
