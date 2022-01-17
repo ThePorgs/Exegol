@@ -64,10 +64,9 @@ class ContainerConfig:
         devices = host_config.get("Devices", [])
         if devices is not None:
             for device in devices:
+                logger.info(f"Shared host device: {device.get('PathOnHost', '?')}")
                 self.__devices.append(
                     f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
-        for device in self.__devices:
-            logger.info(f"Shared host device: {device['PathOnHost']}")
         logger.debug(f"Load devices : {self.__devices}")
 
         # Volumes section
