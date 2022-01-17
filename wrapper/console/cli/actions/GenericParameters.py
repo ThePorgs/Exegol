@@ -83,7 +83,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="vpn",
                           default=None,
                           action="store",
-                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/")
+                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)")
 
         groupArg.append(GroupArgs({"arg": self.X11, "required": False},
                                   {"arg": self.common_resources, "required": False},
