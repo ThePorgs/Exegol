@@ -35,8 +35,7 @@ class Parser:
 
         self.parser = None
         self.__init_parser()
-        self.__set_positionals()
-        self.__set_options(self.parser)
+        self.__set_action_parser()
 
     def __init_parser(self):
         epilog = "[green]Examples:[/green]\n"
@@ -49,7 +48,7 @@ class Parser:
             formatter_class=argparse.RawTextHelpFormatter,
         )
 
-    def __set_positionals(self):
+    def __set_action_parser(self):
         self.parser._positionals.title = "[green]Required arguments[/green]"
         self.subParser = self.parser.add_subparsers(help="Commands help")
         for action in self.__actions:

@@ -7,9 +7,9 @@ class ContainerSelector:
 
     def __init__(self, groupArg):
         # Create container selector arguments
-        # TODO : switch to a positional argument
-        self.containertag = Option("-c", "--container-tag",
-                                   dest="containertag",
+        self.containertag = Option("containertag",
+                                   metavar="CONTAINER",
+                                   nargs='?',
                                    action="store",
                                    help="Tag used to target an Exegol container")
 
@@ -23,9 +23,9 @@ class ImageSelector:
 
     def __init__(self, groupArg):
         # Create image selector arguments
-        # TODO : switch to a positional argument
-        self.imagetag = Option("-i", "--image-tag",
-                               dest="imagetag",
+        self.imagetag = Option("imagetag",
+                               metavar="IMAGE",
+                               nargs='?',
                                action="store",
                                help="Tag used to target an Exegol image")
 

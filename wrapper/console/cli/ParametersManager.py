@@ -1,5 +1,5 @@
 from wrapper.console.cli.actions.Command import Command
-from wrapper.console.cli.argParsev2 import Parser
+from wrapper.utils.argParse import Parser
 from wrapper.utils.ExeLog import logger
 from wrapper.utils.MetaSingleton import MetaSingleton
 
