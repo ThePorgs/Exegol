@@ -93,7 +93,7 @@ class GitUtils:
             return False
         if self.__gitRemote is not None:
             logger.info(f"Updating local git '{self.getCurrentBranch()}'")
-            self.__gitRemote.pull()  # TODO need some test, check fast-forward only / try catch ?
+            self.__gitRemote.pull()
             logger.success("Git successfully updated")
             return True
         return False

@@ -271,8 +271,8 @@ class ContainerConfig:
             # Skip default volume workspace if disabled
             return
         else:
+            # Add shared-data-volumes private workspace bind volume
             volume_path = str(ConstantConfig.private_volume_path.joinpath(share_name))
-            # TODO when SDK will be ready, change this to a volume to enable auto-remove
             self.addVolume(volume_path, '/workspace')
 
     def setNetworkMode(self, host_mode: bool):

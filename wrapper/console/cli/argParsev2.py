@@ -53,7 +53,8 @@ class Parser:
         self.parser._positionals.title = "[green]Required arguments[/green]"
         self.subParser = self.parser.add_subparsers(help="Commands help")
         for action in self.__actions:
-            sp = self.subParser.add_parser(action.name, help=action.__doc__)
+            sp = self.subParser.add_parser(action.name, help=action.__doc__,
+                                           formatter_class=argparse.RawTextHelpFormatter)
             sp.set_defaults(action=action)
             self.__set_options(sp, target=[action])
 
