@@ -226,6 +226,10 @@ class DockerUtils:
             logger.warning("Connection Error: you probably have no internet, skipping online queries")
             logger.debug(f"Error: {err}")
             return []
+        except requests.exceptions.RequestException as err:
+            logger.warning("Unknown connection Error. Skipping online queries.")
+            logger.error(f"Error: {err}")
+            return []
         remote_results = []
         remote_images_list = json.loads(remote_images_request.text)
         for docker_image in remote_images_list["results"]:
