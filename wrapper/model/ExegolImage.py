@@ -152,10 +152,11 @@ class ExegolImage(SelectableInterface):
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0
-        while size > 1024 and suffix_index < 4:
+        calc: float = size
+        while calc > 1024 and suffix_index < 4:
             suffix_index += 1  # increment the index of the suffix
-            size = size / 1024.0  # apply the division
-        return "%.*f%s" % (precision, size, suffixes[suffix_index])
+            calc = calc / 1024  # apply the division
+        return "%.*f%s" % (precision, calc, suffixes[suffix_index])
 
     def __eq__(self, other):
         """Operation == overloading for ExegolImage object"""

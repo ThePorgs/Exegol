@@ -1,7 +1,7 @@
 import os
 import re
-from pathlib import Path
-from typing import Optional, List, Dict, Union, Tuple
+from pathlib import Path, PurePath
+from typing import Optional, List, Dict, Union, Tuple, cast
 
 from docker.models.containers import Container
 from docker.types import Mount
@@ -38,7 +38,7 @@ class ContainerConfig:
         self.__share_private: Optional[str] = None
         self.__disable_workspace: bool = False
         self.__container_command: str = "bash"
-        self.__vpn_name: str = None
+        self.__vpn_name: Optional[str] = None
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -94,11 +94,12 @@ class ContainerConfig:
         self.__disable_workspace = True
         for share in mounts:
             logger.debug(f"Parsing mount : {share}")
-            src_path = None
+            src_path: Optional[PurePath] = None
+            obj_path: PurePath
             if share.get('Type', 'volume') == "volume":
                 source = f"Docker {share.get('Driver', '')} volume '{share.get('Name', 'unknown')}'"
             else:
-                source = share.get("Source")
+                source = share.get("Source", '')
                 src_path = FsUtils.parseDockerVolumePath(source)
 
                 # When debug is disabled, exegol print resolved windows path of mounts
@@ -115,16 +116,22 @@ class ContainerConfig:
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__common_resources = True
             elif "/workspace" in share.get('Destination', ''):
-                logger.debug(f"Loading workspace volume source : {src_path}")
+                # Workspace are always bind mount
+                assert src_path is not None
+                obj_path = cast(PurePath, src_path)
+                logger.debug(f"Loading workspace volume source : {obj_path}")
                 self.__disable_workspace = False
-                if src_path is not None and src_path.name == name and src_path.parent.name == "shared-data-volumes":
+                if obj_path is not None and obj_path.name == name and obj_path.parent.name == "shared-data-volumes":
                     logger.debug("Private workspace detected")
-                    self.__share_private = str(src_path)
+                    self.__share_private = str(obj_path)
                 else:
                     logger.debug("Custom workspace detected")
-                    self.__share_cwd = str(src_path)
+                    self.__share_cwd = str(obj_path)
             elif "/vpn" in share.get('Destination', ''):
-                self.__vpn_name = src_path.name
+                # VPN are always bind mount
+                assert src_path is not None
+                obj_path = cast(PurePath, src_path)
+                self.__vpn_name = obj_path.name
                 logger.debug(f"Loading VPN config: {self.__vpn_name}")
 
     @staticmethod
@@ -332,7 +339,7 @@ class ContainerConfig:
             return FsUtils.resolvStrPath(self.__share_private)
         return "not found :("
 
-    def getPrivateVolumePath(self) -> Optional[str]:
+    def getPrivateVolumePath(self) -> str:
         """Get private volume path (None if not set)"""
         return FsUtils.resolvStrPath(self.__share_private)
 

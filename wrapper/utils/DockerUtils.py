@@ -49,7 +49,8 @@ class DockerUtils:
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
-                return
+                # Not reachable, critical logging will exit
+                return  # type: ignore
             logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(docker_containers)}{os.linesep}", markup=True)
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
@@ -94,12 +95,14 @@ class DockerUtils:
             logger.error(err.explanation.decode('utf-8') if type(err.explanation) is bytes else err.explanation)
             logger.debug(err)
             logger.critical("Error while creating exegol container. Exiting.")
-            return
+            # Not reachable, critical logging will exit
+            return  # type: ignore
         if container is not None:
             logger.success("Exegol container successfully created !")
         else:
             logger.critical("Unknown error while creating exegol container. Exiting.")
-            return
+            # Not reachable, critical logging will exit
+            return  # type: ignore
         return ExegolContainer(container, model)
 
     @classmethod
@@ -111,7 +114,8 @@ class DockerUtils:
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
-            return
+            # Not reachable, critical logging will exit
+            return  # type: ignore
         # Check if there is at least 1 result. If no container was found, raise ObjectNotFound.
         if container is None or len(container) == 0:
             raise ObjectNotFound
@@ -211,7 +215,8 @@ class DockerUtils:
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
-            return
+            # Not reachable, critical logging will exit
+            return  # type: ignore
 
     @classmethod
     def __listRemoteImages(cls) -> List[ExegolImage]:

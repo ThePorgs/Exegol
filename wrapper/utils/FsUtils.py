@@ -1,22 +1,23 @@
 import re
 import subprocess
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PurePath
+from typing import Optional
 
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.ExeLog import logger
 
 
-def parseDockerVolumePath(source: str) -> Path:
+def parseDockerVolumePath(source: str) -> PurePath:
     # Check if path is from Windows Docker Desktop
     matches = re.match(r"^/run/desktop/mnt/host/([a-z])(/.*)$", source, re.IGNORECASE)
     if matches:
         # Convert Windows Docker-VM style volume path to local OS path
         src_path = Path(f"{matches.group(1).upper()}:{matches.group(2)}")
         logger.debug(f"Windows style detected : {src_path}")
+        return src_path
     else:
         # Remove docker mount path if exist
-        src_path = PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
-    return src_path
+        return PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
 
 
 def resolvPath(path: Path) -> str:
@@ -30,10 +31,10 @@ def resolvPath(path: Path) -> str:
             p = subprocess.Popen(["wslpath", "-a", str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output, err = p.communicate()
             logger.debug(f"Resolv path input: {path}")
-            logger.debug(f"Resolv path output: {output}")
+            logger.debug(f"Resolv path output: {output!r}")
             if err != b'':
                 # result is returned to STDERR when the translation didn't properly find a match
-                logger.debug(f"Error on FS path resolution: {err}. Input path is probably a linux path.")
+                logger.debug(f"Error on FS path resolution: {err!r}. Input path is probably a linux path.")
             else:
                 return output.decode('utf-8').strip()
         except FileNotFoundError:
@@ -41,7 +42,7 @@ def resolvPath(path: Path) -> str:
     return str(path)
 
 
-def resolvStrPath(path: str) -> str:
+def resolvStrPath(path: Optional[str]) -> str:
     if path is None:
-        return None
+        return ''
     return resolvPath(Path(path))

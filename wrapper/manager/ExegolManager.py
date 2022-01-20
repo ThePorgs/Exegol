@@ -1,7 +1,7 @@
 import binascii
 import logging
 import os
-from typing import Union, List
+from typing import Union, List, Tuple, Optional, cast, Sequence
 
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
@@ -11,6 +11,7 @@ from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
+from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.ExeLog import logger
@@ -18,8 +19,8 @@ from wrapper.utils.ExeLog import logger
 
 # Main procedure of exegol
 class ExegolManager:
-    __container = None
-    __image = None
+    __container: Union[Optional[ExegolContainer], List[ExegolContainer]] = None
+    __image: Union[Optional[ExegolImage], List[ExegolImage]] = None
 
     @staticmethod
     def info():
@@ -96,7 +97,7 @@ class ExegolManager:
     @classmethod
     def __loadOrInstallImage(cls,
                              multiple: bool = False,
-                             must_exist: bool = False) -> Union[ExegolImage, List[ExegolImage]]:
+                             must_exist: bool = False) -> Union[Optional[ExegolImage], List[ExegolImage]]:
         """Select / Load (and install) an ExegolImage
         When must_exist is set to True, return None if no image are installed
         When multiple is set to True, return a list of ExegolImage
@@ -152,11 +153,12 @@ class ExegolManager:
                 image_selection, image_tag = None, None
                 continue
 
-            cls.__image = checked_images
+            cls.__image = cast(Union[Optional[ExegolImage], List[ExegolImage]], checked_images)
         return cls.__image
 
     @classmethod
-    def __checkImageInstallationStatus(cls, image_selection, multiple: bool = False, must_exist: bool = False) -> bool:
+    def __checkImageInstallationStatus(cls, image_selection, multiple: bool = False, must_exist: bool = False) -> Tuple[
+        bool, Optional[Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]]]:
         """Checks if the selected images are installed and ready for use.
         returns false if the images are supposed to be already installed."""
         # Checks if one or more images have been selected and unifies the format into a list.
@@ -195,7 +197,7 @@ class ExegolManager:
     @classmethod
     def __loadOrCreateContainer(cls,
                                 multiple: bool = False,
-                                must_exist: bool = False) -> Union[ExegolContainer, List[ExegolContainer]]:
+                                must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
         """Select one or multipleExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
@@ -207,7 +209,8 @@ class ExegolManager:
         try:
             if container_tag is None:
                 # Interactive container selection
-                cls.__container = cls.__interactiveSelection(ExegolContainer, multiple, must_exist)
+                cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
+                                       cls.__interactiveSelection(ExegolContainer, multiple, must_exist))
             else:
                 # Try to find the corresponding container
                 container = DockerUtils.getContainer(container_tag)
@@ -223,16 +226,18 @@ class ExegolManager:
                 logger.error("Container not found")
                 return [] if multiple else None
             return cls.__createContainer(container_tag)
-        return cls.__container
+        assert cls.__container is not None
+        return cast(Union[Optional[ExegolContainer], List[ExegolContainer]], cls.__container)
 
     @classmethod
     def __interactiveSelection(cls,
                                object_type: type,
                                multiple: bool = False,
                                must_exist: bool = False) -> \
-            Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]:
+            Union[ExegolImage, ExegolContainer, Sequence[ExegolImage], Sequence[ExegolContainer]]:
         """Interactive object selection process, depending on object_type.
         object_type can be ExegolImage or ExegolContainer."""
+        object_list: Sequence[SelectableInterface]
         # Object listing depending on the type
         if object_type is ExegolContainer:
             # List all images available
@@ -244,6 +249,7 @@ class ExegolManager:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception
         # Interactive choice with TUI
+        user_selection: Union[SelectableInterface, Sequence[SelectableInterface], str]
         if multiple:
             user_selection = ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
         else:
@@ -257,7 +263,7 @@ class ExegolManager:
                 else:
                     # Calling buildAndLoad directly, no need to ask confirmation, already done by TUI.
                     user_selection = UpdateManager.buildAndLoad(user_selection)
-        return user_selection
+        return cast(Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]], user_selection)
 
     @classmethod
     def __prepareContainerConfig(cls):
@@ -292,7 +298,8 @@ class ExegolManager:
         logger.verbose("Configuring new exegol container")
         # Create exegol config
         config = cls.__prepareContainerConfig()
-        model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
+        image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
+        model = ExegolContainerTemplate(name, config, image)
 
         return DockerUtils.createContainer(model)
 
@@ -310,6 +317,7 @@ class ExegolManager:
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
-        model = ExegolContainerTemplate(name, config, cls.__loadOrInstallImage())
+        image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
+        model = ExegolContainerTemplate(name, config, image)
 
         return DockerUtils.createContainer(model, temporary=True)

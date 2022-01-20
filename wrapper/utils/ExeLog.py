@@ -1,13 +1,13 @@
 import logging
 import os
-from typing import Any
+from typing import Any, cast
 
 from rich.console import Console
 from rich.logging import RichHandler
 
 
 # Customized logging class
-class ExeLog(logging.getLoggerClass()):
+class ExeLog(logging.Logger):
     """Project's Logger custom class"""
     # New logging level
     SUCCESS: int = 25
@@ -103,7 +103,7 @@ logging.basicConfig(
 )
 
 # Global logger object
-logger: ExeLog = logging.getLogger("main")
+logger: ExeLog = cast(ExeLog, logging.getLogger("main"))
 # Default log level
 logger.setLevel(logging.INFO)
 

@@ -1,3 +1,5 @@
+from typing import List
+
 from wrapper.utils.ExeLog import logger
 
 
@@ -58,7 +60,7 @@ class Command:
             if arg in self.__dict__:
                 self.__setattr__(arg, vars(args)[arg])
 
-    def check_parameters(self) -> [str]:
+    def check_parameters(self) -> List[str]:
         missingOption = []
         for groupArg in self.groupArg:
             for option in groupArg.options:

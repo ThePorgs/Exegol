@@ -1,6 +1,9 @@
 # Generic singleton class
+from typing import Dict
+
+
 class MetaSingleton(type):
-    __instances = {}
+    __instances: Dict[type, object] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in MetaSingleton.__instances:

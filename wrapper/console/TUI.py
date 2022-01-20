@@ -1,8 +1,8 @@
 import re
-from typing import Union, Optional, List, Dict, Type, Generator
+from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence
 
 from rich import box
-from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
 
@@ -20,11 +20,11 @@ class ExegolTUI:
     @staticmethod
     def downloadDockerLayer(stream: Generator, quick_exit: bool = False):
         """Rich interface for docker image layer download from SDK stream"""
-        layers = set()
-        layers_downloaded = set()
-        layers_extracted = set()
-        downloading = {}
-        extracting = {}
+        layers: Set[str] = set()
+        layers_downloaded: Set[str] = set()
+        layers_extracted: Set[str] = set()
+        downloading: Dict[str, TaskID] = {}
+        extracting: Dict[str, TaskID] = {}
         # Create progress bar with columns
         with ExegolProgress(TextColumn("{task.description}", justify="left"),
                             BarColumn(bar_width=None),
@@ -119,7 +119,7 @@ class ExegolTUI:
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
 
     @staticmethod
-    def printTable(data: list, title: Optional[str] = None):
+    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str]], title: Optional[str] = None):
         """Printing Rich table for a list of object"""
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE, title_justify="left")
@@ -129,18 +129,21 @@ class ExegolTUI:
             return
         else:
             if type(data[0]) is ExegolImage:
-                ExegolTUI.__buildImageTable(table, data)
+                ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data))
             elif type(data[0]) is ExegolContainer:
-                ExegolTUI.__buildContainerTable(table, data)
+                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data))
             elif type(data[0]) is str:
-                ExegolTUI.__buildStringTable(table, data, title)
+                if title is not None:
+                    ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
+                else:
+                    ExegolTUI.__buildStringTable(table, cast(Sequence[str], data))
             else:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
         console.print(table)
 
     @staticmethod
-    def __buildImageTable(table: Table, data: List[ExegolImage]):
+    def __buildImageTable(table: Table, data: Sequence[ExegolImage]):
         """Building Rich table from a list of ExegolImage"""
         table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
@@ -168,7 +171,7 @@ class ExegolTUI:
                 table.add_row(image.getName(), image.getSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table: Table, data: List[ExegolContainer]):
+    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -196,7 +199,7 @@ class ExegolTUI:
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
-    def __buildStringTable(table: Table, data: List[str], title: str = "Key"):
+    def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key"):
         """Building a simple Rich table from a list of string"""
         table.title = None
         # Define columns
@@ -207,7 +210,7 @@ class ExegolTUI:
 
     @classmethod
     def selectFromTable(cls,
-                        data: List[SelectableInterface],
+                        data: Sequence[SelectableInterface],
                         object_type: Optional[Type] = None,
                         default: Optional[str] = None,
                         allow_None: bool = False) -> Union[SelectableInterface, str]:
@@ -230,15 +233,16 @@ class ExegolTUI:
         # Print data list
         cls.printTable(data)
         # Get a list of every choice available
-        choices = [obj.getKey() for obj in data]
+        choices: Optional[List[str]] = [obj.getKey() for obj in data]
         # If no default have been supplied, using the first one
         if default is None:
-            default = choices[0]
+            default = cast(List[str], choices)[0]
         # When allow_none is enable, disabling choices restriction
         if allow_None:
             choices = None
             logger.info(
-                f"You can use a name that does not already exist to {action} a new {object_name}{' from local sources' if object_type is ExegolImage else ''}")
+                f"You can use a name that does not already exist to {action} a new {object_name}"
+                f"{' from local sources' if object_type is ExegolImage else ''}")
         while True:
             choice = Prompt.ask(
                 f"[blue][?][/blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",
@@ -249,7 +253,8 @@ class ExegolTUI:
                     return o
             if allow_None:
                 if Confirm.ask(
-                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it? [bright_magenta][Y/n][/bright_magenta]",
+                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it? "
+                        f"[bright_magenta][Y/n][/bright_magenta]",
                         show_choices=False,
                         show_default=False,
                         default=True):
@@ -260,13 +265,13 @@ class ExegolTUI:
 
     @classmethod
     def multipleSelectFromTable(cls,
-                                data: List[SelectableInterface],
+                                data: Sequence[SelectableInterface],
                                 object_type: Type = None,
-                                default: Optional[str] = None) -> SelectableInterface:
+                                default: Optional[str] = None) -> Sequence[SelectableInterface]:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""
         result = []
-        pool = data.copy()
+        pool = cast(List[SelectableInterface], data).copy()
         if object_type is None and len(pool) > 0:
             object_type = type(pool[0])
         if object_type is ExegolContainer:
@@ -276,13 +281,14 @@ class ExegolTUI:
         else:
             object_subject = "object"
         while True:
-            selected = cls.selectFromTable(pool, object_type, default)
+            selected = cast(SelectableInterface, cls.selectFromTable(pool, object_type, default))
             result.append(selected)
             pool.remove(selected)
             if len(pool) == 0:
                 return result
             elif not Confirm.ask(
-                    f"[blue][?][/blue] Do you want to select another {object_subject}? [bright_magenta]\[y/N][/bright_magenta]",
+                    f"[blue][?][/blue] Do you want to select another {object_subject}? "
+                    f"[bright_magenta]\[y/N][/bright_magenta]",
                     show_choices=False,
                     show_default=False,
                     default=False):
@@ -290,7 +296,7 @@ class ExegolTUI:
 
     @classmethod
     def selectFromList(cls,
-                       data: Union[Dict, List[str]],
+                       data: Union[Dict[str, str], List[str]],
                        subject: str = "an option",
                        title: str = "Options",
                        default: Optional[str] = None) -> str:
@@ -303,7 +309,7 @@ class ExegolTUI:
         if type(data) is dict:
             submit_data = list(data.keys())
         else:
-            submit_data = data
+            submit_data = cast(List[str], data)
         cls.printTable(submit_data, title=title)
         if default is None:
             default = submit_data[0]

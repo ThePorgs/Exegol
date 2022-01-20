@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, cast
 
 from rich.prompt import Confirm, Prompt
 
@@ -14,7 +14,7 @@ from wrapper.utils.GitUtils import GitUtils
 
 # Procedure class for updating the exegol tool and docker images
 class UpdateManager:
-    __git = None
+    __git: Optional[GitUtils] = None
 
     @classmethod
     def __getGit(cls) -> GitUtils:
@@ -32,8 +32,19 @@ class UpdateManager:
         if image_args is not None and tag is None:
             tag = image_args
         if tag is None:
-            # Interactive selection
-            selected_image = ExegolTUI.selectFromTable(DockerUtils.listImages(), allow_None=install_mode)
+            try:
+                # Interactive selection
+                selected_image = ExegolTUI.selectFromTable(DockerUtils.listImages(),
+                                                           object_type=ExegolImage,
+                                                           allow_None=install_mode)
+            except IndexError:
+                # No images are available
+                if install_mode:
+                    # If no image are available in install mode,
+                    # either the user does not have internet,
+                    # or the image repository has been changed and no docker image is available
+                    logger.critical("Exegol can't be installed offline")
+                return None
         else:
             try:
                 # Find image by name
@@ -51,7 +62,7 @@ class UpdateManager:
         else:
             # Unknown use case
             logger.critical(f"Unknown selected image type: {type(selected_image)}. Exiting.")
-        return selected_image
+        return cast(Optional[ExegolImage], selected_image)
 
     @classmethod
     def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
