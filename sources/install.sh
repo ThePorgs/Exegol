@@ -1822,7 +1822,25 @@ function install_httprobe() {
 
 function install_httpx() {
   colorecho "Installing httpx"
-  python3 -m pipx install 'httpx[cli]'
+  go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+}
+
+function install_naabu() {
+  colorecho "Installing Naabu"
+  apt install -y libpcap-dev
+  go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+}
+
+function install_anew() {
+  colorecho "Installing Anew"
+  go get -u github.com/tomnomnom/anew
+}
+
+function install_sudomy() {
+  colorecho "Installing Sudomy"
+  git -C /opt/tools clone --recursive https://github.com/screetsec/Sudomy.git
+  python3 -m pip install -r /opt/tools/Sudomy/requirements.txt
+  ln -s /opt/tools/Sudomy/sudomy /usr/bin/sudomy
 }
 
 function install_base() {
@@ -2131,7 +2149,10 @@ function install_web_tools() {
   install_prips                   # Print the IP addresses in a given range
   install_hakrevdns               # Reverse DNS lookups
   install_httprobe
-  install_httpx
+  install_httpx                   # httpx is a fast and multi-purpose HTTP toolkit allow to run multiple probers
+  install_naabu                   # Naabu is a port scanning tool written in Go that allows you to enumerate valid ports for hosts in a fast and reliable manner
+  install_anew			  # Append lines from stdin to a file - it's like 'tee -a' and 'sort -u' in go
+  install_sudomy                  # Sudomy is a subdomain enumeration tool to collect subdomains
 }
 
 # Package dedicated to command & control frameworks
