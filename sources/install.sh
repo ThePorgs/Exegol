@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.10"
+VERSION="3.1.11.dev"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -420,7 +420,7 @@ function install_subfinder() {
 
 function install_gobuster() {
   colorecho "Installing gobuster"
-  go get -u -v github.com/OJ/gobuster
+  go install github.com/OJ/gobuster/v3@latest
 }
 
 function install_kiterunner() {
@@ -542,9 +542,11 @@ function pykek() {
 
 function install_autorecon() {
   colorecho "Installing autorecon"
+  apt-get -y install wkhtmltopdf oscanner tnscmd10g
   git -C /opt/tools/ clone https://github.com/Tib3rius/AutoRecon
   cd /opt/tools/AutoRecon/
   python3 -m pip install -r requirements.txt
+  chmod +x /opt/tools/AutoRecon/autorecon.py
 }
 
 function install_simplyemail() {
@@ -667,8 +669,6 @@ function krbrelayx() {
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
   cd /opt/tools/krbrelayx/
-  # Added renameMachine.py
-  curl --location https://github.com/dirkjanm/krbrelayx/pull/20.patch | git apply --verbose
 }
 
 function hakrawler() {
@@ -1701,6 +1701,8 @@ function install_androguard() {
 
 function install_petitpotam() {
   colorecho "Installing PetitPotam"
+  git -C /opt/tools/ clone https://github.com/ly4k/PetitPotam
+  mv /opt/tools/PetitPotam /opt/tools/PetitPotam_alt
   git -C /opt/tools/ clone https://github.com/topotam/PetitPotam
 }
 
@@ -1843,6 +1845,44 @@ function install_sudomy() {
   ln -s /opt/tools/Sudomy/sudomy /usr/bin/sudomy
 }
 
+function install_tor() {
+  colorecho "Installing tor"
+  mkdir /opt/tools/tor
+  cd /opt/tools/tor
+  wget https://dist.torproject.org/tor-0.4.3.7.tar.gz
+  tar xf tor-0.4.3.7.tar.gz
+  cd tor-0.4.3.7
+  apt install libevent-dev
+  ./configure
+  make install
+}
+
+function install_pwndb() {
+  colorecho "Installing pwndb"
+  git -C /opt/tools/ clone https://github.com/davidtavarez/pwndb.git
+  cd /opt/tools/pwndb
+  chmod +x pwndb.py
+}
+
+function install_robotstester() {
+  # This Python script can enumerate all URLs present in robots.txt files, and test whether they can be accessed or not.
+  # https://github.com/p0dalirius/robotstester
+  colorecho "Installing Robotstester"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/robotstester.git
+  cd /opt/tools/robotstester
+  python3 setup.py install
+}
+
+function install_shadowcoerce() {
+  colorecho "Installing ShadowCoerce PoC"
+  git -C /opt/tools/ clone https://github.com/ShutdownRepo/ShadowCoerce
+}
+
+function install_pwncat() {
+  colorecho "Installing pwncat"
+  python3 -m pipx install pwncat-cs
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -1978,6 +2018,12 @@ function install_most_used_tools() {
   fapt mimikatz                   # AD vulnerability exploiter
   fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
   fapt smbmap                     # Allows users to enumerate samba share drives across an entire domain
+  install_nuclei                  # Vulnerability scanner
+  evilwinrm                       # WinRM shell
+  install_john                    # Password cracker
+  fapt hashcat                    # Password cracker
+  download_hashcat_rules
+  fapt fcrackzip                  # Zip cracker
 }
 
 # Package dedicated to offensive miscellaneous tools
@@ -2069,9 +2115,10 @@ function install_osint_tools() {
   OSRFramework                    # OSRFramework, the Open Sources Research Framework
   #Dark
   apt-get update
-  fapt tor                        # Tor proxy
+  install_tor					  # Tor proxy
   fapt torbrowser-launcher        # Tor browser
   onionsearch                     # OnionSearch is a script that scrapes urls on different .onion search engines.
+  install_pwndb					  # No need to say more, no ? Be responsible with this tool please !
   #Github
   githubemail                     # Retrieve a GitHub user's email even if it's not public
   #Other
@@ -2149,6 +2196,7 @@ function install_web_tools() {
   install_prips                   # Print the IP addresses in a given range
   install_hakrevdns               # Reverse DNS lookups
   install_httprobe
+  install_robotstester            # Robots.txt scanner
   install_httpx                   # httpx is a fast and multi-purpose HTTP toolkit allow to run multiple probers
   install_naabu                   # Naabu is a port scanning tool written in Go that allows you to enumerate valid ports for hosts in a fast and reliable manner
   install_anew			  # Append lines from stdin to a file - it's like 'tee -a' and 'sort -u' in go
@@ -2160,6 +2208,7 @@ function install_c2_tools() {
   Empire                          # Exploit framework
   fapt metasploit-framework       # Offensive framework
   install_routersploit            # Exploitation Framework for Embedded Devices
+  install_pwncat                  # netcat and rlwrap on steroids to handle revshells, automates a few things too
   # TODO: add Silentrinity
   # TODO: add starkiller
   # TODO: add beef-xss
@@ -2243,6 +2292,7 @@ function install_ad_tools() {
   install_webclientservicescanner
   install_certipy
   npm install ntpsync             # sync local time with remote server
+  install_shadowcoerce
 }
 
 # Package dedicated to mobile apps pentest tools
