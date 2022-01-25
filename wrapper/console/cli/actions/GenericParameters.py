@@ -1,11 +1,13 @@
-from wrapper.console.cli.actions.Command import Option, GroupArgs
+from typing import List
+
+from wrapper.console.cli.actions.Command import Option, GroupArg
 from wrapper.utils.ConstantConfig import ConstantConfig
 
 
-# Generic parameter class for container selection
 class ContainerSelector:
+    """Generic parameter class for container selection"""
 
-    def __init__(self, groupArg):
+    def __init__(self, groupArgs: List[GroupArg]):
         # Create container selector arguments
         self.containertag = Option("containertag",
                                    metavar="CONTAINER",
@@ -14,14 +16,14 @@ class ContainerSelector:
                                    help="Tag used to target an Exegol container")
 
         # Create group parameter for container selection
-        groupArg.append(GroupArgs({"arg": self.containertag, "required": False},
+        groupArgs.append(GroupArg({"arg": self.containertag, "required": False},
                                   title="[blue]Container selection options[/blue]"))
 
 
-# Generic parameter class for container selection
 class ImageSelector:
+    """Generic parameter class for container selection"""
 
-    def __init__(self, groupArg):
+    def __init__(self, groupArgs: List[GroupArg]):
         # Create image selector arguments
         self.imagetag = Option("imagetag",
                                metavar="IMAGE",
@@ -30,17 +32,17 @@ class ImageSelector:
                                help="Tag used to target an Exegol image")
 
         # Create group parameter for container selection
-        groupArg.append(GroupArgs({"arg": self.imagetag, "required": False},
+        groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
                                   title="[blue]Image selection options[/blue]"))
 
 
-# Generic parameter class for container creation
 class ContainerCreation(ContainerSelector, ImageSelector):
+    """Generic parameter class for container creation"""
 
-    def __init__(self, groupArg):
+    def __init__(self, groupArgs: List[GroupArg]):
         # Init parents : ContainerStart > ContainerSelector
-        ContainerSelector.__init__(self, groupArg)
-        ImageSelector.__init__(self, groupArg)
+        ContainerSelector.__init__(self, groupArgs)
+        ImageSelector.__init__(self, groupArgs)
 
         self.X11 = Option("--disable-X11",
                           action="store_false",
@@ -91,7 +93,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
-        groupArg.append(GroupArgs({"arg": self.X11, "required": False},
+        groupArgs.append(GroupArg({"arg": self.X11, "required": False},
                                   {"arg": self.common_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
@@ -101,6 +103,6 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.devices, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
-        groupArg.append(GroupArgs({"arg": self.vpn, "required": False},
+        groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
                                   title="[blue]Container VPN options[/blue]"))

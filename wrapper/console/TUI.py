@@ -125,7 +125,6 @@ class ExegolTUI:
                       box=box.SQUARE, title_justify="left")
         if len(data) == 0:
             logger.debug("No data supplied")
-            # TODO handle no data
             return
         else:
             if type(data[0]) is ExegolImage:

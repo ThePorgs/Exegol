@@ -9,7 +9,7 @@ class Start(Command, ContainerCreation):
 
     def __init__(self):
         Command.__init__(self)
-        ContainerCreation.__init__(self, self.groupArg)
+        ContainerCreation.__init__(self, self.groupArgs)
 
         # Create container start / exec arguments
         self.shell = Option("-s", "--shell",
@@ -20,7 +20,7 @@ class Start(Command, ContainerCreation):
                             help="Select a shell environment to launch at startup (Default: [blue]zsh[/blue])")
 
         # Create group parameter for container selection
-        self.groupArg.append(GroupArgs({"arg": self.shell, "required": False},
+        self.groupArgs.append(GroupArg({"arg": self.shell, "required": False},
                                        title="[bold cyan]Start[/bold cyan] [blue]specific options[/blue]"))
 
     def __call__(self, *args, **kwargs):
@@ -32,7 +32,7 @@ class Stop(Command, ContainerSelector):
 
     def __init__(self):
         Command.__init__(self)
-        ContainerSelector.__init__(self, self.groupArg)
+        ContainerSelector.__init__(self, self.groupArgs)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running stop module")
@@ -44,7 +44,7 @@ class Install(Command, ImageSelector):
 
     def __init__(self):
         Command.__init__(self)
-        ImageSelector.__init__(self, self.groupArg)
+        ImageSelector.__init__(self, self.groupArgs)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
@@ -56,7 +56,7 @@ class Update(Command, ImageSelector):
 
     def __init__(self):
         Command.__init__(self)
-        ImageSelector.__init__(self, self.groupArg)
+        ImageSelector.__init__(self, self.groupArgs)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
@@ -68,7 +68,7 @@ class Uninstall(Command, ImageSelector):
 
     def __init__(self):
         Command.__init__(self)
-        ImageSelector.__init__(self, self.groupArg)
+        ImageSelector.__init__(self, self.groupArgs)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running uninstall module")
@@ -80,7 +80,7 @@ class Remove(Command, ContainerSelector):
 
     def __init__(self):
         Command.__init__(self)
-        ContainerSelector.__init__(self, self.groupArg)
+        ContainerSelector.__init__(self, self.groupArgs)
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running remove module")
@@ -92,7 +92,7 @@ class Exec(Command, ContainerCreation):
 
     def __init__(self):
         Command.__init__(self)
-        ContainerCreation.__init__(self, self.groupArg)
+        ContainerCreation.__init__(self, self.groupArgs)
 
         self.exec = Option("-e", "--exec",
                            dest="exec",
@@ -108,7 +108,7 @@ class Exec(Command, ContainerCreation):
                           help="Created a dedicated and temporary container to execute the command (default: [red bold not italic]False[/red bold not italic])")
 
         # Create group parameter for container selection
-        self.groupArg.append(GroupArgs({"arg": self.exec, "required": True},
+        self.groupArgs.append(GroupArg({"arg": self.exec, "required": True},
                                        {"arg": self.daemon, "required": False},
                                        {"arg": self.tmp, "required": False},
                                        title="[bold cyan]Exec[/bold cyan] [blue]specific options[/blue]"))

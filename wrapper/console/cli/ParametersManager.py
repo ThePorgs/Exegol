@@ -1,26 +1,52 @@
+from argparse import Namespace
+from typing import List, Any
+
 from wrapper.console.cli.actions.Command import Command
-from wrapper.utils.argParse import Parser
 from wrapper.utils.ExeLog import logger
 from wrapper.utils.MetaSingleton import MetaSingleton
+from wrapper.utils.argParse import Parser
 
 
 class ParametersManager(metaclass=MetaSingleton):
     def __init__(self):
-        self.__actions = [cls() for cls in Command.__subclasses__()]
-        self.__parser = Parser(self.__actions)
-        self.parameters = self.__parser.get_parameters()
+        # List every action available on the project (from the root Class)
+        actions: List[Command] = [cls() for cls in Command.__subclasses__()]
+        # Load & execute argparse
+        parser: Parser = Parser(actions)
+        parsing_results = parser.run_parser()
+        # The user arguments resulting from the parsing will be stored in parameters
+        self.parameters: Command = self.__loadResults(parser, parsing_results)
 
-    def populate(self):
+    @staticmethod
+    def __loadResults(parser: Parser, parsing_results: Namespace) -> Command:
+        """The result of argparse is sent to the action object to replace the parser with the parsed values"""
         try:
-            self.parameters.action.populate(self.parameters)
-            self.parameters = self.parameters.action
+            action: Command = parsing_results.action
+            action.populate(parsing_results)
+            return action
         except AttributeError:
             # Catch missing "action" parameter en CLI
-            self.__parser.parser.print_help()
+            parser.print_help()
             exit(0)
 
-    def __getattr__(self, item):
+    def getCurrentAction(self) -> Command:
+        """Return the object corresponding to the action selected by the user"""
+        return self.parameters
+
+    def __getattr__(self, item: str) -> Any:
+        """The getattr function is overloaded to transparently pass the parameter search
+        in the child object of Command stored in the 'parameters' attribute"""
         try:
+            # The priority is to first return the attributes of the current object
+            # Using the object generic method to avoid infinite loop to itself
+            return object.__getattribute__(self, item)
+        except AttributeError:
+            # If parameters is called before initialisation (from the next statement), this can create an infinite loop
+            if item == "parameters":
+                return None
+        try:
+            # If item was not found in self, the search is initiated among the parameters
             return getattr(self.parameters, item)
-        except AttributeError as r:
-            logger.debug(r)
+        except AttributeError:
+            # The logger may not work if the call is made before its initialization
+            logger.debug(f"Attribute bis not found in parameters: {item}")

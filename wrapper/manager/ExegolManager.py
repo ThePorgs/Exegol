@@ -43,6 +43,7 @@ class ExegolManager:
 
     @classmethod
     def exec(cls):
+        # TODO review args
         logger.info("Starting exegol")
         if ParametersManager().tmp:
             container = cls.createTmpContainer()
