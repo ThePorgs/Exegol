@@ -166,12 +166,14 @@ class ContainerConfig:
 
     def enablePrivileged(self, status: bool = True):
         """Set container as privileged"""
+        logger.verbose("Config : Setting container as privileged")
+        logger.warning("Setting container as privileged (this exposes the host to security risks)")
         self.__privileged = status
 
     def enableCommonVolume(self):
         """Procedure to enable common volume feature"""
         if not self.__common_resources:
-            logger.verbose("Config : Enable common resources volume")
+            logger.verbose("Config : Enabling common resources volume")
             self.__common_resources = True
             # Adding volume config
             self.addVolume(ConstantConfig.COMMON_SHARE_NAME, '/opt/resources', volume_type='volume')
