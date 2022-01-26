@@ -94,21 +94,38 @@ class Exec(Command, ContainerCreation):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
 
-        self.exec = Option("-e", "--exec",
-                           dest="exec",
+        # Overwrite default selectors
+        self.containertag = None
+        self.imagetag = None
+        self.groupArgs.pop(1)
+        self.groupArgs.pop(1)
+
+        self.selector = Option("selector",
+                               metavar="CONTAINER or IMAGE",
+                               nargs='?',
+                               action="store",
+                               help="Tag used to target an Exegol container (by default) or an image (if --tmp is set).")
+
+        # Custom parameters
+        self.exec = Option("exec",
+                           metavar="COMMAND",
+                           nargs="+",
                            action="store",
-                           help="Execute a single command in the exegol container. If --tmp is set, this command will be executed via the container entrypoint command.")
+                           help="Execute a single command in the exegol container.")
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
-                             help="Executes the command in background as a daemon (default: [red bold not italic]False[/red bold not italic])")
+                             help="Executes the command in background as a daemon "
+                                  "(default: [red bold not italic]False[/red bold not italic])")
         self.tmp = Option("--tmp",
                           action="store_true",
                           dest="tmp",
-                          help="Created a dedicated and temporary container to execute the command (default: [red bold not italic]False[/red bold not italic])")
+                          help="Created a dedicated and temporary container to execute the command "
+                               "(default: [red bold not italic]False[/red bold not italic])")
 
         # Create group parameter for container selection
-        self.groupArgs.append(GroupArg({"arg": self.exec, "required": True},
+        self.groupArgs.append(GroupArg({"arg": self.selector, "required": False},
+                                       {"arg": self.exec, "required": False},
                                        {"arg": self.daemon, "required": False},
                                        {"arg": self.tmp, "required": False},
                                        title="[bold cyan]Exec[/bold cyan] [blue]specific options[/blue]"))

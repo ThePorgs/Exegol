@@ -24,7 +24,7 @@ def resolvPath(path: Path) -> str:
     """Resolv a filesystem path depending on the environment.
     On WSL, Windows PATH can be resolved using 'wslpath'."""
     if path is None:
-        return None
+        return ''
     if ConstantConfig.wsl_environment:
         try:
             # Resolv Windows path on WSL environment

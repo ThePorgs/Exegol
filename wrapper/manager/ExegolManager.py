@@ -43,17 +43,16 @@ class ExegolManager:
 
     @classmethod
     def exec(cls):
-        # TODO review args
         logger.info("Starting exegol")
         if ParametersManager().tmp:
-            container = cls.createTmpContainer()
+            container = cls.createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:
                 container.exec(command=ParametersManager().exec, as_daemon=False)
                 container.stop(timeout=2)
             else:
                 logger.success(f"Command executed as entrypoint of the container {container.hostname}")
         else:
-            container = cls.__loadOrCreateContainer()
+            container = cls.__loadOrCreateContainer(override_container=ParametersManager().selector)
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
 
     @classmethod
@@ -97,6 +96,7 @@ class ExegolManager:
 
     @classmethod
     def __loadOrInstallImage(cls,
+                             override_image: Optional[str] = None,
                              multiple: bool = False,
                              must_exist: bool = False) -> Union[Optional[ExegolImage], List[ExegolImage]]:
         """Select / Load (and install) an ExegolImage
@@ -106,7 +106,7 @@ class ExegolManager:
         if cls.__image is not None:
             # Return cache
             return cls.__image
-        image_tag = ParametersManager().imagetag
+        image_tag = override_image if override_image is not None else ParametersManager().imagetag
         image_selection = None
         # While an image have not been selected
         while image_selection is None:
@@ -197,6 +197,7 @@ class ExegolManager:
 
     @classmethod
     def __loadOrCreateContainer(cls,
+                                override_container: Optional[str] = None,
                                 multiple: bool = False,
                                 must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
         """Select one or multipleExegolContainer
@@ -206,7 +207,7 @@ class ExegolManager:
         if cls.__container is not None:
             # Return cache
             return cls.__container
-        container_tag = ParametersManager().containertag
+        container_tag = override_container if override_container is not None else ParametersManager().containertag
         try:
             if container_tag is None:
                 # Interactive container selection
@@ -305,7 +306,7 @@ class ExegolManager:
         return DockerUtils.createContainer(model)
 
     @classmethod
-    def createTmpContainer(cls) -> ExegolContainer:
+    def createTmpContainer(cls, image_name: Optional[str] = None) -> ExegolContainer:
         """Create a temporary ExegolContainer with custom entrypoint"""
         logger.verbose("Configuring new exegol container")
         # Create exegol config
@@ -318,7 +319,7 @@ class ExegolManager:
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
-        image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
+        image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
         model = ExegolContainerTemplate(name, config, image)
 
         return DockerUtils.createContainer(model, temporary=True)

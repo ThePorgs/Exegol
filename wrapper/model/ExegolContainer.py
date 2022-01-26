@@ -1,7 +1,7 @@
 import base64
 import os
 import shutil
-from typing import Optional, Dict
+from typing import Optional, Dict, Sequence
 
 from docker.errors import NotFound
 from docker.models.containers import Container
@@ -104,7 +104,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True)
         # logger.debug(result)
 
-    def exec(self, command: str, as_daemon: bool = True):
+    def exec(self, command: Sequence[str], as_daemon: bool = True):
         """Execute a command / process on the docker container"""
         if not self.isRunning():
             self.start()
@@ -127,10 +127,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.warning("Exiting this command do NOT stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: str):
+    def formatShellCommand(command: Sequence[str]):
         """Generic method to format a shell command and support zsh aliases"""
         # Using base64 to escape special characters
-        cmd_b64 = base64.b64encode(command.encode('utf-8')).decode('utf-8')
+        str_cmd = ' '.join(command)
+        logger.success(f"Command received: {str_cmd}")
+        cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
         cmd = f'zsh -c "source /opt/.zsh_aliases; eval $(echo {cmd_b64} | base64 -d)"'
         logger.debug(f"Formatting zsh command: {cmd}")
