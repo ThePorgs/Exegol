@@ -152,7 +152,7 @@ class ContainerConfig:
             logger.verbose("Config : Enabling display sharing")
             self.addVolume("/tmp/.X11-unix", "/tmp/.X11-unix")
             self.addEnv("QT_X11_NO_MITSHM", "1")
-            self.addEnv("DISPLAY", f"unix{os.getenv('DISPLAY')}")
+            self.addEnv("DISPLAY", f"{os.getenv('DISPLAY')}")
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -422,6 +422,21 @@ class ContainerConfig:
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         return self.__envs
+
+    def getShellEnvs(self) -> List[str]:
+        """Overriding envs when opening a shell"""
+        result = []
+        if self.__enable_gui:
+            current_display = os.getenv('DISPLAY')
+            # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
+            # the environment variable will be updated in the exegol shell.
+            if self.__envs.get('DISPLAY', '') != current_display:
+                # This case can happen when the container is created from a local desktop
+                # but exegol can be launched from a remote access via ssh with X11 forwarding
+                # (Be careful, an .Xauthority file may be needed).
+                result.append(f"DISPLAY={current_display}")
+        # TODO handle post-creation env config
+        return result
 
     def addPort(self,
                 port_host: Union[int, str],

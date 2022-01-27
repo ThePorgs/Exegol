@@ -99,9 +99,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")
             os.system(f"xhost +local:{self.hostname} > /dev/null")
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
-        os.system("docker exec -ti {} {}".format(self.getFullId(), ParametersManager().shell))
+        envs = self.config.getShellEnvs()
+        options = ""
+        if len(envs) > 0:
+            options += f" -e {' -e '.join(envs)}"
+        cmd = f"docker exec{options} -ti {self.getFullId()} {ParametersManager().shell}"
+        logger.debug(f"Opening shell with: {cmd}")
+        os.system(cmd)
         # Docker SDK dont support (yet) stdin properly
-        # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True)
+        # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True,
+        #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
     def exec(self, command: Sequence[str], as_daemon: bool = True):
