@@ -292,6 +292,9 @@ class ExegolManager:
                 config.addDevice(device)
         if ParametersManager().vpn is not None:
             config.enableVPN()
+        if ParametersManager().envs is not None:
+            for env in ParametersManager().envs:
+                config.addRawEnv(env)
         return config
 
     @classmethod

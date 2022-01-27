@@ -20,6 +20,24 @@ class ContainerSelector:
                                   title="[blue]Container selection options[/blue]"))
 
 
+class ContainerStart:
+    """Generic parameter class for container selection"""
+
+    def __init__(self, groupArgs: List[GroupArg]):
+        # Create options on container start
+        self.envs = Option("-e", "--env",
+                           action="append",
+                           default=[],
+                           dest="envs",
+                           help="And an environment variable on Exegol (format: --env KEY=value). The variables "
+                                "configured during the creation of the container will be persistent in all shells. "
+                                "If the container already exists, the variable will be present only in the current shell")
+
+        # Create group parameter for container selection
+        groupArgs.append(GroupArg({"arg": self.envs, "required": False},
+                                  title="[blue]Container start options[/blue]"))
+
+
 class ImageSelector:
     """Generic parameter class for container selection"""
 

@@ -16,6 +16,11 @@ class Option:
             self.kwargs["dest"] = dest
         self.dest = dest
 
+    def __repr__(self) -> str:
+        """This overload allows to format the name of the object.
+        Mainly used by developers to easily identify objects"""
+        return f"Option: {str(self.dest) if self.dest is not None else self.kwargs.get('metavar', 'Option not found')}"
+
 
 class GroupArg:
     """This object allows you to group a set of options within the same group"""
@@ -26,6 +31,11 @@ class GroupArg:
         self.description = description
         self.options: Tuple[Dict[str, Union[Option, bool]]] = cast(Tuple[Dict[str, Union[Option, bool]]], options)
         self.is_global = is_global
+
+    def __repr__(self) -> str:
+        """This overload allows to format the name of the object.
+        Mainly used by developers to easily identify objects"""
+        return f"GroupArg: {self.title}"
 
 
 class Command:
@@ -69,7 +79,7 @@ class Command:
         logger.debug("the object is", type(self).__name__)
         raise NotImplementedError
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """This overload allows to format the name of the object.
         Mainly used by developers to easily identify objects"""
         return self.name

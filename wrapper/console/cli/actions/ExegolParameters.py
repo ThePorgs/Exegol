@@ -4,12 +4,13 @@ from wrapper.manager.ExegolManager import ExegolManager
 from wrapper.utils.ExeLog import logger
 
 
-class Start(Command, ContainerCreation):
+class Start(Command, ContainerCreation, ContainerStart):
     """Automatically create, start / resume and enter an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
+        ContainerStart.__init__(self, self.groupArgs)
 
         # Create container start / exec arguments
         self.shell = Option("-s", "--shell",
@@ -87,18 +88,25 @@ class Remove(Command, ContainerSelector):
         return ExegolManager.remove
 
 
-class Exec(Command, ContainerCreation):
+class Exec(Command, ContainerCreation, ContainerStart):
     """Execute a command on an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
+        ContainerStart.__init__(self, self.groupArgs)
 
         # Overwrite default selectors
+        for group in self.groupArgs:
+            # Find group containing default selector to remove them
+            for parameter in group.options:
+                if parameter.get('arg') == self.containertag or parameter.get('arg') == self.imagetag:
+                    # Removing default GroupArg selector
+                    self.groupArgs.remove(group)
+                    break
+        # Removing default selector objects
         self.containertag = None
         self.imagetag = None
-        self.groupArgs.pop(1)
-        self.groupArgs.pop(1)
 
         self.selector = Option("selector",
                                metavar="CONTAINER or IMAGE",

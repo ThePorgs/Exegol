@@ -84,8 +84,7 @@ class ContainerConfig:
         for env in envs:
             logger.debug(f"Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
-            key, value = env.strip("'").strip('"').split('=')
-            self.__envs[key] = value
+            self.addRawEnv(env.strip("'").strip('"'))
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -419,6 +418,15 @@ class ContainerConfig:
         """Add an environment variable to the container configuration"""
         self.__envs[key] = value
 
+    def addRawEnv(self, env: str):
+        env_args = env.split('=')
+        if len(env_args) < 2:
+            logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
+        key = env_args[0]
+        value = '='.join(env_args[1:])
+        logger.debug(f"Adding env {key}={value}")
+        self.addEnv(key, value)
+
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         return self.__envs
@@ -435,7 +443,14 @@ class ContainerConfig:
                 # but exegol can be launched from a remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
-        # TODO handle post-creation env config
+        # Overwrite env from user parameters
+        user_envs = ParametersManager().envs
+        if user_envs is not None:
+            for env in user_envs:
+                if len(env.split('=')) < 2:
+                    logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
+                logger.debug(f"Add env to current shell: {env}")
+                result.append(env)
         return result
 
     def addPort(self,
