@@ -267,6 +267,7 @@ function install_crackmapexec() {
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
 #  apt-get -y install crackmapexec
+  cp -v /root/sources/grc/conf.cme /usr/share/grc/conf.cme
 }
 
 function install_lsassy() {
@@ -669,6 +670,7 @@ function krbrelayx() {
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
   cd /opt/tools/krbrelayx/
+  cp -v /root/sources/grc/conf.krbrelayx /usr/share/grc/conf.krbrelayx
 }
 
 function hakrawler() {
