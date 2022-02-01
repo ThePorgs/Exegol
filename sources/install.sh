@@ -298,7 +298,7 @@ function Impacket() {
   # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
   # Shadow Credentials in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1249.patch | git apply --verbose
   # Improved searchFilter for GetUserSPNs
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
   # Added user filter on findDelegation
