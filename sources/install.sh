@@ -1303,6 +1303,12 @@ function install_trilium_packaged() {
   rm /opt/tools/trilium.tar.xz
   mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
+  # START temporary hot fix below
+  # TODO : find why latest trilium errors out and find a stable solution
+  cd /opt/tools/trilium
+  rm package-lock.json
+  git checkout v0.47.8
+  # END of temp. hot fix
 }
 
 function install_trilium_sources() {
