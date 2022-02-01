@@ -317,11 +317,9 @@ function Impacket() {
   cp -v /root/sources/grc/conf.describeTicket /usr/share/grc/conf.describeTicket
 }
 
-function bloodhound.py() {
+function install_bloodhound.py() {
   colorecho "Installing and Python ingestor for BloodHound"
   git -C /opt/tools/ clone https://github.com/fox-it/BloodHound.py
-  cd /opt/tools/BloodHound.py/
-  python setup.py install
 }
 
 function neo4j_install() {
@@ -2214,7 +2212,7 @@ function install_ad_tools() {
   install_crackmapexec            # Network scanner
   sprayhound                      # Password spraying tool
   install_smartbrute              # Password spraying tool
-  bloodhound.py                   # AD cartographer
+  install_bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
   cypheroth                       # Bloodhound dependency
   # mitm6_sources                 # Install mitm6 from sources
