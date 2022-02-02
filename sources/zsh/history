@@ -327,4 +327,5 @@ pwndb --target @example.com --output txt
 robotstester -u http://www.example.com/ -L
 shadowcoerce.py -d "domain" -u "user1" -p "complexpassword" 192.168.56.1 192.168.56.101
 faketime '2022-01-31 22:05:35' zsh
+manspider --threads 50 192.168.56.0/24 -d BREAKING.BAD -u someuser -H bb38628253e7681553b72e7da3adf305 --content administrateur
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
