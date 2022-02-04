@@ -1887,6 +1887,7 @@ function install_base() {
   fapt zsh                        # Awesome shell
   ohmyzsh                         # Awesome shell
   dependencies
+  fzf                             # File fuzzer
   grc
   fapt golang                     # Golang language
   fapt gem                        # Install ruby packages
@@ -1907,7 +1908,6 @@ function install_base() {
   fapt iputils-ping               # Ping binary
   fapt iproute2                   # Firewall rules
   fapt openvpn
-  arsenal                         # Cheatsheets tool
   mdcat                           # cat markdown files
   bat                             # Beautiful cat
   fapt tidy                       # TODO: comment this
@@ -1925,7 +1925,6 @@ function install_base() {
   fapt telnet                     # Telnet client
   fapt nfs-common                 # NFS client
   fapt snmp                       # TODO: comment this
-  fzf                             # File fuzzer
   fapt ncat                       # Socket manager
   fapt netcat-traditional         # Socket manager
   fapt socat                      # Socket manager
@@ -1934,8 +1933,8 @@ function install_base() {
   fapt putty                      # GUI-based SSH, Telnet and Rlogin client
   fapt screen                     # CLI-based PuTT-like
   fapt npm                        # Node Package Manager
-  nvm istall node                 # Install latest Node version
-  nvm use node                    # Use latest Node version
+  colorecho "Installing nvm"
+  zsh -c "source ~/.zshrc && nvm install node"
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
@@ -2000,6 +1999,7 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   install_shellerator             # Reverse shell generator
   install_uberfile                # file uploader/downloader commands generator
+  arsenal                         # Cheatsheets tool
   install_trilium                 # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
