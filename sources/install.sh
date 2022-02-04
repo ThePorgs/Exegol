@@ -2411,6 +2411,7 @@ function install_reverse_tools() {
 function install_crypto_tools() {
 #  install_rsactftool              # attack rsa
 # todo : this function fails and make the whole build stop, temporarily removing
+  echo "nothing to install"
 }
 
 # Package dedicated to GUI-based apps
