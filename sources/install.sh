@@ -612,18 +612,18 @@ function fzf() {
   ./install --all
 }
 
-function shellerator() {
+function install_shellerator() {
   colorecho "Installing shellerator"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/shellerator
   cd /opt/tools/shellerator
-  python3 setup.py install
+  python3 -m pipx install .
 }
 
-function uberfile() {
+function install_uberfile() {
   colorecho "Installing uberfile"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/uberfile
   cd /opt/tools/uberfile/
-  python3 setup.py install
+  python3 -m pipx install .
 }
 
 function kadimus() {
@@ -1323,7 +1323,7 @@ function install_trilium_sources() {
 function install_trilium_sources() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
-  git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
+  git -C /opt/tools/ clone https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
   npm install
   mkdir -p /root/.local/share/trilium-data
@@ -1693,8 +1693,7 @@ function install_smartbrute() {
   colorecho "Installing smartbrute"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/smartbrute
   cd /opt/tools/smartbrute
-  python3 -m pip install -r requirements.txt
-  python3 -m pip install --force rich
+  python3 -m pipx install .
 }
 
 function install_frida() {
@@ -2021,8 +2020,8 @@ function install_most_used_tools() {
 function install_misc_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt rlwrap                     # Reverse shell utility
-  shellerator                     # Reverse shell generator
-  uberfile                        # file uploader/downloader commands generator
+  install_shellerator                     # Reverse shell generator
+  install_uberfile                        # file uploader/downloader commands generator
 #  install_trilium_packaged       # notes taking tool
   install_trilium_sources         # notes taking tool
   fapt exiftool                   # Meta information reader/writer
