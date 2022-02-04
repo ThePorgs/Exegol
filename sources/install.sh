@@ -57,6 +57,7 @@ function ohmyzsh() {
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/lukechilds/zsh-nvm
+  zsh -c "source ~/.oh-my-zsh/custom/plugins/zsh-nvm/zsh-nvm.plugin.zsh" # this is needed to start an instance of zsh to have the plugin set up
 }
 
 function locales() {
@@ -1294,7 +1295,7 @@ function icmpdoor() {
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
 }
 
-function install_trilium_sources() {
+function install_trilium() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
@@ -1934,6 +1935,7 @@ function install_base() {
   fapt screen                     # CLI-based PuTT-like
   fapt npm                        # Node Package Manager
   nvm istall node                 # Install latest Node version
+  nvm use node                    # Use latest Node version
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
@@ -1996,9 +1998,9 @@ function install_most_used_tools() {
 function install_misc_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt rlwrap                     # Reverse shell utility
-  install_shellerator                     # Reverse shell generator
-  install_uberfile                        # file uploader/downloader commands generator
-  install_trilium_sources         # notes taking tool
+  install_shellerator             # Reverse shell generator
+  install_uberfile                # file uploader/downloader commands generator
+  install_trilium                 # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
