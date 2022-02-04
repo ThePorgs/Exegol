@@ -56,6 +56,7 @@ function ohmyzsh() {
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/lukechilds/zsh-nvm
 }
 
 function locales() {
@@ -1293,39 +1294,13 @@ function icmpdoor() {
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
 }
 
-function install_trilium_packaged() {
-  colorecho "Installing Trilium (packaged)"
-  url=$(curl -s https://github.com/zadam/trilium/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
-  tag=${url##*/v}
-  wget -O /opt/tools/trilium.tar.xz $url/trilium-linux-x64-server-$tag.tar.xz
-  tar -xvf /opt/tools/trilium.tar.xz -C /opt/tools/
-  mv /opt/tools/trilium-linux-x64-server /opt/tools/trilium
-  rm /opt/tools/trilium.tar.xz
-  mkdir -p /root/.local/share/trilium-data
-  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
-  # START temporary hot fix below
-  # TODO : find why latest trilium errors out and find a stable solution
-  cd /opt/tools/trilium
-  rm package-lock.json
-  git checkout v0.47.8
-  # END of temp. hot fix
-}
-
-function install_trilium_sources() {
-  colorecho "Installing Trilium (packaged)"
-  git -C /opt/tools/ clone https://github.com/zadam/trilium
-  cd /opt/tools/trilium
-  npm install
-  mkdir -p /root/.local/share/trilium-data
-  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
-}
-
 function install_trilium_sources() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
-  git -C /opt/tools/ clone https://github.com/zadam/trilium.git
+  git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
   npm install
+  npm rebuild
   mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
@@ -1958,6 +1933,7 @@ function install_base() {
   fapt putty                      # GUI-based SSH, Telnet and Rlogin client
   fapt screen                     # CLI-based PuTT-like
   fapt npm                        # Node Package Manager
+  nvm istall node                 # Install latest Node version
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
@@ -2022,7 +1998,6 @@ function install_misc_tools() {
   fapt rlwrap                     # Reverse shell utility
   install_shellerator                     # Reverse shell generator
   install_uberfile                        # file uploader/downloader commands generator
-#  install_trilium_packaged       # notes taking tool
   install_trilium_sources         # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
