@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.11"
+VERSION="3.1.12.dev"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -406,12 +406,12 @@ function dementor() {
 
 function assetfinder() {
   colorecho "Installing assetfinder"
-  go get -u -v github.com/tomnomnom/assetfinder
+  go install -v github.com/tomnomnom/assetfinder@latest
 }
 
 function install_subfinder() {
   colorecho "Installing subfinder"
-  go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
+  go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 }
 
 function install_gobuster() {
@@ -495,7 +495,7 @@ function install_gitrob(){
 
 function gron() {
   colorecho "Installing gron"
-  go get -u -v github.com/tomnomnom/gron
+  go install -v github.com/tomnomnom/gron@latest
 }
 
 function timing_attack() {
@@ -675,7 +675,7 @@ function krbrelayx() {
 
 function hakrawler() {
   colorecho "Installing hakrawler"
-  go get -u -v github.com/hakluke/hakrawler
+  go install -v github.com/hakluke/hakrawler@latest
 }
 
 function install_jwt_tool() {
@@ -692,13 +692,13 @@ function jwt_cracker() {
 
 function wuzz() {
   colorecho "Installing wuzz"
-  go get -u -v github.com/asciimoo/wuzz
+  go install -v github.com/asciimoo/wuzz@latest
 }
 
 function gf_install() {
   colorecho "Installing gf"
   mkdir ~/.gf
-  go get -u -v github.com/tomnomnom/gf
+  go install -v github.com/tomnomnom/gf@latest
   echo 'source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh' | tee -a ~/.zshrc
   cp -rv ~/go/src/github.com/tomnomnom/gf/examples/* ~/.gf
   # TODO: fix this when building : cp: cannot stat '/root/go/src/github.com/tomnomnom/gf/examples/*': No such file or directory
@@ -1051,7 +1051,7 @@ function bloodhound_old_v2() {
 function bettercap_install() {
   colorecho "Installing Bettercap"
   apt-get -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
-  go get -u -v github.com/bettercap/bettercap
+  go install -v github.com/bettercap/bettercap@latest
   /root/go/bin/bettercap -eval "caplets.update; ui.update; q"
   sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
   sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/http-ui.cap
@@ -1360,7 +1360,7 @@ function maigret_pip() {
 function amber() {
   colorecho "Installing amber"
   # TODO: this fails and needs a fix
-  go get -u -v github.com/EgeBalci/amber
+  go install -v github.com/EgeBalci/amber@latest
 }
 
 function hashonymize() {
@@ -1452,7 +1452,7 @@ function install_jackit() {
 function install_gosecretsdump() {
   colorecho "Installing gosecretsdump"
   git -C /opt/tools/ clone https://github.com/c-sto/gosecretsdump
-  go get -u -v github.com/C-Sto/gosecretsdump
+  go install -v github.com/C-Sto/gosecretsdump@latest
 }
 
 function install_hackrf() {
@@ -1736,7 +1736,7 @@ function install_donpapi() {
 
 function install_gau() {
   colorecho "Installing gau"
-  GO111MODULE=on go get -u -v github.com/lc/gau
+  GO111MODULE=on go install -v github.com/lc/gau@latest
 }
 
 function install_webclientservicescanner() {
@@ -1800,7 +1800,7 @@ function install_hakrevdns() {
 
 function install_httprobe() {
   colorecho "Installing httprobe"
-  go get -u -v github.com/tomnomnom/httprobe
+  go install -v github.com/tomnomnom/httprobe@latest
 }
 
 function install_httpx() {
