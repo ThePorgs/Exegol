@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.11.dev"
+VERSION="3.1.11"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
