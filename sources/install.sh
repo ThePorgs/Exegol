@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.11.dev"
+VERSION="3.1.11"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -46,7 +46,7 @@ function filesystem() {
   mkdir -p "/opt/resources/encrypted disks/"
 }
 
-function ohmyzsh() {
+function install_ohmyzsh() {
   colorecho "Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   cp -v /root/sources/zsh/history ~/.zsh_history
@@ -56,6 +56,8 @@ function ohmyzsh() {
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-syntax-highlighting
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/zsh-users/zsh-completions
   git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/agkozak/zsh-z
+  git -C ~/.oh-my-zsh/custom/plugins/ clone https://github.com/lukechilds/zsh-nvm
+  zsh -c "source ~/.oh-my-zsh/custom/plugins/zsh-nvm/zsh-nvm.plugin.zsh" # this is needed to start an instance of zsh to have the plugin set up
 }
 
 function locales() {
@@ -71,13 +73,6 @@ function tmux() {
   touch ~/.hushlogin
 }
 
-function dependencies() {
-  colorecho "Installing most required dependencies"
-  apt-get -y install python-setuptools python3-setuptools
-  python3 -m pip install wheel
-  python -m pip install wheel
-}
-
 function Responder() {
   colorecho "Installing Responder"
   git -C /opt/tools/ clone https://github.com/lgandx/Responder
@@ -89,6 +84,8 @@ function Responder() {
   fapt gcc-mingw-w64-x86-64
   x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Runas.c -o /opt/tools/Responder/tools/MultiRelay/bin/Runas.exe -municode -lwtsapi32 -luserenv
   x86_64-w64-mingw32-gcc /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.c -o /opt/tools/Responder/tools/MultiRelay/bin/Syssvc.exe -municode
+  cd /opt/tools/Responder
+  /opt/tools/Responder/certs/gen-self-signed-cert.sh
 }
 
 function Sublist3r() {
@@ -267,6 +264,7 @@ function install_crackmapexec() {
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
 #  apt-get -y install crackmapexec
+  cp -v /root/sources/grc/conf.cme /usr/share/grc/conf.cme
 }
 
 function install_lsassy() {
@@ -295,7 +293,7 @@ function Impacket() {
   # User-defined password for LDAP attack addComputer
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
   # Shadow Credentials in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1132.patch | git apply --verbose
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1249.patch | git apply --verbose
   # Improved searchFilter for GetUserSPNs
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
   # Added user filter on findDelegation
@@ -314,11 +312,9 @@ function Impacket() {
   cp -v /root/sources/grc/conf.describeTicket /usr/share/grc/conf.describeTicket
 }
 
-function bloodhound.py() {
+function install_bloodhound.py() {
   colorecho "Installing and Python ingestor for BloodHound"
   git -C /opt/tools/ clone https://github.com/fox-it/BloodHound.py
-  cd /opt/tools/BloodHound.py/
-  python setup.py install
 }
 
 function neo4j_install() {
@@ -529,10 +525,15 @@ function install_proxychains() {
   cp -v /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
 }
 
-function grc() {
+function install_grc() {
   colorecho "Installing and configuring grc"
   apt-get -y install grc
   cp -v /root/sources/grc/grc.conf /etc/grc.conf
+}
+
+function install_nvm() {
+  colorecho "Installing nvm (in zsh context)"
+  zsh -c "source ~/.zshrc && nvm install node"
 }
 
 function pykek() {
@@ -604,25 +605,25 @@ function powershell() {
   ln -s /opt/tools/microsoft/powershell/7/pwsh /usr/bin/pwsh
 }
 
-function fzf() {
+function install_fzf() {
   colorecho "Installing fzf"
   git -C /opt/tools/ clone --depth 1 https://github.com/junegunn/fzf.git
   cd /opt/tools/fzf
   ./install --all
 }
 
-function shellerator() {
+function install_shellerator() {
   colorecho "Installing shellerator"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/shellerator
   cd /opt/tools/shellerator
-  python3 setup.py install
+  python3 -m pipx install .
 }
 
-function uberfile() {
+function install_uberfile() {
   colorecho "Installing uberfile"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/uberfile
   cd /opt/tools/uberfile/
-  python3 setup.py install
+  python3 -m pipx install .
 }
 
 function kadimus() {
@@ -639,7 +640,7 @@ function install_testssl() {
   git -C /opt/tools/ clone --depth 1 https://github.com/drwetter/testssl.sh.git
 }
 
-function bat() {
+function install_bat() {
   colorecho "Installing bat"
   version=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep "tag_name" | cut -d 'v' -f2 | cut -d '"' -f1)
   wget https://github.com/sharkdp/bat/releases/download/v$version/bat_$version\_amd64.deb
@@ -647,7 +648,7 @@ function bat() {
   rm bat_$version\_amd64.deb
 }
 
-function mdcat() {
+function install_mdcat() {
   colorecho "Installing mdcat"
   version=$(curl -s https://api.github.com/repos/lunaryorn/mdcat/releases/latest | grep "tag_name" | cut -d '"' -f4)
   wget https://github.com/lunaryorn/mdcat/releases/download/$version/$version-x86_64-unknown-linux-musl.tar.gz
@@ -669,6 +670,7 @@ function krbrelayx() {
   python -m pip install dnstool==1.15.0
   git -C /opt/tools/ clone https://github.com/dirkjanm/krbrelayx
   cd /opt/tools/krbrelayx/
+  cp -v /root/sources/grc/conf.krbrelayx /usr/share/grc/conf.krbrelayx
 }
 
 function hakrawler() {
@@ -1291,33 +1293,13 @@ function icmpdoor() {
   cp -v /opt/tools/icmpdoor/binaries/x86_64-linux/* /opt/resources/linux/icmptools/
 }
 
-function install_trilium_packaged() {
-  colorecho "Installing Trilium (packaged)"
-  url=$(curl -s https://github.com/zadam/trilium/releases/latest | grep -o '"[^"]*"' | tr -d '"' | sed 's/tag/download/')
-  tag=${url##*/v}
-  wget -O /opt/tools/trilium.tar.xz $url/trilium-linux-x64-server-$tag.tar.xz
-  tar -xvf /opt/tools/trilium.tar.xz -C /opt/tools/
-  mv /opt/tools/trilium-linux-x64-server /opt/tools/trilium
-  rm /opt/tools/trilium.tar.xz
-  mkdir -p /root/.local/share/trilium-data
-  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
-}
-
-function install_trilium_sources() {
-  colorecho "Installing Trilium (packaged)"
-  git -C /opt/tools/ clone https://github.com/zadam/trilium
-  cd /opt/tools/trilium
-  npm install
-  mkdir -p /root/.local/share/trilium-data
-  cp -v /root/sources/trilium/* /root/.local/share/trilium-data
-}
-
-function install_trilium_sources() {
+function install_trilium() {
   colorecho "Installing Trilium (building from sources)"
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
-  npm install
+  # the npm install needs to be executed in the zsh context where nvm is used to set the Node version to be used.
+  zsh -c "source ~/.zshrc && cd /opt/tools/trilium && nvm use node && npm install && npm rebuild"
   mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
@@ -1685,8 +1667,7 @@ function install_smartbrute() {
   colorecho "Installing smartbrute"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/smartbrute
   cd /opt/tools/smartbrute
-  python3 -m pip install -r requirements.txt
-  python3 -m pip install --force rich
+  python3 -m pipx install .
 }
 
 function install_frida() {
@@ -1901,7 +1882,7 @@ function install_base() {
   fapt zip
   fapt unzip
   fapt kmod
-  fapt gifsicle
+#  fapt gifsicle
   fapt sudo                       # Sudo
   fapt curl                       # HTTP handler
   fapt wget                       # Wget
@@ -1913,16 +1894,21 @@ function install_base() {
   fapt python3-dev                # Python 3 language (dev version)
   fapt python3.9-venv
   ln -s /usr/bin/python2.7 /usr/bin/python  # fix shit
-  fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
   fapt python3-pip                # Pip
   filesystem
   locales
   tmux                            # Tmux
   fapt zsh                        # Awesome shell
-  ohmyzsh                         # Awesome shell
-  dependencies
-  grc
+  install_ohmyzsh                         # Awesome shell
+  fapt python-setuptools
+  fapt python3-setuptools
+  python3 -m pip install wheel
+  python -m pip install wheel
+  install_fzf                             # File fuzzer
+  install_grc
+  fapt npm                        # Node Package Manager
+  install_nvm
   fapt golang                     # Golang language
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
@@ -1939,12 +1925,12 @@ function install_base() {
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
   fapt emacs-nox
+  fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   fapt iputils-ping               # Ping binary
   fapt iproute2                   # Firewall rules
   fapt openvpn
-  arsenal                         # Cheatsheets tool
-  mdcat                           # cat markdown files
-  bat                             # Beautiful cat
+  install_mdcat                           # cat markdown files
+  install_bat                             # Beautiful cat
   fapt tidy                       # TODO: comment this
   fapt amap                       # TODO: comment this
   fapt mlocate                    # TODO: comment this
@@ -1960,7 +1946,6 @@ function install_base() {
   fapt telnet                     # Telnet client
   fapt nfs-common                 # NFS client
   fapt snmp                       # TODO: comment this
-  fzf                             # File fuzzer
   fapt ncat                       # Socket manager
   fapt netcat-traditional         # Socket manager
   fapt socat                      # Socket manager
@@ -1968,7 +1953,6 @@ function install_base() {
   fapt rdate                      # tool for querying the current time from a network server
   fapt putty                      # GUI-based SSH, Telnet and Rlogin client
   fapt screen                     # CLI-based PuTT-like
-  fapt npm                        # Node Package Manager
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
@@ -1978,6 +1962,7 @@ function install_base() {
   install_pipx
   fapt parallel
   fapt tree
+  fapt faketime
 }
 
 # Package dedicated to most used offensive tools
@@ -2030,10 +2015,10 @@ function install_most_used_tools() {
 function install_misc_tools() {
   fapt exploitdb                  # Exploitdb downloaded locally
   fapt rlwrap                     # Reverse shell utility
-  shellerator                     # Reverse shell generator
-  uberfile                        # file uploader/downloader commands generator
-#  install_trilium_packaged       # notes taking tool
-  install_trilium_sources         # notes taking tool
+  install_shellerator             # Reverse shell generator
+  install_uberfile                # file uploader/downloader commands generator
+  arsenal                         # Cheatsheets tool
+  install_trilium                 # notes taking tool
   fapt exiftool                   # Meta information reader/writer
   fapt imagemagick                # Copy, modify, and distribute image
   install_ngrok                   # expose a local development server to the Internet
@@ -2230,7 +2215,7 @@ function install_ad_tools() {
   install_crackmapexec            # Network scanner
   sprayhound                      # Password spraying tool
   install_smartbrute              # Password spraying tool
-  bloodhound.py                   # AD cartographer
+  install_bloodhound.py                   # AD cartographer
   neo4j_install                   # Bloodhound dependency
   cypheroth                       # Bloodhound dependency
   # mitm6_sources                 # Install mitm6 from sources
@@ -2421,7 +2406,9 @@ function install_reverse_tools() {
 
 # Package dedicated to attack crypto
 function install_crypto_tools() {
-  install_rsactftool              # attack rsa
+#  install_rsactftool              # attack rsa
+# todo : this function fails and make the whole build stop, temporarily removing
+  echo "nothing to install"
 }
 
 # Package dedicated to GUI-based apps
