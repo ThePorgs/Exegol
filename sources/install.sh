@@ -46,7 +46,7 @@ function filesystem() {
   mkdir -p "/opt/resources/encrypted disks/"
 }
 
-function ohmyzsh() {
+function install_ohmyzsh() {
   colorecho "Installing oh-my-zsh, config, history, aliases"
   sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
   cp -v /root/sources/zsh/history ~/.zsh_history
@@ -71,13 +71,6 @@ function tmux() {
   apt-get -y install tmux
   cp -v /root/sources/tmux/tmux.conf ~/.tmux.conf
   touch ~/.hushlogin
-}
-
-function dependencies() {
-  colorecho "Installing most required dependencies"
-  apt-get -y install python-setuptools python3-setuptools
-  python3 -m pip install wheel
-  python -m pip install wheel
 }
 
 function Responder() {
@@ -532,10 +525,15 @@ function install_proxychains() {
   cp -v /root/sources/proxychains/proxychains.conf /etc/proxychains.conf
 }
 
-function grc() {
+function install_grc() {
   colorecho "Installing and configuring grc"
   apt-get -y install grc
   cp -v /root/sources/grc/grc.conf /etc/grc.conf
+}
+
+function install_nvm() {
+  colorecho "Installing nvm (in zsh context)"
+  zsh -c "source ~/.zshrc && nvm install node"
 }
 
 function pykek() {
@@ -607,7 +605,7 @@ function powershell() {
   ln -s /opt/tools/microsoft/powershell/7/pwsh /usr/bin/pwsh
 }
 
-function fzf() {
+function install_fzf() {
   colorecho "Installing fzf"
   git -C /opt/tools/ clone --depth 1 https://github.com/junegunn/fzf.git
   cd /opt/tools/fzf
@@ -642,7 +640,7 @@ function install_testssl() {
   git -C /opt/tools/ clone --depth 1 https://github.com/drwetter/testssl.sh.git
 }
 
-function bat() {
+function install_bat() {
   colorecho "Installing bat"
   version=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep "tag_name" | cut -d 'v' -f2 | cut -d '"' -f1)
   wget https://github.com/sharkdp/bat/releases/download/v$version/bat_$version\_amd64.deb
@@ -650,7 +648,7 @@ function bat() {
   rm bat_$version\_amd64.deb
 }
 
-function mdcat() {
+function install_mdcat() {
   colorecho "Installing mdcat"
   version=$(curl -s https://api.github.com/repos/lunaryorn/mdcat/releases/latest | grep "tag_name" | cut -d '"' -f4)
   wget https://github.com/lunaryorn/mdcat/releases/download/$version/$version-x86_64-unknown-linux-musl.tar.gz
@@ -1300,8 +1298,8 @@ function install_trilium() {
   apt-get -y install libpng16-16 libpng-dev pkg-config autoconf libtool build-essential nasm libx11-dev libxkbfile-dev
   git -C /opt/tools/ clone -b stable https://github.com/zadam/trilium.git
   cd /opt/tools/trilium
-  npm install
-  npm rebuild
+  # the npm install needs to be executed in the zsh context where nvm is used to set the Node version to be used.
+  zsh -c "source ~/.zshrc && cd /opt/tools/trilium && nvm use node && npm install && npm rebuild"
   mkdir -p /root/.local/share/trilium-data
   cp -v /root/sources/trilium/* /root/.local/share/trilium-data
 }
@@ -1866,7 +1864,7 @@ function install_base() {
   fapt zip
   fapt unzip
   fapt kmod
-  fapt gifsicle
+#  fapt gifsicle
   fapt sudo                       # Sudo
   fapt curl                       # HTTP handler
   fapt wget                       # Wget
@@ -1878,17 +1876,21 @@ function install_base() {
   fapt python3-dev                # Python 3 language (dev version)
   fapt python3.9-venv
   ln -s /usr/bin/python2.7 /usr/bin/python  # fix shit
-  fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   python-pip                      # Pip
   fapt python3-pip                # Pip
   filesystem
   locales
   tmux                            # Tmux
   fapt zsh                        # Awesome shell
-  ohmyzsh                         # Awesome shell
-  dependencies
-  fzf                             # File fuzzer
-  grc
+  install_ohmyzsh                         # Awesome shell
+  fapt python-setuptools
+  fapt python3-setuptools
+  python3 -m pip install wheel
+  python -m pip install wheel
+  install_fzf                             # File fuzzer
+  install_grc
+  fapt npm                        # Node Package Manager
+  install_nvm
   fapt golang                     # Golang language
   fapt gem                        # Install ruby packages
   fapt automake                   # Automake
@@ -1905,11 +1907,12 @@ function install_base() {
   install_ultimate_vimrc          # Make vim usable OOFB
   fapt nano                       # Text editor (not the best)
   fapt emacs-nox
+  fapt jq                         # jq is a lightweight and flexible command-line JSON processor
   fapt iputils-ping               # Ping binary
   fapt iproute2                   # Firewall rules
   fapt openvpn
-  mdcat                           # cat markdown files
-  bat                             # Beautiful cat
+  install_mdcat                           # cat markdown files
+  install_bat                             # Beautiful cat
   fapt tidy                       # TODO: comment this
   fapt amap                       # TODO: comment this
   fapt mlocate                    # TODO: comment this
@@ -1932,9 +1935,6 @@ function install_base() {
   fapt rdate                      # tool for querying the current time from a network server
   fapt putty                      # GUI-based SSH, Telnet and Rlogin client
   fapt screen                     # CLI-based PuTT-like
-  fapt npm                        # Node Package Manager
-  colorecho "Installing nvm"
-  zsh -c "source ~/.zshrc && nvm install node"
   fapt p7zip-full                 # 7zip
   fapt p7zip-rar                  # 7zip rar module
   fapt rar                        # rar
