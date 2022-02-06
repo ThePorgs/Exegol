@@ -73,7 +73,7 @@ function tmux() {
   touch ~/.hushlogin
 }
 
-function Responder() {
+function install_responder() {
   colorecho "Installing Responder"
   git -C /opt/tools/ clone https://github.com/lgandx/Responder
   sed -i 's/ Random/ 1122334455667788/g' /opt/tools/Responder/Responder.conf
@@ -143,7 +143,7 @@ function sn0int() {
   apt-get install --fix-broken -y
 }
 
-function CloudFail() {
+function install_CloudFail() {
   colorecho "Installing CloudFail"
   git -C /opt/tools/ clone https://github.com/m0rtem/CloudFail
   python3 -m pip install -r /opt/tools/CloudFail/requirements.txt
@@ -155,14 +155,14 @@ function OneForAll() {
   python3 -m pip install -r /opt/tools/OneForAll/requirements.txt
 }
 
-function EyeWitness() {
+function install_EyeWitness() {
   colorecho "Installing EyeWitness"
   git -C /opt/tools/ clone https://github.com/FortyNorthSecurity/EyeWitness
   cd /opt/tools/EyeWitness/Python/setup
   ./setup.sh
 }
 
-function wafw00f() {
+function install_wafw00f() {
   colorecho "Installing wafw00f"
   git -C /opt/tools/ clone https://github.com/EnableSecurity/wafw00f
   cd /opt/tools/wafw00f
@@ -286,7 +286,7 @@ function sprayhound() {
   python3 setup.py install
 }
 
-function Impacket() {
+function install_impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
@@ -718,11 +718,6 @@ function rbcd-attack() {
 function rbcd-permissions() {
   colorecho "Installing rbcd_permissions (alternative to rbcd-attack)"
   git -C /opt/tools/ clone https://github.com/NinjaStyle82/rbcd_permissions
-}
-
-function evilwinrm() {
-  colorecho "Installing evil-winrm"
-  gem install evil-winrm
 }
 
 function pypykatz() {
@@ -1972,15 +1967,15 @@ function install_most_used_tools() {
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
-  CloudFail                       # Cloudflare misconfiguration detector
-  EyeWitness                      # Website screenshoter
-  wafw00f                         # Waf detector
+  install_CloudFail                       # Cloudflare misconfiguration detector
+  install_EyeWitness                      # Website screenshoter
+  install_wafw00f                         # Waf detector
   install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
-  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  install_responder                       # LLMNR, NBT-NS and MDNS poisoner
   install_crackmapexec            # Network scanner
-  Impacket                        # Network protocols scripts
+  install_impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
   fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
@@ -2066,7 +2061,7 @@ function install_osint_tools() {
   carbon14                        # OSINT tool for estimating when a web page was written
   WikiLeaker                      # A WikiLeaks scraper
   photon                          # Incredibly fast crawler designed for OSINT.
-  CloudFail                       # Utilize misconfigured DNS and old database records to find hidden IP's behind the CloudFlare network
+  install_CloudFail                       # Utilize misconfigured DNS and old database records to find hidden IP's behind the CloudFlare network
   #Ip
   ipinfo                          # Get information about an IP address using command line with ipinfo.io
   #Data visualization
@@ -2131,10 +2126,10 @@ function install_web_tools() {
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
-  CloudFail                       # Cloudflare misconfiguration detector
-  EyeWitness                      # Website screenshoter
+  install_CloudFail                       # Cloudflare misconfiguration detector
+  install_EyeWitness                      # Website screenshoter
   OneForAll                       # TODO: comment this
-  wafw00f                         # Waf detector
+  install_wafw00f                         # Waf detector
   CORScanner                      # CORS misconfiguration detector
   hakrawler                       # Web endpoint discovery
   LinkFinder                      # Discovers endpoint JS files
@@ -2165,6 +2160,7 @@ function install_web_tools() {
   install_httprobe
   install_httpx
   install_robotstester            # Robots.txt scanner
+  install_gitrob                  # Senstive files reconnaissance in github
 }
 
 # Package dedicated to command & control frameworks
@@ -2190,7 +2186,7 @@ install_services_tools() {
 
 # Package dedicated to internal Active Directory tools
 function install_ad_tools() {
-  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  install_responder                       # LLMNR, NBT-NS and MDNS poisoner
   install_crackmapexec            # Network scanner
   sprayhound                      # Password spraying tool
   install_smartbrute              # Password spraying tool
@@ -2202,7 +2198,7 @@ function install_ad_tools() {
   aclpwn                          # ACL exploiter
   # IceBreaker                    # TODO: comment this
   dementor                        # SpoolService exploiter
-  Impacket                        # Network protocols scripts
+  install_impacket                        # Network protocols scripts
   pykek                           # AD vulnerability exploiter
   install_lsassy                  # Credentials extracter
   privexchange                    # Exchange exploiter
