@@ -1843,6 +1843,11 @@ function install_pwncat() {
   python3 -m pipx install pwncat-cs
 }
 
+function the_hacker_recipes() {
+  colorecho "Adding The Hacker Recipes to the resources"
+  git -C /opt/resources/ clone https://github.com/ShutdownRepo/The-Hacker-Recipes
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2443,6 +2448,7 @@ function install_resources() {
   azurehound
   icmpdoor
   sharpcollection
+  the_hacker_recipes
 }
 
 # Function used to clean up post-install files
