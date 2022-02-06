@@ -260,6 +260,8 @@ function install_crackmapexec() {
   apt-get -y install libssl-dev libffi-dev python2-dev build-essential python3-winrm python3-venv
   git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
   cd /opt/tools/CrackMapExec
+  # Redefining baseDN from domain name instead of KDC
+  curl --location https://github.com/byt3bl33d3r/CrackMapExec/pull/535.patch | git apply --verbose
   python3 -m pipx install .
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
