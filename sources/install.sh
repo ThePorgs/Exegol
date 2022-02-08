@@ -308,6 +308,8 @@ function install_impacket() {
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
   # Added renameMachine.py
   curl --location https://github.com/SecureAuthCorp/impacket/pull/1224.patch | git apply --verbose
+  # Added LSA dump on top of SAM dump for ntlmrelayx
+  curl --location https://github.com/SecureAuthCorp/impacket/pull/1253.patch | git apply --verbose
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
