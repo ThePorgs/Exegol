@@ -263,6 +263,8 @@ function install_crackmapexec() {
   # Redefining baseDN from domain name instead of KDC
   curl --location https://github.com/byt3bl33d3r/CrackMapExec/pull/535.patch | git apply --verbose
   python3 -m pipx install .
+  mkdir -p ~/.cme
+  cp -v /root/sources/crackmapexec/cme.conf ~/.cme/cme.conf
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
 #  apt-get -y install crackmapexec
