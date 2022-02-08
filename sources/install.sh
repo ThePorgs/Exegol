@@ -1858,6 +1858,11 @@ function install_gMSADumper() {
   git -C /opt/tools/ clone https://github.com/micahvandeusen/gMSADumper
 }
 
+function install_modifyCertTemplate() {
+  colorecho "Installing modifyCertTemplate"
+  git -C /opt/tools/ clone https://github.com/fortalice/modifyCertTemplate
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2272,6 +2277,7 @@ function install_ad_tools() {
   install_shadowcoerce
   install_dcsync
   install_gMSADumper
+  install_modifyCertTemplate
 }
 
 # Package dedicated to mobile apps pentest tools
