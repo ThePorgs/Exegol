@@ -1972,7 +1972,6 @@ function install_most_used_tools() {
   fapt seclists                   # Awesome wordlists
   install_subfinder               # Subdomain bruteforcer
   install_autorecon               # External recon tool
-  install_gitrob                  # Senstive files reconnaissance in github
   install_waybackurls             # Website history
   install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   install_simplyemail             # Gather emails
@@ -2182,7 +2181,7 @@ function install_web_tools() {
   install_httprobe
   install_httpx
   install_robotstester            # Robots.txt scanner
-  install_gitrob                  # Senstive files reconnaissance in github
+#  install_gitrob                  # Senstive files reconnaissance in github
 }
 
 # Package dedicated to command & control frameworks
