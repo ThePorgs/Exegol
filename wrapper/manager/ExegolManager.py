@@ -44,7 +44,6 @@ class ExegolManager:
     @classmethod
     def exec(cls):
         logger.info("Starting exegol")
-        # todo : arguments are not taken into account here, they don't exist, vars(ParametersManager()) = {'parameters': exec}
         if ParametersManager().tmp:
             container = cls.createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:

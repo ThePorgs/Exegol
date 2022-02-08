@@ -40,7 +40,12 @@ class GitUtils:
         if self.__gitRemote is None:
             return result
         for branch in self.__gitRemote.fetch():
-            result.append(branch.name.split('/')[1])
+            branch_parts = branch.name.split('/')
+            if len(branch_parts) < 2:
+                logger.warning(f"Branch name is not correct: {branch.name}")
+                result.append(branch.name)
+            else:
+                result.append(branch_parts[1])
         return result
 
     def safeCheck(self) -> bool:

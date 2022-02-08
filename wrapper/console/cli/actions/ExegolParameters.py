@@ -97,7 +97,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
         ContainerStart.__init__(self, self.groupArgs)
 
         # Overwrite default selectors
-        for group in self.groupArgs:
+        for group in self.groupArgs.copy():
             # Find group containing default selector to remove them
             for parameter in group.options:
                 if parameter.get('arg') == self.containertag or parameter.get('arg') == self.imagetag:

@@ -80,6 +80,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
             self.__container.start()
+            # If GUI enable, allow X11 access on host ACL (if not already allowed)  # TODO review xhost entrypoints
+            if self.config.isGUIEnable():
+                logger.debug(f"Adding xhost ACL to local:{self.hostname}")
+                os.system(f"xhost +local:{self.hostname} > /dev/null")
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""
@@ -94,7 +98,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         for device in self.config.getDevices():
             logger.info(f"Shared host device: {device.split(':')[0]}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
-        # If GUI enable, allow X11 access on host ACL
+        # If GUI enable, allow X11 access on host ACL (if not already allowed)
         if self.config.isGUIEnable():
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")
             os.system(f"xhost +local:{self.hostname} > /dev/null")
@@ -116,7 +120,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.isRunning():
             self.start()
         logger.info("Executing command on Exegol")
-        if logger.getEffectiveLevel() > logger.VERBOSE:
+        if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
             logger.info("Hint: use verbose mode to see command output (-v).")
         cmd = self.formatShellCommand(command)
         stream = self.__container.exec_run(cmd, detach=as_daemon, stream=not as_daemon)
