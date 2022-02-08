@@ -1853,6 +1853,11 @@ function install_dcsync() {
   git -C /opt/tools/ clone https://github.com/n00py/DCSync
 }
 
+function install_gMSADumper() {
+  colorecho "Installing gMSADumper"
+  git -C /opt/tools/ clone https://github.com/micahvandeusen/gMSADumper
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2266,6 +2271,7 @@ function install_ad_tools() {
   npm install ntpsync             # sync local time with remote server
   install_shadowcoerce
   install_dcsync
+  install_gMSADumper
 }
 
 # Package dedicated to mobile apps pentest tools
