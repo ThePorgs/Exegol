@@ -477,22 +477,22 @@ function install_arjun() {
 
 function amass() {
   colorecho "Installing amass"
-  go install -v github.com/OWASP/Amass/v3/...
+  go install -v github.com/OWASP/Amass/v3/...@latest
 }
 
 function install_ffuf() {
   colorecho "Installing ffuf"
-  go install -v github.com/ffuf/ffuf
+  go install -v github.com/ffuf/ffuf@latest
 }
 
 function install_waybackurls() {
   colorecho "Installing waybackurls"
-  go install -v github.com/tomnomnom/waybackurls
+  go install -v github.com/tomnomnom/waybackurls@latest
 }
 
 function install_gitrob(){
   colorecho "Installing gitrob"
-  go install -v github.com/michenriksen/gitrob
+  go install -v github.com/michenriksen/gitrob@latest
 }
 
 function gron() {
