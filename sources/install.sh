@@ -1848,6 +1848,11 @@ function the_hacker_recipes() {
   git -C /opt/resources/ clone https://github.com/ShutdownRepo/The-Hacker-Recipes
 }
 
+function install_dcsync() {
+  colorecho "Installing DCSync.py"
+  git -C /opt/tools/ clone https://github.com/n00py/DCSync
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2260,6 +2265,7 @@ function install_ad_tools() {
   install_certipy
   npm install ntpsync             # sync local time with remote server
   install_shadowcoerce
+  install_dcsync
 }
 
 # Package dedicated to mobile apps pentest tools
