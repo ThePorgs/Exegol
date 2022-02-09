@@ -1801,7 +1801,6 @@ function install_base() {
   fapt unrar                      # unrar
   fapt xz-utils                   # xz (de)compression
   fapt xsltproc                   # apply XSLT stylesheets to XML documents (Nmap reports)
-  fapt openvpn                    # OpenVPN client
   install_pipx
 }
 

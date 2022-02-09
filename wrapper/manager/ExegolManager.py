@@ -280,7 +280,7 @@ class ExegolManager:
         config.setNetworkMode(ParametersManager().host_network)
         if ParametersManager().common_resources:
             config.enableCommonVolume()
-        if ParametersManager().mount_current_dir:
+        if ParametersManager().mount_current_dir:  # TODO add cwd interactive confirmation
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.enablePrivileged()

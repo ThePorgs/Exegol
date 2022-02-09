@@ -195,12 +195,13 @@ class ContainerConfig:
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
+        # TODO test cap needs / mknod device
         self.__addCapability("NET_ADMIN")
         if not self.__network_host:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
-        self.addDevice("/dev/net/tun")
+        self.addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
         ovpn_parameters = self.__prepareVpnVolumes()
         # Execution of the VPN daemon at container startup
@@ -399,7 +400,7 @@ class ContainerConfig:
                   device_source: str,
                   device_dest: Optional[str] = None,
                   readonly: bool = False,
-                  mknod: bool = True):
+                  mknod: bool = False):
         """Add a device to the container configuration"""
         if device_dest is None:
             device_dest = device_source
@@ -419,6 +420,7 @@ class ContainerConfig:
         self.__envs[key] = value
 
     def addRawEnv(self, env: str):
+        """Parse and add an environment variable from raw user input"""
         env_args = env.split('=')
         if len(env_args) < 2:
             logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
@@ -438,11 +440,12 @@ class ContainerConfig:
             current_display = os.getenv('DISPLAY')
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
             # the environment variable will be updated in the exegol shell.
-            if self.__envs.get('DISPLAY', '') != current_display:
+            if current_display and self.__envs.get('DISPLAY', '') != current_display:
                 # This case can happen when the container is created from a local desktop
-                # but exegol can be launched from a remote access via ssh with X11 forwarding
+                # but exegol can be launched from remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
+        # TODO PATH common volume bin folder
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:
