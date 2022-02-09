@@ -294,24 +294,21 @@ function install_impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  # User-defined password for LDAP attack addComputer
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  # Shadow Credentials in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1249.patch | git apply --verbose
-  # Improved searchFilter for GetUserSPNs
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
-  # Added user filter on findDelegation
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1184.patch | git apply --verbose
-  # Added describeTicket
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
-  # Added self for getST
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
-  # Added renameMachine.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1224.patch | git apply --verbose
-  # Added LSA dump on top of SAM dump for ntlmrelayx
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1253.patch | git apply --verbose
-  # Improved exporting and added Kerberos keys calculation
-  curl --location https://github.com/n00py/impacket/pull/1.patch | git apply --verbose
+  # 1063: User-defined password for LDAP attack addComputer
+  # 1249: Shadow Credentials in ntlmrelayx.py
+  # 1135: Improved searchFilter for GetUserSPNs
+  # 1184: Added user filter on findDelegation
+  # 1201: Added describeTicket
+  # 1202: Added self for getST
+  # 1224: Added renameMachine.py
+  # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
+  prs = "1063 1249 1135 1184 1201 1202 1224 1253"
+  for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
+  # Applying external PR: improved exporting and added Kerberos keys calculation
+  git remote add n00py/impacket https://github.com/n00py/impacket
+  git fetch n00py/impacket pull/1/head:"n00py/pull/1"
+  git merge --no-edit "n00py/pull/1"
+
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
