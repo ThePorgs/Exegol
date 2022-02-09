@@ -304,11 +304,6 @@ function install_impacket() {
   # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
   prs = "1063 1249 1135 1184 1201 1202 1224 1253"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
-  # Applying external PR: improved exporting and added Kerberos keys calculation
-  git remote add n00py/impacket https://github.com/n00py/impacket
-  git fetch n00py/impacket pull/1/head:"n00py/pull/1"
-  git merge --no-edit "n00py/pull/1"
-
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
