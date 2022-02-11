@@ -1,3 +1,4 @@
+import os
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
@@ -42,6 +43,18 @@ class Command:
     """The Command class is the root of all CLI actions"""
 
     def __init__(self):
+        # Root command usages (can be overwritten by subclasses to display different use cases)
+        self._usages = {
+            "Install (or build) (↓ ~25GB max)": "exegol install",
+            "Get a shell": "exegol start",
+            "Check image updates": "exegol info",
+            "Update an image": "exegol update",
+            "See usages to execute a single command": "exegol exec -h",
+            "Remove a container": "exegol remove",
+            "Uninstall an image": "exegol uninstall",
+            "Stop a container": "exegol stop"
+        }
+
         # Name of the object
         self.name = type(self).__name__.lower()
         # Global parameters
@@ -109,3 +122,11 @@ class Command:
                     if self.__dict__[option["arg"].dest] is None:
                         missingOption.append(option["arg"].dest)
         return missingOption
+
+    def formatEpilog(self) -> str:
+        epilog = "[green]Examples:[/green]" + os.linesep
+        max_key = max([len(k) for k in self._usages.keys()])
+        for k, v in self._usages.items():
+            space = ' ' * (max_key - len(k) + 2)
+            epilog += f"  {k}:{space}[i]{v}[/i]{os.linesep}"
+        return epilog

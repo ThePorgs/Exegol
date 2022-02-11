@@ -19,20 +19,6 @@ class ExegolArgParse(argparse.ArgumentParser):
 class Parser:
     __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
                     "your machine."
-    # TODO review usages
-    __examples = {
-        "install (↓ ~25GB max)":    "exegol install",
-        "check image updates":      "exegol info",
-        "get a shell\t": "exegol start",
-        "run as daemon\t": "exegol exec -e bloodhound",
-        "get a tmux shell": "exegol start --shell tmux",
-        "use wifi/bluetooth": "exegol start --privileged",
-        "use a Proxmark": "exegol start --device /dev/ttyACM0",
-        "use a LOGITacker": "exegol start --device /dev/ttyACM0",
-        "use an ACR122u": "exegol start --device /dev/bus/usb/",
-        "use an HackRF One": "exegol start --device /dev/bus/usb/",
-        "use an Crazyradio PA": "exegol start --device /dev/bus/usb/",
-    }
     __formatter_class: type = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
@@ -51,14 +37,10 @@ class Parser:
 
     def __init_parser(self) -> None:
         """Root parser creation"""
-        # TODO move epilog building
-        epilog = "[green]Examples:[/green]\n"
-        for k, v in self.__examples.items():
-            epilog += "  {}\t{}\n".format(k, v)
 
         self.__root_parser = ExegolArgParse(
             description=self.__description,
-            epilog=epilog,
+            epilog=Command().formatEpilog(),
             formatter_class=self.__formatter_class,
         )
 
@@ -67,10 +49,11 @@ class Parser:
         self.__root_parser._positionals.title = "[green]Required arguments[/green]"
         for action in self.__actions:
             # Each action has a dedicated sub-parser with different options
-            # the 'help' description of the current action is retrieved from the comment of the corresponding action class
-            # TODO add epilog usage on each action
+            # the 'help' description of the current action is retrieved
+            # from the comment of the corresponding action class
             sub_parser = self.subParser.add_parser(action.name, help=action.__doc__,
                                                    description=action.__doc__,
+                                                   epilog=action.formatEpilog(),
                                                    formatter_class=self.__formatter_class)
             sub_parser.set_defaults(action=action)
             self.__set_options(sub_parser, target=action)

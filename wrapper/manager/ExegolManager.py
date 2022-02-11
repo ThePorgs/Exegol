@@ -40,6 +40,7 @@ class ExegolManager:
     def start(cls):
         logger.info("Starting exegol")
         container = cls.__loadOrCreateContainer()
+        # TODO check parameters / already existing container
         container.start()
         container.spawnShell()
 

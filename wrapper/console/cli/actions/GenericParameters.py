@@ -115,15 +115,15 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
-        groupArgs.append(GroupArg({"arg": self.X11, "required": False},
-                                  {"arg": self.common_resources, "required": False},
-                                  {"arg": self.host_network, "required": False},
-                                  {"arg": self.share_timezone, "required": False},
-                                  {"arg": self.workspace_path, "required": False},
+        groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
+                                  {"arg": self.X11, "required": False},
+                                  {"arg": self.common_resources, "required": False},
+                                  {"arg": self.host_network, "required": False},
+                                  {"arg": self.share_timezone, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},

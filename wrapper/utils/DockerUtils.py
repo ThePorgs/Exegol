@@ -51,7 +51,8 @@ class DockerUtils:
                 logger.critical(err.explanation)
                 # Not reachable, critical logging will exit
                 return  # type: ignore
-            logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(docker_containers)}{os.linesep}", markup=True)
+            logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(docker_containers)}{os.linesep}",
+                       markup=True)
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -157,10 +158,10 @@ class DockerUtils:
                 logger.error(f"Error while creating common share docker volume.")
                 logger.debug(err)
                 logger.critical(err.explanation)
-                return None
+                return None  # type: ignore
         except APIError as err:
             logger.critical(f"Unexpected error by Docker SDK : {err}")
-            return None
+            return None  # type: ignore
         return volume
 
     # # # Image Section # # #
@@ -296,8 +297,8 @@ class DockerUtils:
         if build_profile is None:
             build_profile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
-        logger.verbose(
-            f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with [green][b]{build_profile}[/b][/green]")
+        logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
+                       f"[green][b]{build_profile}[/b][/green]")
         try:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
