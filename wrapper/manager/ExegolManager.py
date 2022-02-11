@@ -6,6 +6,7 @@ from typing import Union, List, Tuple, Optional, cast, Sequence
 from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
+from wrapper.console.cli.actions.GenericParameters import ContainerCreation
 from wrapper.exceptions.ExegolExceptions import ObjectNotFound
 from wrapper.manager.UpdateManager import UpdateManager
 from wrapper.model.ContainerConfig import ContainerConfig
@@ -40,7 +41,9 @@ class ExegolManager:
     def start(cls):
         logger.info("Starting exegol")
         container = cls.__loadOrCreateContainer()
-        # TODO check parameters / already existing container
+        if not container.isNew():
+            # Check and warn user if some parameters dont apply to the current sessionh
+            cls.__checkUselessParameters()
         container.start()
         container.spawnShell()
 
@@ -340,3 +343,29 @@ class ExegolManager:
         container = DockerUtils.createContainer(model, temporary=True)
         container.postStartSetup()
         return container
+
+    @classmethod
+    def __checkUselessParameters(cls):
+        """Checks if the container creation parameters have not been filled in when the container already existed"""
+        # Get defaults parameters
+        creation_parameters = ContainerCreation([]).__dict__
+        # Get parameters from user input
+        user_inputs = ParametersManager().parameters.__dict__
+        detected = []
+        for param in creation_parameters.keys():
+            # Skip parameters useful in a start context
+            if param in ('containertag',):
+                continue
+            # For each parameter, check if it's not None and different from the default
+            if user_inputs.get(param) is not None and \
+                    user_inputs.get(param) != creation_parameters.get(param).kwargs.get('default'):
+                # If the supplied parameter is positional, getting his printed name
+                name = creation_parameters.get(param).kwargs.get('metavar')
+                if name is None:
+                    # if not, using the args name
+                    detected.append(' / '.join(creation_parameters.get(param).args))
+                else:
+                    detected.append(name)
+        if len(detected) > 0:
+            logger.warning(f"These parameters ({', '.join(detected)}) have been entered although the container already "
+                           f"exists, they will not be taken into account.")

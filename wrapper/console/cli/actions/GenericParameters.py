@@ -64,14 +64,17 @@ class ContainerCreation(ContainerSelector, ImageSelector):
 
         self.X11 = Option("--disable-X11",
                           action="store_false",
+                          default=True,
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.common_resources = Option("--disable-common-resources",
                                        action="store_false",
+                                       default=True,
                                        dest="common_resources",
                                        help=f"Disable the mount of the common exegol resources (/opt/resources) from the host ({ConstantConfig.root_path_obj.joinpath('shared-resources')}) (default: [green]Enabled[/green])")
         self.host_network = Option("--disable-shared-network",
                                    action="store_false",
+                                   default=True,
                                    dest="host_network",
                                    help="Disable the sharing of the host's network interfaces with exegol (default: [green]Enabled[/green])")
         self.share_timezone = Option("--disable-shared-timezones",
@@ -82,6 +85,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.mount_current_dir = Option("-cwd", "--cwd-mount",
                                         dest="mount_current_dir",
                                         action="store_true",
+                                        default=False,
                                         help="This option is a shortcut to set the /workspace folder to the user's current working directory")
         self.workspace_path = Option("-w", "--workspace",
                                      dest="workspace_path",

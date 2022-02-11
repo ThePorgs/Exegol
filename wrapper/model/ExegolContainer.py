@@ -29,12 +29,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(docker_image=docker_container.image))
             self.image.syncContainer(docker_container)
+            self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with his object template.
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
                              # Rebuild config from docker object to update workspace path
                              image=model.image)
+            self.__new_container = True
 
     def __str__(self):
         """Default object text formatter, debug only"""
@@ -59,6 +61,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         elif status == "running":
             return "[green]:play_button: [green]Running"
         return status
+
+    def isNew(self) -> bool:
+        """Check if the container has just been created or not"""
+        return self.__new_container
 
     def isRunning(self) -> bool:
         """Check is the container is running. Return bool."""
