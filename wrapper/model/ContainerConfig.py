@@ -195,7 +195,6 @@ class ContainerConfig:
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
-        # TODO test cap needs / mknod device
         self.__addCapability("NET_ADMIN")
         if not self.__network_host:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled

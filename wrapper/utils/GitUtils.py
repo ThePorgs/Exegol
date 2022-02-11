@@ -62,7 +62,6 @@ class GitUtils:
         This method compare the last commit local and the ancestor."""
         if branch is None:
             branch = self.getCurrentBranch()
-        # TODO handle None git object
         assert self.__gitRepo is not None
         assert self.__gitRemote is not None
         # Get last local commit

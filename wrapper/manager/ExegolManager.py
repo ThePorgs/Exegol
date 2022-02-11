@@ -45,7 +45,7 @@ class ExegolManager:
     def exec(cls):
         logger.info("Starting exegol")
         if ParametersManager().tmp:
-            container = cls.createTmpContainer(ParametersManager().selector)
+            container = cls.__createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:
                 container.exec(command=ParametersManager().exec, as_daemon=False)
                 container.stop(timeout=2)
@@ -306,10 +306,12 @@ class ExegolManager:
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
         model = ExegolContainerTemplate(name, config, image)
 
-        return DockerUtils.createContainer(model)
+        container = DockerUtils.createContainer(model)
+        container.postStartSetup()
+        return container
 
     @classmethod
-    def createTmpContainer(cls, image_name: Optional[str] = None) -> ExegolContainer:
+    def __createTmpContainer(cls, image_name: Optional[str] = None) -> ExegolContainer:
         """Create a temporary ExegolContainer with custom entrypoint"""
         logger.verbose("Configuring new exegol container")
         # Create exegol config
@@ -325,4 +327,6 @@ class ExegolManager:
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
         model = ExegolContainerTemplate(name, config, image)
 
-        return DockerUtils.createContainer(model, temporary=True)
+        container = DockerUtils.createContainer(model, temporary=True)
+        container.postStartSetup()
+        return container

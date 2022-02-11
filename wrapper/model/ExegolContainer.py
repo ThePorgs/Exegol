@@ -22,6 +22,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         logger.debug(f"== Loading container : {docker_container.name}")
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
+        self.__xhost_applied = False
         if model is None:
             # Create Exegol container from an existing docker container
             super().__init__(docker_container.name,
@@ -79,17 +80,15 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
-            self.__container.start()
-            # If GUI enable, allow X11 access on host ACL (if not already allowed)  # TODO review xhost entrypoints
-            if self.config.isGUIEnable():
-                logger.debug(f"Adding xhost ACL to local:{self.hostname}")
-                os.system(f"xhost +local:{self.hostname} > /dev/null")
+            with console.status(f"Waiting to start {self.name}", spinner_style="blue"):
+                self.__container.start()
+            self.postStartSetup()
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
-            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue") as status:
+            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
                 self.__container.stop(timeout=timeout)
 
     def spawnShell(self):
@@ -98,10 +97,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         for device in self.config.getDevices():
             logger.info(f"Shared host device: {device.split(':')[0]}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
-        # If GUI enable, allow X11 access on host ACL (if not already allowed)
-        if self.config.isGUIEnable():
-            logger.debug(f"Adding xhost ACL to local:{self.hostname}")
-            os.system(f"xhost +local:{self.hostname} > /dev/null")
+        # In case of multi-user environment, xhost must be set before opening each session to be sure
+        self.__applyXhostACL()
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         envs = self.config.getShellEnvs()
         options = ""
@@ -189,3 +186,13 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             if path.startswith('/wsl/') or path.startswith('\\wsl\\'):
                 # Docker volume defines from WSL don't return the real path, they cannot be automatically removed
                 logger.warning("Warning: WSL workspace directory cannot be removed automatically.")
+
+    def postStartSetup(self):
+        self.__applyXhostACL()
+
+    def __applyXhostACL(self):
+        # If GUI is enable, allow X11 access on host ACL (if not already allowed)
+        if self.config.isGUIEnable() and not self.__xhost_applied:
+            self.__xhost_applied = True  # Can be applied only once per execution
+            logger.debug(f"Adding xhost ACL to local:{self.hostname}")
+            os.system(f"xhost +local:{self.hostname} > /dev/null")

@@ -107,12 +107,16 @@ class UpdateManager:
         Start docker image building
         Return the name of the built image"""
         # Ask to update git
-        if not cls.__getGit().isUpToDate() and Confirm.ask(
-                "[blue][?][/blue] Do you want to update git (in order to update local build profiles)? [bright_magenta][Y/n][/bright_magenta]",
-                show_choices=False,
-                show_default=False,
-                default=True):
-            cls.updateGit()
+        try:
+            if not cls.__getGit().isUpToDate() and Confirm.ask(
+                    "[blue][?][/blue] Do you want to update git (in order to update local build profiles)? [bright_magenta][Y/n][/bright_magenta]",
+                    show_choices=False,
+                    show_default=False,
+                    default=True):
+                cls.updateGit()
+        except AssertionError:
+            # Catch None git object assertions
+            logger.warning("Git update is not available. Skipping.")
         # Choose tag name
         blacklisted_build_name = ["stable"]
         while build_name is None or build_name in blacklisted_build_name:
