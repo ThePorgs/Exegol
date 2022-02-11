@@ -50,7 +50,9 @@ class Command:
                              action="store_false",
                              default=True,
                              required=False,
-                             help="Allow insecure server connections for web requests, e.g. when fetching info from DockerHub (default: [red bold not italic]False[/red bold not italic])")
+                             help="Allow insecure server connections for web requests, "
+                                  "e.g. when fetching info from DockerHub "
+                                  "(default: [red bold not italic]False[/red bold not italic])")
         self.quiet = Option("-q", "--quiet",
                             dest="quiet",
                             action="store_true",
@@ -61,11 +63,17 @@ class Command:
                                 action="count",
                                 default=0,
                                 help="Verbosity level (-v for verbose, -vv for advanced, -vvv for debug)")
+        self.interactive_mode = Option("--non-interactive",
+                                       dest="interactive_mode",
+                                       action="store_false",
+                                       help="[red](WIP)[/red] Prevents Exegol from interactively requesting information. "
+                                            "If critical information is missing, an error will be raised.")
 
         # Main global group of argparse
         self.groupArgs = [
             GroupArg({"arg": self.verify, "required": False},
                      {"arg": self.quiet, "required": False},
+                     {"arg": self.interactive_mode, "required": False},
                      {"arg": self.verbosity, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)

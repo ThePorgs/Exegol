@@ -5,8 +5,8 @@ from typing import Optional, Dict, Sequence
 
 from docker.errors import NotFound
 from docker.models.containers import Container
-from rich.prompt import Confirm
 
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.model.ContainerConfig import ContainerConfig
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
@@ -167,11 +167,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             try:
                 if os.listdir(volume_path):
                     # Directory is not empty
-                    if not Confirm.ask(
-                            f"[blue][?][/blue] Workspace {volume_path} is not empty, do you want to delete it? [bright_magenta]\[y/N][/bright_magenta]",
-                            show_choices=False,
-                            show_default=False,
-                            default=False):
+                    if not Confirm(f"Workspace {volume_path} is not empty, do you want to delete it?",
+                                   default=False):
                         # User can choose not to delete the workspace on the host
                         return
                 shutil.rmtree(volume_path)

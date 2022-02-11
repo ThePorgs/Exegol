@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ObjectNotFound
@@ -14,7 +15,7 @@ from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
-from wrapper.utils.ExeLog import logger
+from wrapper.utils.ExeLog import logger, console
 
 
 # Main procedure of exegol
@@ -26,12 +27,13 @@ class ExegolManager:
     def info():
         """Print a list of available images and containers on the current host"""
         ExegolManager.print_version()
+        with console.status(f"Loading information", spinner_style="blue"):
+            images = DockerUtils.listImages()
+            containers = DockerUtils.listContainers()
         # List and print images
-        images = DockerUtils.listImages()
         ExegolTUI.printTable(images)
         logger.empty_line()
         # List and print containers
-        containers = DockerUtils.listContainers()
         ExegolTUI.printTable(containers)
 
     @classmethod
@@ -280,7 +282,14 @@ class ExegolManager:
         config.setNetworkMode(ParametersManager().host_network)
         if ParametersManager().common_resources:
             config.enableCommonVolume()
-        if ParametersManager().mount_current_dir:  # TODO add cwd interactive confirmation
+        if ParametersManager().workspace_path:
+            if ParametersManager().mount_current_dir:
+                logger.warning(
+                    f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
+            config.setWorkspaceShare(ParametersManager().workspace_path)
+        elif ParametersManager().mount_current_dir or \
+                (ParametersManager().interactive_mode and
+                 Confirm("Do you want to share your current working directory in the new container?", default=False)):
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.enablePrivileged()

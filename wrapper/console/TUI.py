@@ -3,11 +3,13 @@ from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequ
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
-from rich.prompt import Prompt, Confirm
+from rich.prompt import Prompt
 from rich.table import Table
 
 from wrapper.console.ExegolProgress import ExegolProgress
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.LayerTextColumn import LayerTextColumn
+from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.SelectableInterface import SelectableInterface
@@ -216,6 +218,7 @@ class ExegolTUI:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
         Raise IndexError of the data list is empty."""
+        cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
             if object_type is ExegolImage:
@@ -251,11 +254,8 @@ class ExegolTUI:
                 if choice == o:
                     return o
             if allow_None:
-                if Confirm.ask(
-                        f"[blue][?][/blue] No {object_name} is available under this name, do you want to {action} it? "
-                        f"[bright_magenta][Y/n][/bright_magenta]",
-                        show_choices=False,
-                        show_default=False,
+                if Confirm(
+                        f"No {object_name} is available under this name, do you want to {action} it?",
                         default=True):
                     return choice
                 logger.info(f"[red]Please select one of the available {object_name}s[/red]")
@@ -269,6 +269,7 @@ class ExegolTUI:
                                 default: Optional[str] = None) -> Sequence[SelectableInterface]:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""
+        cls.__isInteractionAllowed()
         result = []
         pool = cast(List[SelectableInterface], data).copy()
         if object_type is None and len(pool) > 0:
@@ -285,12 +286,7 @@ class ExegolTUI:
             pool.remove(selected)
             if len(pool) == 0:
                 return result
-            elif not Confirm.ask(
-                    f"[blue][?][/blue] Do you want to select another {object_subject}? "
-                    f"[bright_magenta]\[y/N][/bright_magenta]",
-                    show_choices=False,
-                    show_default=False,
-                    default=False):
+            elif not Confirm(f"Do you want to select another {object_subject}?", default=False):
                 return result
 
     @classmethod
@@ -302,6 +298,7 @@ class ExegolTUI:
         """if data is list(str): Return a string selected by the user
         if data is dict: list keys and return corresponding value
         Raise IndexError of the data list is empty."""
+        cls.__isInteractionAllowed()
         if len(data) == 0:
             logger.warning("No options were found")
             raise IndexError
@@ -318,3 +315,8 @@ class ExegolTUI:
             return data[choice]
         else:
             return choice
+
+    @classmethod
+    def __isInteractionAllowed(cls):
+        if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
+            logger.critical(f'A required information is missing. Exiting.')

@@ -82,7 +82,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.mount_current_dir = Option("-cwd", "--cwd-mount",
                                         dest="mount_current_dir",
                                         action="store_true",
-                                        help="Share the current working directory to container's /workspace")
+                                        help="This option is a shortcut to set the /workspace folder to the user's current working directory")
+        self.workspace_path = Option("-w", "--workspace",
+                                     dest="workspace_path",
+                                     action="store",
+                                     help="The specified host folder will be linked to the /workspace folder in the container")
         self.volumes = Option("-V", "--volume",
                               action="append",
                               default=[],
@@ -115,6 +119,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.common_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
+                                  {"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.privileged, "required": False},

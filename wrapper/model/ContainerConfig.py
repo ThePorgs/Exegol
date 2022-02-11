@@ -5,9 +5,9 @@ from typing import Optional, List, Dict, Union, Tuple, cast
 
 from docker.models.containers import Container
 from docker.types import Mount
-from rich.prompt import Confirm
 
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
 from wrapper.utils import FsUtils
@@ -178,20 +178,25 @@ class ContainerConfig:
             self.addVolume(ConstantConfig.COMMON_SHARE_NAME, '/opt/resources', volume_type='volume')
 
     def enableCwdShare(self):
-        """Procedure to share Current Working Directory with the container"""
+        """Procedure to share Current Working Directory with the /workspace of the container"""
         logger.verbose("Config : Sharing current working directory")
         self.__share_cwd = os.getcwd()
+
+    def setWorkspaceShare(self, host_directory):
+        """Procedure to share a specific directory with the /workspace of the container"""
+        path = Path(host_directory).absolute()
+        if not path.is_dir():
+            logger.critical("The specified workspace is not a directory")
+        logger.verbose(f"Config : Sharing workspace directory {path}")
+        self.__share_cwd = str(path)
 
     def enableVPN(self):
         """Configure a VPN profile for container startup"""
         # Check host mode : custom (allows you to isolate the VPN connection from the host's network)
         if self.__network_host:
             logger.warning("Using the host network mode with a VPN profile is not recommended.")
-            if not Confirm.ask(
-                    f"[blue][?][/blue] Are you sure you want to configure a VPN container based on the host's network? [bright_magenta]\[y/N][/bright_magenta]",
-                    default=False,
-                    show_choices=False,
-                    show_default=False):
+            if not Confirm(f"Are you sure you want to configure a VPN container based on the host's network?",
+                           default=False):
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels

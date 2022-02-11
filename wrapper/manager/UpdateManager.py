@@ -1,7 +1,8 @@
 from typing import Optional, Dict, cast
 
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Prompt
 
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ObjectNotFound
@@ -68,11 +69,8 @@ class UpdateManager:
     def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
         """Build confirmation process and image building"""
         # Need confirmation from the user before starting building.
-        if Confirm.ask(
-                "[blue][?][/blue] Do you want to build locally a custom image? [bright_magenta]\[y/N][/bright_magenta]",
-                show_default=False,
-                show_choices=False,
-                default=False):
+        if Confirm("Do you want to build locally a custom image?",
+                   default=False):
             return cls.buildAndLoad(tag)
         return None
 
@@ -108,10 +106,8 @@ class UpdateManager:
         Return the name of the built image"""
         # Ask to update git
         try:
-            if not cls.__getGit().isUpToDate() and Confirm.ask(
-                    "[blue][?][/blue] Do you want to update git (in order to update local build profiles)? [bright_magenta][Y/n][/bright_magenta]",
-                    show_choices=False,
-                    show_default=False,
+            if not cls.__getGit().isUpToDate() and Confirm(
+                    "Do you want to update git (in order to update local build profiles)?",
                     default=True):
                 cls.updateGit()
         except AssertionError:
