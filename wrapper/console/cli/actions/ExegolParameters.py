@@ -16,7 +16,7 @@ class Start(Command, ContainerCreation, ContainerStart):
             "Start interactively a container": "exegol start",
             "Create a 'demo' container using 'stable' image": "exegol start [green]demo[/green] [orange3]stable[/orange3]",
             "Spawn a shell from 'demo' container": "exegol start [green]demo[/green]",
-            "Create a container 'htb' with a VPN": "exegol start [green]htb[/green] [orange3]stable[/orange3] --vpn ./vpn/lab_Dramelac.ovpn",
+            "Create a container 'htb' with a VPN": "exegol start [green]htb[/green] [orange3]stable[/orange3] --vpn ~/vpn/lab_Dramelac.ovpn",
             "Create a container 'test' with a custom shared workspace": "exegol start [green]test[/green] [orange3]stable[/orange3] -w ./project/pentest",
             "Create a container 'test' sharing the current working directory": "exegol start [green]test[/green] [orange3]stable[/orange3] -cwd",
             "Create a container 'app' with custom volume": "exegol start [green]app[/green] [orange3]stable[/orange3] -V '/var/app/:/app/'",

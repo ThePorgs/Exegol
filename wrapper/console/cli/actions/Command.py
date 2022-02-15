@@ -44,7 +44,9 @@ class Command:
 
     def __init__(self):
         # Root command usages (can be overwritten by subclasses to display different use cases)
+        # todo : add post/pre epilog
         self._usages = {
+            "[green]To see specific examples run: [italic white]exegol [orange3]command[/orange3] -h[/italic white][/green]": "",
             "Install (or build) (↓ ~25GB max)": "exegol install",
             "Get a shell": "exegol start",
             "Check image updates": "exegol info",
