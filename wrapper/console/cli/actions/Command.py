@@ -44,9 +44,8 @@ class Command:
 
     def __init__(self):
         # Root command usages (can be overwritten by subclasses to display different use cases)
-        # todo : add post/pre epilog
+        self._pre_usages = "[green]To see specific examples run: [italic white]exegol [orange3]command[/orange3] -h[/italic white][/green]"
         self._usages = {
-            "[green]To see specific examples run: [italic white]exegol [orange3]command[/orange3] -h[/italic white][/green]": "",
             "Install (or build) (↓ ~25GB max)": "exegol install",
             "Get a shell": "exegol start",
             "Check image updates": "exegol info",
@@ -56,6 +55,7 @@ class Command:
             "Uninstall an image": "exegol uninstall",
             "Stop a container": "exegol stop"
         }
+        self._post_usages = ""
 
         # Name of the object
         self.name = type(self).__name__.lower()
@@ -127,8 +127,10 @@ class Command:
 
     def formatEpilog(self) -> str:
         epilog = "[green]Examples:[/green]" + os.linesep
+        epilog += self._pre_usages + os.linesep
         max_key = max([len(k) for k in self._usages.keys()])
         for k, v in self._usages.items():
             space = ' ' * (max_key - len(k) + 2)
             epilog += f"  {k}:{space}[i]{v}[/i]{os.linesep}"
+        epilog += self._post_usages + os.linesep
         return epilog
