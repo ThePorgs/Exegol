@@ -302,7 +302,7 @@ function install_impacket() {
   # 1202: Added self for getST
   # 1224: Added renameMachine.py
   # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
-  prs = "1063 1249 1135 1184 1201 1202 1224 1253 1256"
+  prs = "1063 1249 1135 1184 1201 1202 1224 1253 1256 1257"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
