@@ -135,6 +135,10 @@ class ContainerConfig:
                 self.__vpn_name = obj_path.name
                 logger.debug(f"Loading VPN config: {self.__vpn_name}")
 
+    def interactiveConfig(self):
+        if Confirm("Do you want to share your current working directory in the new container?", default=False):
+            self.enableCwdShare()
+
     def enableGUI(self):
         """Procedure to enable GUI feature"""
         if not GuiUtils.isGuiAvailable():

@@ -167,6 +167,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def __removeVolume(self):
         """Remove private workspace volume directory if exist"""
         volume_path = self.config.getPrivateVolumePath()
+        # TODO add backup
+        # TODO add remove root files
         if volume_path != '':
             logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")

@@ -3,7 +3,6 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
-from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.console.cli.actions.GenericParameters import ContainerCreation
@@ -296,10 +295,6 @@ class ExegolManager:
                 logger.warning(
                     f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
             config.setWorkspaceShare(ParametersManager().workspace_path)
-        elif ParametersManager().mount_current_dir or \
-                (ParametersManager().interactive_mode and
-                 Confirm("Do you want to share your current working directory in the new container?", default=False)):
-            config.enableCwdShare()
         if ParametersManager().privileged:
             config.enablePrivileged()
         if ParametersManager().volumes is not None:
@@ -323,6 +318,10 @@ class ExegolManager:
         config = cls.__prepareContainerConfig()
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
         model = ExegolContainerTemplate(name, config, image)
+
+        # Recap
+        ExegolTUI.printContainerRecap(model)
+        # TODO handle interactive config
 
         container = DockerUtils.createContainer(model)
         container.postStartSetup()

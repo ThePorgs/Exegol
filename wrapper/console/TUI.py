@@ -11,6 +11,7 @@ from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.LayerTextColumn import LayerTextColumn
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.model.ExegolContainer import ExegolContainer
+from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ExeLog import logger, console, ExeLog
@@ -315,6 +316,13 @@ class ExegolTUI:
             return data[choice]
         else:
             return choice
+
+    @classmethod
+    def printContainerRecap(cls, container: ExegolContainerTemplate):
+        # TODO create rich recap table
+        logger.debug(container)
+        logger.debug(container.image)
+        logger.debug(container.config)
 
     @classmethod
     def __isInteractionAllowed(cls):
