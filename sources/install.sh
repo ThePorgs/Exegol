@@ -1861,6 +1861,11 @@ function install_modifyCertTemplate() {
   git -C /opt/tools/ clone https://github.com/fortalice/modifyCertTemplate
 }
 
+function install_pylaps() {
+  colorecho "Installing pyLAPS"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/pyLAPS
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2275,6 +2280,7 @@ function install_ad_tools() {
   install_dcsync
   install_gMSADumper
   install_modifyCertTemplate
+  install_pylaps
 }
 
 # Package dedicated to mobile apps pentest tools

