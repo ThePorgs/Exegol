@@ -12,7 +12,9 @@ from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
 from wrapper.utils import FsUtils
 from wrapper.utils.ConstantConfig import ConstantConfig
+from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger, ExeLog
+from wrapper.utils.GuiUtils import GuiUtils
 
 
 # Configuration class of an exegol container
@@ -33,7 +35,7 @@ class ContainerConfig:
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
         self.interactive: bool = True
         self.tty: bool = True
-        self.shm_size: str = '1G'
+        self.shm_size: str = '64M'
         self.__share_cwd: Optional[str] = None
         self.__share_private: Optional[str] = None
         self.__disable_workspace: bool = False
@@ -133,29 +135,23 @@ class ContainerConfig:
                 self.__vpn_name = obj_path.name
                 logger.debug(f"Loading VPN config: {self.__vpn_name}")
 
-    @staticmethod
-    def __isGuiAvailable() -> bool:
-        if ConstantConfig.windows_host:
-            # TODO Investigate X11 sharing on Windows with container
-            logger.warning("Display sharing is not (yet) supported on Windows.")
-            return False
-        return True
-
     def enableGUI(self):
         """Procedure to enable GUI feature"""
-        if not self.__isGuiAvailable():
+        if not GuiUtils.isGuiAvailable():
             logger.error("GUI feature is not available on your environment. Skipping.")
             return
         if not self.__enable_gui:
             self.__enable_gui = True
             logger.verbose("Config : Enabling display sharing")
-            self.addVolume("/tmp/.X11-unix", "/tmp/.X11-unix")
+            self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix")
+            self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             self.addEnv("QT_X11_NO_MITSHM", "1")
-            self.addEnv("DISPLAY", f"{os.getenv('DISPLAY')}")
+            # TODO support pulseaudio
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
-        if ConstantConfig.windows_host:
+        if not EnvInfo.is_linux_shell:
+            # TODO review timezone config
             logger.warning("Timezone sharing is inconsistent on Windows. May be inaccurate.")
         if not self.__share_timezone:
             self.__share_timezone = True
@@ -441,7 +437,7 @@ class ContainerConfig:
         """Overriding envs when opening a shell"""
         result = []
         if self.__enable_gui:
-            current_display = os.getenv('DISPLAY')
+            current_display = GuiUtils.getDisplayEnv()
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
             # the environment variable will be updated in the exegol shell.
             if current_display and self.__envs.get('DISPLAY', '') != current_display:

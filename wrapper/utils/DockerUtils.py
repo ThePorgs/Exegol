@@ -16,6 +16,7 @@ from wrapper.model.ExegolContainer import ExegolContainer
 from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ConstantConfig import ConstantConfig
+from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger
 
 
@@ -27,6 +28,12 @@ class DockerUtils:
         # Connect Docker SDK to the local docker instance.
         # Docker connection setting is loaded from the user environment variables.
         __client: DockerClient = docker.from_env()
+        # Check if the docker daemon is serving linux container
+        __daemon_info = __client.info()
+        if __daemon_info.get("OSType", "linux").lower() != "linux":
+            logger.critical(
+                f"Docker daemon is not serving linux container ! Docker OS Type is: {__daemon_info.get('OSType', 'linux')}")
+        EnvInfo.initData(__daemon_info)
     except DockerException as err:
         logger.error(err)
         logger.critical(
@@ -34,6 +41,18 @@ class DockerUtils:
             "Exiting.")
     __images: Optional[List[ExegolImage]] = None
     __containers: Optional[List[ExegolContainer]] = None
+
+    @classmethod
+    def clearCache(cls):
+        """Remove class's images and containers data cache
+        Only needed if the list as to be updated in the same runtime at a later moment"""
+        cls.__containers = None
+        cls.__images = None
+
+    @classmethod
+    def getDockerInfo(cls) -> dict:
+        """Fetch info from docker daemon"""
+        return cls.__daemon_info
 
     # # # Container Section # # #
 
@@ -319,10 +338,3 @@ class DockerUtils:
                 logger.debug(f"Error: {err}")
             else:
                 logger.critical(f"An error occurred while building this image : {err}")
-
-    @classmethod
-    def clearCache(cls):
-        """Remove class's images and containers data cache
-        Only needed if the list as to be updated in the same runtime at a later moment"""
-        cls.__containers = None
-        cls.__images = None

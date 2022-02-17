@@ -3,7 +3,7 @@ import subprocess
 from pathlib import Path, PurePosixPath, PurePath
 from typing import Optional
 
-from wrapper.utils.ConstantConfig import ConstantConfig
+from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger
 
 
@@ -25,7 +25,7 @@ def resolvPath(path: Path) -> str:
     On WSL, Windows PATH can be resolved using 'wslpath'."""
     if path is None:
         return ''
-    if ConstantConfig.wsl_environment:
+    if EnvInfo.current_platform == "WSL":
         try:
             # Resolv Windows path on WSL environment
             p = subprocess.Popen(["wslpath", "-a", str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)

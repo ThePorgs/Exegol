@@ -16,6 +16,7 @@ from wrapper.model.ExegolImage import ExegolImage
 from wrapper.model.SelectableInterface import SelectableInterface
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
+from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger, console
 
 
@@ -95,10 +96,14 @@ class ExegolManager:
     def print_version(cls):
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}",
                    level=logging.INFO, markup=True)
-        logger.debug(f"Host: {'Windows' if ConstantConfig.windows_host else 'Linux'}")
-        if ConstantConfig.windows_host:
-            logger.debug(f"Environment: {'WSL' if ConstantConfig.wsl_environment else 'Windows'}")
-            logger.debug(f"Windows release: {ConstantConfig.windows_release}")
+        logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
+        if EnvInfo.isWindowsHost():
+            logger.debug(f"Python environment: {EnvInfo.current_platform}")
+            logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
+            if EnvInfo.is_linux_shell:
+                logger.debug(f"Windows release: Not available on a linux shell")
+            else:
+                logger.debug(f"Windows release: {EnvInfo.windows_release}")
 
     @classmethod
     def __loadOrInstallImage(cls,

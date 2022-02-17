@@ -1,4 +1,3 @@
-import platform
 from pathlib import Path
 
 
@@ -20,7 +19,3 @@ class ConstantConfig:
     # Docker common share volume name
     COMMON_SHARE_NAME: str = "exegol-shared-resources"
     common_share_path: str = str(root_path_obj.joinpath("shared-resources"))
-    # Current platform
-    wsl_environment = "microsoft" in platform.release()
-    windows_host: bool = platform.system() == "Windows" or wsl_environment
-    windows_release: str = platform.win32_ver()[1]
