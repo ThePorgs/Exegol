@@ -488,13 +488,13 @@ class ContainerConfig:
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
-            result += f"Network mode: {'host' if self.__network_host else 'custom'}{os.linesep}"
+            result += f"[green]Network mode: [/green]{'host' if self.__network_host else 'custom'}{os.linesep}"
         if verbose or not self.__share_timezone:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
         if verbose or not self.__common_resources:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
         if self.__vpn_name is not None:
-            result += f"VPN: {self.__vpn_name}{os.linesep}"
+            result += f"[green]VPN: [/green]{self.__vpn_name}{os.linesep}"
         return result
 
     def getTextMounts(self, verbose: bool = False) -> str:

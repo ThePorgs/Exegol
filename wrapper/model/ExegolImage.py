@@ -68,7 +68,7 @@ class ExegolImage(SelectableInterface):
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
-            self.__name = f'{container.attrs["Config"]["Image"].split(":")[1]} [italic bright_black](deprecated)[/italic bright_black]'
+            self.__name = f'{container.attrs["Config"]["Image"].split(":")[1]} [bright_black](deprecated)[/bright_black]'
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return his name, otherwise return None"""

@@ -28,6 +28,7 @@ class ExegolManager:
     def info():
         """Print a list of available images and containers on the current host"""
         ExegolManager.print_version()
+        logger.empty_line()
         with console.status(f"Loading information", spinner_style="blue"):
             images = DockerUtils.listImages()
             containers = DockerUtils.listContainers()

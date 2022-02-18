@@ -55,11 +55,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Formatted text getter of the container status"""
         status = self.getRawStatus().lower()
         if status == "unknown":
-            return "[red]:question:[/red] Unknown"
+            return "Unknown"
         elif status == "exited":
-            return ":stop_sign: [red]Stopped"
+            return "[red]Stopped"
         elif status == "running":
-            return "[green]:play_button: [green]Running"
+            return "[green]Running"
         return status
 
     def isNew(self) -> bool:
