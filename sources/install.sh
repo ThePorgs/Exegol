@@ -1846,6 +1846,12 @@ function install_pwncat() {
   python3 -m pipx install pwncat-cs
 }
 
+function install_finduncommonshares() {
+  colorecho "Installing FindUncommonShares"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/FindUncommonShares
+  ln -s /opt/tools/FindUncommonShares/FindUncommonShares.py /bin/FindUncommonShares
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2257,6 +2263,7 @@ function install_ad_tools() {
   install_certipy
   npm install ntpsync             # sync local time with remote server
   install_shadowcoerce
+  install_finduncommonshares
 }
 
 # Package dedicated to mobile apps pentest tools
