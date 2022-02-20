@@ -1017,10 +1017,7 @@ function bloodhound() {
   echo "Installing BloodHound from sources"
   git -C /opt/tools/ clone https://github.com/BloodHoundAD/BloodHound/
   mv /opt/tools/BloodHound /opt/tools/BloodHound4
-  npm install -g electron-packager
-  cd /opt/tools/BloodHound4
-  npm install
-  npm run linuxbuild
+  zsh -c "source ~/.zshrc && cd /opt/tools/BloodHound4 && nvm install 16.13.0 && nvm use 16.13.0 && npm install -g electron-packager && npm install && npm run build:linux"
   mkdir -p ~/.config/bloodhound
   cp -v /root/sources/bloodhound/config.json ~/.config/bloodhound/config.json
   cp -v /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
