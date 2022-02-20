@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.11"
+VERSION="3.1.12.dev"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -73,7 +73,7 @@ function tmux() {
   touch ~/.hushlogin
 }
 
-function Responder() {
+function install_responder() {
   colorecho "Installing Responder"
   git -C /opt/tools/ clone https://github.com/lgandx/Responder
   sed -i 's/ Random/ 1122334455667788/g' /opt/tools/Responder/Responder.conf
@@ -143,7 +143,7 @@ function sn0int() {
   apt-get install --fix-broken -y
 }
 
-function CloudFail() {
+function install_CloudFail() {
   colorecho "Installing CloudFail"
   git -C /opt/tools/ clone https://github.com/m0rtem/CloudFail
   python3 -m pip install -r /opt/tools/CloudFail/requirements.txt
@@ -155,14 +155,14 @@ function OneForAll() {
   python3 -m pip install -r /opt/tools/OneForAll/requirements.txt
 }
 
-function EyeWitness() {
+function install_EyeWitness() {
   colorecho "Installing EyeWitness"
   git -C /opt/tools/ clone https://github.com/FortyNorthSecurity/EyeWitness
   cd /opt/tools/EyeWitness/Python/setup
   ./setup.sh
 }
 
-function wafw00f() {
+function install_wafw00f() {
   colorecho "Installing wafw00f"
   git -C /opt/tools/ clone https://github.com/EnableSecurity/wafw00f
   cd /opt/tools/wafw00f
@@ -260,7 +260,11 @@ function install_crackmapexec() {
   apt-get -y install libssl-dev libffi-dev python2-dev build-essential python3-winrm python3-venv
   git -C /opt/tools/ clone --recursive https://github.com/byt3bl33d3r/CrackMapExec
   cd /opt/tools/CrackMapExec
+  # Redefining baseDN from domain name instead of KDC
+  curl --location https://github.com/byt3bl33d3r/CrackMapExec/pull/535.patch | git apply --verbose
   python3 -m pipx install .
+  mkdir -p ~/.cme
+  cp -v /root/sources/crackmapexec/cme.conf ~/.cme/cme.conf
   # this is for having the ability to check the source code when working with modules and so on
   #git -C /opt/tools/ clone https://github.com/byt3bl33d3r/CrackMapExec
 #  apt-get -y install crackmapexec
@@ -286,24 +290,22 @@ function sprayhound() {
   python3 setup.py install
 }
 
-function Impacket() {
+function install_impacket() {
   colorecho "Installing Impacket scripts"
   git -C /opt/tools/ clone https://github.com/SecureAuthCorp/impacket
   cd /opt/tools/impacket/
-  # User-defined password for LDAP attack addComputer
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1063.patch | git apply --verbose
-  # Shadow Credentials in ntlmrelayx.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1249.patch | git apply --verbose
-  # Improved searchFilter for GetUserSPNs
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1135.patch | git apply --verbose
-  # Added user filter on findDelegation
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1184.patch | git apply --verbose
-  # Added describeTicket
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1201.patch | git apply --verbose
-  # Added self for getST
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1202.patch | git apply --verbose
-  # Added renameMachine.py
-  curl --location https://github.com/SecureAuthCorp/impacket/pull/1224.patch | git apply --verbose
+  # 1063: User-defined password for LDAP attack addComputer
+  # 1249: Shadow Credentials in ntlmrelayx.py
+  # 1135: Improved searchFilter for GetUserSPNs
+  # 1184: Added user filter on findDelegation
+  # 1201: Added describeTicket
+  # 1202: Added self for getST
+  # 1224: Added renameMachine.py
+  # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
+  # 1256: Added tgssub script for service substitution
+  # 1265: Fixes Ccache to Kirbi conversion issues
+  prs = "1063 1249 1135 1184 1201 1202 1224 1253 1256 1265"
+  for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
@@ -406,12 +408,12 @@ function dementor() {
 
 function assetfinder() {
   colorecho "Installing assetfinder"
-  go get -u -v github.com/tomnomnom/assetfinder
+  go install -v github.com/tomnomnom/assetfinder@latest
 }
 
 function install_subfinder() {
   colorecho "Installing subfinder"
-  go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
+  go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 }
 
 function install_gobuster() {
@@ -475,27 +477,27 @@ function install_arjun() {
 
 function amass() {
   colorecho "Installing amass"
-  go get -v -u github.com/OWASP/Amass/v3/...
+  go install -v github.com/OWASP/Amass/v3/...@latest
 }
 
 function install_ffuf() {
   colorecho "Installing ffuf"
-  go get -v -u github.com/ffuf/ffuf
+  go install -v github.com/ffuf/ffuf@latest
 }
 
 function install_waybackurls() {
   colorecho "Installing waybackurls"
-  go get -v -u github.com/tomnomnom/waybackurls
+  go install -v github.com/tomnomnom/waybackurls@latest
 }
 
 function install_gitrob(){
   colorecho "Installing gitrob"
-  go get -v -u github.com/michenriksen/gitrob
+  go install -v github.com/michenriksen/gitrob@latest
 }
 
 function gron() {
   colorecho "Installing gron"
-  go get -u -v github.com/tomnomnom/gron
+  go install -v github.com/tomnomnom/gron@latest
 }
 
 function timing_attack() {
@@ -675,7 +677,7 @@ function krbrelayx() {
 
 function hakrawler() {
   colorecho "Installing hakrawler"
-  go get -u -v github.com/hakluke/hakrawler
+  go install -v github.com/hakluke/hakrawler@latest
 }
 
 function install_jwt_tool() {
@@ -692,13 +694,13 @@ function jwt_cracker() {
 
 function wuzz() {
   colorecho "Installing wuzz"
-  go get -u -v github.com/asciimoo/wuzz
+  go install -v github.com/asciimoo/wuzz@latest
 }
 
 function gf_install() {
   colorecho "Installing gf"
   mkdir ~/.gf
-  go get -u -v github.com/tomnomnom/gf
+  go install -v github.com/tomnomnom/gf@latest
   echo 'source $GOPATH/src/github.com/tomnomnom/gf/gf-completion.zsh' | tee -a ~/.zshrc
   cp -rv ~/go/src/github.com/tomnomnom/gf/examples/* ~/.gf
   # TODO: fix this when building : cp: cannot stat '/root/go/src/github.com/tomnomnom/gf/examples/*': No such file or directory
@@ -718,11 +720,6 @@ function rbcd-attack() {
 function rbcd-permissions() {
   colorecho "Installing rbcd_permissions (alternative to rbcd-attack)"
   git -C /opt/tools/ clone https://github.com/NinjaStyle82/rbcd_permissions
-}
-
-function evilwinrm() {
-  colorecho "Installing evil-winrm"
-  gem install evil-winrm
 }
 
 function pypykatz() {
@@ -1022,10 +1019,7 @@ function bloodhound() {
   echo "Installing BloodHound from sources"
   git -C /opt/tools/ clone https://github.com/BloodHoundAD/BloodHound/
   mv /opt/tools/BloodHound /opt/tools/BloodHound4
-  npm install -g electron-packager
-  cd /opt/tools/BloodHound4
-  npm install
-  npm run linuxbuild
+  zsh -c "source ~/.zshrc && cd /opt/tools/BloodHound4 && nvm install 16.13.0 && nvm use 16.13.0 && npm install -g electron-packager && npm install && npm run build:linux"
   mkdir -p ~/.config/bloodhound
   cp -v /root/sources/bloodhound/config.json ~/.config/bloodhound/config.json
   cp -v /root/sources/bloodhound/customqueries.json ~/.config/bloodhound/customqueries.json
@@ -1051,7 +1045,7 @@ function bloodhound_old_v2() {
 function bettercap_install() {
   colorecho "Installing Bettercap"
   apt-get -y install libpcap-dev libusb-1.0-0-dev libnetfilter-queue-dev
-  go get -u -v github.com/bettercap/bettercap
+  go install -v github.com/bettercap/bettercap@latest
   /root/go/bin/bettercap -eval "caplets.update; ui.update; q"
   sed -i 's/set api.rest.username user/set api.rest.username bettercap/g' /usr/local/share/bettercap/caplets/http-ui.cap
   sed -i 's/set api.rest.password pass/set api.rest.password exegol4thewin/g' /usr/local/share/bettercap/caplets/http-ui.cap
@@ -1360,7 +1354,7 @@ function maigret_pip() {
 function amber() {
   colorecho "Installing amber"
   # TODO: this fails and needs a fix
-  go get -u -v github.com/EgeBalci/amber
+  go install -v github.com/EgeBalci/amber@latest
 }
 
 function hashonymize() {
@@ -1452,7 +1446,7 @@ function install_jackit() {
 function install_gosecretsdump() {
   colorecho "Installing gosecretsdump"
   git -C /opt/tools/ clone https://github.com/c-sto/gosecretsdump
-  go get -u -v github.com/C-Sto/gosecretsdump
+  go install -v github.com/C-Sto/gosecretsdump@latest
 }
 
 function install_hackrf() {
@@ -1736,7 +1730,7 @@ function install_donpapi() {
 
 function install_gau() {
   colorecho "Installing gau"
-  GO111MODULE=on go get -u -v github.com/lc/gau
+  GO111MODULE=on go install -v github.com/lc/gau@latest
 }
 
 function install_webclientservicescanner() {
@@ -1800,7 +1794,7 @@ function install_hakrevdns() {
 
 function install_httprobe() {
   colorecho "Installing httprobe"
-  go get -u -v github.com/tomnomnom/httprobe
+  go install -v github.com/tomnomnom/httprobe@latest
 }
 
 function install_httpx() {
@@ -1836,6 +1830,11 @@ function install_robotstester() {
   python3 setup.py install
 }
 
+function install_finduncommonshares() {
+  colorecho "Installing FindUncommonShares"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/FindUncommonShares
+}
+
 function install_shadowcoerce() {
   colorecho "Installing ShadowCoerce PoC"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/ShadowCoerce
@@ -1846,10 +1845,29 @@ function install_pwncat() {
   python3 -m pipx install pwncat-cs
 }
 
-function install_finduncommonshares() {
-  colorecho "Installing FindUncommonShares"
-  git -C /opt/tools/ clone https://github.com/p0dalirius/FindUncommonShares
-  ln -s /opt/tools/FindUncommonShares/FindUncommonShares.py /bin/FindUncommonShares
+function the_hacker_recipes() {
+  colorecho "Adding The Hacker Recipes to the resources"
+  git -C /opt/resources/ clone https://github.com/ShutdownRepo/The-Hacker-Recipes
+}
+
+function install_dcsync() {
+  colorecho "Installing DCSync.py"
+  git -C /opt/tools/ clone https://github.com/n00py/DCSync
+}
+
+function install_gMSADumper() {
+  colorecho "Installing gMSADumper"
+  git -C /opt/tools/ clone https://github.com/micahvandeusen/gMSADumper
+}
+
+function install_modifyCertTemplate() {
+  colorecho "Installing modifyCertTemplate"
+  git -C /opt/tools/ clone https://github.com/fortalice/modifyCertTemplate
+}
+
+function install_pylaps() {
+  colorecho "Installing pyLAPS"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/pyLAPS
 }
 
 function install_base() {
@@ -1961,7 +1979,6 @@ function install_most_used_tools() {
   fapt seclists                   # Awesome wordlists
   install_subfinder               # Subdomain bruteforcer
   install_autorecon               # External recon tool
-  install_gitrob                  # Senstive files reconnaissance in github
   install_waybackurls             # Website history
   install_theHarvester            # Gather emails, subdomains, hosts, employee names, open ports and banners
   install_simplyemail             # Gather emails
@@ -1978,15 +1995,15 @@ function install_most_used_tools() {
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
-  CloudFail                       # Cloudflare misconfiguration detector
-  EyeWitness                      # Website screenshoter
-  wafw00f                         # Waf detector
+  install_CloudFail                       # Cloudflare misconfiguration detector
+  install_EyeWitness                      # Website screenshoter
+  install_wafw00f                         # Waf detector
   install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   install_gittools                # Dump a git repository from a website
   install_ysoserial               # Deserialization payloads
-  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  install_responder                       # LLMNR, NBT-NS and MDNS poisoner
   install_crackmapexec            # Network scanner
-  Impacket                        # Network protocols scripts
+  install_impacket                        # Network protocols scripts
   fapt enum4linux                 # Hosts enumeration
   fapt mimikatz                   # AD vulnerability exploiter
   fapt smbclient                  # Small dynamic library that allows iOS apps to access SMB/CIFS file servers
@@ -2072,7 +2089,7 @@ function install_osint_tools() {
   carbon14                        # OSINT tool for estimating when a web page was written
   WikiLeaker                      # A WikiLeaks scraper
   photon                          # Incredibly fast crawler designed for OSINT.
-  CloudFail                       # Utilize misconfigured DNS and old database records to find hidden IP's behind the CloudFlare network
+  install_CloudFail                       # Utilize misconfigured DNS and old database records to find hidden IP's behind the CloudFlare network
   #Ip
   ipinfo                          # Get information about an IP address using command line with ipinfo.io
   #Data visualization
@@ -2137,10 +2154,10 @@ function install_web_tools() {
   install_testssl                 # SSL/TLS scanner
   fapt sslscan                    # SSL/TLS scanner
   fapt weevely                    # Awesome secure and light PHP webshell
-  CloudFail                       # Cloudflare misconfiguration detector
-  EyeWitness                      # Website screenshoter
+  install_CloudFail                       # Cloudflare misconfiguration detector
+  install_EyeWitness                      # Website screenshoter
   OneForAll                       # TODO: comment this
-  wafw00f                         # Waf detector
+  install_wafw00f                         # Waf detector
   CORScanner                      # CORS misconfiguration detector
   hakrawler                       # Web endpoint discovery
   LinkFinder                      # Discovers endpoint JS files
@@ -2171,6 +2188,7 @@ function install_web_tools() {
   install_httprobe
   install_httpx
   install_robotstester            # Robots.txt scanner
+#  install_gitrob                  # Senstive files reconnaissance in github
 }
 
 # Package dedicated to command & control frameworks
@@ -2196,7 +2214,7 @@ install_services_tools() {
 
 # Package dedicated to internal Active Directory tools
 function install_ad_tools() {
-  Responder                       # LLMNR, NBT-NS and MDNS poisoner
+  install_responder                       # LLMNR, NBT-NS and MDNS poisoner
   install_crackmapexec            # Network scanner
   sprayhound                      # Password spraying tool
   install_smartbrute              # Password spraying tool
@@ -2208,7 +2226,7 @@ function install_ad_tools() {
   aclpwn                          # ACL exploiter
   # IceBreaker                    # TODO: comment this
   dementor                        # SpoolService exploiter
-  Impacket                        # Network protocols scripts
+  install_impacket                        # Network protocols scripts
   pykek                           # AD vulnerability exploiter
   install_lsassy                  # Credentials extracter
   privexchange                    # Exchange exploiter
@@ -2263,6 +2281,10 @@ function install_ad_tools() {
   install_certipy
   npm install ntpsync             # sync local time with remote server
   install_shadowcoerce
+  install_dcsync
+  install_gMSADumper
+  install_modifyCertTemplate
+  install_pylaps
   install_finduncommonshares
 }
 
@@ -2452,6 +2474,7 @@ function install_resources() {
   azurehound
   icmpdoor
   sharpcollection
+  the_hacker_recipes
 }
 
 # Function used to clean up post-install files
