@@ -1830,6 +1830,11 @@ function install_robotstester() {
   python3 setup.py install
 }
 
+function install_finduncommonshares() {
+  colorecho "Installing FindUncommonShares"
+  git -C /opt/tools/ clone https://github.com/p0dalirius/FindUncommonShares
+}
+
 function install_shadowcoerce() {
   colorecho "Installing ShadowCoerce PoC"
   git -C /opt/tools/ clone https://github.com/ShutdownRepo/ShadowCoerce
@@ -2280,6 +2285,7 @@ function install_ad_tools() {
   install_gMSADumper
   install_modifyCertTemplate
   install_pylaps
+  install_finduncommonshares
 }
 
 # Package dedicated to mobile apps pentest tools
