@@ -157,3 +157,4 @@ alias modifyCertTemplate.py='python3 /opt/tools/modifyCertTemplate/modifyCertTem
 alias cme-neo4j-enable='sed -i "s/bh_enabled = False/bh_enabled = True/" ~/.cme/cme.conf'
 alias cme-neo4j-disable='sed -i "s/bh_enabled = True/bh_enabled = False/" ~/.cme/cme.conf'
 alias pyLAPS.py='python3 /opt/tools/pyLAPS/pyLAPS.py'
+alias FindUncommonShares.py='python3 /opt/tools/FindUncommonShares/FindUncommonShares.py'
