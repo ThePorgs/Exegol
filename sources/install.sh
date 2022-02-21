@@ -1833,6 +1833,7 @@ function install_robotstester() {
 function install_finduncommonshares() {
   colorecho "Installing FindUncommonShares"
   git -C /opt/tools/ clone https://github.com/p0dalirius/FindUncommonShares
+  python3 -m pip install -r requirements.txt
 }
 
 function install_shadowcoerce() {
