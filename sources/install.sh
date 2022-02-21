@@ -304,6 +304,8 @@ function install_impacket() {
   # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
   # 1256: Added tgssub script for service substitution
   # 1265: Fixes Ccache to Kirbi conversion issues
+  git config --global user.email "exegol@install.er"
+  git config --global user.name "Exegol installer"
   prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1265"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
