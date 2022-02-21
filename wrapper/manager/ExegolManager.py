@@ -82,6 +82,11 @@ class ExegolManager:
     def uninstall(cls):
         logger.info("Uninstalling an exegol image")
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        all_name = ", ".join([x.getName() for x in images])
+        if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
+                       default=False):
+            logger.error("Aborting operation.")
+            return
         for img in images:
             DockerUtils.removeImage(img)
 
@@ -89,6 +94,11 @@ class ExegolManager:
     def remove(cls):
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        all_name = ", ".join([x.name for x in containers])
+        if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
+                       default=False):
+            logger.error("Aborting operation.")
+            return
         for c in containers:
             c.remove()
 
