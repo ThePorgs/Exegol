@@ -17,6 +17,7 @@ from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger, console
+from wrapper.console.ExegolPrompt import Confirm
 
 
 # Main procedure of exegol
