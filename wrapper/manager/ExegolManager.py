@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
+from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.TUI import ExegolTUI
 from wrapper.console.cli.ParametersManager import ParametersManager
 from wrapper.console.cli.actions.GenericParameters import ContainerCreation
@@ -17,13 +18,14 @@ from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
 from wrapper.utils.EnvInfo import EnvInfo
 from wrapper.utils.ExeLog import logger, console
-from wrapper.console.ExegolPrompt import Confirm
 
 
 # Main procedure of exegol
 class ExegolManager:
     __container: Union[Optional[ExegolContainer], List[ExegolContainer]] = None
     __image: Union[Optional[ExegolImage], List[ExegolImage]] = None
+
+    __interactive_mode = False
 
     @staticmethod
     def info():
@@ -42,6 +44,8 @@ class ExegolManager:
     @classmethod
     def start(cls):
         logger.info("Starting exegol")
+        # Check if the first positional parameter have been supplied
+        cls.__interactive_mode = not bool(ParametersManager().containertag)
         container = cls.__loadOrCreateContainer()
         if not container.isNew():
             # Check and warn user if some parameters dont apply to the current sessionh
@@ -327,13 +331,16 @@ class ExegolManager:
         """Create an ExegolContainer"""
         logger.verbose("Configuring new exegol container")
         # Create exegol config
-        config = cls.__prepareContainerConfig()
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
+        config = cls.__prepareContainerConfig()
         model = ExegolContainerTemplate(name, config, image)
 
         # Recap
         ExegolTUI.printContainerRecap(model)
-        # TODO handle interactive config
+        if cls.__interactive_mode:
+            while not Confirm("Is the container configuration correct?", default=True):
+                model.config.interactiveConfig()
+                ExegolTUI.printContainerRecap(model)
 
         container = DockerUtils.createContainer(model)
         container.postStartSetup()

@@ -6,6 +6,7 @@ from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapse
 from rich.prompt import Prompt
 from rich.table import Table
 
+from wrapper.console.ConsoleFormat import boolFormatter
 from wrapper.console.ExegolProgress import ExegolProgress
 from wrapper.console.ExegolPrompt import Confirm
 from wrapper.console.LayerTextColumn import LayerTextColumn
@@ -319,10 +320,86 @@ class ExegolTUI:
 
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
-        # TODO create rich recap table
-        logger.debug(container)
-        logger.debug(container.image)
-        logger.debug(container.config)
+        logger.empty_line()
+        recap = Table(title="Container summary", box=box.SIMPLE_HEAVY)
+        # Header
+        recap.add_column("Name:", justify="right")
+        recap.add_column(container.name)
+        recap.add_column("Image:", justify="right")
+        recap.add_column(f"{container.image.getName()} ({container.image.getStatus()})")
+
+        verbose_color = "salmon1"
+
+        # Fetch data
+        devices = container.config.getDevices()
+        envs = container.config.getEnvs()
+        sysctls = container.config.getSysctls()
+        capabilities = container.config.getCapabilities()
+        volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.ADVANCED))
+
+        # Main features
+        recap.add_row("GUI =", boolFormatter(container.config.isGUIEnable()), "Network =",
+                      container.config.getNetworkMode())
+        recap.add_row("Timezone =", boolFormatter(container.config.isTimezoneShared()), "Common resources =",
+                      boolFormatter(container.config.isCommonResourcesEnable()))
+        recap.add_row("Privileged =", boolFormatter(container.config.getPrivileged()),
+                      "Capabilities =" if len(capabilities) > 0 else "",
+                      f"[{verbose_color}]{', '.join(capabilities)}[/{verbose_color}]")
+        recap.add_row("VPN =", container.config.getVpnName(), "Workspace =",
+                      f"{'[chartreuse1]' + container.config.getHostWorkspacePath() + '[/chartreuse1]' if container.config.isWorkspaceCustom() else '[orange3]Dedicated[/orange3]'}")
+        recap.add_row("", "", "", "")
+
+        if len(devices) > 0:
+            header = "Device :"
+        else:
+            if len(envs) > 0:
+                header = "Envs :"
+            else:
+                header = ""
+
+        recap.add_row(header, "", "Volumes :" if volumes else "", "")
+        # Stack complex data struct (each slot represent a column)
+        stack_data: List[List[str], List[str], List[str], List[str]] = [[] for x in range(4)]
+        # Handles devices
+        if len(devices) > 0:
+            for device in devices:
+                stack_data[0].append('')
+                stack_data[1].append(f"{device.split(':')[0]}:{device.split(':')[-1]}")
+            # Space line
+            stack_data[0].append('')
+            stack_data[1].append('')
+
+        # Handle Env variables
+        if len(envs) > 0:
+            if len(devices) > 0:
+                stack_data[0].append('Envs :')
+                stack_data[1].append('')
+            for key, value in envs.items():
+                stack_data[0].append(f"{key} =")
+                stack_data[1].append(value)
+
+        # Handles volume
+        if volumes:
+            stack_data[2].append("")
+            stack_data[3].append(volumes)
+
+        # Handle sysctls
+        if len(sysctls) > 0:
+            # Space line
+            stack_data[2].append('')
+            stack_data[3].append('')
+            stack_data[2].append('Sysctls =')
+            stack_data[3].append(f"[{verbose_color}]{', '.join(container.config.getSysctls())}[/{verbose_color}]")
+
+        # Add stack to the table
+        max_column = max([len(x) for x in stack_data])
+        for i in range(max_column):
+            column = []
+            for y in range(4):
+                column.append(stack_data[y][i] if len(stack_data[y]) > i else '')
+            recap.add_row(column[0], column[1], column[2], column[3])
+
+        console.print(recap)
 
     @classmethod
     def __isInteractionAllowed(cls):

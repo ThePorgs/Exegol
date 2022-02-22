@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Union, Tuple, cast
 
 from docker.models.containers import Container
 from docker.types import Mount
+from rich.prompt import Prompt
 
 from wrapper.console.ConsoleFormat import boolFormatter, getColor
 from wrapper.console.ExegolPrompt import Confirm
@@ -36,8 +37,8 @@ class ContainerConfig:
         self.interactive: bool = True
         self.tty: bool = True
         self.shm_size: str = '64M'
-        self.__share_cwd: Optional[str] = None
-        self.__share_private: Optional[str] = None
+        self.__workspace_custom_path: Optional[str] = None
+        self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
         self.__container_command: str = "bash"
         self.__vpn_name: Optional[str] = None
@@ -124,10 +125,10 @@ class ContainerConfig:
                 self.__disable_workspace = False
                 if obj_path is not None and obj_path.name == name and obj_path.parent.name == "shared-data-volumes":
                     logger.debug("Private workspace detected")
-                    self.__share_private = str(obj_path)
+                    self.__workspace_dedicated_path = str(obj_path)
                 else:
                     logger.debug("Custom workspace detected")
-                    self.__share_cwd = str(obj_path)
+                    self.__workspace_custom_path = str(obj_path)
             elif "/vpn" in share.get('Destination', ''):
                 # VPN are always bind mount
                 assert src_path is not None
@@ -136,8 +137,58 @@ class ContainerConfig:
                 logger.debug(f"Loading VPN config: {self.__vpn_name}")
 
     def interactiveConfig(self):
-        if Confirm("Do you want to share your current working directory in the new container?", default=False):
+        logger.info("Starting interactive configuration")
+
+        # Workspace config
+        if Confirm("Do you want to share your [green]current working directory[/green] in the new container?",
+                   default=False):
             self.enableCwdShare()
+        elif Confirm("Do you want to share a [green]workspace directory[/green] in the new container?", default=False):
+            while True:
+                workspace_path = Prompt.ask("Enter the path of your workspace")
+                if os.path.isdir(workspace_path):
+                    break
+                else:
+                    logger.error("The provided path is not a folder or does not exist.")
+            self.setWorkspaceShare(workspace_path)
+
+        # GUI Config
+        if self.__enable_gui:
+            # TODO add disable gui option
+            pass
+        elif Confirm("Do you want to [green]enable GUI[/green]?", False):
+            self.enableGUI()
+
+        # Timezone config
+        if self.__share_timezone:
+            # TODO add disable share timezone option
+            pass
+        elif Confirm("Do you want to share your [green]host's timezone[/green]?", False):
+            self.enableSharedTimezone()
+
+        # Common resources config
+        if self.__common_resources:
+            # TODO add disable common resources
+            pass
+        elif Confirm("Do you want to activate the [green]shared resources[/green]?", False):
+            self.enableCommonVolume()
+
+        # Network config
+        if self.__network_host:
+            if Confirm("Do you want to use a [green]dedicated private network[/green]?", False):
+                self.setNetworkMode(False)
+        elif Confirm("Do you want to share the [green]host's networks[/green]?", False):
+            self.setNetworkMode(True)
+
+        # VPN config
+        if self.__vpn_name is None and Confirm("Do you want to [green]use a VPN[/green] in this container", False):
+            while True:
+                vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
+                if os.path.isfile(vpn_path):
+                    self.enableVPN(vpn_path)
+                    break
+                else:
+                    logger.error("No config files were found.")
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
@@ -180,7 +231,7 @@ class ContainerConfig:
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
         logger.verbose("Config : Sharing current working directory")
-        self.__share_cwd = os.getcwd()
+        self.__workspace_custom_path = os.getcwd()
 
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""
@@ -188,9 +239,9 @@ class ContainerConfig:
         if not path.is_dir():
             logger.critical("The specified workspace is not a directory")
         logger.verbose(f"Config : Sharing workspace directory {path}")
-        self.__share_cwd = str(path)
+        self.__workspace_custom_path = str(path)
 
-    def enableVPN(self):
+    def enableVPN(self, config_path: Optional[str] = None):
         """Configure a VPN profile for container startup"""
         # Check host mode : custom (allows you to isolate the VPN connection from the host's network)
         if self.__network_host:
@@ -207,13 +258,13 @@ class ContainerConfig:
         # Add tun device, this device is needed to create VPN tunnels
         self.addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
-        ovpn_parameters = self.__prepareVpnVolumes()
+        ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
             self.setContainerCommand(
                 f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")
 
-    def __prepareVpnVolumes(self) -> Optional[str]:
+    def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
         Depending on the user's settings, different configurations can be applied.
         With or without username / password authentication via auth-user-pass.
@@ -238,7 +289,7 @@ class ContainerConfig:
                     f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
 
         # VPN config path
-        vpn_path = Path(ParametersManager().vpn)
+        vpn_path = Path(config_path if config_path else ParametersManager().vpn)
 
         logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
         self.__vpn_name = vpn_path.name
@@ -269,7 +320,7 @@ class ContainerConfig:
     def disableDefaultWorkspace(self):
         """Allows you to disable the default workspace volume"""
         # If a custom workspace is not define, disable workspace
-        if self.__share_cwd is None:
+        if self.__workspace_custom_path is None:
             self.__disable_workspace = True
 
     def prepareShare(self, share_name: str):
@@ -278,8 +329,8 @@ class ContainerConfig:
             if mount.get('Target') == '/workspace':
                 # Volume is already prepared
                 return
-        if self.__share_cwd is not None:
-            self.addVolume(self.__share_cwd, '/workspace')
+        if self.__workspace_custom_path is not None:
+            self.addVolume(self.__workspace_custom_path, '/workspace')
         elif self.__disable_workspace:
             # Skip default volume workspace if disabled
             return
@@ -339,15 +390,15 @@ class ContainerConfig:
 
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
-        if self.__share_cwd:
-            return FsUtils.resolvStrPath(self.__share_cwd)
-        elif self.__share_private:
-            return FsUtils.resolvStrPath(self.__share_private)
+        if self.__workspace_custom_path:
+            return FsUtils.resolvStrPath(self.__workspace_custom_path)
+        elif self.__workspace_dedicated_path:
+            return FsUtils.resolvStrPath(self.__workspace_dedicated_path)
         return "not found :("
 
     def getPrivateVolumePath(self) -> str:
         """Get private volume path (None if not set)"""
-        return FsUtils.resolvStrPath(self.__share_private)
+        return FsUtils.resolvStrPath(self.__workspace_dedicated_path)
 
     def isCommonResourcesEnable(self) -> bool:
         """Return if the feature 'common resources' is enabled in this container config"""
@@ -356,6 +407,14 @@ class ContainerConfig:
     def isGUIEnable(self) -> bool:
         """Return if the feature 'GUI' is enabled in this container config"""
         return self.__enable_gui
+
+    def isTimezoneShared(self) -> bool:
+        """Return if the feature 'timezone' is enabled in this container config"""
+        return self.__share_timezone
+
+    def isWorkspaceCustom(self) -> bool:
+        """Return if the workspace have a custom host volume"""
+        return bool(self.__workspace_custom_path)
 
     def addVolume(self,
                   host_path: str,
@@ -460,6 +519,12 @@ class ContainerConfig:
                 result.append(env)
         return result
 
+    def getVpnName(self):
+        """Get VPN Config name"""
+        if self.__vpn_name is None:
+            return "[bright_black]N/A[/bright_black]"
+        return f"[deep_sky_blue3]{self.__vpn_name}[/deep_sky_blue3]"
+
     def addPort(self,
                 port_host: Union[int, str],
                 port_container: Union[int, str],
@@ -484,7 +549,7 @@ class ContainerConfig:
         Print config only if they are different from their default config (or print everything in verbose mode)"""
         result = ""
         if verbose or self.__privileged:
-            result += f"{getColor(self.__privileged)[0]}Privileged: {':fire:' if self.__privileged else '[red]:cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}"
+            result += f"{getColor(self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[red]Off :cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
