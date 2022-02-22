@@ -338,7 +338,12 @@ class ExegolManager:
         # Recap
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
-            while not Confirm("Is the container configuration correct?", default=True):
+            if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?",
+                                                        False):
+                image = UpdateManager.updateImage(model.image.getName())
+                if image is not None:
+                    model.image = image
+            while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 model.config.interactiveConfig()
                 ExegolTUI.printContainerRecap(model)
 

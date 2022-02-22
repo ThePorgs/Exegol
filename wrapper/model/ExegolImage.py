@@ -81,6 +81,11 @@ class ExegolImage(SelectableInterface):
             logger.error("Local images cannot be updated.")  # TODO add build mode
             return None
 
+    def isUpToDate(self) -> bool:
+        if not self.__is_remote:
+            return True  # Local image cannot be updated
+        return self.__is_update
+
     def removeCheck(self) -> Optional[str]:
         """If this image can be removed, return his name, otherwise return None"""
         if self.__is_install:
