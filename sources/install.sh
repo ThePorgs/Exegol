@@ -308,7 +308,6 @@ function install_impacket() {
   git config --global user.name "Exegol installer"
   prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1265"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
-  python -m pip install .
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
   cp -v /root/sources/grc/conf.secretsdump /usr/share/grc/conf.secretsdump
