@@ -278,31 +278,36 @@ class DockerUtils:
                                           stream=True,
                                           decode=True))
                 logger.success(f"Image successfully updated")
+                # Remove old image
+                cls.removeImage(image, upgrade_mode=True)
                 return True
-                # TODO remove old image version ? /!\ Collision with existing containers
             except APIError as err:
                 if err.status_code == 500:
-                    logger.debug(f"Error: {err}")
-                    logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
+                    logger.error(f"Error: {err}")  # TODO switch to debug
+                    logger.error(f"Error while contacting docker hub. You probably don't have internet. Aborting.")
                 else:
                     logger.critical(f"An error occurred while downloading this image : {err}")
         return False
 
     @classmethod
-    def removeImage(cls, image: ExegolImage) -> bool:
+    def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
-        logger.info(f"Removing image '{image.getName()}'")
+        logger.info(f"Removing {'previous ' if upgrade_mode else ''}image '{image.getName()}'")
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
         try:
-            cls.__client.images.remove(image.getFullName(), force=False, noprune=False)
-            logger.success("Docker image successfully removed.")
+            cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
+            logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
         except APIError as err:
             # Handle docker API error code
             if err.status_code == 409:
-                logger.error("This image cannot be deleted because it is currently used by a container. Aborting.")
+                if upgrade_mode:
+                    logger.error("This image cannot be deleted yet, "
+                                 "all deprecated containers using this image must be deleted first.")
+                else:
+                    logger.error("This image cannot be deleted because it is currently used by a container. Aborting.")
             elif err.status_code == 404:
                 logger.error("This image doesn't exist locally. Aborting.")
             else:

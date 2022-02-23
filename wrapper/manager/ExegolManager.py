@@ -106,6 +106,9 @@ class ExegolManager:
             return
         for c in containers:
             c.remove()
+            # If the image used is deprecated, it must be deleted after the removal of its container
+            if c.image.isLocked():
+                DockerUtils.removeImage(c.image, upgrade_mode=True)
 
     @classmethod
     def print_version(cls):

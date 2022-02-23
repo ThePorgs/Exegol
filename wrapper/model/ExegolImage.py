@@ -210,7 +210,7 @@ class ExegolImage(SelectableInterface):
         if digest is not None:
             self.__digest = digest.split(":")[1]
 
-    def getDigest(self) -> str:
+    def getRemoteId(self) -> str:
         """Remote digest getter"""
         return self.__digest
 
@@ -219,7 +219,7 @@ class ExegolImage(SelectableInterface):
         if image_id is not None:
             self.__image_id = image_id.split(":")[1][:12]
 
-    def getId(self) -> str:
+    def getLocalId(self) -> str:
         """Local id getter"""
         return self.__image_id
 

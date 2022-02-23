@@ -90,7 +90,9 @@ class ExegolTUI:
                             total=line.get("progressDetail", {}).get("total", 100),
                             layer=layer_id)
                         task_pool[layer_id] = task_id
+                    # Updating task progress
                     progress.update(task_id, completed=line.get("progressDetail", {}).get("current", 100))
+                    # TODO add checksum step
                 elif "Image is up to date" in status or "Status: Downloaded newer image for" in status:
                     logger.success(status)
                     if quick_exit:
@@ -168,7 +170,7 @@ class ExegolTUI:
             if image.isLocked() and not debug_mode:
                 continue
             if verbose_mode:
-                table.add_row(image.getId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
+                table.add_row(image.getLocalId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
                               image.getStatus())
             else:
                 table.add_row(image.getName(), image.getSize(), image.getStatus())
