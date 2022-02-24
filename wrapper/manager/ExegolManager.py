@@ -339,6 +339,7 @@ class ExegolManager:
         model = ExegolContainerTemplate(name, config, image)
 
         # Recap
+        ExegolTUI.printVerticalContainerRecap(model)
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
             if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?",
@@ -348,6 +349,7 @@ class ExegolManager:
                     model.image = image
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 model.config.interactiveConfig()
+                ExegolTUI.printVerticalContainerRecap(model)
                 ExegolTUI.printContainerRecap(model)
 
         container = DockerUtils.createContainer(model)
