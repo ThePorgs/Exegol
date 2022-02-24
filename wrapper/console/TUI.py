@@ -408,7 +408,6 @@ class ExegolTUI:
             recap.add_row(column[0], column[1], column[2], column[3])
 
         console.print(recap)
-        exit(0)  # TORM
 
     @classmethod
     def printVerticalContainerRecap(cls, container: ExegolContainerTemplate):
