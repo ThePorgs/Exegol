@@ -420,27 +420,22 @@ class ExegolTUI:
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.ADVANCED))
 
         logger.empty_line()
-        recap = Table(border_style="grey35", box=box.SQUARE, title_justify="left", show_header=False)
+        recap = Table(border_style="grey35", box=box.SQUARE, title_justify="left", show_header=True)
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
-        recap.add_column("column 1", justify="right")
-        recap.add_column("column 2")
-        recap.add_row("[bold blue]Name[/bold blue]", container.name)
-        recap.add_row("[bold blue]Image[/bold blue]",
-                      "%s (%s)" % (container.image.getName(), container.image.getStatus()))
+        recap.add_column("[bold blue]Name[/bold blue]\n[bold blue]Image[/bold blue]", justify="right")
+        recap.add_column("%s\n%s (%s)" % (container.name, container.image.getName(), container.image.getStatus()))
         # Main features
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
-        recap.add_row("[bold blue]Common resources[/bold blue]",
-                      boolFormatter(container.config.isCommonResourcesEnable()))
+        recap.add_row("[bold blue]Common resources[/bold blue]", boolFormatter(container.config.isCommonResourcesEnable()))
         recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         recap.add_row("[bold blue]Privileged[/bold blue]", boolFormatter(container.config.getPrivileged()))
         if len(capabilities) > 0:
             recap.add_row("[bold blue]Capabilities[/bold blue]", "[salmon1]%s[/salmon1]" % str(capabilities))
         if container.config.isWorkspaceCustom():
-            recap.add_row("[bold blue]Workspace[/bold blue]",
-                          '[chartreuse1]%s[/chartreuse1]' % container.config.getHostWorkspacePath())
+            recap.add_row("[bold blue]Workspace[/bold blue]", '[chartreuse1]%s[/chartreuse1]' % container.config.getHostWorkspacePath())
         else:
             recap.add_row("[bold blue]Workspace[/bold blue]", '[orange3]Dedicated[/orange3]')
         if len(devices) > 0:
@@ -452,6 +447,7 @@ class ExegolTUI:
         if len(sysctls) > 0:
             recap.add_row("[bold blue]Systctls[/bold blue]", str(sysctls))
         console.print(recap)
+        logger.empty_line()
 
     @classmethod
     def __isInteractionAllowed(cls):
