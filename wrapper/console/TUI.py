@@ -331,6 +331,9 @@ class ExegolTUI:
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.ADVANCED))
 
+        privilege_color = "salmon1"
+        path_color = "chartreuse1"
+
         logger.empty_line()
         recap = Table(title="[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]",
                       title_justify="left",
@@ -341,8 +344,6 @@ class ExegolTUI:
         recap.add_column(f"[bold blue]Image:[/bold blue] {container.image.getName()} ({container.image.getStatus()})",
                          justify="justify")
 
-        verbose_color = "salmon1"
-
         # Main features
         recap.add_row(
             Align(f"[bold blue]GUI =[/bold blue] {boolFormatter(container.config.isGUIEnable())}", align='right'),
@@ -352,56 +353,57 @@ class ExegolTUI:
                       f"[bold blue]Common resources =[/bold blue] {boolFormatter(container.config.isCommonResourcesEnable())}")
         recap.add_row(Align(f"[bold blue]Privileged =[/bold blue] {boolFormatter(container.config.getPrivileged())}",
                             align='right'),
-                      f"[bold blue]Capabilities =[/bold blue] [{verbose_color}]{', '.join(capabilities)}[/{verbose_color}]" if len(
+                      f"[bold blue]Capabilities =[/bold blue] [{privilege_color}]{', '.join(capabilities)}[/{privilege_color}]" if len(
                           capabilities) > 0 else "")
         recap.add_row(Align(f"[bold blue]VPN =[/bold blue] {container.config.getVpnName()}", align='right'),
-                      f"[bold blue]Workspace =[/bold blue] {'[chartreuse1]' + container.config.getHostWorkspacePath() + '[/chartreuse1]' if container.config.isWorkspaceCustom() else '[orange3]Dedicated[/orange3]'}")
+                      f"[bold blue]Workspace =[/bold blue] {f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}]' if container.config.isWorkspaceCustom() else '[orange3]Dedicated[/orange3]'}")
 
         # Array section
 
-        # Column 1 - header
-        if len(devices) > 0:
-            header = "[bold blue]Device :[/bold blue]"
-        else:
-            if len(envs) > 0:
-                header = "[bold blue]Envs :[/bold blue]"
-            else:
-                header = ""
-
-        # Column 2 - Header
-        if header or volumes:
+        # Space line if the next section is not empty
+        if len(devices) or len(envs) or volumes:
             recap.add_row('', '')
-            recap.add_row(header, "[bold blue]Volumes :[/bold blue]" if volumes else "")
+
         # Stack complex data struct (each slot represent a column)
         stack_data: List[List[str], List[str]] = [[] for x in range(2)]
         # Handles devices
         if len(devices) > 0:
+            # Title
+            stack_data[0].append('[bold blue]Device :[/bold blue]')
+            # Data
             for device in devices:
                 stack_data[0].append(f" {device.split(':')[0]}:{device.split(':')[-1]}")
-            # Space line
-            stack_data[0].append('')
 
         # Stacking Env variables
         if len(envs) > 0:
-            if len(devices) > 0:
-                stack_data[0].append('[bold blue]Envs :[/bold blue]')
+            # New line if needed
+            if len(stack_data[0]) > 0 and stack_data[0][-1] != '':
+                stack_data[0].append('')
+            # Title
+            stack_data[0].append('[bold blue]Envs :[/bold blue]')
+            # Data
             for key, value in envs.items():
                 stack_data[0].append(f" {key} = {value}")
 
         # Stacking volumes
         if volumes:
+            # Title
+            stack_data[1].append('[bold blue]Volumes :[/bold blue]')
+            # Data
             for vol in volumes.splitlines():
                 stack_data[1].append(f" {vol}")
 
         # Stacking sysctls
         if len(sysctls) > 0:
             # Space line
-            stack_data[1].append('')
-            # Section title
+            if len(stack_data[1]) > 0 and stack_data[1][-1] != '':
+                stack_data[1].append('')
+            # Title
             stack_data[1].append(f"[bold blue]Sysctls :[/bold blue]")
+            # Data
             for key, value in container.config.getSysctls().items():
                 stack_data[1].append(
-                    f" [{verbose_color}]{key}[/{verbose_color}] = {getColor(value)[0]}{value}{getColor(value)[1]}")
+                    f" [{privilege_color}]{key}[/{privilege_color}] = {getColor(value)[0]}{value}{getColor(value)[1]}")
 
         # Add stack to the table
         max_column = max([len(x) for x in stack_data])
@@ -437,7 +439,8 @@ class ExegolTUI:
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
-        recap.add_row("[bold blue]Common resources[/bold blue]", boolFormatter(container.config.isCommonResourcesEnable()))
+        recap.add_row("[bold blue]Common resources[/bold blue]",
+                      boolFormatter(container.config.isCommonResourcesEnable()))
         recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         recap.add_row("[bold blue]Privileged[/bold blue]", boolFormatter(container.config.getPrivileged()))
         if len(capabilities) > 0:
