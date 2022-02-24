@@ -522,7 +522,7 @@ class ContainerConfig:
     def getVpnName(self):
         """Get VPN Config name"""
         if self.__vpn_name is None:
-            return "[bright_black]N/A[/bright_black]"
+            return "[bright_black]N/A[/bright_black]   "
         return f"[deep_sky_blue3]{self.__vpn_name}[/deep_sky_blue3]"
 
     def addPort(self,
