@@ -305,9 +305,10 @@ function install_impacket() {
   # 1256: Added tgssub script for service substitution
   # 1265: Fixes Ccache to Kirbi conversion issues
   # 1267: Better handling of various XML files in Group Policy Preferences
+  # 1270: Fix ticketer duration to support default 10 hours tickets
   git config --global user.email "exegol@install.er"
   git config --global user.name "Exegol installer"
-  prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1265 1267"
+  prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1265 1267 1270"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
@@ -1882,6 +1883,13 @@ function install_ldaprelayscan() {
   python3 -m pip install -r requirements.txt
 }
 
+function install_goldencopy() {
+  colorecho "Installing GoldenCopy"
+  git -C /opt/tools/ clone https://github.com/Dramelac/GoldenCopy
+  cd /opt/tools/GoldenCopy
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2299,6 +2307,7 @@ function install_ad_tools() {
   install_pylaps
   install_finduncommonshares
   install_ldaprelayscan
+  install_goldencopy
 }
 
 # Package dedicated to mobile apps pentest tools
