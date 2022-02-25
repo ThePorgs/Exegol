@@ -1875,6 +1875,13 @@ function install_pylaps() {
   git -C /opt/tools/ clone https://github.com/p0dalirius/pyLAPS
 }
 
+function install_ldaprelayscan() {
+  colorecho "Installing LdapRelayScan"
+  git -C /opt/tools/ clone https://github.com/zyn3rgy/LdapRelayScan
+  cd /opt/tools/LdapRelayScan
+  python3 -m pip install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2291,6 +2298,7 @@ function install_ad_tools() {
   install_modifyCertTemplate
   install_pylaps
   install_finduncommonshares
+  install_ldaprelayscan
 }
 
 # Package dedicated to mobile apps pentest tools

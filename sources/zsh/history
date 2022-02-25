@@ -337,4 +337,5 @@ secretsdump -sam SAM.save -system SYSTEM.save -security SECURITY.save LOCAL
 pyLAPS.py --action get -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
 FindUncommonShares.py -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 192.168.56.101
 certipy find -dc-ip 'domaincontroller' -scheme ldap 'domain.local'/'user':'password'@'domaincontroller'
+LdapRelayScan.py -method BOTH -dc-ip 192.168.56.101 -u 'someuser' -p 'somepassword'
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #

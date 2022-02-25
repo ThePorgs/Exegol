@@ -158,3 +158,4 @@ alias cme-neo4j-enable='sed -i "s/bh_enabled = False/bh_enabled = True/" ~/.cme/
 alias cme-neo4j-disable='sed -i "s/bh_enabled = True/bh_enabled = False/" ~/.cme/cme.conf'
 alias pyLAPS.py='python3 /opt/tools/pyLAPS/pyLAPS.py'
 alias FindUncommonShares.py='python3 /opt/tools/FindUncommonShares/FindUncommonShares.py'
+alias LdapRelayScan.py='python3 /opt/tools/LdapRelayScan/LdapRelayScan.py'
