@@ -99,16 +99,17 @@ class ExegolManager:
     def remove(cls):
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
-        all_name = ", ".join([x.name for x in containers])
-        if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
-                       default=False):
-            logger.error("Aborting operation.")
-            return
-        for c in containers:
-            c.remove()
-            # If the image used is deprecated, it must be deleted after the removal of its container
-            if c.image.isLocked():
-                DockerUtils.removeImage(c.image, upgrade_mode=True)
+        if containers:
+            all_name = ", ".join([x.name for x in containers])
+            if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
+                           default=False):
+                logger.error("Aborting operation.")
+                return
+            for c in containers:
+                c.remove()
+                # If the image used is deprecated, it must be deleted after the removal of its container
+                if c.image.isLocked():
+                    DockerUtils.removeImage(c.image, upgrade_mode=True)
 
     @classmethod
     def print_version(cls):
