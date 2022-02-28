@@ -36,7 +36,6 @@ class ExegolManager:
             # If the user have supplied a container name, show container config
             container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
             if container is not None:
-                ExegolTUI.printVerticalContainerRecap(container)
                 ExegolTUI.printContainerRecap(container)
         else:
             # Without any parameter, show all images and containers info
@@ -356,7 +355,6 @@ class ExegolManager:
         model = ExegolContainerTemplate(name, config, image)
 
         # Recap
-        ExegolTUI.printVerticalContainerRecap(model)
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
             if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?",
@@ -367,7 +365,6 @@ class ExegolManager:
             command_options = []
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 command_options = model.config.interactiveConfig()
-                ExegolTUI.printVerticalContainerRecap(model)
                 ExegolTUI.printContainerRecap(model)
             logger.info(f"Command line of the configuration: [green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")
             logger.info("To use exegol [orange3]without interaction[/orange3], read CLI options with [green]exegol start -h[/green]")
