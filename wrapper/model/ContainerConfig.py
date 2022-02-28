@@ -20,6 +20,8 @@ from wrapper.utils.GuiUtils import GuiUtils
 
 # Configuration class of an exegol container
 class ContainerConfig:
+    __default_entrypoint = "bash"
+    __default_shm_size = "64M"
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -36,11 +38,11 @@ class ContainerConfig:
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
         self.interactive: bool = True
         self.tty: bool = True
-        self.shm_size: str = '64M'
+        self.shm_size: str = self.__default_shm_size
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
-        self.__container_command: str = "bash"
+        self.__container_command: str = self.__default_entrypoint
         self.__vpn_name: Optional[str] = None
         if container is not None:
             self.__parseContainerConfig(container)
@@ -140,10 +142,13 @@ class ContainerConfig:
         logger.info("Starting interactive configuration")
 
         # Workspace config
-        if Confirm("Do you want to share your [green]current working directory[/green] in the new container?",
-                   default=False):
+        if Confirm(
+                "Do you want to [green]share[/green] your [orange3]current working directory[/orange3] in the new container?",
+                default=False):
             self.enableCwdShare()
-        elif Confirm("Do you want to share a [green]workspace directory[/green] in the new container?", default=False):
+        elif Confirm(
+                "Do you want to [green]share[/green] a [orange3]workspace directory[/orange3] in the new container?",
+                default=False):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
                 if os.path.isdir(workspace_path):
@@ -154,34 +159,35 @@ class ContainerConfig:
 
         # GUI Config
         if self.__enable_gui:
-            # TODO add disable gui option
-            pass
-        elif Confirm("Do you want to [green]enable GUI[/green]?", False):
+            if Confirm("Do you want to [red]disable[/red] [orange3]GUI[/orange3]?", False):
+                self.__disableGUI()
+        elif Confirm("Do you want to [green]enable[/green] [orange3]GUI[/orange3]?", False):
             self.enableGUI()
 
         # Timezone config
         if self.__share_timezone:
-            # TODO add disable share timezone option
-            pass
-        elif Confirm("Do you want to share your [green]host's timezone[/green]?", False):
+            if Confirm("Do you want to [red]remove[/red] your [orange3]shared timezone[/orange3] config?", False):
+                self.__disableSharedTimezone()
+        elif Confirm("Do you want to [green]share[/green] your [orange3]host's timezone[/orange3]?", False):
             self.enableSharedTimezone()
 
         # Common resources config
         if self.__common_resources:
-            # TODO add disable common resources
-            pass
-        elif Confirm("Do you want to activate the [green]shared resources[/green]?", False):
+            if Confirm("Do you want to [red]disable[/red] the [orange3]shared resources[/orange3]?", False):
+                self.__disableCommonVolume()
+        elif Confirm("Do you want to [green]activate[/green] the [orange3]shared resources[/orange3]?", False):
             self.enableCommonVolume()
 
         # Network config
         if self.__network_host:
-            if Confirm("Do you want to use a [green]dedicated private network[/green]?", False):
+            if Confirm("Do you want to use a [green]dedicated private[/green] [orange3]network[/orange3]?", False):
                 self.setNetworkMode(False)
-        elif Confirm("Do you want to share the [green]host's networks[/green]?", False):
+        elif Confirm("Do you want to share the [green]host's[/green] [orange3]networks[/orange3]?", False):
             self.setNetworkMode(True)
 
         # VPN config
-        if self.__vpn_name is None and Confirm("Do you want to [green]use a VPN[/green] in this container", False):
+        if self.__vpn_name is None and Confirm(
+                "Do you want to [green]config[/green] a [orange3]VPN[/orange3] for this container", False):
             while True:
                 vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
                 if os.path.isfile(vpn_path):
@@ -189,6 +195,9 @@ class ContainerConfig:
                     break
                 else:
                     logger.error("No config files were found.")
+        elif self.__vpn_name and Confirm(
+                "Do you want to [red]remove[/red] your [orange3]VPN configuration[/orange3] in this container", False):
+            self.__disableVPN()
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
@@ -203,6 +212,15 @@ class ContainerConfig:
             self.addEnv("QT_X11_NO_MITSHM", "1")
             # TODO support pulseaudio
 
+    def __disableGUI(self):
+        """Procedure to enable GUI feature (Only for interactive config)"""
+        if self.__enable_gui:
+            self.__enable_gui = False
+            logger.verbose("Config : Disabling display sharing")
+            self.removeVolume(container_path="/tmp/.X11-unix")
+            self.removeEnv("DISPLAY")
+            self.removeEnv("QT_X11_NO_MITSHM")
+
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
         if not EnvInfo.is_linux_shell:
@@ -214,10 +232,19 @@ class ContainerConfig:
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
-    def enablePrivileged(self, status: bool = True):
+    def __disableSharedTimezone(self):
+        """Procedure to disable shared timezone feature (Only for interactive config)"""
+        if self.__share_timezone:
+            self.__share_timezone = False
+            logger.verbose("Config : Disabling host timezones")
+            self.removeVolume("/etc/timezone")
+            self.removeVolume("/etc/localtime")
+
+    def setPrivileged(self, status: bool = True):
         """Set container as privileged"""
-        logger.verbose("Config : Setting container as privileged")
-        logger.warning("Setting container as privileged (this exposes the host to security risks)")
+        logger.verbose(f"Config : Setting container privileged as {status}")
+        if status:
+            logger.warning("Setting container as privileged (this exposes the host to security risks)")
         self.__privileged = status
 
     def enableCommonVolume(self):
@@ -227,6 +254,13 @@ class ContainerConfig:
             self.__common_resources = True
             # Adding volume config
             self.addVolume(ConstantConfig.COMMON_SHARE_NAME, '/opt/resources', volume_type='volume')
+
+    def __disableCommonVolume(self):
+        """Procedure to disable common volume feature (Only for interactive config)"""
+        if self.__common_resources:
+            logger.verbose("Config : Disabling common resources volume")
+            self.__common_resources = False
+            self.removeVolume(container_path='/opt/resources')
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
@@ -317,6 +351,22 @@ class ContainerConfig:
 
         return ' '.join(ovpn_parameters)
 
+    def __disableVPN(self) -> bool:
+        """Remove a VPN profile for container startup (Only for interactive config)"""
+        if self.__vpn_name:
+            logger.verbose('Removing VPN configuration')
+            self.__vpn_name = None
+            self.__removeCapability("NET_ADMIN")
+            self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
+            self.removeDevice("/dev/net/tun")
+            # Try to remove each possible volume
+            self.removeVolume(container_path="/vpn/auth/creds.txt")
+            self.removeVolume(container_path="/vpn/config/client.ovpn")
+            self.removeVolume(container_path="/vpn/config")
+            self.__restoreEntrypoint()
+            return True
+        return False
+
     def disableDefaultWorkspace(self):
         """Allows you to disable the default workspace volume"""
         # If a custom workspace is not define, disable workspace
@@ -350,19 +400,41 @@ class ContainerConfig:
         This parameter is applied to the container at creation."""
         self.__container_command = cmd
 
-    def __addCapability(self, cap_string):
+    def __restoreEntrypoint(self):
+        """Restore container's entrypoint to its default configuration"""
+        self.__container_command = self.__default_entrypoint
+
+    def __addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
         if cap_string in self.__capabilities:
             logger.warning("Capability already setup. Skipping.")
             return
         self.__capabilities.append(cap_string)
 
-    def __addSysctl(self, sysctl_key, config):
+    def __removeCapability(self, cap_string: str):
+        """Remove a linux capability from the container's config"""
+        try:
+            self.__capabilities.remove(cap_string)
+            return True
+        except ValueError:
+            # When the capability is not present
+            return False
+
+    def __addSysctl(self, sysctl_key: str, config: str):
         """Add a linux sysctl to the container"""
         if sysctl_key in self.__sysctls.keys():
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
             return
         self.__sysctls[sysctl_key] = config
+
+    def __removeSysctl(self, sysctl_key: str):
+        """Remove a linux capability from the container's config"""
+        try:
+            self.__sysctls.pop(sysctl_key)
+            return True
+        except KeyError:
+            # When the sysctl is not present
+            return False
 
     def getNetworkMode(self) -> str:
         """Network mode, text getter"""
@@ -455,6 +527,23 @@ class ContainerConfig:
         else:
             logger.error(f"Volume '{volume_string}' cannot be parsed. Skipping the volume.")
 
+    def removeVolume(self, host_path: Optional[str] = None, container_path: Optional[str] = None) -> bool:
+        """Remove a volume from the container configuration (Only before container creation)"""
+        if host_path is None and container_path is None:
+            # This is a dev problem
+            raise ReferenceError('At least one parameter must be set')
+        for i in range(len(self.__mounts)):
+            # For each Mount object compare the host_path if supplied or the container_path si supplied
+            if host_path is not None and self.__mounts[i].get("Source") == host_path:
+                # When the right object is found, remove it from the list
+                self.__mounts.pop(i)
+                return True
+            if container_path is not None and self.__mounts[i].get("Target") == container_path:
+                # When the right object is found, remove it from the list
+                self.__mounts.pop(i)
+                return True
+        return False
+
     def getVolumes(self) -> List[Mount]:
         """Volume config getter"""
         return self.__mounts
@@ -474,6 +563,16 @@ class ContainerConfig:
             perm += 'm'
         self.__devices.append(f"{device_source}:{device_dest}:{perm}")
 
+    def removeDevice(self, device_source: str) -> bool:
+        """Remove a device from the container configuration (Only before container creation)"""
+        for i in range(len(self.__devices)):
+            # For each device, compare source device
+            if self.__devices[i].split(':')[0] == device_source:
+                # When found, remove it from the config list
+                self.__devices.pop(i)
+                return True
+        return False
+
     def getDevices(self) -> List[str]:
         """Devices config getter"""
         return self.__devices
@@ -481,6 +580,15 @@ class ContainerConfig:
     def addEnv(self, key: str, value: str):
         """Add an environment variable to the container configuration"""
         self.__envs[key] = value
+
+    def removeEnv(self, key: str) -> bool:
+        """Remove an environment variable to the container configuration (Only before container creation)"""
+        try:
+            self.__envs.pop(key)
+            return True
+        except KeyError:
+            # When the Key is not present in the dictionary
+            return False
 
     def addRawEnv(self, env: str):
         """Parse and add an environment variable from raw user input"""

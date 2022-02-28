@@ -323,7 +323,7 @@ class ExegolManager:
                     f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
             config.setWorkspaceShare(ParametersManager().workspace_path)
         if ParametersManager().privileged:
-            config.enablePrivileged()
+            config.setPrivileged()
         if ParametersManager().volumes is not None:
             for volume in ParametersManager().volumes:
                 config.addRawVolume(volume)
