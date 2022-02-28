@@ -27,19 +27,28 @@ class ExegolManager:
 
     __interactive_mode = False
 
-    @staticmethod
-    def info():
+    @classmethod
+    def info(cls):
         """Print a list of available images and containers on the current host"""
         ExegolManager.print_version()
         logger.empty_line()
-        with console.status(f"Loading information", spinner_style="blue"):
-            images = DockerUtils.listImages()
-            containers = DockerUtils.listContainers()
-        # List and print images
-        ExegolTUI.printTable(images)
-        logger.empty_line()
-        # List and print containers
-        ExegolTUI.printTable(containers)
+        if bool(ParametersManager().containertag):
+            # If the user have supplied a container name, show container config
+            container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
+            if container is not None:
+                ExegolTUI.printVerticalContainerRecap(container)
+                ExegolTUI.printContainerRecap(container)
+        else:
+            # Without any parameter, show all images and containers info
+            with console.status(f"Loading information", spinner_style="blue"):
+                # Fetch data
+                images = DockerUtils.listImages()
+                containers = DockerUtils.listContainers()
+            # List and print images
+            ExegolTUI.printTable(images)
+            logger.empty_line()
+            # List and print containers
+            ExegolTUI.printTable(containers)
 
     @classmethod
     def start(cls):
@@ -157,7 +166,7 @@ class ExegolManager:
             except ObjectNotFound:
                 # ObjectNotFound is raised when the image_tag provided by the user does not match any existing image.
                 if image_tag is not None:
-                    logger.warning(f"The image named '{image_tag}', has not been found.")
+                    logger.warning(f"The image named '{image_tag}' has not been found.")
                 # If the user's selected image have not been found,
                 # offer to build a local image with this name
                 # (only if must_exist is not set)
@@ -262,7 +271,7 @@ class ExegolManager:
             # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
-                logger.warning(f"The container named '{container_tag}', has not been found")
+                logger.warning(f"The container named '{container_tag}' has not been found")
                 return [] if multiple else None
             return cls.__createContainer(container_tag)
         assert cls.__container is not None

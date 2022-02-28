@@ -193,11 +193,13 @@ class Exec(Command, ContainerCreation, ContainerStart):
         return ExegolManager.exec
 
 
-class Info(Command):
+class Info(Command, ContainerSelector):
     """Print info on containers and local & remote images (name, size, state, ...)"""
 
     def __init__(self):
-        super().__init__()
+        Command.__init__(self)
+        ContainerSelector.__init__(self, self.groupArgs)
+
         self._usages = {
             "Print containers and images essentials information": "exegol info",
             "Print advanced information": "exegol info -v",
