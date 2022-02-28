@@ -364,10 +364,13 @@ class ExegolManager:
                 image = UpdateManager.updateImage(model.image.getName())
                 if image is not None:
                     model.image = image
+            command_options = []
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
-                model.config.interactiveConfig()
+                command_options = model.config.interactiveConfig()
                 ExegolTUI.printVerticalContainerRecap(model)
                 ExegolTUI.printContainerRecap(model)
+            logger.info(f"Command line of the configuration: [green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")
+            logger.info("To use exegol [orange3]without interaction[/orange3], read CLI options with [green]exegol start -h[/green]")
 
         container = DockerUtils.createContainer(model)
         container.postStartSetup()

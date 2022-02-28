@@ -43,7 +43,7 @@ class ContainerConfig:
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
         self.__container_command: str = self.__default_entrypoint
-        self.__vpn_name: Optional[str] = None
+        self.__vpn_path: Optional[Path] = None
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -135,27 +135,31 @@ class ContainerConfig:
                 # VPN are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
-                self.__vpn_name = obj_path.name
-                logger.debug(f"Loading VPN config: {self.__vpn_name}")
+                self.__vpn_path = obj_path
+                logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
 
-    def interactiveConfig(self):
+    def interactiveConfig(self) -> List[str]:
         logger.info("Starting interactive configuration")
+
+        command_options = []
 
         # Workspace config
         if Confirm(
                 "Do you want to [green]share[/green] your [orange3]current working directory[/orange3] in the new container?",
                 default=False):
             self.enableCwdShare()
+            command_options.append("-cwd")
         elif Confirm(
                 "Do you want to [green]share[/green] a [orange3]workspace directory[/orange3] in the new container?",
                 default=False):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
-                if os.path.isdir(workspace_path):
+                if Path(workspace_path).expanduser().is_dir():
                     break
                 else:
                     logger.error("The provided path is not a folder or does not exist.")
             self.setWorkspaceShare(workspace_path)
+            command_options.append(f"-w {workspace_path}")
 
         # GUI Config
         if self.__enable_gui:
@@ -163,6 +167,9 @@ class ContainerConfig:
                 self.__disableGUI()
         elif Confirm("Do you want to [green]enable[/green] [orange3]GUI[/orange3]?", False):
             self.enableGUI()
+        # Command builder info
+        if not self.__enable_gui:
+            command_options.append("--disable-X11")
 
         # Timezone config
         if self.__share_timezone:
@@ -170,6 +177,9 @@ class ContainerConfig:
                 self.__disableSharedTimezone()
         elif Confirm("Do you want to [green]share[/green] your [orange3]host's timezone[/orange3]?", False):
             self.enableSharedTimezone()
+        # Command builder info
+        if not self.__share_timezone:
+            command_options.append("--disable-shared-timezones")
 
         # Common resources config
         if self.__common_resources:
@@ -177,6 +187,9 @@ class ContainerConfig:
                 self.__disableCommonVolume()
         elif Confirm("Do you want to [green]activate[/green] the [orange3]shared resources[/orange3]?", False):
             self.enableCommonVolume()
+        # Command builder info
+        if not self.__common_resources:
+            command_options.append("--disable-common-resources")
 
         # Network config
         if self.__network_host:
@@ -184,20 +197,27 @@ class ContainerConfig:
                 self.setNetworkMode(False)
         elif Confirm("Do you want to share the [green]host's[/green] [orange3]networks[/orange3]?", False):
             self.setNetworkMode(True)
+        # Command builder info
+        if not self.__network_host:
+            command_options.append("--disable-shared-network")
 
         # VPN config
-        if self.__vpn_name is None and Confirm(
+        if self.__vpn_path is None and Confirm(
                 "Do you want to [green]config[/green] a [orange3]VPN[/orange3] for this container", False):
             while True:
                 vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
-                if os.path.isfile(vpn_path):
+                if Path(vpn_path).expanduser().is_file():
                     self.enableVPN(vpn_path)
                     break
                 else:
                     logger.error("No config files were found.")
-        elif self.__vpn_name and Confirm(
+        elif self.__vpn_path and Confirm(
                 "Do you want to [red]remove[/red] your [orange3]VPN configuration[/orange3] in this container", False):
             self.__disableVPN()
+        if self.__vpn_path:
+            command_options.append(f"--vpn {self.__vpn_path}")
+
+        return command_options
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
@@ -269,7 +289,7 @@ class ContainerConfig:
 
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""
-        path = Path(host_directory).absolute()
+        path = Path(host_directory).expanduser().absolute()
         if not path.is_dir():
             logger.critical("The specified workspace is not a directory")
         logger.verbose(f"Config : Sharing workspace directory {path}")
@@ -310,7 +330,7 @@ class ContainerConfig:
         input_vpn_auth = ParametersManager().vpn_auth
         vpn_auth = None
         if input_vpn_auth is not None:
-            vpn_auth = Path(input_vpn_auth)
+            vpn_auth = Path(input_vpn_auth).expanduser()
 
         if vpn_auth is not None:
             if vpn_auth.is_file():
@@ -323,10 +343,10 @@ class ContainerConfig:
                     f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
 
         # VPN config path
-        vpn_path = Path(config_path if config_path else ParametersManager().vpn)
+        vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
 
         logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
-        self.__vpn_name = vpn_path.name
+        self.__vpn_path = vpn_path
         if vpn_path.is_file():
             # Configure VPN with single file
             self.addVolume(str(vpn_path.absolute()), "/vpn/config/client.ovpn", read_only=True)
@@ -353,9 +373,9 @@ class ContainerConfig:
 
     def __disableVPN(self) -> bool:
         """Remove a VPN profile for container startup (Only for interactive config)"""
-        if self.__vpn_name:
+        if self.__vpn_path:
             logger.verbose('Removing VPN configuration')
-            self.__vpn_name = None
+            self.__vpn_path = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
             self.removeDevice("/dev/net/tun")
@@ -629,9 +649,9 @@ class ContainerConfig:
 
     def getVpnName(self):
         """Get VPN Config name"""
-        if self.__vpn_name is None:
+        if self.__vpn_path is None:
             return "[bright_black]N/A[/bright_black]   "
-        return f"[deep_sky_blue3]{self.__vpn_name}[/deep_sky_blue3]"
+        return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
 
     def addPort(self,
                 port_host: Union[int, str],
@@ -666,8 +686,8 @@ class ContainerConfig:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
         if verbose or not self.__common_resources:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
-        if self.__vpn_name is not None:
-            result += f"[green]VPN: [/green]{self.__vpn_name}{os.linesep}"
+        if self.__vpn_path is not None:
+            result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
         return result
 
     def getTextMounts(self, verbose: bool = False) -> str:
@@ -718,7 +738,7 @@ class ContainerConfig:
                f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
                f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
                f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \
-               f"VPN: {self.__vpn_name}"
+               f"VPN: {self.getVpnName()}"
 
     def printConfig(self):
         """Log current object state, debug only"""
