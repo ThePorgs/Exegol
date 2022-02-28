@@ -46,9 +46,11 @@ class ExegolManager:
         logger.info("Starting exegol")
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
+        if not cls.__interactive_mode:
+            logger.info("Arguments supplied with the command, skipping interactive mode")
         container = cls.__loadOrCreateContainer()
         if not container.isNew():
-            # Check and warn user if some parameters dont apply to the current sessionh
+            # Check and warn user if some parameters don't apply to the current session
             cls.__checkUselessParameters()
         container.start()
         container.spawnShell()
@@ -87,6 +89,9 @@ class ExegolManager:
     def uninstall(cls):
         logger.info("Uninstalling an exegol image")
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        if len(images) == 0:
+            logger.error("No images were selected. Exiting.")
+            return
         all_name = ", ".join([x.getName() for x in images])
         if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
                        default=False):
@@ -99,6 +104,9 @@ class ExegolManager:
     def remove(cls):
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        if len(containers) == 0:
+            logger.error("No containers were selected. Exiting.")
+            return
         all_name = ", ".join([x.name for x in containers])
         if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
                        default=False):
@@ -254,7 +262,7 @@ class ExegolManager:
             # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
-                logger.error("Container not found")
+                logger.warning(f"The container named '{container_tag}', has not been found")
                 return [] if multiple else None
             return cls.__createContainer(container_tag)
         assert cls.__container is not None
