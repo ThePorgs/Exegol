@@ -3,7 +3,6 @@ import re
 from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence
 
 from rich import box
-from rich.align import Align
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
 from rich.prompt import Prompt
 from rich.table import Table
@@ -159,6 +158,7 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
+        table.add_column("Version")
         if verbose_mode:
             table.add_column("Download size")
             table.add_column("Disk size")
@@ -169,13 +169,14 @@ class ExegolTUI:
         table.add_column("Status")
         # Load data into the table
         for image in data:
-            if image.isLocked() and not debug_mode:
+            if image.isLocked() and not (debug_mode or image.isInstall()):
                 continue
             if verbose_mode:
-                table.add_row(image.getLocalId(), image.getName(), image.getDownloadSize(), image.getRealSize(),
+                table.add_row(image.getLocalId(), image.getName(), image.getImageVersion(), image.getDownloadSize(),
+                              image.getRealSize(),
                               image.getStatus())
             else:
-                table.add_row(image.getName(), image.getSize(), image.getStatus())
+                table.add_row(image.getName(), image.getImageVersion(), image.getSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):
@@ -340,7 +341,8 @@ class ExegolTUI:
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
         recap.add_column(f"[bold blue]Name[/bold blue]{os.linesep}[bold blue]Image[/bold blue]", justify="right")
-        recap.add_column(f"{container.name}{os.linesep}{container.image.getName()} ({container.image.getStatus()})")
+        recap.add_column(
+            f"{container.name}{os.linesep}{container.image.getName()} - {container.image.getImageVersion()} ({container.image.getStatus()})")
         # Main features
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())

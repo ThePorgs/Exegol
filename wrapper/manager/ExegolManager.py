@@ -41,12 +41,14 @@ class ExegolManager:
             # Without any parameter, show all images and containers info
             with console.status(f"Loading information", spinner_style="blue"):
                 # Fetch data
-                images = DockerUtils.listImages()
+                images = DockerUtils.listImages(include_version_tag=True)  # TODO debug mode, set to false
                 containers = DockerUtils.listContainers()
             # List and print images
+            logger.verbose("Listing local and remote Exegol images")
             ExegolTUI.printTable(images)
             logger.empty_line()
             # List and print containers
+            logger.verbose("Listing local Exegol containers")
             ExegolTUI.printTable(containers)
 
     @classmethod
@@ -228,7 +230,7 @@ class ExegolManager:
                     # Check if the selected image is installed and install it
                     logger.warning("The selected image is not installed.")
                     # Download remote image
-                    if DockerUtils.updateImage(check_img[i]):
+                    if DockerUtils.downloadImage(check_img[i], install_mode=True):
                         # Select installed image
                         check_img[i] = DockerUtils.getInstalledImage(check_img[i].getName())
                     else:

@@ -56,7 +56,7 @@ class UpdateManager:
 
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
-            if DockerUtils.updateImage(selected_image):
+            if DockerUtils.downloadImage(selected_image, install_mode):
                 return DockerUtils.getImage(selected_image.getName())
         elif type(selected_image) is str:
             # Build a new image using TUI selected name, confirmation has already been requested by TUI

@@ -5,7 +5,7 @@ from typing import List, Optional
 import docker
 import requests
 from docker import DockerClient
-from docker.errors import APIError, DockerException, NotFound
+from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
 from docker.models.volumes import Volume
 
@@ -61,7 +61,6 @@ class DockerUtils:
         """List available docker containers.
         Return a list of ExegolContainer"""
         if cls.__containers is None:
-            logger.verbose("Listing local Exegol containers")
             cls.__containers = []
             try:
                 docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
@@ -186,14 +185,17 @@ class DockerUtils:
     # # # Image Section # # #
 
     @classmethod
-    def listImages(cls) -> List[ExegolImage]:
+    def listImages(cls, include_version_tag: bool = False) -> List[ExegolImage]:
         """List available docker images.
         Return a list of ExegolImage"""
         if cls.__images is None:
-            logger.verbose("Listing local and remote Exegol images")
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
-            cls.__images = ExegolImage.mergeImages(remote_images, local_images)
+            images = ExegolImage.mergeImages(remote_images, local_images)
+            if include_version_tag:
+                cls.__images = images
+            else:
+                cls.__images = [img for img in images if img.isLatest() or img.isInstall()]
         return cls.__images
 
     @classmethod
@@ -218,6 +220,7 @@ class DockerUtils:
     @classmethod
     def getInstalledImage(cls, tag: str) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
+        # TODO try to find in cache?
         docker_local_image = cls.__listLocalImages(tag)
         if docker_local_image is None or len(docker_local_image) == 0:
             raise ObjectNotFound
@@ -243,31 +246,58 @@ class DockerUtils:
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
-        try:
-            remote_images_request = requests.get(
-                url="https://hub.docker.com/v2/repositories/{}/tags".format(ConstantConfig.IMAGE_NAME),
-                timeout=(5, 10), verify=ParametersManager().verify)
-        except requests.exceptions.ConnectionError as err:
-            logger.warning("Connection Error: you probably have no internet, skipping online queries")
-            logger.debug(f"Error: {err}")
-            return []
-        except requests.exceptions.RequestException as err:
-            logger.warning("Unknown connection Error. Skipping online queries.")
-            logger.error(f"Error: {err}")
-            return []
         remote_results = []
-        remote_images_list = json.loads(remote_images_request.text)
-        for docker_image in remote_images_list["results"]:
-            exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
-                                       digest=docker_image["images"][0]["digest"],
-                                       size=docker_image.get("full_size"))
-            remote_results.append(exegol_image)
+        # TODO custom registry host (+pull)
+        url: Optional[str] = "https://hub.docker.com/v2/repositories/{}/tags".format(ConstantConfig.IMAGE_NAME)
+        # Handle multi-page tags from registry
+        while url is not None:
+            remote_images_request = None
+            try:
+                remote_images_request = requests.get(
+                    url=url,
+                    timeout=(5, 10), verify=ParametersManager().verify)
+            except requests.exceptions.HTTPError as e:
+                logger.error(f"Response error: {e.response.text}")
+            except requests.exceptions.ConnectionError as err:
+                logger.error(f"Error: {err}")
+                logger.error("Connection Error: you probably have no internet.")
+            except requests.exceptions.ReadTimeout:
+                logger.error(
+                    "[green]Dockerhub[/green] request has [red]timeout[/red]. Do you have a slow internet connection? Retry later.")
+            except requests.exceptions.RequestException as err:
+                logger.error(f"Unknown connection error: {err}")
+            if remote_images_request is None:
+                logger.warning("Skipping online queries.")
+                return []
+            docker_repo_response = json.loads(remote_images_request.text)
+            for docker_image in docker_repo_response["results"]:
+                exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
+                                           digest=docker_image["images"][0]["digest"],
+                                           size=docker_image.get("full_size"))
+                remote_results.append(exegol_image)
+            url = docker_repo_response["next"]  # handle multiple page tags
+        # Remove duplication (version specific / latest release)
         return remote_results
 
     @classmethod
-    def updateImage(cls, image: ExegolImage) -> bool:
-        """Update an ExegolImage"""  # TODO add local image support / move this procedure
-        logger.info(f"Updating exegol image : {image.getName()}")
+    def __findImageMatch(cls, remote_images: List[ExegolImage]):
+        """From a list of Remote ExegolImage, try to find a local match (using Remote DigestID).
+        This method is useful if the image repository name is also lost"""
+        # TODO TORM ?
+        for image in remote_images:
+            try:
+                docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{image.getRemoteId()}")
+            except ImageNotFound:
+                continue
+            image.setDockerObject(docker_image)
+            # TODO handle none tag
+
+    @classmethod
+    def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:
+        """Download/pull an ExegolImage"""
+        # Switch to install mode if the selected image not already installed
+        install_mode = install_mode or not image.isInstall()
+        logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
@@ -279,14 +309,16 @@ class DockerUtils:
                                           decode=True))
                 logger.success(f"Image successfully updated")
                 # Remove old image
-                cls.removeImage(image, upgrade_mode=True)
+                if not install_mode and image.isInstall():
+                    cls.removeImage(image, upgrade_mode=install_mode)
                 return True
             except APIError as err:
                 if err.status_code == 500:
-                    logger.error(f"Error: {err}")  # TODO switch to debug
-                    logger.error(f"Error while contacting docker hub. You probably don't have internet. Aborting.")
+                    logger.error(f"Error: {err.explanation}")
+                    logger.error(f"Error while contacting docker registry. Aborting.")
                 else:
-                    logger.critical(f"An error occurred while downloading this image : {err}")
+                    logger.debug(f"Error: {err}")
+                    logger.critical(f"An error occurred while downloading this image : {err.explanation}")
         return False
 
     @classmethod
@@ -339,6 +371,7 @@ class DockerUtils:
         except APIError as err:
             logger.debug(f"Error: {err}")
             if err.status_code == 500:
+                logger.error(f"Error: {err.explanation}")
                 logger.error("Error while contacting docker hub. You probably don't have internet. Aborting.")
                 logger.debug(f"Error: {err}")
             else:
