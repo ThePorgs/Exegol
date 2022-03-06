@@ -192,10 +192,9 @@ class DockerUtils:
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
             images = ExegolImage.mergeImages(remote_images, local_images)
-            if include_version_tag:
-                cls.__images = images
-            else:
-                cls.__images = [img for img in images if img.isLatest() or img.isInstall()]
+            cls.__images = ExegolImage.reorderImages(images)
+        if not include_version_tag:
+            return [img for img in cls.__images if not img.isVersionSpecific() or img.isInstall()]
         return cls.__images
 
     @classmethod

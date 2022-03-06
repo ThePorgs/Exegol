@@ -68,15 +68,19 @@ class ExegolImage(SelectableInterface):
                 if "-" not in name:
                     self.__must_be_removed = False
                     self.__name = name
-                else:
-                    self.__image_version: str = '-'.join(name.split('-')[1:])
             # if no version has been found, restoring previous name
             if self.__name is None:
                 self.__name = name
+
+            self.__version_specific = "-" in self.__name
+            if self.__version_specific:
+                self.__profile_version = '-'.join(name.split('-')[1:])
+                self.__image_version = self.__profile_version
         else:
             # If tag is <none>, use default value
             self.__name = "<none>"  # TODO find attached container
             self.__must_be_removed = True
+            self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
@@ -90,8 +94,10 @@ class ExegolImage(SelectableInterface):
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
-            self.__name = f'{container.attrs["Config"]["Image"].split(":")[1]} ' \
-                          f'[bright_black](deprecated{f" v{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
+            name = container.attrs["Config"]["Image"].split(":")[1]
+            self.__name = f'{name} [bright_black](deprecated' \
+                          f'{f" v{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
+            self.__version_specific = "-" in name
             # TODO debug deprecated version number
 
     def updateCheck(self) -> Optional[str]:
@@ -242,6 +248,34 @@ class ExegolImage(SelectableInterface):
         cls.__mergeCommonImages(results)
         return results
 
+    @classmethod
+    def reorderImages(cls, images: List['ExegolImage']) -> List['ExegolImage']:
+        """Reorder ExegolImages depending on their status"""
+        result = []
+        # First up-to-date
+        for img in images.copy():
+            if img.isUpToDate():
+                result.append(img)
+                images.remove(img)
+        # Second need upgrade
+        for img in images.copy():
+            if (not img.isLocal()) and img.isInstall():
+                result.append(img)
+                images.remove(img)
+        # Third local
+        for img in images.copy():
+            if img.isLocal():
+                result.append(img)
+                images.remove(img)
+        # Fourth deprecated
+        for img in images.copy():
+            if img.isLocked() and img.isInstall():
+                result.append(img)
+                images.remove(img)
+        # then not installed & other
+        result.extend(images)  # Adding left images
+        return result
+
     @staticmethod
     def __processSize(size: int, precision: int = 1) -> str:
         """Text formatter from size number to human-readable size."""
@@ -361,10 +395,6 @@ class ExegolImage(SelectableInterface):
         Image version specific container a '-' in the name,
         latest image don't."""
         return self.__version_specific
-
-    def isLatest(self) -> bool:
-        """Check if the current image is the latest tag"""
-        return not self.__version_specific
 
     def getName(self) -> str:
         """Image's tag name getter"""
