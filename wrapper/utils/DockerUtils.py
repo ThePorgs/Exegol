@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import docker
 import requests
@@ -69,8 +69,6 @@ class DockerUtils:
                 logger.critical(err.explanation)
                 # Not reachable, critical logging will exit
                 return  # type: ignore
-            logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(docker_containers)}{os.linesep}",
-                       markup=True)
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -315,10 +313,28 @@ class DockerUtils:
                 if err.status_code == 500:
                     logger.error(f"Error: {err.explanation}")
                     logger.error(f"Error while contacting docker registry. Aborting.")
+                elif err.status_code == 404:
+                    logger.critical(f"The image have not been found on the docker registry: {err.explanation}")
                 else:
                     logger.debug(f"Error: {err}")
-                    logger.critical(f"An error occurred while downloading this image : {err.explanation}")
+                    logger.critical(f"An error occurred while downloading this image: {err.explanation}")
         return False
+
+    @classmethod
+    def downloadVersionTag(cls, image: ExegolImage) -> Union[ExegolImage, str]:
+        """Pull a docker image for a specific version tag and returned the corresponding ExegolImage"""
+        try:
+            image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
+                                             tag=image.getVersionName())
+            return ExegolImage(docker_image=image, isUpToDate=True)
+        except APIError as err:
+            if err.status_code == 500:
+                return f"error while contacting docker registry: {err.explanation}"
+            elif err.status_code == 404:
+                return f"matching tag doesn't exist: {err.explanation}"
+            else:
+                logger.debug(f"Error: {err}")
+                return f"en unknown error occurred while downloading this image : {err.explanation}"
 
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:

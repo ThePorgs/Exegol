@@ -9,7 +9,7 @@ from wrapper.exceptions.ExegolExceptions import ObjectNotFound
 from wrapper.model.ExegolImage import ExegolImage
 from wrapper.utils.ConstantConfig import ConstantConfig
 from wrapper.utils.DockerUtils import DockerUtils
-from wrapper.utils.ExeLog import logger
+from wrapper.utils.ExeLog import logger, console
 from wrapper.utils.GitUtils import GitUtils
 
 
@@ -57,7 +57,20 @@ class UpdateManager:
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
             if DockerUtils.downloadImage(selected_image, install_mode):
-                return DockerUtils.getImage(selected_image.getName())
+                sync_result = None
+                # Name comparison allow detecting images without version tag
+                if not selected_image.isVersionSpecific() and selected_image.getName() != selected_image.getVersionName():
+                    with console.status(f"Synchronizing version tag information. Please wait.", spinner_style="blue"):
+                        # Download associated version tag.
+                        sync_result = DockerUtils.downloadVersionTag(selected_image)
+                    # Detect if an error have been triggered during the download
+                    if type(sync_result) is str:
+                        logger.error(f"Error while downloading version tag, {sync_result}")
+                        sync_result = None
+                # if version tag have been successfully download, returning ExegolImage from docker response
+                if sync_result is not None and type(sync_result) is ExegolImage:
+                    return sync_result
+                return DockerUtils.getInstalledImage(selected_image.getName())  # TODO handle new version parsing (on error)
         elif type(selected_image) is str:
             # Build a new image using TUI selected name, confirmation has already been requested by TUI
             return cls.buildAndLoad(selected_image)

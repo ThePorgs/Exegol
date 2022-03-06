@@ -49,6 +49,8 @@ class ExegolManager:
             logger.empty_line()
             # List and print containers
             logger.verbose("Listing local Exegol containers")
+            logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(containers)}{os.linesep}",
+                       markup=True)
             ExegolTUI.printTable(containers)
 
     @classmethod
@@ -364,6 +366,7 @@ class ExegolManager:
                 image = UpdateManager.updateImage(model.image.getName())
                 if image is not None:
                     model.image = image
+                    ExegolTUI.printContainerRecap(model)
             command_options = []
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 command_options = model.config.interactiveConfig()

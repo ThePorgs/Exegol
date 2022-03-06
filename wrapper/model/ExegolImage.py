@@ -16,7 +16,8 @@ class ExegolImage(SelectableInterface):
                  digest: Optional[str] = None,
                  image_id: Optional[str] = None,
                  size: int = 0,
-                 docker_image: Optional[Image] = None):
+                 docker_image: Optional[Image] = None,
+                 isUpToDate: bool = False):
         """Docker image default value"""
         # Init attributes
         self.__image: Image = docker_image
@@ -36,7 +37,7 @@ class ExegolImage(SelectableInterface):
         # Status
         self.__is_remote: bool = size > 0
         self.__is_install: bool = False
-        self.__is_update: bool = False
+        self.__is_update: bool = isUpToDate
         self.__is_discontinued: bool = False
         # The latest version is merged with the latest one, every other version are old and must be removed
         self.__must_be_removed: bool = self.__version_specific
@@ -68,6 +69,9 @@ class ExegolImage(SelectableInterface):
                 if "-" not in name:
                     self.__must_be_removed = False
                     self.__name = name
+                else:
+                    self.__image_version = '-'.join(name.split('-')[1:])
+
             # if no version has been found, restoring previous name
             if self.__name is None:
                 self.__name = name
@@ -161,7 +165,7 @@ class ExegolImage(SelectableInterface):
                     main_image.__setLatestVersion(version_specific.getImageVersion())
                     match = True
                 # Try to find a matching version (If 2 local id images are the same, this version is actually installed as latest)
-                if main_image.getLocalId() == version_specific.getLocalId():
+                if main_image.isInstall() and main_image.getLocalId() == version_specific.getLocalId():
                     # Set version to the remaining latest image
                     main_image.__setImageVersion(version_specific.getImageVersion())
                     match = True
@@ -251,27 +255,26 @@ class ExegolImage(SelectableInterface):
     @classmethod
     def reorderImages(cls, images: List['ExegolImage']) -> List['ExegolImage']:
         """Reorder ExegolImages depending on their status"""
-        result = []
-        # First up-to-date
+        uptodate, outdated, local_build, deprecated = [], [], [], []
         for img in images.copy():
+            # First up-to-date
             if img.isUpToDate():
-                result.append(img)
+                uptodate.append(img)  # The current image if added to the corresponding groups
+                images.remove(img)    # and is removed from the pool (last image without any match will be last)
+            # Second need upgrade
+            elif (not img.isLocal()) and img.isInstall():
+                outdated.append(img)
                 images.remove(img)
-        # Second need upgrade
-        for img in images.copy():
-            if (not img.isLocal()) and img.isInstall():
-                result.append(img)
+            # Third local
+            elif img.isLocal():
+                local_build.append(img)
                 images.remove(img)
-        # Third local
-        for img in images.copy():
-            if img.isLocal():
-                result.append(img)
+            # Fourth deprecated
+            elif img.isLocked() and img.isInstall():
+                deprecated.append(img)
                 images.remove(img)
-        # Fourth deprecated
-        for img in images.copy():
-            if img.isLocked() and img.isInstall():
-                result.append(img)
-                images.remove(img)
+        # apply images order
+        result = uptodate + outdated + local_build + deprecated
         # then not installed & other
         result.extend(images)  # Adding left images
         return result
@@ -337,7 +340,8 @@ class ExegolImage(SelectableInterface):
 
     @staticmethod
     def __parseDigest(docker_image: Image) -> str:
-        """Remote image digest setter"""
+        """Parse the remote image digest ID.
+        Return digest id from the docker object."""
         for digest_id in docker_image.attrs["RepoDigests"]:
             if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
                 return digest_id.split('@')[1]
@@ -399,6 +403,13 @@ class ExegolImage(SelectableInterface):
     def getName(self) -> str:
         """Image's tag name getter"""
         return self.__name
+
+    def getVersionName(self) -> str:
+        """Image's tag name getter"""
+        if self.__version_specific or 'N/A' in self.__profile_version:
+            return self.__name
+        else:
+            return self.__name + "-" + self.__profile_version
 
     def __setImageVersion(self, version: str):
         """Image's tag version setter"""
