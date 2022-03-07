@@ -158,7 +158,6 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
-        table.add_column("Version")
         if verbose_mode:
             table.add_column("Download size")
             table.add_column("Disk size")
@@ -169,14 +168,15 @@ class ExegolTUI:
         table.add_column("Status")
         # Load data into the table
         for image in data:
-            if image.isLocked() and not (debug_mode or image.isInstall()):
+            # ToBeRemoved images are only shown in verbose mode
+            if image.isLocked() and not verbose_mode:
                 continue
             if verbose_mode:
-                table.add_row(image.getLocalId(), image.getName(), image.getImageVersion(), image.getDownloadSize(),
+                table.add_row(image.getLocalId(), image.getName(), image.getDownloadSize(),
                               image.getRealSize(),
                               image.getStatus())
             else:
-                table.add_row(image.getName(), image.getImageVersion(), image.getSize(), image.getStatus())
+                table.add_row(image.getName(), image.getSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):

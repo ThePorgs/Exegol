@@ -313,19 +313,20 @@ class ExegolImage(SelectableInterface):
 
     def getStatus(self) -> str:
         """Formatted text getter of image's status."""
+        image_version = '' if 'N/A' in self.getImageVersion() else f' (v{self.getImageVersion()})'
         if self.__custom_status != "":
             return self.__custom_status
         elif not self.__is_remote:
             return "[blue]Local image[/blue]"
         elif self.__must_be_removed and self.__is_install:
-            return "[red]Must be removed[/red]"
+            return f"[red]Outdated{image_version}[/red]"
         elif self.__is_discontinued:
             return "[red]Discontinued[/red]"
         elif self.__is_update:
-            return "[green]Up to date[/green]"
+            return f"[green]Up to date{image_version}[/green]"
         elif self.__is_install:
             return f"[orange3]Update available" \
-                   f"{'' if 'N/A' in self.getLatestVersion() else f' ({self.getLatestVersion()})'}[/orange3]"
+                   f"{'' if 'N/A' in self.getLatestVersion() else f' (v{self.getImageVersion()} :arrow_right: v{self.getLatestVersion()})'}[/orange3]"
         else:
             return "[bright_black]Not installed[/bright_black]"
 
