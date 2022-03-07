@@ -41,7 +41,7 @@ class ExegolManager:
             # Without any parameter, show all images and containers info
             with console.status(f"Loading information", spinner_style="blue"):
                 # Fetch data
-                images = DockerUtils.listImages(include_version_tag=False)  # TODO debug mode, set to false
+                images = DockerUtils.listImages(include_version_tag=False)
                 containers = DockerUtils.listContainers()
             # List and print images
             logger.verbose("Listing local and remote Exegol images")

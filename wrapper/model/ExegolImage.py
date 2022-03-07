@@ -82,7 +82,7 @@ class ExegolImage(SelectableInterface):
                 self.__image_version = self.__profile_version
         else:
             # If tag is <none>, use default value
-            self.__name = "<none>"  # TODO find attached container
+            self.__name = "<none>"  # TODO fallback to label if exist
             self.__must_be_removed = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -102,7 +102,6 @@ class ExegolImage(SelectableInterface):
             self.__name = f'{name} [bright_black](deprecated' \
                           f'{f" v{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
             self.__version_specific = "-" in name
-            # TODO debug deprecated version number
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return his name, otherwise return None"""
@@ -325,7 +324,8 @@ class ExegolImage(SelectableInterface):
         elif self.__is_update:
             return "[green]Up to date[/green]"
         elif self.__is_install:
-            return f"[orange3]Update available ({self.getLatestVersion()})[/orange3]"
+            return f"[orange3]Update available" \
+                   f"{'' if 'N/A' in self.getLatestVersion() else f' ({self.getLatestVersion()})'}[/orange3]"
         else:
             return "[bright_black]Not installed[/bright_black]"
 

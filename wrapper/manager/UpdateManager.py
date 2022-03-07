@@ -70,7 +70,7 @@ class UpdateManager:
                 # if version tag have been successfully download, returning ExegolImage from docker response
                 if sync_result is not None and type(sync_result) is ExegolImage:
                     return sync_result
-                return DockerUtils.getInstalledImage(selected_image.getName())  # TODO handle new version parsing (on error)
+                return DockerUtils.getInstalledImage(selected_image.getName())
         elif type(selected_image) is str:
             # Build a new image using TUI selected name, confirmation has already been requested by TUI
             return cls.buildAndLoad(selected_image)

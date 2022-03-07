@@ -217,12 +217,27 @@ class DockerUtils:
     @classmethod
     def getInstalledImage(cls, tag: str) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
-        # TODO try to find in cache?
-        docker_local_image = cls.__listLocalImages(tag)
-        if docker_local_image is None or len(docker_local_image) == 0:
-            raise ObjectNotFound
-        # DockerSDK image search is an exact matching, no need to add more check
-        return ExegolImage(docker_image=docker_local_image[0])
+        try:
+            if cls.__images is None:
+                try:
+                    docker_local_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
+                    # DockerSDK image get is an exact matching, no need to add more check
+                    return ExegolImage(docker_image=docker_local_image)
+                except APIError as err:
+                    if err.status_code == 404:
+                        raise ObjectNotFound
+                    else:
+                        logger.critical(f"Error on image loading: {err}")
+            else:
+                for img in cls.__images:
+                    if img.getName() == tag:
+                        if not img.isInstall() or not img.isUpToDate():
+                            # Refresh local image status in case of installation/upgrade operations
+                            cls.__findImageMatch(img)
+                        return img
+        except ObjectNotFound:
+            logger.critical(f"The desired image have not been found ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting")
+        return  # type: ignore
 
     @classmethod
     def __listLocalImages(cls, tag: Optional[str] = None) -> List[Image]:
@@ -244,8 +259,7 @@ class DockerUtils:
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
         remote_results = []
-        # TODO custom registry host (+pull)
-        url: Optional[str] = "https://hub.docker.com/v2/repositories/{}/tags".format(ConstantConfig.IMAGE_NAME)
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags"
         # Handle multi-page tags from registry
         while url is not None:
             remote_images_request = None
@@ -277,17 +291,14 @@ class DockerUtils:
         return remote_results
 
     @classmethod
-    def __findImageMatch(cls, remote_images: List[ExegolImage]):
-        """From a list of Remote ExegolImage, try to find a local match (using Remote DigestID).
+    def __findImageMatch(cls, remote_image: ExegolImage):
+        """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
-        # TODO TORM ?
-        for image in remote_images:
-            try:
-                docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{image.getRemoteId()}")
-            except ImageNotFound:
-                continue
-            image.setDockerObject(docker_image)
-            # TODO handle none tag
+        try:
+            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_image.getRemoteId()}")
+        except ImageNotFound:
+            raise ObjectNotFound
+        remote_image.setDockerObject(docker_image)
 
     @classmethod
     def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:

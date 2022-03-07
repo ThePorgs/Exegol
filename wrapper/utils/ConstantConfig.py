@@ -15,6 +15,7 @@ class ConstantConfig:
     # Path of the private workspace volumes
     private_volume_path: Path = root_path_obj.joinpath("shared-data-volumes")
     # Dockerhub Exegol images repository
+    DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol"
     # Docker common share volume name
     COMMON_SHARE_NAME: str = "exegol-shared-resources"

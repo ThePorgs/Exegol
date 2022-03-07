@@ -67,6 +67,7 @@ class ContainerConfig:
         if caps is not None:
             self.__capabilities = caps
         logger.debug(f"Capabilities : {self.__capabilities}")
+        self.__sysctls = host_config.get("Sysctls", {})
         devices = host_config.get("Devices", [])
         if devices is not None:
             for device in devices:
