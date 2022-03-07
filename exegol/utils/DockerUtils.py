@@ -9,15 +9,15 @@ from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
 from docker.models.volumes import Volume
 
-from wrapper.console.TUI import ExegolTUI
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.exceptions.ExegolExceptions import ObjectNotFound
-from wrapper.model.ExegolContainer import ExegolContainer
-from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
-from wrapper.model.ExegolImage import ExegolImage
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.EnvInfo import EnvInfo
-from wrapper.utils.ExeLog import logger
+from exegol.console.TUI import ExegolTUI
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.model.ExegolContainer import ExegolContainer
+from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
+from exegol.model.ExegolImage import ExegolImage
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html

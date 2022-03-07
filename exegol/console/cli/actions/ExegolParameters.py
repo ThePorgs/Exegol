@@ -1,7 +1,7 @@
-from wrapper.console.cli.actions.Command import Command
-from wrapper.console.cli.actions.GenericParameters import *
-from wrapper.manager.ExegolManager import ExegolManager
-from wrapper.utils.ExeLog import logger
+from exegol.console.cli.actions.Command import Command
+from exegol.console.cli.actions.GenericParameters import *
+from exegol.manager.ExegolManager import ExegolManager
+from exegol.utils.ExeLog import logger
 
 
 class Start(Command, ContainerCreation, ContainerStart):

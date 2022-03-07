@@ -2,7 +2,7 @@ import os
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
-from wrapper.utils.ExeLog import logger
+from exegol.utils.ExeLog import logger
 
 
 class Option:

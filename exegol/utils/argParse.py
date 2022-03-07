@@ -2,8 +2,8 @@ import argparse
 from logging import CRITICAL
 from typing import IO, Optional, List, Union, Dict, cast
 
-from wrapper.console.cli.actions.Command import Command, Option
-from wrapper.utils.ExeLog import logger
+from exegol.console.cli.actions.Command import Command, Option
+from exegol.utils.ExeLog import logger
 
 
 # Argparse overriding

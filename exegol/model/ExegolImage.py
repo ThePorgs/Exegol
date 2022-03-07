@@ -3,9 +3,9 @@ from typing import Optional, List
 from docker.models.containers import Container
 from docker.models.images import Image
 
-from wrapper.model.SelectableInterface import SelectableInterface
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.ExeLog import logger
+from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.ExeLog import logger
 
 
 # Class of an exegol image

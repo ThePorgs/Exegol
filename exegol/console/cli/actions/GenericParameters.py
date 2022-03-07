@@ -1,7 +1,7 @@
 from typing import List
 
-from wrapper.console.cli.actions.Command import Option, GroupArg
-from wrapper.utils.ConstantConfig import ConstantConfig
+from exegol.console.cli.actions.Command import Option, GroupArg
+from exegol.utils.ConstantConfig import ConstantConfig
 
 
 class ContainerSelector:

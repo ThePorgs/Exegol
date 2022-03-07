@@ -3,21 +3,21 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.console.TUI import ExegolTUI
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.console.cli.actions.GenericParameters import ContainerCreation
-from wrapper.exceptions.ExegolExceptions import ObjectNotFound
-from wrapper.manager.UpdateManager import UpdateManager
-from wrapper.model.ContainerConfig import ContainerConfig
-from wrapper.model.ExegolContainer import ExegolContainer
-from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
-from wrapper.model.ExegolImage import ExegolImage
-from wrapper.model.SelectableInterface import SelectableInterface
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.DockerUtils import DockerUtils
-from wrapper.utils.EnvInfo import EnvInfo
-from wrapper.utils.ExeLog import logger, console
+from exegol.console.ExegolPrompt import Confirm
+from exegol.console.TUI import ExegolTUI
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.console.cli.actions.GenericParameters import ContainerCreation
+from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.manager.UpdateManager import UpdateManager
+from exegol.model.ContainerConfig import ContainerConfig
+from exegol.model.ExegolContainer import ExegolContainer
+from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
+from exegol.model.ExegolImage import ExegolImage
+from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.DockerUtils import DockerUtils
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger, console
 
 
 # Main procedure of exegol

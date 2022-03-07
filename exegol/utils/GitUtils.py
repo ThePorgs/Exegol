@@ -2,8 +2,8 @@ from typing import Optional, List
 
 from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
 
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.ExeLog import logger
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.ExeLog import logger
 
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html

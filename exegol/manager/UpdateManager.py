@@ -2,15 +2,15 @@ from typing import Optional, Dict, cast
 
 from rich.prompt import Prompt
 
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.console.TUI import ExegolTUI
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.exceptions.ExegolExceptions import ObjectNotFound
-from wrapper.model.ExegolImage import ExegolImage
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.DockerUtils import DockerUtils
-from wrapper.utils.ExeLog import logger, console
-from wrapper.utils.GitUtils import GitUtils
+from exegol.console.ExegolPrompt import Confirm
+from exegol.console.TUI import ExegolTUI
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.model.ExegolImage import ExegolImage
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.DockerUtils import DockerUtils
+from exegol.utils.ExeLog import logger, console
+from exegol.utils.GitUtils import GitUtils
 
 
 # Procedure class for updating the exegol tool and docker images

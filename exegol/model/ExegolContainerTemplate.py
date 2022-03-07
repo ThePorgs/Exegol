@@ -2,8 +2,8 @@ import os
 
 from rich.prompt import Prompt
 
-from wrapper.model.ContainerConfig import ContainerConfig
-from wrapper.model.ExegolImage import ExegolImage
+from exegol.model.ContainerConfig import ContainerConfig
+from exegol.model.ExegolImage import ExegolImage
 
 
 # Class template used to create a new container

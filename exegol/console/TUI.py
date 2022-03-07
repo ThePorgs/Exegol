@@ -7,16 +7,16 @@ from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapse
 from rich.prompt import Prompt
 from rich.table import Table
 
-from wrapper.console.ConsoleFormat import boolFormatter, getColor
-from wrapper.console.ExegolProgress import ExegolProgress
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.console.LayerTextColumn import LayerTextColumn
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.model.ExegolContainer import ExegolContainer
-from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
-from wrapper.model.ExegolImage import ExegolImage
-from wrapper.model.SelectableInterface import SelectableInterface
-from wrapper.utils.ExeLog import logger, console, ExeLog
+from exegol.console.ConsoleFormat import boolFormatter, getColor
+from exegol.console.ExegolProgress import ExegolProgress
+from exegol.console.ExegolPrompt import Confirm
+from exegol.console.LayerTextColumn import LayerTextColumn
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.model.ExegolContainer import ExegolContainer
+from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
+from exegol.model.ExegolImage import ExegolImage
+from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.ExeLog import logger, console, ExeLog
 
 
 # Class gathering different methods of Terminal User Interface (or TUI)

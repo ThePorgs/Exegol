@@ -6,13 +6,13 @@ from typing import Optional, Dict, Sequence
 from docker.errors import NotFound
 from docker.models.containers import Container
 
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.model.ContainerConfig import ContainerConfig
-from wrapper.model.ExegolContainerTemplate import ExegolContainerTemplate
-from wrapper.model.ExegolImage import ExegolImage
-from wrapper.model.SelectableInterface import SelectableInterface
-from wrapper.utils.ExeLog import logger, console
+from exegol.console.ExegolPrompt import Confirm
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.model.ContainerConfig import ContainerConfig
+from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
+from exegol.model.ExegolImage import ExegolImage
+from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.ExeLog import logger, console
 
 
 # Class of an existing exegol container

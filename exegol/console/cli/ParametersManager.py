@@ -1,10 +1,10 @@
 from argparse import Namespace
 from typing import List, Any
 
-from wrapper.console.cli.actions.Command import Command
-from wrapper.utils.ExeLog import logger
-from wrapper.utils.MetaSingleton import MetaSingleton
-from wrapper.utils.argParse import Parser
+from exegol.console.cli.actions.Command import Command
+from exegol.utils.ExeLog import logger
+from exegol.utils.MetaSingleton import MetaSingleton
+from exegol.utils.argParse import Parser
 
 
 class ParametersManager(metaclass=MetaSingleton):

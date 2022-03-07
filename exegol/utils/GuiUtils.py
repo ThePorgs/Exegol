@@ -2,9 +2,9 @@ import os
 import shutil
 import subprocess
 
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.utils.EnvInfo import EnvInfo
-from wrapper.utils.ExeLog import logger
+from exegol.console.ExegolPrompt import Confirm
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger
 
 
 # Windows environment detection class

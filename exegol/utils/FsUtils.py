@@ -3,8 +3,8 @@ import subprocess
 from pathlib import Path, PurePosixPath, PurePath
 from typing import Optional
 
-from wrapper.utils.EnvInfo import EnvInfo
-from wrapper.utils.ExeLog import logger
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger
 
 
 def parseDockerVolumePath(source: str) -> PurePath:

@@ -7,15 +7,15 @@ from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
 
-from wrapper.console.ConsoleFormat import boolFormatter, getColor
-from wrapper.console.ExegolPrompt import Confirm
-from wrapper.console.cli.ParametersManager import ParametersManager
-from wrapper.exceptions.ExegolExceptions import ProtocolNotSupported
-from wrapper.utils import FsUtils
-from wrapper.utils.ConstantConfig import ConstantConfig
-from wrapper.utils.EnvInfo import EnvInfo
-from wrapper.utils.ExeLog import logger, ExeLog
-from wrapper.utils.GuiUtils import GuiUtils
+from exegol.console.ConsoleFormat import boolFormatter, getColor
+from exegol.console.ExegolPrompt import Confirm
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.exceptions.ExegolExceptions import ProtocolNotSupported
+from exegol.utils import FsUtils
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.GuiUtils import GuiUtils
 
 
 # Configuration class of an exegol container
