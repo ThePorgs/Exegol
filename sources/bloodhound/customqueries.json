@@ -698,6 +698,105 @@
                 "final": true,
                 "query": "MATCH (n:GPO) WHERE n.type = 'Enrollment Service' and n.`Web Enrollment` = 'Enabled' RETURN n"
             }]
-        }
+        },
+        {
+			"name": "Find users that can RDP into something",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintext=True MATCH p1=(u1)-[:CanRDP*1..]->(c:Computer) RETURN u1",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Find users that belong to high value groups",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintext=True MATCH p=(u1:User)-[r:MemberOf*1..]->(m:Group {highvalue:true}) RETURN u1",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Find kerberoastable users",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintext=True AND u1.hasspn=True RETURN u1",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with seasons in their password and are high value targets",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "MATCH (u1:User) WHERE u1.plaintextpassword =~ \"([Ww]inter.*|[sS]pring.*|[sS]ummer.*|[fF]all.*)\" MATCH p=(u1:User)-[r:MemberOf*1..]->(m:Group {highvalue:true}) RETURN u1",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with seasons in their password and have local admin on at least one computer",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintextpassword =~ \"([Ww]inter.*|[sS]pring.*|[sS]ummer.*|[fF]all.*)\" match p=(u1:User)-[r:AdminTo]->(n:Computer) RETURN p",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with seasons in their password and a path to high value targets (limit to 25 results)",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintextpassword =~ \"([Ww]inter.*|[sS]pring.*|[sS]ummer.*|[fF]all.*)\" MATCH p=shortestPath((u1:User)-[*1..]->(n {highvalue:true})) WHERE  u1<>n return u1 LIMIT 25",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with a variant of \"password\" in their password and are high value targets",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "MATCH (u1:User) WHERE u1.plaintextpassword =~ \"(.*[pP][aA@][sS$][sS$][wW][oO0][rR][dD].*)\" MATCH p=(u1:User)-[r:MemberOf*1..]->(m:Group {highvalue:true}) RETURN u1",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with a variant of \"password\" in their password and have local admin on at least one computer",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintextpassword =~ \"(.*[pP][aA@][sS$][sS$][wW][oO0][rR][dD].*)\" match p=(u1:User)-[r:AdminTo]->(n:Computer) RETURN p",
+					"allowCollapse": true
+				}
+			]
+		},
+		{
+			"name": "Return users with a variant of \"password\" in their password and a path to high value targets (limit to 25 results)",
+			"category": "PlainText Password Queries",
+			"queryList": [
+				{
+					"final": true,
+					"query": "match (u1:User) WHERE u1.plaintextpassword =~ \"(.*[pP][aA@][sS$][sS$][wW][oO0][rR][dD].*)\"  MATCH p=shortestPath((u1:User)-[*1..]->(n {highvalue:true})) WHERE  u1<>n return u1 LIMIT 25",
+					"allowCollapse": true
+				}
+			]
+		}
     ]
 }

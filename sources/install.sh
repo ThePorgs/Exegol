@@ -1885,9 +1885,12 @@ function install_ldaprelayscan() {
 
 function install_goldencopy() {
   colorecho "Installing GoldenCopy"
-  git -C /opt/tools/ clone https://github.com/Dramelac/GoldenCopy
-  cd /opt/tools/GoldenCopy
-  python3 -m pip install -r requirements.txt
+  python3 -m pipx install goldencopy
+}
+
+function install_crackhound() {
+  colorecho "Installing CrackHound"
+  git -C /opt/tools/ clone https://github.com/trustedsec/CrackHound
 }
 
 function install_base() {
@@ -2308,6 +2311,7 @@ function install_ad_tools() {
   install_finduncommonshares
   install_ldaprelayscan
   install_goldencopy
+  install_crackhound
 }
 
 # Package dedicated to mobile apps pentest tools
