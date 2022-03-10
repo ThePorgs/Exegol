@@ -339,5 +339,5 @@ FindUncommonShares.py -d 'domain.local' -u 'someuser' -p 'somepassword' --dc-ip 
 certipy find -dc-ip 'domaincontroller' -scheme ldap 'domain.local'/'user':'password'@'domaincontroller'
 LdapRelayScan.py -method BOTH -dc-ip 192.168.56.101 -u 'someuser' -p 'somepassword'
 goldencopy --tools all --password exegol4thewin --stealth --krbtgt 060ee2d06c5648e60a9ed916c9221ad19d90e5fb7b1cccf9d51f540fe991ada1 "john"
-crackhound.py --verbose --password "exegol4thewin" --plaintext --plain-text --domain "BREAKING.BAD" --file ownedusers.txt
+crackhound.py --verbose --password "exegol4thewin" --plain-text --plain-text --domain "BREAKING.BAD" --file ownedusers.txt
 # -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #
