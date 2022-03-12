@@ -656,12 +656,11 @@ function install_bat() {
 
 function install_mdcat() {
   colorecho "Installing mdcat"
-  version=$(curl -s https://api.github.com/repos/lunaryorn/mdcat/releases/latest | grep "tag_name" | cut -d '"' -f4)
-  wget https://github.com/lunaryorn/mdcat/releases/download/$version/$version-x86_64-unknown-linux-musl.tar.gz
-  tar xvfz $version-x86_64-unknown-linux-musl.tar.gz
-  mv $version-x86_64-unknown-linux-musl/mdcat /opt/tools/bin
-  rm -r $version-x86_64-unknown-linux-musl.tar.gz $version-x86_64-unknown-linux-musl
-  chown root:root /opt/tools/bin/mdcat
+  # Installing cargo, a rust installer
+  curl https://sh.rustup.rs -sSf | sh -s -- -y
+  source $HOME/.cargo/env
+  # Installing mdcat now
+  cargo install mdcat
 }
 
 function xsrfprobe() {
