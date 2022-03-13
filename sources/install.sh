@@ -303,12 +303,11 @@ function install_impacket() {
   # 1224: Added renameMachine.py
   # 1253: Added LSA dump on top of SAM dump for ntlmrelayx
   # 1256: Added tgssub script for service substitution
-  # 1265: Fixes Ccache to Kirbi conversion issues
   # 1267: Better handling of various XML files in Group Policy Preferences
   # 1270: Fix ticketer duration to support default 10 hours tickets
   git config --global user.email "exegol@install.er"
   git config --global user.name "Exegol installer"
-  prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1265 1267 1270"
+  prs="1063 1249 1135 1184 1201 1202 1224 1253 1256 1267 1270"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
