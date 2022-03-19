@@ -285,8 +285,8 @@ class ContainerConfig:
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
-        logger.verbose("Config : Sharing current working directory")
         self.__workspace_custom_path = os.getcwd()
+        logger.verbose(f"Config : Sharing current workspace directory {self.__workspace_custom_path}")
 
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""

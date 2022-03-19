@@ -334,6 +334,8 @@ class ExegolManager:
                 logger.warning(
                     f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
             config.setWorkspaceShare(ParametersManager().workspace_path)
+        elif ParametersManager().mount_current_dir:
+            config.enableCwdShare()
         if ParametersManager().privileged:
             config.setPrivileged()
         if ParametersManager().volumes is not None:
