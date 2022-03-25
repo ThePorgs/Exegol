@@ -91,10 +91,14 @@ class UpdateManager:
     @classmethod
     def updateGit(cls):
         """User procedure to update local git repository"""
+        if not cls.__getGit().isAvailable:
+            logger.empty_line()
+            return
         logger.info("Updating Exegol local source code")
         # Check if pending change -> cancel
         if not cls.__getGit().safeCheck():
             logger.error("Aborting git update.")
+            logger.empty_line()
             return
         current_branch = cls.__getGit().getCurrentBranch()
         if current_branch != "master":
@@ -109,6 +113,7 @@ class UpdateManager:
                 cls.__getGit().checkout(selected_branch)
         # git pull
         cls.__getGit().update()
+        logger.empty_line()
 
     @classmethod
     def buildSource(cls, build_name: Optional[str] = None) -> str:

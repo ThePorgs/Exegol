@@ -18,8 +18,10 @@ class GitUtils:
         self.__gitRepo: Optional[Repo] = None
         self.__gitRemote: Optional[Remote] = None
         self.__fetchBranchInfo: Optional[FetchInfo] = None
+        self.isAvailable = False
         try:
             self.__gitRepo = Repo(path)
+            self.isAvailable = True
             logger.debug("Git repository successfully loaded")
             if len(self.__gitRepo.remotes) > 0:
                 self.__gitRemote = self.__gitRepo.remotes['origin']
@@ -27,8 +29,9 @@ class GitUtils:
                 logger.warning("No remote git origin found on repository")
                 logger.debug(self.__gitRepo.remotes)
         except InvalidGitRepositoryError:
-            # TODO handle installed not from source
-            logger.warning("Error while loading local git repository. Skipping all git operation.")
+            logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
+            logger.info("If you have installed Exegol with pip, check for an update with the command "
+                        "[green]pip3 install exegol --upgrade[/green]")
 
     def getCurrentBranch(self) -> str:
         """Get current git branch name"""
