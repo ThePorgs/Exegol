@@ -356,11 +356,15 @@ class DockerUtils:
         if tag is None:  # Skip removal if image is not installed locally.
             return False
         try:
+            if not image.isVersionSpecific() and image.getVersionName() != image.getName():
+                # Docker can't remove multiple image at the same tag, version specific tag must be remove first
+                cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
             cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
         except APIError as err:
             # Handle docker API error code
+            logger.verbose(err.explanation)
             if err.status_code == 409:
                 if upgrade_mode:
                     logger.error("This image cannot be deleted yet, "

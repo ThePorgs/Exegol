@@ -433,3 +433,7 @@ class ExegolImage(SelectableInterface):
     def getFullName(self) -> str:
         """Dockerhub image's full name getter"""
         return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
+
+    def getFullVersionName(self) -> str:
+        """Dockerhub image's full version name getter"""
+        return f"{ConstantConfig.IMAGE_NAME}:{self.getVersionName()}"

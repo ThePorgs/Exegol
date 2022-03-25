@@ -105,7 +105,6 @@ class ExegolManager:
     @classmethod
     def uninstall(cls):
         logger.info("Uninstalling an exegol image")
-        # TODO check uninstall with version tag enabled
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
         if len(images) == 0:
             logger.error("No images were selected. Exiting.")
