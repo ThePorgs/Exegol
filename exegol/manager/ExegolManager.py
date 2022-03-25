@@ -17,7 +17,8 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.UserConfig import UserConfig
 
 
 # Main procedure of exegol
@@ -31,6 +32,10 @@ class ExegolManager:
     def info(cls):
         """Print a list of available images and containers on the current host"""
         ExegolManager.print_version()
+        if logger.isEnabledFor(ExeLog.ADVANCED):
+            logger.empty_line()
+            logger.verbose("Listing user configurations")
+            ExegolTUI.printTable(UserConfig().get_configs(), title="User configurations")
         logger.empty_line()
         if bool(ParametersManager().containertag):
             # If the user have supplied a container name, show container config
@@ -100,13 +105,15 @@ class ExegolManager:
     @classmethod
     def uninstall(cls):
         logger.info("Uninstalling an exegol image")
+        # TODO check uninstall with version tag enabled
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
         if len(images) == 0:
             logger.error("No images were selected. Exiting.")
             return
         all_name = ", ".join([x.getName() for x in images])
-        if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
-                       default=False):
+        if not Confirm(
+                f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
+                default=False):
             logger.error("Aborting operation.")
             return
         for img in images:
@@ -120,8 +127,9 @@ class ExegolManager:
             logger.error("No containers were selected. Exiting.")
             return
         all_name = ", ".join([x.name for x in containers])
-        if not Confirm(f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
-                       default=False):
+        if not Confirm(
+                f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
+                default=False):
             logger.error("Aborting operation.")
             return
         for c in containers:
@@ -373,8 +381,10 @@ class ExegolManager:
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 command_options = model.config.interactiveConfig()
                 ExegolTUI.printContainerRecap(model)
-            logger.info(f"Command line of the configuration: [green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")
-            logger.info("To use exegol [orange3]without interaction[/orange3], read CLI options with [green]exegol start -h[/green]")
+            logger.info(f"Command line of the configuration: "
+                        f"[green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")
+            logger.info("To use exegol [orange3]without interaction[/orange3], "
+                        "read CLI options with [green]exegol start -h[/green]")
 
         container = DockerUtils.createContainer(model)
         container.postStartSetup()

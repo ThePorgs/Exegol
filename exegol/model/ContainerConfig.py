@@ -16,6 +16,7 @@ from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
+from exegol.utils.UserConfig import UserConfig
 
 
 # Configuration class of an exegol container
@@ -126,7 +127,8 @@ class ContainerConfig:
                 obj_path = cast(PurePath, src_path)
                 logger.debug(f"Loading workspace volume source : {obj_path}")
                 self.__disable_workspace = False
-                if obj_path is not None and obj_path.name == name and obj_path.parent.name == "shared-data-volumes":
+                if obj_path is not None and obj_path.name == name and \
+                        (obj_path.parent.name == "shared-data-volumes" or obj_path.parent == UserConfig().private_volume_path):  # Check legacy path and new custom path
                     logger.debug("Private workspace detected")
                     self.__workspace_dedicated_path = str(obj_path)
                 else:
@@ -407,7 +409,7 @@ class ContainerConfig:
             return
         else:
             # Add shared-data-volumes private workspace bind volume
-            volume_path = str(ConstantConfig.private_volume_path.joinpath(share_name))
+            volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
             self.addVolume(volume_path, '/workspace')
 
     def setNetworkMode(self, host_mode: bool):

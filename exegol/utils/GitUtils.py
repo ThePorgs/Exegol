@@ -11,7 +11,7 @@ class GitUtils:
 
     def __init__(self):
         """Init git local repository object / SDK"""
-        path: str = ConstantConfig.root_path
+        path: str = ConstantConfig.src_root_path
         logger.debug(f"Loading git at {path}")
         # locally import git in case git is not installed of the system  # TODO check update action
         from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
@@ -27,6 +27,7 @@ class GitUtils:
                 logger.warning("No remote git origin found on repository")
                 logger.debug(self.__gitRepo.remotes)
         except InvalidGitRepositoryError:
+            # TODO handle installed not from source
             logger.warning("Error while loading local git repository. Skipping all git operation.")
 
     def getCurrentBranch(self) -> str:

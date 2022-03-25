@@ -246,6 +246,8 @@ class ExegolImage(SelectableInterface):
                 else:
                     # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
                     new_image.__is_discontinued = True
+                    # Discontinued image can no longer be updated
+                    new_image.__is_update = True
                 results.append(new_image)
 
         cls.__mergeCommonImages(results)

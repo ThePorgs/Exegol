@@ -2,3 +2,4 @@ docker~=5.0.3
 requests>=2.26.0
 rich~=11.2.0
 GitPython~=3.1.26
+PyYAML>=6.0

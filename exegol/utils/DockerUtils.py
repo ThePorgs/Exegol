@@ -18,6 +18,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
+from exegol.utils.UserConfig import UserConfig
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
@@ -154,10 +155,10 @@ class DockerUtils:
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
         try:
-            os.makedirs(ConstantConfig.common_share_path, exist_ok=True)
+            os.makedirs(UserConfig().shared_resources_path, exist_ok=True)
         except PermissionError:
             logger.error("Unable to create the shared resource folder on the filesystem locally.")
-            logger.critical(f"Insufficient permission to create the folder: {ConstantConfig.common_share_path}")
+            logger.critical(f"Insufficient permission to create the folder: {UserConfig().shared_resources_path}")
         try:
             # Check if volume already exist
             volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)
@@ -168,7 +169,7 @@ class DockerUtils:
                 # Docker volume can load data from container image on host's folder creation
                 volume = cls.__client.volumes.create(ConstantConfig.COMMON_SHARE_NAME, driver="local",
                                                      driver_opts={'o': 'bind',
-                                                                  'device': ConstantConfig.common_share_path,
+                                                                  'device': UserConfig().shared_resources_path,
                                                                   'type': 'none'})
             except APIError as err:
                 logger.error(f"Error while creating common share docker volume.")

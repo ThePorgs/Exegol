@@ -71,7 +71,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                        action="store_false",
                                        default=True,
                                        dest="common_resources",
-                                       help=f"Disable the mount of the common exegol resources (/opt/resources) from the host ({ConstantConfig.root_path_obj.joinpath('shared-resources')}) (default: [green]Enabled[/green])")
+                                       help=f"Disable the mount of the common exegol resources (/opt/resources) from the host ({ConstantConfig.src_root_path_obj.joinpath('shared-resources')}) (default: [green]Enabled[/green])")
         self.host_network = Option("--disable-shared-network",
                                    action="store_false",
                                    default=True,
