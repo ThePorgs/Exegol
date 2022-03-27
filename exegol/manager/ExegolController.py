@@ -9,19 +9,6 @@ class ExegolController:
     # (ParametersManager must be loaded from ExegolController first to load every Command subclass)
     __action: Command = ParametersManager().getCurrentAction()
 
-    @staticmethod
-    def main():
-        try:
-            # Set logger verbosity depending on user input
-            ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)
-            # Start Main controller & Executing action selected by user CLI
-            ExegolController.call_action()
-        except KeyboardInterrupt:
-            logger.empty_line()
-            logger.info("Exiting")
-        except Exception:
-            console.print_exception(show_locals=True)
-
     @classmethod
     def call_action(cls):
         # Check for missing parameters
@@ -34,3 +21,16 @@ class ExegolController:
         else:
             # TODO review required parameters
             logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")
+
+
+def main():
+    try:
+        # Set logger verbosity depending on user input
+        ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)
+        # Start Main controller & Executing action selected by user CLI
+        ExegolController.call_action()
+    except KeyboardInterrupt:
+        logger.empty_line()
+        logger.info("Exiting")
+    except Exception:
+        console.print_exception(show_locals=True)

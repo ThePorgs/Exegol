@@ -159,6 +159,7 @@ class UpdateManager:
         # Default stable profile
         profiles = {"full": "Dockerfile"}
         # List file *.dockerfile is the build context directory
+        logger.debug(f"Loading build profile from {ConstantConfig.build_context_path}")
         docker_files = list(ConstantConfig.build_context_path_obj.glob("*.dockerfile"))
         for file in docker_files:
             # Convert every file to the dict format

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from exegol.manager.ExegolController import ExegolController
+from exegol.manager.ExegolController import main
 
 
 if __name__ == '__main__':
-    ExegolController.main()
+    main()

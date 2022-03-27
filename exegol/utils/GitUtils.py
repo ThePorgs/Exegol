@@ -11,7 +11,7 @@ class GitUtils:
 
     def __init__(self):
         """Init git local repository object / SDK"""
-        path: str = ConstantConfig.src_root_path
+        path = ConstantConfig.src_root_path_obj
         logger.debug(f"Loading git at {path}")
         # locally import git in case git is not installed of the system  # TODO check update action
         from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
@@ -20,7 +20,9 @@ class GitUtils:
         self.__fetchBranchInfo: Optional[FetchInfo] = None
         self.isAvailable = False
         try:
-            self.__gitRepo = Repo(path)
+            if not (path / '.git').is_dir():
+                raise ReferenceError
+            self.__gitRepo = Repo(str(path))
             self.isAvailable = True
             logger.debug("Git repository successfully loaded")
             if len(self.__gitRepo.remotes) > 0:
@@ -28,10 +30,14 @@ class GitUtils:
             else:
                 logger.warning("No remote git origin found on repository")
                 logger.debug(self.__gitRepo.remotes)
-        except InvalidGitRepositoryError:
+        except InvalidGitRepositoryError as err:
+            logger.verbose(err)
+            logger.warning("Error while loading local git repository. Skipping all git operation.")
+        except ReferenceError:
             logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
-            logger.info("If you have installed Exegol with pip, check for an update with the command "
-                        "[green]pip3 install exegol --upgrade[/green]")
+            if path.name == "site-packages":
+                logger.info("If you have installed Exegol with pip, check for an update with the command "
+                            "[green]pip3 install exegol --upgrade[/green]")
 
     def getCurrentBranch(self) -> str:
         """Get current git branch name"""
