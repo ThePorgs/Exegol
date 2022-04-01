@@ -20,6 +20,7 @@ export JOHN=/opt/tools/john/run
 export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH
 
 source /opt/.zsh_aliases
+source $HOME/.cargo/env
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
