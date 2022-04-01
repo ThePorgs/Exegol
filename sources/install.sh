@@ -519,9 +519,9 @@ function timing_attack() {
   gem install timing_attack
 }
 
-function updog() {
+function install_updog() {
   colorecho "Installing updog"
-  python3 -m pip install updog
+  python3 -m pipx install updog
 }
 
 function findomain() {
@@ -2194,7 +2194,7 @@ function install_web_tools() {
   hakrawler                       # Web endpoint discovery
   LinkFinder                      # Discovers endpoint JS files
   timing_attack                   # Cryptocraphic timing attack
-  updog                           # New HTTPServer
+  install_updog                           # New HTTPServer
   install_jwt_tool                # Toolkit for validating, forging, scanning and tampering JWTs
   jwt_cracker                     # JWT cracker and bruteforcer
   wuzz                            # Burp cli
