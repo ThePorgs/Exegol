@@ -319,7 +319,7 @@ class ContainerConfig:
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
             self.setContainerCommand(
-                f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")
+                f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")  # TODO add log rotation on image config
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.

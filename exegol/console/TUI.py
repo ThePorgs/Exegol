@@ -104,9 +104,18 @@ class ExegolTUI:
     @staticmethod
     def buildDockerImage(build_stream: Generator):
         """Rich interface for docker image building from SDK stream"""
+        # Prepare log file
+        logfile = None
+        if ParametersManager().build_log is not None:
+            # Opening log file in line buffering mode (1) to support tail -f [file]
+            logfile = open(ParametersManager().build_log, 'a',  buffering=1)
+        # Follow stream
         for line in build_stream:
             stream_text = line.get("stream", '')
             error_text = line.get("error", '')
+            if logfile is not None:
+                logfile.write(stream_text)
+                logfile.write(error_text)
             if error_text != "":
                 logger.error(f"Docker build error: {error_text}")
                 logger.critical(
@@ -124,6 +133,8 @@ class ExegolTUI:
             if ': FROM ' in stream_text:
                 logger.info("Downloading docker image")
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
+        if logfile is not None:
+            logfile.close()
 
     @staticmethod
     def printTable(data: Union[Sequence[SelectableInterface], Sequence[str]], title: Optional[str] = None):

@@ -76,6 +76,17 @@ class Install(Command, ImageSelector):
             "Build 'local' image": "exegol install [orange3]local[/orange3]"
         }
 
+        # Create container start / exec arguments
+        self.build_log = Option("--build-log",
+                                dest="build_log",
+                                metavar="LOGFILE_PATH",
+                                action="store",
+                                help="Write image building logs to a file.")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.build_log, "required": False},
+                                       title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
+
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
         return ExegolManager.install
