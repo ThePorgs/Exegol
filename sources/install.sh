@@ -316,9 +316,10 @@ function install_impacket() {
   # 1288: [ntlmrelayx] LDAP attack: bypass computer creation restrictions with CVE-2021-34470
   # 1289: [ntlmrelayx] LDAP attack: Add DNS records through LDAP
   # 1290: [ntlmrelayx] Adds the creation of a new machine account through SMB
+  # 1291: [dacledit] New example script for DACL manipulation
   git config --global user.email "exegol@install.er"
   git config --global user.name "Exegol installer"
-  prs="1063 1090 1135 1154 1171 1177 1184 1201 1202 1224 1241 1249 1253 1256 1267 1270 1273 1275 1280 1288 1289 1290"
+  prs="1063 1090 1135 1154 1171 1177 1184 1201 1202 1224 1241 1249 1253 1256 1267 1270 1273 1275 1280 1288 1289 1290 1291"
   for pr in $prs; do git fetch origin pull/$pr/head:pull/$pr && git merge --no-edit pull/$pr; done
   python3 -m pip install .
   cp -v /root/sources/grc/conf.ntlmrelayx /usr/share/grc/conf.ntlmrelayx
