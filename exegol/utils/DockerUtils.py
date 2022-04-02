@@ -385,7 +385,7 @@ class DockerUtils:
             build_profile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
-                       f"[green][b]{build_profile}[/b][/green]")
+                       f"[green][b]{build_profile}[/b][/green] profile.")
         try:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build

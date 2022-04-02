@@ -1,6 +1,7 @@
 from exegol.console.cli.actions.Command import Command
 from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
+from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.ExeLog import logger
 
 
@@ -76,7 +77,13 @@ class Install(Command, ImageSelector):
             "Build 'local' image": "exegol install [orange3]local[/orange3]"
         }
 
-        # Create container start / exec arguments
+        # Create container build arguments
+        self.build_profile = Option("build_profile",
+                                    metavar="BUILD_PROFILE",
+                                    choices=UpdateManager.listBuildProfiles().keys(),
+                                    nargs="?",
+                                    action="store",
+                                    help="Select the build profile to use to create a local image.")
         self.build_log = Option("--build-log",
                                 dest="build_log",
                                 metavar="LOGFILE_PATH",
@@ -84,7 +91,8 @@ class Install(Command, ImageSelector):
                                 help="Write image building logs to a file.")
 
         # Create group parameter for container selection
-        self.groupArgs.append(GroupArg({"arg": self.build_log, "required": False},
+        self.groupArgs.append(GroupArg({"arg": self.build_profile, "required": False},
+                                       {"arg": self.build_log, "required": False},
                                        title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
 
     def __call__(self, *args, **kwargs):

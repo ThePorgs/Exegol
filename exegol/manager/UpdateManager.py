@@ -133,16 +133,22 @@ class UpdateManager:
             # Catch None git object assertions
             logger.warning("Git update is not available. Skipping.")
         # Choose tag name
-        blacklisted_build_name = ["stable"]
+        blacklisted_build_name = ["stable", "full"]
         while build_name is None or build_name in blacklisted_build_name:
             if build_name is not None:
                 logger.error("This name is reserved and cannot be used for local build. Please choose another one.")
             build_name = Prompt.ask("[blue][?][/blue] Choice a name for your build",
                                     default="local")
         # Choose dockerfile
-        build_profile = ExegolTUI.selectFromList(cls.__listBuildProfiles(),
-                                                 subject="a build profile",
-                                                 title="Profile")
+        profiles = cls.listBuildProfiles()
+        if ParametersManager().build_profile is None:
+            build_profile = ExegolTUI.selectFromList(profiles,
+                                                     subject="a build profile",
+                                                     title="Profile")
+        else:
+            build_profile = profiles.get(ParametersManager().build_profile)
+            assert build_profile is not None
+        logger.debug(f"Using '{build_profile}' build profile")
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile)
         return build_name
@@ -153,7 +159,7 @@ class UpdateManager:
         return DockerUtils.getInstalledImage(build_name)
 
     @classmethod
-    def __listBuildProfiles(cls) -> Dict:
+    def listBuildProfiles(cls) -> Dict:
         """List every build profiles available locally
         Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
