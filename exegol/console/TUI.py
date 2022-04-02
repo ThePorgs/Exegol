@@ -387,5 +387,6 @@ class ExegolTUI:
 
     @classmethod
     def __isInteractionAllowed(cls):
-        if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
-            logger.critical(f'A required information is missing. Exiting.')
+        #if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
+        #    logger.critical(f'A required information is missing. Exiting.')
+        pass

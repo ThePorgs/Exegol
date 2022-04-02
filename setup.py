@@ -27,7 +27,7 @@ setup(
     version=__version__,
     license='GNU (GPLv3)',
     author="Shutdown & Dramelac",
-    author_email='dramelac@pm.me',
+    author_email='nwodtuhs@pm.me',
     description='Python wrapper to use Exegol, a container based fully featured and community-driven hacking environment.',
     long_description=long_description,
     long_description_content_type='text/markdown',
