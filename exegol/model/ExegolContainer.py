@@ -32,7 +32,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             self.image.syncContainer(docker_container)
             self.__new_container = False
         else:
-            # Create Exegol container from a newly created docker container with his object template.
+            # Create Exegol container from a newly created docker container with its object template.
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
                              # Rebuild config from docker object to update workspace path
@@ -114,7 +114,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         cmd = f"docker exec{options} -ti {self.getFullId()} {ParametersManager().shell}"
         logger.debug(f"Opening shell with: {cmd}")
         os.system(cmd)
-        # Docker SDK dont support (yet) stdin properly
+        # Docker SDK doesn't support (yet) stdin properly
         # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True,
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
@@ -139,7 +139,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.success("End of the command")
             except KeyboardInterrupt:
                 logger.info("Detaching process logging")
-                logger.warning("Exiting this command do NOT stop the process in the container")
+                logger.warning("Exiting this command does NOT stop the process in the container")
 
     @staticmethod
     def formatShellCommand(command: Sequence[str]):
@@ -197,7 +197,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__applyXhostACL()
 
     def __applyXhostACL(self):
-        # If GUI is enable, allow X11 access on host ACL (if not already allowed)
+        # If GUI is enabled, allow X11 access on host ACL (if not already allowed)
         # + X11 GUI on Windows host don't need xhost command
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution

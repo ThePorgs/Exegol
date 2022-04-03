@@ -23,8 +23,8 @@ from exegol.utils.UserConfig import UserConfig
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
-# Utility class between exegol and the Docker SDK
 class DockerUtils:
+    """Utility class between exegol and the Docker SDK"""
     try:
         # Connect Docker SDK to the local docker instance.
         # Docker connection setting is loaded from the user environment variables.
@@ -46,7 +46,7 @@ class DockerUtils:
     @classmethod
     def clearCache(cls):
         """Remove class's images and containers data cache
-        Only needed if the list as to be updated in the same runtime at a later moment"""
+        Only needed if the list has to be updated in the same runtime at a later moment"""
         cls.__containers = None
         cls.__images = None
 
@@ -140,7 +140,7 @@ class DockerUtils:
         # Filter results with exact name matching
         for c in container:
             if c.name == f"exegol-{tag}":
-                # When the right container have been found, select it and stop the search
+                # When the right container is found, select it and stop the search
                 return ExegolContainer(c)
         # When there is some close container's name,
         # docker may return some results but none of them correspond to the request.
@@ -237,7 +237,7 @@ class DockerUtils:
                             cls.__findImageMatch(img)
                         return img
         except ObjectNotFound:
-            logger.critical(f"The desired image have not been found ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting")
+            logger.critical(f"The desired image has not been found ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting")
         return  # type: ignore
 
     @classmethod
@@ -304,7 +304,7 @@ class DockerUtils:
     @classmethod
     def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
-        # Switch to install mode if the selected image not already installed
+        # Switch to install mode if the selected image is not already installed
         install_mode = install_mode or not image.isInstall()
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
@@ -326,7 +326,7 @@ class DockerUtils:
                     logger.error(f"Error: {err.explanation}")
                     logger.error(f"Error while contacting docker registry. Aborting.")
                 elif err.status_code == 404:
-                    logger.critical(f"The image have not been found on the docker registry: {err.explanation}")
+                    logger.critical(f"The image has not been found on the docker registry: {err.explanation}")
                 else:
                     logger.debug(f"Error: {err}")
                     logger.critical(f"An error occurred while downloading this image: {err.explanation}")
@@ -334,7 +334,7 @@ class DockerUtils:
 
     @classmethod
     def downloadVersionTag(cls, image: ExegolImage) -> Union[ExegolImage, str]:
-        """Pull a docker image for a specific version tag and returned the corresponding ExegolImage"""
+        """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
                                              tag=image.getVersionName())
@@ -357,7 +357,7 @@ class DockerUtils:
             return False
         try:
             if not image.isVersionSpecific() and image.getVersionName() != image.getName():
-                # Docker can't remove multiple image at the same tag, version specific tag must be remove first
+                # Docker can't remove multiple images at the same tag, version specific tag must be remove first
                 cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
             cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")

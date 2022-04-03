@@ -10,7 +10,7 @@ class Option:
 
     def __init__(self, *args, dest: Optional[str] = None, **kwargs):
         """Generic class to handle Key:Value object directly from the constructor"""
-        # Set arguments to the object to save every setting, these values will be sent to argparser
+        # Set arguments to the object to save every setting, these values will be sent to the argparser
         self.args = args
         self.kwargs = kwargs
         if dest is not None:
@@ -47,10 +47,10 @@ class Command:
         self._pre_usages = "[green]To see specific examples run: [italic white]exegol [orange3]command[/orange3] -h[/italic white][/green]"
         self._usages = {
             "Install (or build) (↓ ~25GB max)": "exegol install",
-            "Get a shell": "exegol start",
-            "Check image updates": "exegol info",
+            "Open an exegol shell": "exegol start",
+            "Show exegol images & containers": "exegol info",
             "Update an image": "exegol update",
-            "See usages to execute a single command": "exegol exec -h",
+            "See commands examples to execute": "exegol exec -h",
             "Remove a container": "exegol remove",
             "Uninstall an image": "exegol uninstall",
             "Stop a container": "exegol stop"
@@ -97,7 +97,7 @@ class Command:
 
     def __call__(self, *args, **kwargs):
         """This method is called by the main controller (ExegolController)
-        to get the function to execute to launch the action.
+        to get the function, execute it and launch the action.
         This method must be overloaded in all child classes to ensure the correct execution of the thread"""
         logger.debug("The called command is : ", self.name)
         logger.debug("the object is", type(self).__name__)
@@ -130,6 +130,7 @@ class Command:
         epilog = "[green]Examples:[/green]" + os.linesep
         epilog += self._pre_usages + os.linesep
         max_key = max([len(k) for k in self._usages.keys()])
+        # TODO handle color on keys
         for k, v in self._usages.items():
             space = ' ' * (max_key - len(k) + 2)
             epilog += f"  {k}:{space}[i]{v}[/i]{os.linesep}"

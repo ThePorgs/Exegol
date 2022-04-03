@@ -39,7 +39,7 @@ class ExegolImage(SelectableInterface):
         self.__is_install: bool = False
         self.__is_update: bool = isUpToDate
         self.__is_discontinued: bool = False
-        # The latest version is merged with the latest one, every other version are old and must be removed
+        # The latest version is merged with the latest one, every other version is old and must be removed
         self.__must_be_removed: bool = self.__version_specific
         self.__custom_status: str = ""
         # Process data
@@ -52,7 +52,7 @@ class ExegolImage(SelectableInterface):
 
     def __initFromDockerImage(self):
         """Parse Docker object to set up self configuration on creation."""
-        # If docker object exist, image is already installed
+        # If docker object exists, image is already installed
         self.__is_install = True
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
@@ -104,7 +104,7 @@ class ExegolImage(SelectableInterface):
             self.__version_specific = "-" in name
 
     def updateCheck(self) -> Optional[str]:
-        """If this image can be updated, return his name, otherwise return None"""
+        """If this image can be updated, return its name, otherwise return None"""
         if self.__is_remote:
             if self.__is_update:
                 logger.warning("This image is already up to date. Skipping.")
@@ -120,7 +120,7 @@ class ExegolImage(SelectableInterface):
         return self.__is_update
 
     def removeCheck(self) -> Optional[str]:
-        """If this image can be removed, return his name, otherwise return None"""
+        """If this image can be removed, return its name, otherwise return None"""
         if self.__is_install:
             return self.__name
         else:
@@ -146,7 +146,7 @@ class ExegolImage(SelectableInterface):
 
     @classmethod
     def __mergeCommonImages(cls, images: List['ExegolImage']):
-        """Select latest images and merge them with their version specific equivalent (installed and/or latest)."""
+        """Select latest images and merge them with their version's specific equivalent (installed and/or latest)."""
         latest_images, version_images = [], []
         # Splitting images by type : latest or version specific
         for img in images:
@@ -180,7 +180,7 @@ class ExegolImage(SelectableInterface):
     def mergeImages(cls, remote_images: List['ExegolImage'], local_images: List[Image]) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
-            - up-to-date : Version specific image can use exact digest_id matching. Latest image must match corresponding tag
+            - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
             - outdated : Don't match digest_id but match (latest) tag
             - local image : don't have any 'RepoDigests' because they are local
             - discontinued : image with 'RepoDigests' properties but not found in remote
@@ -394,11 +394,12 @@ class ExegolImage(SelectableInterface):
         return not self.__is_remote
 
     def isLocked(self) -> bool:
-        """Current image is locked and must be removed getter"""
+        """Getter locked status.
+        If current image is locked, it must be removed"""
         return self.__must_be_removed
 
     def isVersionSpecific(self) -> bool:
-        """Is the current image a version specific version.
+        """Is the current image a version specific version?
         Image version specific container a '-' in the name,
         latest image don't."""
         return self.__version_specific
@@ -408,7 +409,7 @@ class ExegolImage(SelectableInterface):
         return self.__name
 
     def getVersionName(self) -> str:
-        """Image's tag name getter"""
+        """Image's tag name with version getter"""
         if self.__version_specific or 'N/A' in self.__profile_version:
             return self.__name
         else:

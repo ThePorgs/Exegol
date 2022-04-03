@@ -37,7 +37,7 @@ class UserConfig(metaclass=MetaSingleton):
         config = f"""# Exegol configuration
         
 volumes:
-    # Changing the shared resources path must be set before creating any exegol container (and remove the docker volume {ConstantConfig.COMMON_SHARE_NAME} if exist)
+    # Changing the shared resources path must be set before creating any exegol container (and remove the docker volume {ConstantConfig.COMMON_SHARE_NAME} if exists)
     shared_resources_path: {self.shared_resources_path}
     
     # Changing the location of the private workspace parent directory can be done at any moment but the change will not affect already created containers

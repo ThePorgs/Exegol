@@ -326,7 +326,7 @@ class ContainerConfig:
         Depending on the user's settings, different configurations can be applied.
         With or without username / password authentication via auth-user-pass.
         OVPN config file directly supplied or a config directory,
-        the directory feature is useful when the configuration depends on multiple file like certificate, keys etc."""
+        the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
 
         # VPN Auth creds file
@@ -523,7 +523,7 @@ class ContainerConfig:
                 os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
-                logger.critical(f"Insufficient permission to create the folder: {host_path}")
+                logger.critical(f"Insufficient permissions to create the folder: {host_path}")
             except FileExistsError:
                 # The volume targets a file that already exists on the file system
                 pass
@@ -706,7 +706,7 @@ class ContainerConfig:
         return result
 
     def getTextDevices(self, verbose: bool = False) -> str:
-        """Text formatter for Devices configurations. The verbose mode show full device configuration."""
+        """Text formatter for Devices configuration. The verbose mode show full device configuration."""
         result = ''
         for device in self.__devices:
             if verbose:
@@ -720,7 +720,7 @@ class ContainerConfig:
         return result
 
     def getTextEnvs(self, verbose: bool = False) -> str:
-        """Text formatter for Envs configurations. The verbose mode does not exclude technical variables."""
+        """Text formatter for Envs configuration. The verbose mode does not exclude technical variables."""
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose

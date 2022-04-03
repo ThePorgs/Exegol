@@ -74,7 +74,7 @@ class Parser:
                     sub_parser._optionals.title = argument_group.title  # Overwriting default argparse title
                     group_parser = sub_parser  # Subparser is directly used to add arguments
                 else:
-                    # In every other case, a dedicated group is create in the parser
+                    # In every other case, a dedicated group is created in the parser
                     group_parser = sub_parser.add_argument_group(argument_group.title,
                                                                  description=argument_group.description)
                 # once the group is created in the parser, the arguments can be added to it

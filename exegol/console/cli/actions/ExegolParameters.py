@@ -15,14 +15,14 @@ class Start(Command, ContainerCreation, ContainerStart):
 
         self._usages = {
             "Start interactively a container": "exegol start",
-            "Create a 'demo' container using 'stable' image": "exegol start [green]demo[/green] [orange3]stable[/orange3]",
+            "Create a 'demo' container using 'full' image": "exegol start [green]demo[/green] [orange3]full[/orange3]",
             "Spawn a shell from 'demo' container": "exegol start [green]demo[/green]",
-            "Create a container 'htb' with a VPN": "exegol start [green]htb[/green] [orange3]stable[/orange3] --vpn ~/vpn/lab_Dramelac.ovpn",
-            "Create a container 'test' with a custom shared workspace": "exegol start [green]test[/green] [orange3]stable[/orange3] -w ./project/pentest",
-            "Create a container 'test' sharing the current working directory": "exegol start [green]test[/green] [orange3]stable[/orange3] -cwd",
-            "Create a container 'app' with custom volume": "exegol start [green]app[/green] [orange3]stable[/orange3] -V '/var/app/:/app/'",
+            "Create a container 'htb' with a VPN": "exegol start [green]htb[/green] [orange3]full[/orange3] --vpn ~/vpn/lab_Dramelac.ovpn",
+            "Create a container 'test' with a custom shared workspace": "exegol start [green]test[/green] [orange3]full[/orange3] -w ./project/pentest",
+            "Create a container 'test' sharing the current working directory": "exegol start [green]test[/green] [orange3]full[/orange3] -cwd",
+            "Create a container 'app' with custom volume": "exegol start [green]app[/green] [orange3]full[/orange3] -V '/var/app/:/app/'",
             "Get a tmux shell": "exegol start --shell tmux",
-            "Use a Proxmark": "exegol start -d /dev/ttyACM0",
+            "Use a Proxmark": "exegol start -d /dev/ttyACM0",  # TODO review usages
             "Use a LOGITacker": "exegol start -d /dev/ttyACM0",
             "Use an ACR122u": "exegol start -d /dev/bus/usb/",
             "Use an HackRF One": "exegol start -d /dev/bus/usb/",
@@ -46,7 +46,7 @@ class Start(Command, ContainerCreation, ContainerStart):
 
 
 class Stop(Command, ContainerSelector):
-    """Stop an Exegol container in a saved state"""
+    """Stop an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
@@ -73,7 +73,7 @@ class Install(Command, ImageSelector):
 
         self._usages = {
             "Install or build interactively an exegol image": "exegol install",
-            "Install or update the 'stable' image": "exegol install [orange3]stable[/orange3]",
+            "Install or update the 'full' image": "exegol install [orange3]full[/orange3]",
             "Build 'local' image": "exegol install [orange3]local[/orange3]"
         }
 
@@ -83,7 +83,7 @@ class Install(Command, ImageSelector):
                                     choices=UpdateManager.listBuildProfiles().keys(),
                                     nargs="?",
                                     action="store",
-                                    help="Select the build profile to use to create a local image.")
+                                    help="Select the build profile used to create a local image.")
         self.build_log = Option("--build-log",
                                 dest="build_log",
                                 metavar="LOGFILE_PATH",
@@ -109,7 +109,7 @@ class Update(Command, ImageSelector):
 
         self._usages = {
             "Install or update interactively an exegol image": "exegol update",
-            "Install or update the 'stable' image": "exegol update [orange3]stable[/orange3]"
+            "Install or update the 'full' image": "exegol update [orange3]full[/orange3]"
         }
 
     def __call__(self, *args, **kwargs):
@@ -142,7 +142,7 @@ class Remove(Command, ContainerSelector):
         ContainerSelector.__init__(self, self.groupArgs)
 
         self._usages = {
-            "Remove interactively one or many container": "exegol remove",
+            "Remove interactively one or many containers": "exegol remove",
             "Remove the 'demo' container": "exegol remove [green]demo[/green]"
         }
 
@@ -160,11 +160,11 @@ class Exec(Command, ContainerCreation, ContainerStart):
         ContainerStart.__init__(self, self.groupArgs)
 
         self._usages = {
-            "Execute the command 'bloodhound' in the container 'main'": "exegol exec [green]main[/green] bloodhound",
-            "Execute the command 'bloodhound' in a temporary container based on the 'stable' image": "exegol exec --tmp [orange3]stable[/orange3] bloodhound",
-            "Execute the command 'nmap -h' with console output": "exegol exec -v [green]main[/green] 'nmap -h'",
-            "Execute the command 'bloodhound' in background": "exegol exec -b [green]main[/green] bloodhound",
-            "Execute a command in background with a temporary container": "exegol exec -b --tmp [green]stable[/green] bloodhound",
+            "Execute the command 'bloodhound' in the container 'main'": "exegol exec [green]main[/green] [blue]bloodhound[/blue]",
+            "Execute the command 'bloodhound' in a temporary container based on the 'full' image": "exegol exec --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
+            "Execute the command 'nmap -h' with console output": "exegol exec -v [green]main[/green] [blue]'nmap -h'[/blue]",
+            "Execute the command 'bloodhound' in background": "exegol exec -b [green]main[/green] [blue]bloodhound[/blue]",
+            "Execute a command in background with a temporary container": "exegol exec -b --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
         }
 
         # Overwrite default selectors
@@ -215,7 +215,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
 
 
 class Info(Command, ContainerSelector):
-    """Print info on containers and local & remote images (name, size, state, ...)"""
+    """Show info on containers and images (local & remote)"""
 
     def __init__(self):
         Command.__init__(self)
