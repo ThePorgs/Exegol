@@ -1,4 +1,5 @@
 import os
+import re
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
@@ -129,10 +130,13 @@ class Command:
     def formatEpilog(self) -> str:
         epilog = "[green]Examples:[/green]" + os.linesep
         epilog += self._pre_usages + os.linesep
-        max_key = max([len(k) for k in self._usages.keys()])
-        # TODO handle color on keys
+        keys_len = {}
+        # Replace [.*] rich tag for line length count
+        for k in self._usages.keys():
+            keys_len[k] = len(re.sub(r"\[/?[^]]+]", '', k, 0, re.MULTILINE))
+        max_key = max(keys_len.values())
         for k, v in self._usages.items():
-            space = ' ' * (max_key - len(k) + 2)
+            space = ' ' * (max_key - keys_len.get(k) + 2)
             epilog += f"  {k}:{space}[i]{v}[/i]{os.linesep}"
         epilog += self._post_usages + os.linesep
         return epilog

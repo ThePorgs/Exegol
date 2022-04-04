@@ -15,12 +15,12 @@ class Start(Command, ContainerCreation, ContainerStart):
 
         self._usages = {
             "Start interactively a container": "exegol start",
-            "Create a 'demo' container using 'full' image": "exegol start [green]demo[/green] [orange3]full[/orange3]",
-            "Spawn a shell from 'demo' container": "exegol start [green]demo[/green]",
-            "Create a container 'htb' with a VPN": "exegol start [green]htb[/green] [orange3]full[/orange3] --vpn ~/vpn/lab_Dramelac.ovpn",
-            "Create a container 'test' with a custom shared workspace": "exegol start [green]test[/green] [orange3]full[/orange3] -w ./project/pentest",
-            "Create a container 'test' sharing the current working directory": "exegol start [green]test[/green] [orange3]full[/orange3] -cwd",
-            "Create a container 'app' with custom volume": "exegol start [green]app[/green] [orange3]full[/orange3] -V '/var/app/:/app/'",
+            "Create a [green]demo[/green] container using [orange3]full[/orange3] image": "exegol start [green]demo[/green] [orange3]full[/orange3]",
+            "Spawn a shell from [green]demo[/green] container": "exegol start [green]demo[/green]",
+            "Create a container [green]test[/green] with a custom shared workspace": "exegol start [green]test[/green] [orange3]full[/orange3] -w ./project/pentest",
+            "Create a container [green]test[/green] sharing the current working directory": "exegol start [green]test[/green] [orange3]full[/orange3] -cwd",
+            "Create a container [green]htb[/green] with a VPN": "exegol start [green]htb[/green] [orange3]full[/orange3] --vpn ~/vpn/lab_Dramelac.ovpn",
+            "Create a container [green]app[/green] with custom volume": "exegol start [green]app[/green] [orange3]full[/orange3] -V '/var/app/:/app/'",
             "Get a tmux shell": "exegol start --shell tmux",
             "Use a Proxmark": "exegol start -d /dev/ttyACM0",  # TODO review usages
             "Use a LOGITacker": "exegol start -d /dev/ttyACM0",
@@ -56,7 +56,7 @@ class Stop(Command, ContainerSelector):
 
         self._usages = {
             "Stop interactively one or multiple container": "exegol stop",
-            "Stop 'demo'": "exegol stop demo"
+            "Stop 'demo'": "exegol stop [green]demo[/green]"
         }
 
     def __call__(self, *args, **kwargs):
@@ -73,8 +73,8 @@ class Install(Command, ImageSelector):
 
         self._usages = {
             "Install or build interactively an exegol image": "exegol install",
-            "Install or update the 'full' image": "exegol install [orange3]full[/orange3]",
-            "Build 'local' image": "exegol install [orange3]local[/orange3]"
+            "Install or update the [orange3]full[/orange3] image": "exegol install [orange3]full[/orange3]",
+            "Build [orange3]local[/orange3] image": "exegol install [orange3]local[/orange3]"
         }
 
         # Create container build arguments
@@ -109,7 +109,7 @@ class Update(Command, ImageSelector):
 
         self._usages = {
             "Install or update interactively an exegol image": "exegol update",
-            "Install or update the 'full' image": "exegol update [orange3]full[/orange3]"
+            "Install or update the [orange3]full[/orange3] image": "exegol update [orange3]full[/orange3]"
         }
 
     def __call__(self, *args, **kwargs):
@@ -126,7 +126,7 @@ class Uninstall(Command, ImageSelector):
 
         self._usages = {
             "Uninstall interactively one or many exegol image": "exegol uninstall",
-            "Uninstall the 'dev' image": "exegol uninstall [orange3]dev[/orange3]"
+            "Uninstall the [orange3]dev[/orange3] image": "exegol uninstall [orange3]dev[/orange3]"
         }
 
     def __call__(self, *args, **kwargs):
@@ -143,7 +143,7 @@ class Remove(Command, ContainerSelector):
 
         self._usages = {
             "Remove interactively one or many containers": "exegol remove",
-            "Remove the 'demo' container": "exegol remove [green]demo[/green]"
+            "Remove the [green]demo[/green] container": "exegol remove [green]demo[/green]"
         }
 
     def __call__(self, *args, **kwargs):
@@ -160,11 +160,16 @@ class Exec(Command, ContainerCreation, ContainerStart):
         ContainerStart.__init__(self, self.groupArgs)
 
         self._usages = {
-            "Execute the command 'bloodhound' in the container 'main'": "exegol exec [green]main[/green] [blue]bloodhound[/blue]",
-            "Execute the command 'bloodhound' in a temporary container based on the 'full' image": "exegol exec --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
-            "Execute the command 'nmap -h' with console output": "exegol exec -v [green]main[/green] [blue]'nmap -h'[/blue]",
-            "Execute the command 'bloodhound' in background": "exegol exec -b [green]main[/green] [blue]bloodhound[/blue]",
-            "Execute a command in background with a temporary container": "exegol exec -b --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
+            "Execute the command [blue]bloodhound[/blue] in the container [green]demo[/green]":
+                "exegol exec [green]demo[/green] [blue]bloodhound[/blue]",
+            "Execute the command [blue]bloodhound[/blue] in a temporary container based on the [orange3]full[/orange3] image":
+                "exegol exec --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
+            "Execute the command [blue]'nmap -h'[/blue] with console output":
+                "exegol exec -v [green]demo[/green] [blue]'nmap -h'[/blue]",
+            "Execute a command in background within the [green]demo[/green] container":
+                "exegol exec -b [green]demo[/green] [blue]bloodhound[/blue]",
+            "Execute a command in background with a temporary container":
+                "exegol exec -b --tmp [orange3]full[/orange3] [blue]bloodhound[/blue]",
         }
 
         # Overwrite default selectors
@@ -224,8 +229,8 @@ class Info(Command, ContainerSelector):
         self._usages = {
             "Print containers and images essentials information": "exegol info",
             "Print the detailed configuration of the [green]demo[/green] container": "exegol info [green]demo[/green]",
-            "Print advanced information": "exegol info -v",
-            "Print full information": "exegol info -vv"
+            "Print advanced information": "exegol info [green]-v[/green]",
+            "Print full information": "exegol info [green]-vv[/green]"
         }
 
     def __call__(self, *args, **kwargs):
