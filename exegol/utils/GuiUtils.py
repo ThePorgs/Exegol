@@ -101,7 +101,7 @@ class GuiUtils:
             logger.warning(
                 "Display sharing is not supported on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
             return False
-        # TODO check mac compatibility
+        # TODO check mac compatibility (default: same as linux)
         return True
 
     @classmethod

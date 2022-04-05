@@ -202,6 +202,7 @@ class Info(Command, ContainerSelector):
 
         self._usages = {
             "Print containers and images essentials information": "exegol info",
+            "Print the detailed configuration of the [green]demo[/green] container": "exegol info [green]demo[/green]",
             "Print advanced information": "exegol info -v",
             "Print full information": "exegol info -vv"
         }

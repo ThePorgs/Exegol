@@ -160,7 +160,7 @@ class ExegolTUI:
         table.add_column("Image tag")
         if verbose_mode:
             table.add_column("Download size")
-            table.add_column("Disk size")
+            table.add_column("Size on disk")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk

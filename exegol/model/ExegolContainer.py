@@ -12,6 +12,7 @@ from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
@@ -197,7 +198,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __applyXhostACL(self):
         # If GUI is enable, allow X11 access on host ACL (if not already allowed)
-        if self.config.isGUIEnable() and not self.__xhost_applied:
+        # + X11 GUI on Windows host don't need xhost command
+        if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")
             os.system(f"xhost +local:{self.hostname} > /dev/null")

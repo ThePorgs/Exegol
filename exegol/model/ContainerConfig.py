@@ -244,7 +244,7 @@ class ContainerConfig:
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
-        if not EnvInfo.is_linux_shell:
+        if EnvInfo.is_windows_shell:
             # TODO review timezone config
             logger.warning("Timezone sharing is inconsistent on Windows. May be inaccurate.")
         if not self.__share_timezone:

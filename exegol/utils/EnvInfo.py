@@ -5,7 +5,8 @@ from typing import Optional
 class EnvInfo:
     # Shell env
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
-    is_linux_shell: bool = current_platform in ["WSL", "Linux"]
+    is_linux_shell: bool = current_platform in ["WSL", "Linux"]  # TODO test mac platform
+    is_windows_shell: bool = current_platform == "Windows"
     windows_release: str = platform.win32_ver()[1]
     # Host OS
     __docker_host_os: Optional[str] = None
@@ -16,7 +17,7 @@ class EnvInfo:
         # Fetch date from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
         docker_kernel = docker_info.get("KernelVersion", "unknown").lower()
-        is_host_windows = docker_os == "docker desktop" and "microsoft" in docker_kernel
+        is_host_windows = docker_os == "docker desktop" and "microsoft" in docker_kernel  # TODO handle mac docker-desktop
         cls.__docker_host_os = "Windows" if is_host_windows else "Unix"
         if is_host_windows:
             is_wsl2 = "wsl2" in docker_kernel
