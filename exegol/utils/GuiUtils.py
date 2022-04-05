@@ -1,20 +1,81 @@
+import io
 import os
 import shutil
 import subprocess
+from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 
-# Windows environment detection class
 class GuiUtils:
+    """This utility class allows determining if the current system supports the GUI
+    from the information of the system."""
+
+    __distro_name = ""
+
+    @classmethod
+    def isGuiAvailable(cls) -> bool:
+        """
+        Check if the host OS can support GUI application with X11 sharing
+        :return: bool
+        """
+        # GUI was not supported on Windows before WSLg
+        if EnvInfo.isWindowsHost():
+            logger.debug("Testing WSLg availability")
+            # WSL + WSLg must be available on the Windows host for the GUI to work
+            if not cls.__wsl_available():
+                logger.error("WSL is not available on your system. GUI is not supported.")
+                return False
+            # Only WSL2 support WSLg
+            if EnvInfo.getDockerEngine() != "wsl2":
+                logger.error("Docker must be run with WSL2 engine in order to support GUI applications.")
+                return False
+            logger.debug("WSL is available and docker is using WSL2")
+            if cls.__wslg_installed():
+                # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
+                if EnvInfo.current_platform != "WSL":
+                    cls.__distro_name = cls.__find_wsl_distro()
+                    # If no WSL is found, propose to continue without GUI
+                    if not cls.__distro_name and not Confirm(
+                            "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                        raise KeyboardInterrupt
+                return True
+            elif cls.__wslg_eligible():
+                logger.info("WSLg is available on your system but not installed.")
+                logger.info("Make sure, WSLg is installed on your Windows by running 'wsl --update' as admin.")
+                return True
+            logger.debug("WSLg is not available")
+            logger.warning(
+                "Display sharing is not supported on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+            return False
+        # TODO check mac compatibility (default: same as linux)
+        return True
+
+    @classmethod
+    def getX11SocketPath(cls) -> str:
+        """
+        Get the host path of the X11 socket
+        :return:
+        """
+        if cls.__distro_name:
+            return f"\\\\wsl.localhost\\{cls.__distro_name}\\mnt\\wslg\\.X11-unix"
+        return "/tmp/.X11-unix"
+
+    @classmethod
+    def getDisplayEnv(cls) -> str:
+        """
+        Get the current DISPLAY env to access X11 socket
+        :return:
+        """
+        return os.getenv('DISPLAY', ":0")
 
     @staticmethod
-    def __wsl_test(path, name="docker-desktop") -> bool:
+    def __wsl_test(path, name: Optional[str] = "docker-desktop") -> bool:
         """
         Check presence of a file in the WSL docker-desktop image.
-        the targeted WSL image can be change with 'name' parameter.
+        the targeted WSL image can be changed with 'name' parameter.
         If name is None, the default WSL image will be use.
         """
         if EnvInfo.isWindowsHost():
@@ -66,58 +127,61 @@ class GuiUtils:
             return os_version >= 10 and build_number >= 21364
 
     @classmethod
-    def isGuiAvailable(cls) -> bool:
-        """
-        Check if the host OS can support GUI application with X11 sharing
-        :return: bool
-        """
-        # GUI was not supported on Windows before WSLg
-        if EnvInfo.isWindowsHost():
-            logger.debug("Testing WSLg availability")
-            # WSL + WSLg must be available on the Windows host for the GUI to work
-            if not cls.__wsl_available():
-                logger.error("WSL is not available on your system. GUI is not supported.")
-                return False
-            # Only WSL2 support WSLg
-            if EnvInfo.getDockerEngine() != "wsl2":
-                logger.error("Docker must be run with WSL2 engine in order to support GUI applications.")
-                return False
-            logger.debug("WSL is available and docker is using WSL2")
-            if cls.__wslg_installed():
-                # X11 GUI socket can only be shared from a WSL with docker integration context
-                if EnvInfo.current_platform != "WSL":
-                    # TODO find a bypass to create a GUI container from windows context
-                    logger.error(
-                        "WSLg is installed but a GUI container can only be created from a WSL context with docker integration (for now).")
-                    if not Confirm("Do you want to continue without GUI support ?", default=True):
-                        raise KeyboardInterrupt
-                    return False
-                return True
-            elif cls.__wslg_eligible():
-                logger.info("WSLg is available on your system but not installed.")
-                logger.info("Make sure, WSLg is installed on your Windows by running 'wsl --update' as admin.")
-                return True
-            logger.debug("WSLg is not available")
-            logger.warning(
-                "Display sharing is not supported on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+    def __find_wsl_distro(cls) -> str:
+        distro_name = ""
+        # these distros cannot be used to load WSLg socket
+        blacklisted_distro = ["docker-desktop", "docker-desktop-data"]
+        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # Wait for WSL process to end
+        ret.wait()
+        if ret.returncode == 0:
+            skip_header = True
+            # parse distribs
+            logger.debug("Found WSL distribution:")
+            for line in io.TextIOWrapper(ret.stdout, encoding="utf-16le"):
+                # Skip WSL text header
+                if skip_header:
+                    skip_header = False
+                    continue
+                # Remove newline
+                line = line.strip()
+                # Skip if line is empty
+                if not line:
+                    continue
+                # Remove default text message
+                name = line.split()[0]
+                logger.debug(f"- {name}")
+                if name not in blacklisted_distro:  # TODO check docker integration status
+                    distro_name = name
+                    break
+            if distro_name:
+                logger.verbose(f"Wsl '{distro_name}' distribution found, the WSLg service can be mounted in exegol.")
+            else:
+                logger.warning(
+                    "No WSL distribution was found on your machine. At least one distribution must be available to allow Exegol to use WSLg.")
+                if Confirm("Do you want Exegol to install one automatically (Ubuntu)?", default=True):
+                    if cls.__create_default_wsl():
+                        distro_name = "Ubuntu"
+        else:
+            logger.error(
+                f"Error while loading existing wsl distributions. {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
+        return distro_name
+
+    @classmethod
+    def __create_default_wsl(cls) -> bool:
+        logger.info("Creating Ubuntu WSL distribution. Please wait.")
+        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
+        ret.wait()
+        logger.info("Please follow installation instructions on the new window.")
+        if ret.returncode != 0:
+            logger.error(
+                f"Error while install WSL Ubuntu: {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
             return False
-        # TODO check mac compatibility (default: same as linux)
-        return True
-
-    @classmethod
-    def getX11SocketPath(cls) -> str:
-        """
-        Get the host path of the X11 socket
-        :return:
-        """
-        # TODO check WSLg mount from Windows/WSL
-        return "/tmp/.X11-unix"
-
-    @classmethod
-    def getDisplayEnv(cls) -> str:
-        """
-        Get the current DISPLAY env to access X11 socket
-        :return:
-        """
-        # TODO check WSLg display env
-        return os.getenv('DISPLAY')
+        else:
+            while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
+                pass
+            logger.verbose("Set WSL Ubuntu as default to enable docker integration")
+            # Set new WSL distribution as default to start it and enable docker integration
+            ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
+            ret.wait()
+            return True

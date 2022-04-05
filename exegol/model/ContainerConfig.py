@@ -245,8 +245,8 @@ class ContainerConfig:
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
         if EnvInfo.is_windows_shell:
-            # TODO review timezone config
-            logger.warning("Timezone sharing is inconsistent on Windows. May be inaccurate.")
+            logger.warning("Timezone sharing is not supported from a Windows shell. Skipping.")
+            return
         if not self.__share_timezone:
             self.__share_timezone = True
             logger.verbose("Config : Enabling host timezones")
@@ -515,7 +515,8 @@ class ContainerConfig:
                   read_only: bool = False,
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration"""
-        if volume_type == 'bind':
+        # The creation of the directory is ignored when it is a path to the remote drive
+        if volume_type == 'bind' and not host_path.startswith("\\\\"):
             try:
                 os.makedirs(host_path, exist_ok=True)
             except PermissionError:

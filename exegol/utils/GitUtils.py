@@ -1,7 +1,5 @@
 from typing import Optional, List
 
-from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
-
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
@@ -15,6 +13,8 @@ class GitUtils:
         """Init git local repository object / SDK"""
         path: str = ConstantConfig.root_path
         logger.debug(f"Loading git at {path}")
+        # locally import git in case git is not installed of the system  # TODO check update action
+        from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
         self.__gitRepo: Optional[Repo] = None
         self.__gitRemote: Optional[Remote] = None
         self.__fetchBranchInfo: Optional[FetchInfo] = None
