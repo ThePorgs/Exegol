@@ -51,6 +51,8 @@ class Stop(Command, ContainerSelector):
         Command.__init__(self)
         ContainerSelector.__init__(self, self.groupArgs)
 
+        # TODO add -y / -f confirmation
+
         self._usages = {
             "Stop interactively one or multiple container": "exegol stop",
             "Stop 'demo'": "exegol stop demo"

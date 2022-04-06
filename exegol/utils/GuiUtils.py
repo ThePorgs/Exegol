@@ -2,11 +2,12 @@ import io
 import os
 import shutil
 import subprocess
+import time
 from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger
+from exegol.utils.ExeLog import logger, console
 
 
 class GuiUtils:
@@ -90,6 +91,14 @@ class GuiUtils:
         return False
 
     @classmethod
+    def __check_wsl_docker_integration(cls, distrib_name) -> bool:
+        """
+        Check the presence of the docker binary in the supplied WSL distribution.
+        This test allows checking if docker integration is enabled.
+        """
+        return cls.__wsl_test("/usr/bin/docker", distrib_name)
+
+    @classmethod
     def __wsl_available(cls) -> bool:
         """
         heuristic to detect if Windows Subsystem for Linux is available.
@@ -151,9 +160,22 @@ class GuiUtils:
                 # Remove default text message
                 name = line.split()[0]
                 logger.debug(f"- {name}")
-                if name not in blacklisted_distro:  # TODO check docker integration status
-                    distro_name = name
-                    break
+                # Skip blacklisted WSL
+                if name not in blacklisted_distro:
+                    eligible = True
+                    # Test if the current WSL has docker integration activated
+                    while not cls.__check_wsl_docker_integration(name):
+                        eligible = False
+                        logger.warning(
+                            f"The '{name}' WSL distribution could be used to enable the GUI on exegol but the docker integration is [orange3]not enabled[/orange3].")
+                        if not Confirm(
+                                f"Do you want to [red]manually[/red] enable docker integration for WSL '{name}'?",
+                                default=True):
+                            break
+                        eligible = True
+                    if eligible:
+                        distro_name = name
+                        break
             if distro_name:
                 logger.verbose(f"Wsl '{distro_name}' distribution found, the WSLg service can be mounted in exegol.")
             else:
@@ -184,4 +206,17 @@ class GuiUtils:
             # Set new WSL distribution as default to start it and enable docker integration
             ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
             ret.wait()
+            # Wait for the docker integration (10 try, 1 sec apart)
+            with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
+                for _ in range(10):
+                    if cls.__check_wsl_docker_integration("Ubuntu"):
+                        break
+                    time.sleep(1)
+            while not cls.__check_wsl_docker_integration("Ubuntu"):
+                logger.error("The newly created WSL could not get the docker integration automatically. "
+                             "It has to be activated [red]manually[/red]")
+                if not Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
+                               default=True):
+                    return False
+            logger.success("WSL 'Ubuntu' successfully created with docker integration")
             return True
