@@ -8,8 +8,8 @@ from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 
-# Class of an exegol image
 class ExegolImage(SelectableInterface):
+    """Class of an exegol image. Container every information about the docker image."""
 
     def __init__(self,
                  name: str = "NONAME",

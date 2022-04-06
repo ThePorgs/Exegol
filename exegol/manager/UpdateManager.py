@@ -13,8 +13,8 @@ from exegol.utils.ExeLog import logger, console
 from exegol.utils.GitUtils import GitUtils
 
 
-# Procedure class for updating the exegol tool and docker images
 class UpdateManager:
+    """Procedure class for updating the exegol tool and docker images"""
     __git: Optional[GitUtils] = None
 
     @classmethod
@@ -155,6 +155,7 @@ class UpdateManager:
 
     @classmethod
     def buildAndLoad(cls, tag: str):
+        """Build an image and load it"""
         build_name = cls.buildSource(tag)
         return DockerUtils.getInstalledImage(build_name)
 

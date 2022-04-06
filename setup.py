@@ -66,5 +66,5 @@ setup(
         'Documentation': 'https://github.com/ShutdownRepo/Exegol/wiki',  # TODO add doc url
         'Funding': 'https://patreon.com/nwodtuhs',
     },
-    test_suite='tests'
+    test_suite='tests'  # TODO check tests
 )

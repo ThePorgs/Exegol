@@ -1,5 +1,6 @@
-# Generic class used to select objects in the user TUI
 class SelectableInterface:
+    """Generic class used to select objects in the user TUI"""
+
     def getKey(self) -> str:
         """Universal unique key getter"""
         raise NotImplementedError

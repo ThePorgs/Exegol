@@ -8,8 +8,8 @@ from rich.table import Column
 from rich.text import Text
 
 
-# Merging two Rich class to obtain a double behavior  in the same RichTable
 class LayerTextColumn(TextColumn, DownloadColumn):
+    """Merging two Rich class to obtain a double behavior in the same RichTable"""
 
     def __init__(self,
                  text_format: str,

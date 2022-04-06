@@ -11,6 +11,7 @@ from exegol.utils.MetaSingleton import MetaSingleton
 
 
 class UserConfig(metaclass=MetaSingleton):
+    """This class allows loading user defined configurations"""
 
     def __init__(self):
         # Config file options

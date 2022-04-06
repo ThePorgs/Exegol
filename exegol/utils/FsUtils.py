@@ -8,6 +8,7 @@ from exegol.utils.ExeLog import logger
 
 
 def parseDockerVolumePath(source: str) -> PurePath:
+    """Parse docker volume path to find the corresponding host path."""
     # Check if path is from Windows Docker Desktop
     matches = re.match(r"^/run/desktop/mnt/host/([a-z])(/.*)$", source, re.IGNORECASE)
     if matches:
@@ -43,6 +44,7 @@ def resolvPath(path: Path) -> str:
 
 
 def resolvStrPath(path: Optional[str]) -> str:
+    """Try to resolv a filesystem path from a string."""
     if path is None:
         return ''
     return resolvPath(Path(path))

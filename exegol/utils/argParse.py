@@ -6,9 +6,8 @@ from exegol.console.cli.actions.Command import Command, Option
 from exegol.utils.ExeLog import logger
 
 
-# Argparse overriding
 class ExegolArgParse(argparse.ArgumentParser):
-    """Overloading of the main parsing class"""
+    """Overloading of the main parsing (argparse.ArgumentParser) class"""
 
     # Using Exelog to print built-in parser message
     def _print_message(self, message: str, file: Optional[IO[str]] = None) -> None:
@@ -17,6 +16,8 @@ class ExegolArgParse(argparse.ArgumentParser):
 
 
 class Parser:
+    """Custom Exegol CLI Parser. Main controller of argument building and parsing."""
+
     __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
                     "your machine."
     __formatter_class: type = argparse.RawTextHelpFormatter

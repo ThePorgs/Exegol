@@ -16,6 +16,7 @@ class ExeLog(logging.Logger):
 
     @staticmethod
     def setVerbosity(verbose: int, quiet: bool = False):
+        """Set logging level accordingly to the verbose count or with quiet enable."""
         if quiet:
             logger.setLevel(logging.CRITICAL)
         elif verbose == 1:
@@ -85,6 +86,7 @@ class ExeLog(logging.Logger):
                       "{}[+]{} {}".format("[bold green]", "[/bold green]", msg), args, **kwargs)
 
     def empty_line(self) -> None:
+        """Print an empty line."""
         self.raw(os.linesep, level=logging.INFO)
 
 

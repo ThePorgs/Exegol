@@ -2,8 +2,8 @@ import site
 from pathlib import Path
 
 
-# Constant parameter list
 class ConstantConfig:
+    """Constant parameters information"""
     # Exegol Version
     version: str = "4.0.0a1"
 
@@ -44,5 +44,6 @@ class ConstantConfig:
             return Path(site.PREFIXES[0]) / dockerbuild_folder_name
 
 
+# Dynamically built attribute must be set after class initialization
 ConstantConfig.build_context_path_obj = ConstantConfig.findBuildContextPath()
 ConstantConfig.build_context_path = str(ConstantConfig.build_context_path_obj)

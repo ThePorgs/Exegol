@@ -3,6 +3,7 @@ from typing import Dict
 
 
 class MetaSingleton(type):
+    """Metaclass to create a singleton class"""
     __instances: Dict[type, object] = {}
 
     def __call__(cls, *args, **kwargs) -> object:

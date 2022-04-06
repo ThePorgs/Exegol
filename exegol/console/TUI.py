@@ -19,8 +19,8 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ExeLog import logger, console, ExeLog
 
 
-# Class gathering different methods of Terminal User Interface (or TUI)
 class ExegolTUI:
+    """Class gathering different methods of Terminal User Interface (or TUI)"""
 
     @staticmethod
     def downloadDockerLayer(stream: Generator, quick_exit: bool = False):
@@ -85,15 +85,17 @@ class ExegolTUI:
                         if not progress.getTask(task_layers_extract).started:
                             progress.start_task(task_layers_extract)
                     task_id = task_pool.get(layer_id)
+                    progressDetail = line.get("progressDetail", {})
                     if task_id is None:  # If this is a new layer, create a new task accordingly
                         task_id = progress.add_task(
-                            f"[{'blue' if status == 'Downloading' else 'green'}]{status} {layer_id}",
-                            total=line.get("progressDetail", {}).get("total", 100),
+                            f"[{'blue' if status == 'Downloading' else 'magenta'}]{status} {layer_id}",
+                            total=progressDetail.get("total", 100),
                             layer=layer_id)
                         task_pool[layer_id] = task_id
                     # Updating task progress
-                    progress.update(task_id, completed=line.get("progressDetail", {}).get("current", 100))
-                    # TODO add checksum step
+                    progress.update(task_id, completed=progressDetail.get("current", 100))
+                    if status == "Extracting" and progressDetail.get("current", 0) == progressDetail.get("total", 100):
+                        progress.update(task_id, description=f"[green]Checksum {layer_id} ...")
                 elif "Image is up to date" in status or "Status: Downloaded newer image for" in status:
                     logger.success(status)
                     if quick_exit:

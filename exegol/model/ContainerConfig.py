@@ -19,8 +19,10 @@ from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.UserConfig import UserConfig
 
 
-# Configuration class of an exegol container
 class ContainerConfig:
+    """Configuration class of an exegol container"""
+
+    # Default hardcoded value
     __default_entrypoint = "bash"
     __default_shm_size = "64M"
 
@@ -142,6 +144,7 @@ class ContainerConfig:
                 logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
 
     def interactiveConfig(self) -> List[str]:
+        """Interactive procedure allowing the user to configure its new container"""
         logger.info("Starting interactive configuration")
 
         command_options = []
@@ -531,6 +534,8 @@ class ContainerConfig:
         self.__mounts.append(mount)
 
     def addRawVolume(self, volume_string):
+        """Add a volume to the container configuration from raw text input.
+        Expected format is: /source/path:/target/mount:rw"""
         logger.debug(f"Parsing raw volume config: {volume_string}")
         parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
                            volume_string)
@@ -549,7 +554,7 @@ class ContainerConfig:
                 f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
             self.addVolume(host_path, container_path, readonly)
         else:
-            logger.error(f"Volume '{volume_string}' cannot be parsed. Skipping the volume.")
+            logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
 
     def removeVolume(self, host_path: Optional[str] = None, container_path: Optional[str] = None) -> bool:
         """Remove a volume from the container configuration (Only before container creation)"""

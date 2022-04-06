@@ -3,6 +3,7 @@ from typing import Optional
 
 
 class EnvInfo:
+    """Contain information about the environment (host, OS, platform, etc)"""
     # Shell env
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
     is_linux_shell: bool = current_platform in ["WSL", "Linux"]  # TODO test mac platform
@@ -14,12 +15,15 @@ class EnvInfo:
 
     @classmethod
     def initData(cls, docker_info):
-        # Fetch date from Docker daemon
+        """Initialize information from Docker daemon data"""
+        # Fetch data from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
         docker_kernel = docker_info.get("KernelVersion", "unknown").lower()
+        # Deduct a Windows Host from data
         is_host_windows = docker_os == "docker desktop" and "microsoft" in docker_kernel  # TODO handle mac docker-desktop
         cls.__docker_host_os = "Windows" if is_host_windows else "Unix"
         if is_host_windows:
+            # Check docker engine with Windows host
             is_wsl2 = "wsl2" in docker_kernel
             cls.__docker_engine = "wsl2" if is_wsl2 else "hyper-v"
         else:

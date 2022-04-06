@@ -8,6 +8,9 @@ from exegol.utils.argParse import Parser
 
 
 class ParametersManager(metaclass=MetaSingleton):
+    """This class is a singleton allowing to access from anywhere to any parameter
+    filled by the user from the CLI arguments"""
+
     def __init__(self):
         # List every action available on the project (from the root Class)
         actions: List[Command] = [cls() for cls in Command.__subclasses__()]

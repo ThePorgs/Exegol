@@ -16,8 +16,8 @@ from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
-# Class of an existing exegol container
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
+    """Class of an exegol container already create in docker"""
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
         logger.debug(f"== Loading container : {docker_container.name}")

@@ -3,18 +3,21 @@ from exegol.console.cli.actions.ExegolParameters import Command
 from exegol.utils.ExeLog import logger, ExeLog, console
 
 
-# Main controller of exegol
 class ExegolController:
+    """Main controller of exegol"""
+
     # Get action selected by user
     # (ParametersManager must be loaded from ExegolController first to load every Command subclass)
     __action: Command = ParametersManager().getCurrentAction()
 
     @classmethod
     def call_action(cls):
+        """Dynamically retrieve the main function corresponding to the action selected by the user
+        and execute it on the main thread"""
         # Check for missing parameters
         missing_params = cls.__action.check_parameters()
         if len(missing_params) == 0:
-            # Fetch operation function
+            # Fetch main operation function
             main_action = cls.__action()
             # Execute main function
             main_action()
@@ -24,6 +27,7 @@ class ExegolController:
 
 
 def main():
+    """Exegol main console entrypoint"""
     try:
         # Set logger verbosity depending on user input
         ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)

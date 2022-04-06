@@ -6,8 +6,8 @@ from exegol.utils.ExeLog import logger
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
 
-# Utility class between exegol and the Git SDK
 class GitUtils:
+    """Utility class between exegol and the Git SDK"""
 
     def __init__(self):
         """Init git local repository object / SDK"""

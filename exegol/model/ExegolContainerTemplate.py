@@ -6,8 +6,8 @@ from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolImage import ExegolImage
 
 
-# Class template used to create a new container
 class ExegolContainerTemplate:
+    """Exegol template class used to create a new container"""
 
     def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):
         if name is None:
