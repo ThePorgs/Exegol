@@ -46,6 +46,7 @@ volumes:
 """
         # TODO handle default image selection
         # TODO handle default start container
+        # TODO add custom build profiles path
         with open(self.__config_file_path, 'w') as file:
             file.write(config)
 

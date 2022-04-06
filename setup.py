@@ -47,7 +47,6 @@ setup(
         'docker~=5.0.3',
         'requests',
         'rich~=11.2.0',
-        'GitPython',
         'PyYAML'
     ],
     packages=find_packages(exclude=["assets"]),

@@ -36,10 +36,17 @@ class DockerUtils:
                 f"Docker daemon is not serving linux container ! Docker OS Type is: {__daemon_info.get('OSType', 'linux')}")
         EnvInfo.initData(__daemon_info)
     except DockerException as err:
-        logger.error(err)
-        logger.critical(
-            "Unable to connect to docker (from env config). Is docker installed and running on your machine? "
-            "Exiting.")
+        if 'ConnectionRefusedError' in str(err):
+            logger.critical("Unable to connect to docker (from env config). Is docker running on your machine? "
+                            "Exiting.")
+        elif 'FileNotFoundError' in str(err):
+            logger.critical("Unable to connect to docker. Is docker installed on your machine? "
+                            "Exiting.")
+        else:
+            logger.error(err)
+            logger.critical(
+                "Unable to connect to docker (from env config). Is docker operational and accessible? on your machine? "
+                "Exiting.")
     __images: Optional[List[ExegolImage]] = None
     __containers: Optional[List[ExegolContainer]] = None
 
