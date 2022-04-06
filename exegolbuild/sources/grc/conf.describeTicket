@@ -1,0 +1,28 @@
+# GENERAL INFO
+regexp=.*\[\*\].*
+colours=blue
+=======
+# GENERAL WARNING
+regexp=.*\[\!\].*
+colours=yellow
+=======
+# GENERAL DEFAULT
+regexp=.*\[\-\].*
+colours=yellow
+=======
+# Kerberoast
+regexp=.*krb5tgs.*
+colours=yellow
+=======
+# UserName
+regexp=.*User Name.*
+colours=magenta
+=======
+# UserRealm
+regexp=.*User Realm.*
+colours=magenta
+=======
+# ServiceName
+regexp=.*Service Name.*
+colours=magenta
+=======

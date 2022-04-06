@@ -12,7 +12,7 @@ RUN /root/sources/install.sh install_most_used_tools
 
 # WARNING: the following installs (except: install_base, install_resources, install_clean) can't be used with install_most_used_tools
 # this is a temporary limitation
-#RUN /root/sources/install.sh install_misc_tools
+RUN /root/sources/install.sh install_misc_tools
 #RUN /root/sources/install.sh install_wordlists_tools
 #RUN /root/sources/install.sh install_cracking_tools
 #RUN /root/sources/install.sh install_osint_tools
@@ -31,6 +31,7 @@ RUN /root/sources/install.sh install_most_used_tools
 #RUN /root/sources/install.sh install_steganography_tools
 #RUN /root/sources/install.sh install_reverse_tools
 #RUN /root/sources/install.sh install_GUI_tools
+#RUN /root/sources/install.sh install_code_analysis_tools
 
 RUN /root/sources/install.sh install_resources
 RUN /root/sources/install.sh install_clean

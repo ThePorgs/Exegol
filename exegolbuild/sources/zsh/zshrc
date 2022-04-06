@@ -3,7 +3,7 @@ ZSH_THEME="gentoo"
 
 export FZF_BASE=/opt/tools/fzf
 
-plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux fzf zsh-z)
+plugins=(docker docker-compose zsh-syntax-highlighting zsh-completions zsh-autosuggestions tmux fzf zsh-z zsh-nvm)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -20,6 +20,7 @@ export JOHN=/opt/tools/john/run
 export PATH=/opt/tools/bin:$JOHN:$GOPATH/bin:$PATH
 
 source /opt/.zsh_aliases
+source $HOME/.cargo/env
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
