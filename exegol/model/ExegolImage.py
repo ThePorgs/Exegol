@@ -141,8 +141,8 @@ class ExegolImage(SelectableInterface):
         # Add version tag (if available)
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
-            if tmp_name == ConstantConfig.IMAGE_NAME and "-" in repo_tag:
-                self.__image_version = '-'.join(repo_tag.split('-')[1:])
+            if tmp_name == ConstantConfig.IMAGE_NAME and "-" in tmp_tag:
+                self.__image_version = '-'.join(tmp_tag.split('-')[1:])
 
     @classmethod
     def __mergeCommonImages(cls, images: List['ExegolImage']):
