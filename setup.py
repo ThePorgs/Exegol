@@ -12,7 +12,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 # Additional non-code data used by Exegol to build local docker image from source
 data_files_dict = {}
 data_files = []
-for path in pathlib.Path('exegolbuild').rglob('*'):
+for path in pathlib.Path('exegol-docker-build').rglob('*'):
     # Exclude directory path and exclude dockerhub hooks files
     if path.is_dir() or path.parent.name == "hooks":
         continue

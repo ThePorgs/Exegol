@@ -5,7 +5,7 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.0.0b1"
+    version: str = "4.0.0b2"
 
     # OS Dir full root path of exegol project
     src_root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
@@ -22,7 +22,7 @@ class ConstantConfig:
     def findBuildContextPath(cls) -> Path:
         """Find the right path to the build context from Exegol docker images.
         Support source clone installation and pip package (venv / user / global context)"""
-        dockerbuild_folder_name = "exegolbuild"
+        dockerbuild_folder_name = "exegol-docker-build"
         local_src = cls.src_root_path_obj / dockerbuild_folder_name
         if local_src.is_dir():
             # If exegol is clone from github, build context is accessible from root src
