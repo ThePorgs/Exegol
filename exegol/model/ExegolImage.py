@@ -98,14 +98,17 @@ class ExegolImage(SelectableInterface):
         self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         if self.__is_remote:
             self.__setDigest(self.__parseDigest(self.__image))
+        # Default status, must be refreshed if some parameters are change externally
         self.syncStatus()
 
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
-        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate():
+        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued:
             # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache / DockerHubUtils)
             self.__custom_status = "[bright_black]Unknown[/bright_black]"
+        else:
+            self.__custom_status = ""
 
     def syncContainerData(self, container: Container):
         """Synchronization between the container and the image.
@@ -264,6 +267,8 @@ class ExegolImage(SelectableInterface):
                     new_image.__is_discontinued = True
                     # Discontinued image can no longer be updated
                     new_image.__is_update = True
+                    # Status must be updated after changing previous criteria
+                    new_image.syncStatus()
                 results.append(new_image)
 
         cls.__mergeCommonImages(results)

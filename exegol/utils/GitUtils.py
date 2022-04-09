@@ -51,11 +51,13 @@ class GitUtils:
 
     def getCurrentBranch(self) -> str:
         """Get current git branch name"""
+        assert self.isAvailable
         assert self.__gitRepo is not None
         return str(self.__gitRepo.active_branch)
 
     def listBranch(self) -> List[str]:
         """Return a list of str of all remote git branch available"""
+        assert self.isAvailable
         result: List[str] = []
         if self.__gitRemote is None:
             return result
@@ -71,6 +73,7 @@ class GitUtils:
     def safeCheck(self) -> bool:
         """Check the status of the local git repository,
         if there is pending change it is not safe to apply some operations"""
+        assert self.isAvailable
         if self.__gitRepo is None or self.__gitRemote is None:
             return False
         if self.__gitRepo.is_dirty():
@@ -80,6 +83,7 @@ class GitUtils:
     def isUpToDate(self, branch: Optional[str] = None) -> bool:
         """Check if the local git repository is up-to-date.
         This method compare the last commit local and the ancestor."""
+        assert self.isAvailable
         if branch is None:
             branch = self.getCurrentBranch()
         assert self.__gitRepo is not None
@@ -115,6 +119,7 @@ class GitUtils:
 
     def update(self) -> bool:
         """Update local git repository within current branch"""
+        assert self.isAvailable
         if not self.safeCheck():
             return False
         if self.isUpToDate():
@@ -129,6 +134,7 @@ class GitUtils:
 
     def checkout(self, branch: str) -> bool:
         """Change local git branch"""
+        assert self.isAvailable
         if not self.safeCheck():
             return False
         if branch == self.getCurrentBranch():

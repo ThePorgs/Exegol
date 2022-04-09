@@ -254,12 +254,18 @@ class DockerUtils:
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
             image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
-            return cls.__client.images.list(image_name, filters={"dangling": False})
+            images = cls.__client.images.list(image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
             # Not reachable, critical logging will exit
             return  # type: ignore
+        # Filter out image non-related to the right repository
+        result = []
+        for img in images:
+            if ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
+                result.append(img)
+        return result
 
     @classmethod
     def __listRemoteImages(cls) -> List[ExegolImage]:

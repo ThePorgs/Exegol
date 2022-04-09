@@ -125,7 +125,7 @@ class UpdateManager:
         Return the name of the built image"""
         # Ask to update git
         try:
-            if not cls.__getGit().isUpToDate() and Confirm(
+            if cls.__getGit().isAvailable and not cls.__getGit().isUpToDate() and Confirm(
                     "Do you want to update git (in order to update local build profiles)?",
                     default=True):
                 cls.updateGit()
