@@ -375,15 +375,15 @@ class ExegolManager:
         """Create an ExegolContainer"""
         logger.verbose("Configuring new exegol container")
         # Create exegol config
-        image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage())
+        image: Optional[ExegolImage] = cast(ExegolImage, cls.__loadOrInstallImage())
         config = cls.__prepareContainerConfig()
+        assert image is not None  # load or install return an image
         model = ExegolContainerTemplate(name, config, image)
 
         # Recap
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
-            if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?",
-                                                        False):
+            if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?", False):
                 image = UpdateManager.updateImage(model.image.getName())
                 if image is not None:
                     model.image = image

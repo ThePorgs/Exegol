@@ -5,13 +5,13 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.0.0a1"
+    version: str = "4.0.0b1"
 
     # OS Dir full root path of exegol project
     src_root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
     # Path of the Dockerfile
-    build_context_path_obj: Path = None
-    build_context_path: str = ""
+    build_context_path_obj: Path
+    build_context_path: str
     # Dockerhub Exegol images repository
     DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol"

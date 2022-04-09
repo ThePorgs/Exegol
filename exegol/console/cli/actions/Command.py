@@ -136,7 +136,7 @@ class Command:
             keys_len[k] = len(re.sub(r"\[/?[^]]+]", '', k, 0, re.MULTILINE))
         max_key = max(keys_len.values())
         for k, v in self._usages.items():
-            space = ' ' * (max_key - keys_len.get(k) + 2)
+            space = ' ' * (max_key - keys_len.get(k, 0) + 2)
             epilog += f"  {k}:{space}[i]{v}[/i]{os.linesep}"
         epilog += self._post_usages + os.linesep
         return epilog

@@ -352,7 +352,7 @@ class ExegolImage(SelectableInterface):
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
-    def __setDigest(self, digest: str):
+    def __setDigest(self, digest: Optional[str]):
         """Remote image digest setter"""
         if digest is not None:
             self.__digest = digest

@@ -32,11 +32,12 @@ setup(
     description='Python wrapper to use Exegol, a container based fully featured and community-driven hacking environment.',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    python_requires='>=3.7, <4',
+    python_requires='>=3.6, <4',
     url='https://github.com/ShutdownRepo/Exegol',
     keywords='pentest redteam ctf exegol',
     classifiers=[
-        'Development Status :: 3 - Alpha',  # TODO change status
+        'Development Status :: 3 - Beta',  # TODO change status
+        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
@@ -50,7 +51,7 @@ setup(
         'rich~=11.2.0',
         'PyYAML'
     ],
-    packages=find_packages(exclude=["assets"]),
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     data_files=data_files,
 

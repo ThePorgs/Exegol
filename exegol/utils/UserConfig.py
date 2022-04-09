@@ -5,7 +5,7 @@ from typing import Dict, List
 import yaml
 import yaml.parser
 
-from exegol import ConstantConfig
+from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
@@ -32,7 +32,8 @@ class UserConfig(metaclass=MetaSingleton):
         if not self.__config_file_path.is_file():
             logger.verbose(f"Creating default exegol config: {self.__config_file_path}")
             self.__create_default_config()
-        self.__parse_config()
+        else:
+            self.__parse_config()
 
     def __create_default_config(self):
         config = f"""# Exegol configuration

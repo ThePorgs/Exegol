@@ -129,11 +129,9 @@ class GuiUtils:
             return False
         else:
             os_version, _, build_number = EnvInfo.windows_release.split('.')[:3]
-            os_version = int(os_version)
-            build_number = int(build_number)
             # Available from Windows 10 Build 21364
             # Available from Windows 11 Build 22000
-            return os_version >= 10 and build_number >= 21364
+            return int(os_version) >= 10 and int(build_number) >= 21364
 
     @classmethod
     def __find_wsl_distro(cls) -> str:
@@ -147,6 +145,7 @@ class GuiUtils:
             skip_header = True
             # parse distribs
             logger.debug("Found WSL distribution:")
+            assert ret.stdout is not None
             for line in io.TextIOWrapper(ret.stdout, encoding="utf-16le"):
                 # Skip WSL text header
                 if skip_header:
@@ -185,6 +184,7 @@ class GuiUtils:
                     if cls.__create_default_wsl():
                         distro_name = "Ubuntu"
         else:
+            assert ret.stderr is not None
             logger.error(
                 f"Error while loading existing wsl distributions. {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
         return distro_name
@@ -196,6 +196,7 @@ class GuiUtils:
         ret.wait()
         logger.info("Please follow installation instructions on the new window.")
         if ret.returncode != 0:
+            assert ret.stderr is not None
             logger.error(
                 f"Error while install WSL Ubuntu: {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
             return False
