@@ -16,7 +16,7 @@ else
   echo "Single tag: $DOCKER_TAG"
 fi
 
-echo "Executing build on branch $TAG_BRANCH version $TAG_VERSION"
+echo "Executing build on branch $TAG_BRANCH version $TAG_VERSION using Dockerfile profile $DOCKERFILE_PATH"
 echo "DEBUG PWD: $(pwd)"
 ls -lha
 
