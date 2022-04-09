@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "Running build hook !"
 TAG_COMMAND="-t $IMAGE_NAME"
 
 if [[ "$DOCKER_TAG" == *"-"* ]]; then
@@ -7,14 +8,22 @@ if [[ "$DOCKER_TAG" == *"-"* ]]; then
   TAG_BRANCH=$(echo "$DOCKER_TAG" | cut -d '-' -f 1)
   TAG_VERSION=$(echo "$DOCKER_TAG" | cut -d '-' -f 2)
   TAG_COMMAND="$TAG_COMMAND -t $DOCKER_REPO:$TAG_BRANCH"
+  echo "Multi-tagging: $DOCKER_REPO:$TAG_BRANCH & $IMAGE_NAME"
 else
   # For image without version (like dev), use default build options
   TAG_BRANCH=$DOCKER_TAG
   TAG_VERSION="n/a"
+  echo "Single tag: $DOCKER_TAG"
 fi
+
+echo "Executing build on branch $TAG_BRANCH version $TAG_VERSION"
+echo "DEBUG PWD: $(pwd)"
+ls -lha
 
 docker build --build-arg TAG="$TAG_BRANCH" \
              --build-arg VERSION="$TAG_VERSION" \
              --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
              -f "$DOCKERFILE_PATH" \
              $TAG_COMMAND .
+
+echo "Build done!"
