@@ -23,8 +23,10 @@ class ExegolImage(SelectableInterface):
         self.__image: Image = docker_image
         self.__name: str = name
         self.__version_specific: bool = "-" in name
-        self.__profile_version: str = '-'.join(
-            name.split('-')[1:]) if self.isVersionSpecific() else "[bright_black]N/A[/bright_black]"
+        # Latest version available of the current image (or current version if version specific)
+        self.__profile_version: str = '-'.join(name.split('-')[1:]) if self.isVersionSpecific() else \
+            "[bright_black]N/A[/bright_black]"
+        # Version of the docker image installed
         self.__image_version: str = self.__profile_version
         self.__build_date = ":question:"
         # Remote image size
@@ -78,14 +80,13 @@ class ExegolImage(SelectableInterface):
                 self.__name = name
 
             self.__version_specific = "-" in self.__name
-            if self.__version_specific:
+            if self.isVersionSpecific():
                 self.__profile_version = '-'.join(name.split('-')[1:])
                 self.__image_version = self.__profile_version
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.__image.labels.get("org.exegol.version", "<none>")
-            self.__profile_version = self.__image.labels.get("org.exegol.tag", "[bright_black]N/A[/bright_black]")
-            self.__image_version = self.__profile_version
+            self.__image_version = self.__image.labels.get("org.exegol.tag", "[bright_black]N/A[/bright_black]")
             self.__must_be_removed = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -102,6 +103,9 @@ class ExegolImage(SelectableInterface):
         """Synchronization between the container and the image.
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
+        if "N/A" in self.__profile_version:
+            # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache)
+            pass
         if self.isLocked():
             name = container.attrs["Config"]["Image"].split(":")[1]
             self.__name = f'{name} [bright_black](deprecated' \
@@ -419,12 +423,19 @@ class ExegolImage(SelectableInterface):
         """Image's tag name getter"""
         return self.__name
 
-    def getVersionName(self) -> str:
-        """Image's tag name with version getter"""
+    def getLatestVersionName(self) -> str:
+        """Image's tag name with latest version getter"""
         if self.__version_specific or 'N/A' in self.__profile_version:
             return self.__name
         else:
             return self.__name + "-" + self.__profile_version
+
+    def getInstalledVersionName(self) -> str:
+        """Image's tag name with latest version getter"""
+        if self.__version_specific or 'N/A' in self.__image_version:
+            return self.__name
+        else:
+            return self.__name + "-" + self.__image_version
 
     def __setImageVersion(self, version: str):
         """Image's tag version setter"""
@@ -447,5 +458,5 @@ class ExegolImage(SelectableInterface):
         return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
 
     def getFullVersionName(self) -> str:
-        """Dockerhub image's full version name getter"""
-        return f"{ConstantConfig.IMAGE_NAME}:{self.getVersionName()}"
+        """Dockerhub image's full (installed) version name getter"""
+        return f"{ConstantConfig.IMAGE_NAME}:{self.getInstalledVersionName()}"

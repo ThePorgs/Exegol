@@ -697,7 +697,7 @@ class ContainerConfig:
             result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
-        return result
+        return result.strip()
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""

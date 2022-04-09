@@ -344,7 +344,7 @@ class DockerUtils:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
-                                             tag=image.getVersionName())
+                                             tag=image.getLatestVersionName())
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
@@ -363,9 +363,11 @@ class DockerUtils:
         if tag is None:  # Skip removal if image is not installed locally.
             return False
         try:
-            if not image.isVersionSpecific() and image.getVersionName() != image.getName():
+            if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName():
                 # Docker can't remove multiple images at the same tag, version specific tag must be remove first
+                logger.debug(f"Remove image {image.getFullVersionName()}")
                 cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
+            logger.debug(f"Remove image {image.getLocalId()} ({image.getFullName()})")
             cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
