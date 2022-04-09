@@ -56,6 +56,19 @@ Add Exegol to PATH :
 sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 ```
 
+## Exegol images
+
+It is possible to install an exegol image using the wrapper with the command: `exegol install <image_name>`
+
+| Image name | Description                                                                                        |
+|------------|----------------------------------------------------------------------------------------------------|
+| full       | This image includes all the tools supported by Exegol. It is however very large.                   |
+| nightly    | This image is for developers containing the latest updates. Warning: this image is unstable!       |
+| ad         | This lighter image only includes the Active Directory tools. Ideal for internal penetration tests. |
+| web        | This lighter image integrates only the web tools. Ideal for web penetration testing.               |
+| light      | This image is the lightest, it integrates only the essential elements.                             |
+| osint      | This image is specialized in OSINT activities.                                                     |
+
 # :mag_right: Usage
 A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
 
