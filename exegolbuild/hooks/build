@@ -1,0 +1,20 @@
+#!/bin/bash
+
+TAG_COMMAND="-t $IMAGE_NAME"
+
+if [[ "$DOCKER_TAG" == *"-"* ]]; then
+  # If the current build tag has a version specific number, parse branch / version for image labels
+  TAG_BRANCH=$(echo "$DOCKER_TAG" | cut -d '-' -f 1)
+  TAG_VERSION=$(echo "$DOCKER_TAG" | cut -d '-' -f 2)
+  TAG_COMMAND="$TAG_COMMAND -t $DOCKER_REPO:$TAG_BRANCH"
+else
+  # For image without version (like dev), use default build options
+  TAG_BRANCH=$DOCKER_TAG
+  TAG_VERSION="n/a"
+fi
+
+docker build --build-arg TAG="$TAG_BRANCH" \
+             --build-arg VERSION="$TAG_VERSION" \
+             --build-arg BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+             -f "$DOCKERFILE_PATH" \
+             $TAG_COMMAND .

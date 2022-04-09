@@ -13,11 +13,12 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 data_files_dict = {}
 data_files = []
 for path in pathlib.Path('exegolbuild').rglob('*'):
+    # Exclude directory path and exclude dockerhub hooks files
+    if path.is_dir() or path.parent.name == "hooks":
+        continue
     key = str(path.parent)
     if data_files_dict.get(key) is None:
         data_files_dict[key] = []
-    if path.is_dir():
-        continue
     data_files_dict[key].append(str(path))
 for k, v in data_files_dict.items():
     data_files.append((k, v))
