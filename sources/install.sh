@@ -1890,6 +1890,13 @@ function install_goldencopy() {
   python3 -m pip install -r requirements.txt
 }
 
+function install_sherlock(){
+  colorecho "Installing Sherlock"
+  git -C /opt/tools clone https://github.com/sherlock-project/sherlock.git
+  cd /opt/tools/sherlock
+  pytho3 -m pip3 install -r requirements.txt
+}
+
 function install_base() {
   update || exit
   echo $VERSION > /opt/.exegol_version
@@ -2137,6 +2144,7 @@ function install_osint_tools() {
   ReconDog                        # Informations gathering tool
   JSParser                        # Parse JS files
   gron                            # JSON parser
+  install_sherlock                # Hunt down social media accounts by username across social networks
   #install_ignorant                # holehe but for phone numbers
 }
 
