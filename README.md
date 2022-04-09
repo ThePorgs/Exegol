@@ -24,7 +24,7 @@ The main features of Exegol are:
 - [:bulb: Resources](#bulb-resources): many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
 - [:scroll: History](#scroll-history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
 - [:rocket: Aliases](#rocket-aliases): a file containing aliases that can be handful when using manually installed tools, or doing common operations.
-- [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles docker operations like `docker pull`, `docker build`, `docker run`, `docker start`, `docker stop`, `docker ps`, `docker rm`, `docker inspect`).
+- [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles every docker operations).
 
 Below is an example of a Zerologon attack operated with Exegol.
 ![Example](assets/example-zerologon.gif)
@@ -33,12 +33,22 @@ Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/a
 ![Example](assets/example-rbcd.gif)
 
 # :fast_forward: Quick start
-Bear in mind that the install process can be long as it downloads a ~6GB image.
+
+> Keep in mind that this is only the installation of the exegol wrapper, at least one docker image will be downloaded by the wrapper afterwards.
+
+## Installation using pip
+
+Exegol wrapper can be installed from pip repository:
+```
+pip3 install exegol
+```
+
+## Installation from source
+Installing the wrapper by the source has the advantage of handling self updates.
 ```
 git clone https://github.com/ShutdownRepo/Exegol
 cd Exegol
 python3 -m pip install --user --requirement requirements.txt
-python3 exegol.py start
 ```
 
 Add Exegol to PATH :
@@ -51,12 +61,14 @@ A powerful Python wrapper allows to manage Exegol without having to know docker-
 
 - Install (pull or build) an image : `exegol install`
 - Create/start/enter a container : `exegol start`
-- Execute a specific command on a container (with stdout / stderr) : `exegol start -e bloodhound`
-- Execute a specific command on a container as a daemon : `exegol exec -e bloodhound`
+- Show info on containers and images : `exegol info`
+- Execute a specific command on a container as a daemon : `exegol exec -b bloodhound`
 - Stop a container : `exegol stop`
-- Remove a container or an image : `exegol remove`
+- Remove a container : `exegol remove`
+- Uninstall an image : `exegol uninstall`
 - Get help and advanced usage : `exegol --help`
 
+# TODO update gif
 ![Example](assets/example-info.gif)
 
 By default, Exegol will start with display sharing allowing GUI-based programs to run, here is an example with BloodHound.
@@ -73,7 +85,7 @@ Some tools are pre-configured with the following credentials
 | trilium | trilium | exegol4thewin |
 
 # :pushpin: Pre-requisites
-You need python3, python3-pip, git, docker :whale:, and 15GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
+You need python3 and docker :whale:, and at least 10GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
 
 # :wrench: Tools
 The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
