@@ -120,7 +120,7 @@ class ExegolManager:
             logger.error("No images were selected. Exiting.")
             return
         all_name = ", ".join([x.getName() for x in images])
-        if not Confirm(
+        if not ParametersManager().force_mode and not Confirm(
                 f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
                 default=False):
             logger.error("Aborting operation.")
@@ -137,7 +137,7 @@ class ExegolManager:
             logger.error("No containers were selected. Exiting.")
             return
         all_name = ", ".join([x.name for x in containers])
-        if not Confirm(
+        if not ParametersManager().force_mode and not Confirm(
                 f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
                 default=False):
             logger.error("Aborting operation.")

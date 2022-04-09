@@ -52,8 +52,6 @@ class Stop(Command, ContainerSelector):
         Command.__init__(self)
         ContainerSelector.__init__(self, self.groupArgs)
 
-        # TODO add -y / -f confirmation
-
         self._usages = {
             "Stop interactively one or multiple container": "exegol stop",
             "Stop 'demo'": "exegol stop [green]demo[/green]"
@@ -124,6 +122,15 @@ class Uninstall(Command, ImageSelector):
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
+        self.force_mode = Option("-F", "--force",
+                                 dest="force_mode",
+                                 action="store_true",
+                                 help="Remove image without interactive user confirmation.")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.force_mode, "required": False},
+                                       title="[bold cyan]Uninstall[/bold cyan] [blue]specific options[/blue]"))
+
         self._usages = {
             "Uninstall interactively one or many exegol image": "exegol uninstall",
             "Uninstall the [orange3]dev[/orange3] image": "exegol uninstall [orange3]dev[/orange3]"
@@ -140,6 +147,15 @@ class Remove(Command, ContainerSelector):
     def __init__(self):
         Command.__init__(self)
         ContainerSelector.__init__(self, self.groupArgs)
+
+        self.force_mode = Option("-F", "--force",
+                                 dest="force_mode",
+                                 action="store_true",
+                                 help="Remove container without interactive user confirmation.")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.force_mode, "required": False},
+                                       title="[bold cyan]Remove[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
             "Remove interactively one or many containers": "exegol remove",
