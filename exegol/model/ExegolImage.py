@@ -26,6 +26,7 @@ class ExegolImage(SelectableInterface):
         self.__profile_version: str = '-'.join(
             name.split('-')[1:]) if self.isVersionSpecific() else "[bright_black]N/A[/bright_black]"
         self.__image_version: str = self.__profile_version
+        self.__build_date = ":question:"
         # Remote image size
         self.__dl_size: str = ":question:" if size == 0 else self.__processSize(size)
         # Local uncompressed image's size
@@ -81,11 +82,15 @@ class ExegolImage(SelectableInterface):
                 self.__profile_version = '-'.join(name.split('-')[1:])
                 self.__image_version = self.__profile_version
         else:
-            # If tag is <none>, use default value
-            self.__name = "<none>"  # TODO fallback to label if exist
+            # If tag is <none>, try to find labels value, if not set fallback to default value
+            self.__name = self.__image.labels.get("org.exegol.version", "<none>")
+            self.__profile_version = self.__image.labels.get("org.exegol.tag", "[bright_black]N/A[/bright_black]")
+            self.__image_version = self.__profile_version
             self.__must_be_removed = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
+        # Set build date from labels
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', ':question:')
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
@@ -136,6 +141,8 @@ class ExegolImage(SelectableInterface):
         self.__setRealSize(self.__image.attrs["Size"])
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
+        # Set build date from labels
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', ':question:')
         # Check if local image is sync with remote digest id (check up-to-date status)
         self.__is_update = self.__digest == self.__parseDigest(docker_image)
         # Add version tag (if available)
@@ -384,6 +391,10 @@ class ExegolImage(SelectableInterface):
     def getSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
         return self.__disk_size if self.__is_install else f"{self.__dl_size} [bright_black](compressed)[/bright_black]"
+
+    def getBuildDate(self):
+        """Build date getter"""
+        return self.__build_date
 
     def isInstall(self) -> bool:
         """Installation status getter"""

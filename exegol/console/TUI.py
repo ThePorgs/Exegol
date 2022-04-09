@@ -174,6 +174,7 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Download size")
             table.add_column("Size on disk")
+            table.add_column("Build date")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk
@@ -186,8 +187,7 @@ class ExegolTUI:
                 continue
             if verbose_mode:
                 table.add_row(image.getLocalId(), image.getName(), image.getDownloadSize(),
-                              image.getRealSize(),
-                              image.getStatus())
+                              image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
                 table.add_row(image.getName(), image.getSize(), image.getStatus())
 
