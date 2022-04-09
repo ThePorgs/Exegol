@@ -29,7 +29,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(docker_image=docker_container.image))
-            self.image.syncContainer(docker_container)
+            self.image.syncContainerData(docker_container)
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.
@@ -38,6 +38,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              # Rebuild config from docker object to update workspace path
                              image=model.image)
             self.__new_container = True
+        self.image.syncStatus()
 
     def __str__(self):
         """Default object text formatter, debug only"""

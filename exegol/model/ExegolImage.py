@@ -98,14 +98,19 @@ class ExegolImage(SelectableInterface):
         self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         if self.__is_remote:
             self.__setDigest(self.__parseDigest(self.__image))
+        self.syncStatus()
 
-    def syncContainer(self, container: Container):
+    def syncStatus(self):
+        """When the image is loaded from a docker object, docker repository metadata are not present.
+        It's not (yet) possible to know if the current image is up-to-date."""
+        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate():
+            # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache / DockerHubUtils)
+            self.__custom_status = "[bright_black]Unknown[/bright_black]"
+
+    def syncContainerData(self, container: Container):
         """Synchronization between the container and the image.
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
-        if "N/A" in self.__profile_version:
-            # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache)
-            pass
         if self.isLocked():
             name = container.attrs["Config"]["Image"].split(":")[1]
             self.__name = f'{name} [bright_black](deprecated' \
