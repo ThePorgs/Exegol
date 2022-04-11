@@ -175,10 +175,13 @@ class DockerUtils:
                     cls.__client.api.remove_volume(name=ConstantConfig.COMMON_SHARE_NAME)
                     raise NotFound('Volume must be reloaded')
                 except APIError as e:
-                    logger.warning("The path of shared exegol resources specified in the user configuration is not the same as in the existing docker volume. "
-                                   "The user path will be [red]ignored[/red] as long as the docker volume already exists.")
-                    logger.verbose("The volume is already used by some container and cannot be automatically removed.")
-                    logger.debug(e.explanation)
+                    if e.status_code == 409:
+                        logger.warning("The path of shared exegol resources specified in the user configuration is not the same as in the existing docker volume. "
+                                       "The user path will be [red]ignored[/red] as long as the docker volume already exists.")
+                        logger.verbose("The volume is already used by some container and cannot be automatically removed.")
+                        logger.debug(e.explanation)
+                    else:
+                        raise NotFound('Volume must be reloaded')
         except NotFound:
             try:
                 # Creating a docker volume bind to a host path
