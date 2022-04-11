@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 from typing import List, Optional, Union
 
 import docker
@@ -406,11 +407,12 @@ class DockerUtils:
         return False
 
     @classmethod
-    def buildImage(cls, tag: str, build_profile: Optional[str] = None):
+    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None):
         """Build a docker image from source"""
         logger.info(f"Building exegol image : {tag}")
-        if build_profile is None:
-            build_profile = "Dockerfile"
+        if build_profile is None or build_dockerfile is None:
+            build_profile = "full"
+            build_dockerfile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
                        f"[green][b]{build_profile}[/b][/green] profile.")
@@ -420,8 +422,11 @@ class DockerUtils:
             # dockerfile is the Dockerfile filename
             ExegolTUI.buildDockerImage(
                 cls.__client.api.build(path=ConstantConfig.build_context_path,
-                                       dockerfile=build_profile,
+                                       dockerfile=build_dockerfile,
                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
+                                       buildargs={"TAG": f"{build_profile}",
+                                                  "VERSION": "local",
+                                                  "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                        rm=True,
                                        forcerm=True,
                                        pull=True,

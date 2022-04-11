@@ -141,18 +141,19 @@ class UpdateManager:
                                     default="local")
         # Choose dockerfile
         profiles = cls.listBuildProfiles()
-        build_profile: Optional[str] = None
-        if ParametersManager().build_profile is not None:
-            build_profile = profiles.get(ParametersManager().build_profile)
-            if build_profile is None:
-                logger.error(f"Build profile {ParametersManager().build_profile} not found.")
-        if build_profile is None:
-            build_profile = ExegolTUI.selectFromList(profiles,
-                                                     subject="a build profile",
-                                                     title="Profile")
-        logger.debug(f"Using '{build_profile}' build profile")
+        build_profile: Optional[str] = ParametersManager().build_profile
+        build_dockerfile: Optional[str] = None
+        if build_profile is not None:
+            build_dockerfile = profiles.get(build_profile)
+            if build_dockerfile is None:
+                logger.error(f"Build profile {build_profile} not found.")
+        if build_dockerfile is None:
+            build_profile, build_dockerfile = ExegolTUI.selectFromList(profiles,
+                                                                       subject="a build profile",
+                                                                       title="Profile")
+        logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
-        DockerUtils.buildImage(build_name, build_profile)
+        DockerUtils.buildImage(build_name, build_profile, build_dockerfile)
         return build_name
 
     @classmethod

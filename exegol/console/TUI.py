@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence
+from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
@@ -314,9 +314,9 @@ class ExegolTUI:
                        data: Union[Dict[str, str], List[str]],
                        subject: str = "an option",
                        title: str = "Options",
-                       default: Optional[str] = None) -> str:
+                       default: Optional[str] = None) -> Union[str, Tuple[str, str]]:
         """if data is list(str): Return a string selected by the user
-        if data is dict: list keys and return corresponding value
+        if data is dict: list keys and return a tuple of the selected key corresponding value
         Raise IndexError of the data list is empty."""
         cls.__isInteractionAllowed()
         if len(data) == 0:
@@ -332,7 +332,7 @@ class ExegolTUI:
         choice = Prompt.ask(f"[blue][?][/blue] Select {subject}", default=default, choices=submit_data,
                             show_choices=False)
         if type(data) is dict:
-            return data[choice]
+            return choice, data[choice]
         else:
             return choice
 
