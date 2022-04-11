@@ -83,8 +83,8 @@ class UpdateManager:
     def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
         """Build confirmation process and image building"""
         # Need confirmation from the user before starting building.
-        if Confirm("Do you want to build locally a custom image?",
-                   default=False):
+        if ParametersManager().build_profile is not None or \
+                Confirm("Do you want to build locally a custom image?", default=False):
             return cls.buildAndLoad(tag)
         return None
 

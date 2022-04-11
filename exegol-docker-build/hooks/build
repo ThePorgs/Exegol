@@ -17,8 +17,6 @@ else
 fi
 
 echo "Executing build on branch $TAG_BRANCH version $TAG_VERSION using Dockerfile profile $DOCKERFILE_PATH"
-echo "DEBUG PWD: $(pwd)"
-ls -lha
 
 docker build --build-arg TAG="$TAG_BRANCH" \
              --build-arg VERSION="$TAG_VERSION" \

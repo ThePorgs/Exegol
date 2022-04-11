@@ -7,6 +7,8 @@ from rich.style import StyleType
 from rich.table import Column
 from rich.text import Text
 
+from exegol.utils.ExeLog import logger
+
 
 class LayerTextColumn(TextColumn, DownloadColumn):
     """Merging two Rich class to obtain a double behavior in the same RichTable"""
@@ -24,7 +26,10 @@ class LayerTextColumn(TextColumn, DownloadColumn):
         # Custom field
         self.__data_key = layer_key
         # Inheritance configuration
-        TextColumn.__init__(self, text_format, style, justify, markup, highlighter, table_column)
+        try:
+            TextColumn.__init__(self, text_format, style, justify, markup, highlighter, table_column)
+        except TypeError:
+            logger.critical("Your version of Rich does not correspond to the project requirements. Please update your dependencies with pip.")
         DownloadColumn.__init__(self, binary_units, table_column)
 
     def render(self, task: "Task") -> Text:
