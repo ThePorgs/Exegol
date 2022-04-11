@@ -171,8 +171,14 @@ class DockerUtils:
             volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)
             path = volume.attrs.get('Options', {}).get('device', '')
             if path != UserConfig().shared_resources_path:
-                logger.warning("The path of shared exegol resources specified in the user configuration is not the same as in the existing docker volume. "
-                               "The user path will be [red]ignored[/red] as long as the docker volume already exists.")
+                try:
+                    cls.__client.api.remove_volume(name=ConstantConfig.COMMON_SHARE_NAME)
+                    raise NotFound
+                except APIError as e:
+                    logger.warning("The path of shared exegol resources specified in the user configuration is not the same as in the existing docker volume. "
+                                   "The user path will be [red]ignored[/red] as long as the docker volume already exists.")
+                    logger.verbose("The volume is already used by some container and cannot be automatically removed.")
+                    logger.debug(e.explanation)
         except NotFound:
             try:
                 # Creating a docker volume bind to a host path
