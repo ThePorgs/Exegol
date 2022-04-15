@@ -19,7 +19,7 @@ class UpdateManager:
 
     @classmethod
     def __getGit(cls) -> GitUtils:
-        """GetUtils local singleton getter"""
+        """GitUtils local singleton getter"""
         if cls.__git is None:
             cls.__git = GitUtils()
         return cls.__git
@@ -89,31 +89,42 @@ class UpdateManager:
         return None
 
     @classmethod
-    def updateGit(cls):
+    def updateWrapper(cls) -> bool:
+        """Update wrapper source code from git"""
+        return cls.__updateGit(cls.__getGit())
+
+    @classmethod
+    def updateImageSource(cls) -> bool:
+        """Update image source code from git submodule"""
+        return cls.__getGit().submoduleUpdate()
+
+    @staticmethod
+    def __updateGit(gitUtils: GitUtils) -> bool:
         """User procedure to update local git repository"""
-        if not cls.__getGit().isAvailable:
+        if not gitUtils.isAvailable:
             logger.empty_line()
-            return
-        logger.info("Updating Exegol local source code")
+            return False
+        logger.info(f"Updating Exegol wrapper source code")
         # Check if pending change -> cancel
-        if not cls.__getGit().safeCheck():
+        if not gitUtils.safeCheck():
             logger.error("Aborting git update.")
             logger.empty_line()
-            return
-        current_branch = cls.__getGit().getCurrentBranch()
+            return False
+        current_branch = gitUtils.getCurrentBranch()
         if current_branch != "master":
             logger.info(f"Current git branch : {current_branch}")
             # List & Select git branch
-            selected_branch = ExegolTUI.selectFromList(cls.__getGit().listBranch(),
+            selected_branch = ExegolTUI.selectFromList(gitUtils.listBranch(),
                                                        subject="a git branch",
                                                        title="Branch",
                                                        default=current_branch)
             # Checkout new branch
             if selected_branch is not None and selected_branch != current_branch:
-                cls.__getGit().checkout(selected_branch)
+                gitUtils.checkout(selected_branch)
         # git pull
-        cls.__getGit().update()
+        gitUtils.update()
         logger.empty_line()
+        return True
 
     @classmethod
     def buildSource(cls, build_name: Optional[str] = None) -> str:
@@ -128,7 +139,7 @@ class UpdateManager:
             if cls.__getGit().isAvailable and not cls.__getGit().isUpToDate() and Confirm(
                     "Do you want to update git (in order to update local build profiles)?",
                     default=True):
-                cls.updateGit()
+                cls.updateImageSource()
         except AssertionError:
             # Catch None git object assertions
             logger.warning("Git update is not available. Skipping.")

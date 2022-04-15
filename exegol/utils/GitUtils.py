@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional, List
 
 from exegol.utils.ConstantConfig import ConstantConfig
@@ -9,9 +10,12 @@ from exegol.utils.ExeLog import logger
 class GitUtils:
     """Utility class between exegol and the Git SDK"""
 
-    def __init__(self):
+    def __init__(self, path_str: Optional[str] = None):
         """Init git local repository object / SDK"""
-        path = ConstantConfig.src_root_path_obj
+        if path_str is None:
+            path = ConstantConfig.src_root_path_obj
+        else:
+            path = Path(path_str)
         self.isAvailable = False
         # Check if .git directory exist
         try:
@@ -45,6 +49,7 @@ class GitUtils:
             else:
                 logger.warning("No remote git origin found on repository")
                 logger.debug(self.__gitRepo.remotes)
+            # TODO init submodules
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
@@ -130,6 +135,25 @@ class GitUtils:
             self.__gitRemote.pull()
             logger.success("Git successfully updated")
             return True
+        return False
+
+    def submoduleUpdate(self, name: str = "sources") -> bool:
+        if not self.isAvailable:
+            return False
+        try:
+            submodule = self.__gitRepo.submodule(name)
+        except ValueError:
+            logger.debug(f"Git submodule '{name}' not found.")
+            return False
+        from git.exc import RepositoryDirtyError
+        logger.info("Updating Exegol image source code")
+        logger.debug(f"Updating submodule {name}")
+        try:
+            submodule.update(to_latest_revision=True)
+            logger.success("Image source code successfully updated.")
+            return True
+        except RepositoryDirtyError:
+            logger.warning("Exegol images source code cannot be updated automatically as long as there are local modifications.")
         return False
 
     def checkout(self, branch: str) -> bool:
