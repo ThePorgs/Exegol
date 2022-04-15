@@ -12,8 +12,8 @@ if [[ "$DOCKER_TAG" == *"-"* ]]; then
 else
   # For image without version (like dev), use default build options
   TAG_BRANCH=$DOCKER_TAG
-  TAG_VERSION="n/a"
-  echo "Single tag: $DOCKER_TAG"
+  TAG_VERSION=${SOURCE_COMMIT:0:8}
+  echo "Single tag: $DOCKER_TAG (version from commit hash)"
 fi
 
 echo "Executing build on branch $TAG_BRANCH version $TAG_VERSION using Dockerfile profile $DOCKERFILE_PATH"

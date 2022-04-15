@@ -110,7 +110,7 @@ class ExegolTUI:
         logfile = None
         if ParametersManager().build_log is not None:
             # Opening log file in line buffering mode (1) to support tail -f [file]
-            logfile = open(ParametersManager().build_log, 'a',  buffering=1)
+            logfile = open(ParametersManager().build_log, 'a', buffering=1)
         # Follow stream
         for line in build_stream:
             stream_text = line.get("stream", '')
@@ -354,8 +354,12 @@ class ExegolTUI:
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
         recap.add_column(f"[bold blue]Name[/bold blue]{os.linesep}[bold blue]Image[/bold blue]", justify="right")
-        recap.add_column(
-            f"{container.name}{os.linesep}{container.image.getName()} - {container.image.getImageVersion()} ({container.image.getStatus()})")
+        container_info_header = f"{container.name}{os.linesep}{container.image.getName()}"
+        if "N/A" not in container.image.getImageVersion():
+            container_info_header += f" - {container.image.getImageVersion()}"
+        if "Unknown" not in container.image.getStatus():
+            container_info_header += f" ({container.image.getStatus()})"
+        recap.add_column(container_info_header)
         # Main features
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())
@@ -389,6 +393,6 @@ class ExegolTUI:
 
     @classmethod
     def __isInteractionAllowed(cls):
-        #if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
+        # if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
         #    logger.critical(f'A required information is missing. Exiting.')
         pass
