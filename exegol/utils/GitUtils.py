@@ -198,7 +198,17 @@ class GitUtils:
             logger.warning(f"Branch '{branch}' is already the current branch")
             return False
         assert self.__gitRepo is not None
-        self.__gitRepo.heads[branch].checkout()
+        from git.exc import GitCommandError
+        try:
+            self.__gitRepo.heads[branch].checkout()
+        except GitCommandError as e:
+            logger.error("Unable to checkout to the selected branch. Skipping operation.")
+            logger.debug(e)
+            return False
+        except IndexError as e:
+            logger.error("Unable to find the selected branch. Skipping operation.")
+            logger.debug(e)
+            return False
         logger.success(f"Git successfully checkout to '{branch}'")
         return True
 
