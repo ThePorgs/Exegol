@@ -63,14 +63,14 @@ class ExegolImage(SelectableInterface):
         self.__is_install = True
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
-            # Tag as deprecated until the latest tag is found
+            # Tag as outdated until the latest tag is found
             self.__must_be_removed = True
             name = self.__name  # Init with old name
             self.__name = None
             for repo_tag in self.__image.attrs["RepoTags"]:
                 repo, name = repo_tag.split(':')
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
-                    # Ignoring external images (set container using external image as deprecated)
+                    # Ignoring external images (set container using external image as outdated)
                     continue
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if "-" not in name:
@@ -128,7 +128,7 @@ class ExegolImage(SelectableInterface):
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
             name = container.attrs["Config"]["Image"].split(":")[1]
-            self.__name = f'{name} [bright_black](deprecated' \
+            self.__name = f'{name} [bright_black](outdated' \
                           f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
             self.__version_specific = "-" in name
 
@@ -357,7 +357,7 @@ class ExegolImage(SelectableInterface):
         elif not self.__is_remote:
             return "[blue]Local image[/blue]"
         elif self.__must_be_removed and self.__is_install:
-            return f"[red]Outdated{image_version}[/red]"
+            return f"[orange3]Outdated{image_version}[/orange3]"
         elif self.__is_discontinued:
             return "[red]Discontinued[/red]"
         elif self.__is_update:

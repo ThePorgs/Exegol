@@ -48,6 +48,7 @@ volumes:
         # TODO handle default image selection
         # TODO handle default start container
         # TODO add custom build profiles path
+        # TODO add auto_remove flag True/False to remove outdated images
         with open(self.__config_file_path, 'w') as file:
             file.write(config)
 
