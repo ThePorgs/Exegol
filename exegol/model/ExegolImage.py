@@ -23,6 +23,7 @@ class ExegolImage(SelectableInterface):
         # Init attributes
         self.__image: Image = docker_image
         self.__name: str = name
+        self.__alt_name: str = ''
         self.__version_specific: bool = "-" in name
         # Latest version available of the current image (or current version if version specific)
         self.__profile_version: str = '-'.join(name.split('-')[1:]) if self.isVersionSpecific() else \
@@ -47,7 +48,7 @@ class ExegolImage(SelectableInterface):
         self.__is_update: bool = isUpToDate
         self.__is_discontinued: bool = False
         # The latest version is merged with the latest one, every other version is old and must be removed
-        self.__must_be_removed: bool = self.__version_specific
+        self.__outdated: bool = self.__version_specific
         self.__custom_status: str = ""
         # Process data
         if docker_image is not None:
@@ -64,7 +65,7 @@ class ExegolImage(SelectableInterface):
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
             # Tag as outdated until the latest tag is found
-            self.__must_be_removed = True
+            self.__outdated = True
             name = self.__name  # Init with old name
             self.__name = None
             for repo_tag in self.__image.attrs["RepoTags"]:
@@ -74,7 +75,7 @@ class ExegolImage(SelectableInterface):
                     continue
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if "-" not in name:
-                    self.__must_be_removed = False
+                    self.__outdated = False
                     self.__name = name
                 else:
                     self.__setImageVersion('-'.join(name.split('-')[1:]))
@@ -90,7 +91,7 @@ class ExegolImage(SelectableInterface):
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.__image.labels.get("org.exegol.tag", "<none>")
-            self.__must_be_removed = True
+            self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
         # Set build date from labels
@@ -116,7 +117,7 @@ class ExegolImage(SelectableInterface):
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
-        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__must_be_removed:
+        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__outdated:
             # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache / DockerHubUtils)
             self.__custom_status = "[bright_black]Unknown[/bright_black]"
         else:
@@ -127,10 +128,12 @@ class ExegolImage(SelectableInterface):
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
-            name = container.attrs["Config"]["Image"].split(":")[1]
-            self.__name = f'{name} [bright_black](outdated' \
-                          f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
-            self.__version_specific = "-" in name
+            original_name = container.attrs["Config"]["Image"].split(":")[1]
+            if self.__name == 'NONAME':
+                self.__name = original_name
+                self.__version_specific = "-" in self.__name
+            self.__alt_name = f'{original_name} [bright_black](outdated' \
+                              f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return its name, otherwise return None"""
@@ -348,15 +351,17 @@ class ExegolImage(SelectableInterface):
         """Manual image's status overwrite"""
         self.__custom_status = status
 
-    def getStatus(self) -> str:
-        """Formatted text getter of image's status."""
-        # todo : add paramater or change internals to print/not print version
-        image_version = '' if 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
+    def getStatus(self, include_version: bool = True) -> str:
+        """Formatted text getter of image's status.
+        Parameter include_version allow choosing if the image version must be printed or not.
+        When image version is already print in the user context, no need to duplicate the information.
+        The status update available always print his version because the latest version is not print elsewhere."""
+        image_version = '' if (not include_version) or 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
         if self.__custom_status != "":
             return self.__custom_status
         elif not self.__is_remote:
             return "[blue]Local image[/blue]"
-        elif self.__must_be_removed and self.__is_install:
+        elif self.__outdated and self.__is_install:
             return f"[orange3]Outdated{image_version}[/orange3]"
         elif self.__is_discontinued:
             return "[red]Discontinued[/red]"
@@ -439,7 +444,7 @@ class ExegolImage(SelectableInterface):
     def isLocked(self) -> bool:
         """Getter locked status.
         If current image is locked, it must be removed"""
-        return self.__must_be_removed
+        return self.__outdated
 
     def isVersionSpecific(self) -> bool:
         """Is the current image a version specific version?
@@ -449,8 +454,11 @@ class ExegolImage(SelectableInterface):
 
     def getName(self) -> str:
         """Image's tag name getter"""
-        # todo : add another "altname" getter specificly for printing additional stuff along the name and keep the self.__name clean
         return self.__name
+
+    def getDisplayName(self) -> str:
+        """Image's display name getter"""
+        return self.__alt_name if self.__alt_name else self.__name
 
     def getLatestVersionName(self) -> str:
         """Image's tag name with latest version getter"""

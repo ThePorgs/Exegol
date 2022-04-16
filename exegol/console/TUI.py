@@ -188,10 +188,10 @@ class ExegolTUI:
             if image.isLocked() and not verbose_mode:
                 continue
             if verbose_mode:
-                table.add_row(image.getLocalId(), image.getName(), image.getDownloadSize(),
+                table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
                               image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
-                table.add_row(image.getName(), image.getSize(), image.getStatus())
+                table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):
@@ -213,12 +213,12 @@ class ExegolTUI:
         # Load data into the table
         for container in data:
             if verbose_mode:
-                table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getName(),
+                table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode), container.config.getTextEnvs(debug_mode))
             else:
-                table.add_row(container.name, container.getTextStatus(), container.image.getName(),
+                table.add_row(container.name, container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
@@ -360,7 +360,7 @@ class ExegolTUI:
         if "N/A" not in container.image.getImageVersion():
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
-            container_info_header += f" ({container.image.getStatus()})"
+            container_info_header += f" ({container.image.getStatus(include_version=False)})"
         recap.add_column(container_info_header)
         # Main features
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
