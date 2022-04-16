@@ -146,6 +146,9 @@ class GitUtils:
         assert self.isAvailable
         if not self.safeCheck():
             return False
+        # Check if the git branch status is not detached
+        if self.getCurrentBranch() is None:
+            return False
         if self.isUpToDate():
             logger.info(f"Git branch '{self.getCurrentBranch()}' is already up-to-date.")
             return False
@@ -200,6 +203,10 @@ class GitUtils:
         assert self.__gitRepo is not None
         from git.exc import GitCommandError
         try:
+            # If git local branch didn't exist, change HEAD to the origin branch and create a new local branch
+            if branch not in self.__gitRepo.heads:
+                self.__gitRepo.references['origin/'+branch].checkout()
+                self.__gitRepo.create_head(branch)
             self.__gitRepo.heads[branch].checkout()
         except GitCommandError as e:
             logger.error("Unable to checkout to the selected branch. Skipping operation.")
