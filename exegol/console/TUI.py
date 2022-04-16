@@ -141,6 +141,7 @@ class ExegolTUI:
     @staticmethod
     def printTable(data: Union[Sequence[SelectableInterface], Sequence[str]], title: Optional[str] = None):
         """Printing Rich table for a list of object"""
+        logger.empty_line()
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE, title_justify="left")
         if len(data) == 0:
@@ -160,6 +161,7 @@ class ExegolTUI:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
         console.print(table)
+        logger.empty_line()
 
     @staticmethod
     def __buildImageTable(table: Table, data: Sequence[ExegolImage]):
@@ -346,8 +348,8 @@ class ExegolTUI:
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.ADVANCED))
 
         # Color code
-        privilege_color = "salmon1"
-        path_color = "chartreuse1"
+        privilege_color = "bright_magenta"
+        path_color = "magenta"
 
         logger.empty_line()
         recap = Table(border_style="grey35", box=box.SQUARE, title_justify="left", show_header=True)
@@ -367,7 +369,10 @@ class ExegolTUI:
         recap.add_row("[bold blue]Common resources[/bold blue]",
                       boolFormatter(container.config.isCommonResourcesEnable()))
         recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
-        recap.add_row("[bold blue]Privileged[/bold blue]", boolFormatter(container.config.getPrivileged()))
+        if container.config.getPrivileged() is True:
+            recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]')
+        else:
+            recap.add_row("[bold blue]Privileged[/bold blue]", "[green]Off :heavy_check_mark:[/green]")
         if len(capabilities) > 0:
             recap.add_row(f"[bold blue]Capabilities[/bold blue]",
                           f"[{privilege_color}]{', '.join(capabilities)}[/{privilege_color}]")
@@ -375,7 +380,7 @@ class ExegolTUI:
             recap.add_row("[bold blue]Workspace[/bold blue]",
                           f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}]')
         else:
-            recap.add_row("[bold blue]Workspace[/bold blue]", '[orange3]Dedicated[/orange3]')
+            recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta]')
         if len(devices) > 0:
             recap.add_row("[bold blue]Devices[/bold blue]",
                           os.linesep.join([f"{device.split(':')[0]}:{device.split(':')[-1]}" for device in devices]))

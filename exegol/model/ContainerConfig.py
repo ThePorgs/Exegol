@@ -686,7 +686,7 @@ class ContainerConfig:
         Print config only if they are different from their default config (or print everything in verbose mode)"""
         result = ""
         if verbose or self.__privileged:
-            result += f"{getColor(self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[red]Off :cross_mark:[/red]'}{getColor(self.__privileged)[1]}{os.linesep}"
+            result += f"{getColor(not self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[green]Off :heavy_check_mark:[/green]'}{getColor(not self.__privileged)[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:

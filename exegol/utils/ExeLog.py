@@ -31,19 +31,19 @@ class ExeLog(logging.Logger):
 
     def debug(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default debug text format with rich color support"""
-        super(ExeLog, self).debug("{}[D]{} {}".format("[yellow3]", "[/yellow3]", msg), *args, **kwargs)
+        super(ExeLog, self).debug("{}[D]{} {}".format("[bold yellow3]", "[/bold yellow3]", msg), *args, **kwargs)
 
     def advanced(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Add advanced logging method with text format / rich color support"""
         if self.isEnabledFor(ExeLog.ADVANCED):
             self._log(ExeLog.ADVANCED,
-                      "{}[A]{} {}".format("[yellow3]", "[/yellow3]", msg), args, **kwargs)
+                      "{}[A]{} {}".format("[bold yellow3]", "[/bold yellow3]", msg), args, **kwargs)
 
     def verbose(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Add verbose logging method with text format / rich color support"""
         if self.isEnabledFor(ExeLog.VERBOSE):
             self._log(ExeLog.VERBOSE,
-                      "{}[V]{} {}".format("[blue]", "[/blue]", msg), args, **kwargs)
+                      "{}[V]{} {}".format("[bold blue]", "[/bold blue]", msg), args, **kwargs)
 
     def raw(self, msg: Any, level=VERBOSE, markup=False, highlight=False, emoji=False, rich_parsing=False) -> None:
         """Add raw text logging, used for stream printing."""
@@ -71,12 +71,12 @@ class ExeLog(logging.Logger):
 
     def exception(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default exception text format with rich color support"""
-        super(ExeLog, self).exception("{}[x]{} {}".format("[red3]", "[/red3]", msg), *args, **kwargs)
+        super(ExeLog, self).exception("{}[x]{} {}".format("[bold red]", "[/bold red]", msg), *args, **kwargs)
 
     def critical(self, msg: Any, *args: Any, **kwargs: Any) -> None:
         """Change default critical text format with rich color support
         Add auto exit."""
-        super(ExeLog, self).critical("{}[X]{} {}".format("[bold dark_red]", "[/bold dark_red]", msg), *args, **kwargs)
+        super(ExeLog, self).critical("{}[!]{} {}".format("[bold red]", "[/bold red]", msg), *args, **kwargs)
         exit(1)
 
     def success(self, msg: Any, *args: Any, **kwargs: Any) -> None:

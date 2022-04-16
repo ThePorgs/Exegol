@@ -45,7 +45,7 @@ class Command:
 
     def __init__(self):
         # Root command usages (can be overwritten by subclasses to display different use cases)
-        self._pre_usages = "[green]To see specific examples run: [italic white]exegol [orange3]command[/orange3] -h[/italic white][/green]"
+        self._pre_usages = "[underline]To see specific examples run:[/underline][italic] exegol [cyan]command[/cyan] -h[/italic]"
         self._usages = {
             "Install (or build) (↓ ~25GB max)": "exegol install",
             "Open an exegol shell": "exegol start",
@@ -68,7 +68,7 @@ class Command:
                              required=False,
                              help="Allow insecure server connections for web requests, "
                                   "e.g. when fetching info from DockerHub "
-                                  "(default: [red bold not italic]False[/red bold not italic])")
+                                  "(default: [red not italic]False[/red not italic])")
         self.quiet = Option("-q", "--quiet",
                             dest="quiet",
                             action="store_true",
@@ -128,7 +128,7 @@ class Command:
         return missingOption
 
     def formatEpilog(self) -> str:
-        epilog = "[green]Examples:[/green]" + os.linesep
+        epilog = "[blue]Examples:[/blue]" + os.linesep
         epilog += self._pre_usages + os.linesep
         keys_len = {}
         # Replace [.*] rich tag for line length count

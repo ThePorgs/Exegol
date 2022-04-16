@@ -36,10 +36,8 @@ class ExegolManager:
         """Print a list of available images and containers on the current host"""
         ExegolManager.print_version()
         if logger.isEnabledFor(ExeLog.ADVANCED):
-            logger.empty_line()
             logger.verbose("Listing user configurations")
             ExegolTUI.printTable(UserConfig().get_configs(), title="User configurations")
-        logger.empty_line()
         if bool(ParametersManager().containertag):
             # If the user have supplied a container name, show container config
             container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
@@ -54,7 +52,6 @@ class ExegolManager:
             # List and print images
             logger.verbose("Listing local and remote Exegol images")
             ExegolTUI.printTable(images)
-            logger.empty_line()
             # List and print containers
             logger.verbose("Listing local Exegol containers")
             logger.raw(f"[bold blue][*][/bold blue] Number of Exegol containers: {len(containers)}{os.linesep}",

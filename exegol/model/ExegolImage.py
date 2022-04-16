@@ -33,11 +33,11 @@ class ExegolImage(SelectableInterface):
         self.__version_label_mode: bool = False
         self.__build_date = ":question:"
         # Remote image size
-        self.__dl_size: str = ":question:" if size == 0 else self.__processSize(size)
+        self.__dl_size: str = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
         # Local uncompressed image's size
-        self.__disk_size: str = ":question:"
+        self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # Remote image ID
-        self.__digest: str = "[bright_black]:question:[/bright_black]"
+        self.__digest: str = "[bright_black]N/A[/bright_black]"
         # Local docker image ID
         self.__image_id: str = "[bright_black]Not installed[/bright_black]"
         # Status
@@ -165,7 +165,7 @@ class ExegolImage(SelectableInterface):
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', ':question:')
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
         # Check if local image is sync with remote digest id (check up-to-date status)
         self.__is_update = self.__digest == self.__parseDigest(docker_image)
         # Add version tag (if available)
