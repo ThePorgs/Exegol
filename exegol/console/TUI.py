@@ -341,11 +341,11 @@ class ExegolTUI:
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
         # Fetch data
-        devices = container.config.getDevices()
-        envs = container.config.getEnvs()
+        devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
+        envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
         sysctls = container.config.getSysctls()
         capabilities = container.config.getCapabilities()
-        volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.ADVANCED))
+        volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
 
         # Color code
         privilege_color = "bright_magenta"
@@ -382,11 +382,9 @@ class ExegolTUI:
         else:
             recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta]')
         if len(devices) > 0:
-            recap.add_row("[bold blue]Devices[/bold blue]",
-                          os.linesep.join([f"{device.split(':')[0]}:{device.split(':')[-1]}" for device in devices]))
+            recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(envs) > 0:
-            recap.add_row("[bold blue]Envs[/bold blue]",
-                          os.linesep.join([f"{key} = {value}" for key, value in envs.items()]))
+            recap.add_row("[bold blue]Envs[/bold blue]", envs.strip())
         if len(volumes) > 0:
             recap.add_row("[bold blue]Volumes[/bold blue]", volumes.strip())
         if len(sysctls) > 0:
