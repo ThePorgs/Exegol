@@ -1,8 +1,6 @@
 #!/bin/bash
 # Author: Charlie BROMBERG (Shutdown - @_nwodtuhs)
 
-VERSION="3.1.12.dev"
-
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -1193,10 +1191,10 @@ function ruler() {
 
 function ghidra() {
   colorecho "Installing Ghidra"
-  apt-get -y install openjdk-14-jdk
-  wget -P /tmp/ "https://ghidra-sre.org/ghidra_9.2.3_PUBLIC_20210325.zip"
-  unzip /tmp/ghidra_9.2.3_PUBLIC_20210325.zip -d /opt/tools
-  rm /tmp/ghidra_9.2.3_PUBLIC_20210325.zip
+  apt-get -y install openjdk-17-jdk
+  wget -P /tmp/ "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_10.1.2_build/ghidra_10.1.2_PUBLIC_20220125.zip"
+  unzip /tmp/ghidra_10.1.2_PUBLIC_20220125.zip -d /opt/tools
+  rm /tmp/ghidra_10.1.2_PUBLIC_20220125.zip
 }
 
 function burp() {
@@ -1906,7 +1904,6 @@ function install_crackhound() {
 
 function install_base() {
   update || exit
-  echo $VERSION > /opt/.exegol_version
   echo '# Debian sources' | tee -a /etc/apt/sources.list
   echo 'deb http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
   echo 'deb-src http://deb.debian.org/debian/ bullseye main' | tee -a /etc/apt/sources.list
