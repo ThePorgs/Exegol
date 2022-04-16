@@ -15,7 +15,7 @@ class GitUtils:
         if path_str is None:
             path = ConstantConfig.src_root_path_obj
         else:
-            path = Path(path_str)
+            path = ConstantConfig.src_root_path_obj / path_str
         self.isAvailable = False
         self.__is_submodule = False
         # Check if .git directory exist
