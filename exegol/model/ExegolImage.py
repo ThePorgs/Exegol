@@ -350,6 +350,7 @@ class ExegolImage(SelectableInterface):
 
     def getStatus(self) -> str:
         """Formatted text getter of image's status."""
+        # todo : add paramater or change internals to print/not print version
         image_version = '' if 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
         if self.__custom_status != "":
             return self.__custom_status
@@ -448,6 +449,7 @@ class ExegolImage(SelectableInterface):
 
     def getName(self) -> str:
         """Image's tag name getter"""
+        # todo : add another "altname" getter specificly for printing additional stuff along the name and keep the self.__name clean
         return self.__name
 
     def getLatestVersionName(self) -> str:
