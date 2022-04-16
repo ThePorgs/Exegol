@@ -10,16 +10,21 @@ from exegol.utils.ExeLog import logger
 class GitUtils:
     """Utility class between exegol and the Git SDK"""
 
-    def __init__(self, path_str: Optional[str] = None):
+    def __init__(self, path_str: Optional[str] = None, name: str = "wrapper"):
         """Init git local repository object / SDK"""
         if path_str is None:
             path = ConstantConfig.src_root_path_obj
         else:
             path = Path(path_str)
         self.isAvailable = False
+        self.__is_submodule = False
         # Check if .git directory exist
         try:
-            if not (path / '.git').is_dir():
+            test_git_dir = path / '.git'
+            if test_git_dir.is_file():
+                logger.debug("Git submodule repository detected")
+                self.__is_submodule = True
+            elif not test_git_dir.is_dir():
                 raise ReferenceError
         except ReferenceError:
             logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
@@ -39,6 +44,7 @@ class GitUtils:
         self.__gitRepo: Optional[Repo] = None
         self.__gitRemote: Optional[Remote] = None
         self.__fetchBranchInfo: Optional[FetchInfo] = None
+        self.__git_name: str = name
 
         try:
             self.__gitRepo = Repo(str(path))
@@ -54,11 +60,15 @@ class GitUtils:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
 
-    def getCurrentBranch(self) -> str:
+    def getCurrentBranch(self) -> Optional[str]:
         """Get current git branch name"""
         assert self.isAvailable
         assert self.__gitRepo is not None
-        return str(self.__gitRepo.active_branch)
+        try:
+            return str(self.__gitRepo.active_branch)
+        except TypeError:
+            logger.debug("Git HEAD is detached, cant find the current branch.")
+            return None
 
     def listBranch(self) -> List[str]:
         """Return a list of str of all remote git branch available"""
@@ -81,9 +91,11 @@ class GitUtils:
         assert self.isAvailable
         if self.__gitRepo is None or self.__gitRemote is None:
             return False
-        if self.__gitRepo.is_dirty():
+        # Submodule changes must be ignored to update the submodules sources independently of the wrapper
+        is_dirty = self.__gitRepo.is_dirty(submodules=False)
+        if is_dirty:
             logger.warning("Local git have unsaved change. Skipping source update.")
-        return not self.__gitRepo.is_dirty()
+        return not is_dirty
 
     def isUpToDate(self, branch: Optional[str] = None) -> bool:
         """Check if the local git repository is up-to-date.
@@ -91,13 +103,20 @@ class GitUtils:
         assert self.isAvailable
         if branch is None:
             branch = self.getCurrentBranch()
+            if branch is None:
+                logger.warning("No branch is currently attached to the git repository. The up-to-date status cannot be checked.")
+                return False
         assert self.__gitRepo is not None
         assert self.__gitRemote is not None
         # Get last local commit
         current_commit = self.__gitRepo.heads[branch].commit
         # Get last remote commit
         fetch_result = self.__gitRemote.fetch()
-        self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
+        try:
+            self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
+        except IndexError:
+            logger.warning("The selected branch is local and cannot be updated.")
+            return True
 
         logger.debug(f"Fetch flags : {self.__fetchBranchInfo.flags}")
         logger.debug(f"Fetch note : {self.__fetchBranchInfo.note}")
@@ -128,10 +147,10 @@ class GitUtils:
         if not self.safeCheck():
             return False
         if self.isUpToDate():
-            logger.info("Git branch is already up-to-date.")
+            logger.info(f"Git branch '{self.getCurrentBranch()}' is already up-to-date.")
             return False
         if self.__gitRemote is not None:
-            logger.info(f"Updating local git '{self.getCurrentBranch()}'")
+            logger.info(f"Using branch '{self.getCurrentBranch()}' on {self.getName()} repository")
             self.__gitRemote.pull()
             logger.success("Git successfully updated")
             return True
@@ -139,15 +158,19 @@ class GitUtils:
 
     def __initSubmodules(self):
         """Init (and update) git sub repositories (not source code)"""
+        if self.isSubModule():
+            # Disable submodule init from submodule repo
+            return
         logger.verbose("Git init submodules")
         for subm in self.__gitRepo.iter_submodules():
             logger.debug(f"Init submodule '{subm.name}'")
             subm.update(recursive=True)
 
-    def submoduleUpdate(self, name: str) -> bool:
+    def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
         if not self.isAvailable:
             return False
+        assert self.__gitRepo is not None
         try:
             submodule = self.__gitRepo.submodule(name)
         except ValueError:
@@ -178,3 +201,11 @@ class GitUtils:
         self.__gitRepo.heads[branch].checkout()
         logger.success(f"Git successfully checkout to '{branch}'")
         return True
+
+    def getName(self) -> str:
+        """Git name getter"""
+        return self.__git_name
+
+    def isSubModule(self) -> bool:
+        """Git submodule status getter"""
+        return self.__is_submodule

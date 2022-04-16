@@ -1,4 +1,4 @@
-from typing import Optional, Dict, cast
+from typing import Optional, Dict, cast, Tuple
 
 from rich.prompt import Prompt
 
@@ -9,13 +9,14 @@ from exegol.exceptions.ExegolExceptions import ObjectNotFound
 from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
 
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
     __git: Optional[GitUtils] = None
+    __git_source: Optional[GitUtils] = None
 
     @classmethod
     def __getGit(cls) -> GitUtils:
@@ -23,6 +24,13 @@ class UpdateManager:
         if cls.__git is None:
             cls.__git = GitUtils()
         return cls.__git
+
+    @classmethod
+    def __getSourceGit(cls) -> GitUtils:
+        """GitUtils source submodule singleton getter"""
+        if cls.__git_source is None:
+            cls.__git_source = GitUtils("exegol-docker-build", "image")
+        return cls.__git_source
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -96,7 +104,7 @@ class UpdateManager:
     @classmethod
     def updateImageSource(cls) -> bool:
         """Update image source code from git submodule"""
-        return cls.__getGit().submoduleUpdate("sources")
+        return cls.__updateGit(cls.__getSourceGit())
 
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
@@ -104,20 +112,24 @@ class UpdateManager:
         if not gitUtils.isAvailable:
             logger.empty_line()
             return False
-        logger.info(f"Updating Exegol wrapper source code")
+        logger.info(f"Updating Exegol {gitUtils.getName()} source code")
         # Check if pending change -> cancel
         if not gitUtils.safeCheck():
             logger.error("Aborting git update.")
             logger.empty_line()
             return False
         current_branch = gitUtils.getCurrentBranch()
-        if current_branch != "master":
+        if current_branch is None:
+            logger.warning("HEAD is detached. Please checkout to an existing branch.")
+            current_branch = "unknown"
+        if logger.isEnabledFor(ExeLog.VERBOSE) or current_branch not in ["master", "main"]:
             logger.info(f"Current git branch : {current_branch}")
             # List & Select git branch
-            selected_branch = ExegolTUI.selectFromList(gitUtils.listBranch(),
-                                                       subject="a git branch",
-                                                       title="Branch",
-                                                       default=current_branch)
+            default_choice = current_branch if current_branch != 'unknown' else None
+            selected_branch = cast(str, ExegolTUI.selectFromList(gitUtils.listBranch(),
+                                                                 subject="a git branch",
+                                                                 title="Branch",
+                                                                 default=default_choice))
             # Checkout new branch
             if selected_branch is not None and selected_branch != current_branch:
                 gitUtils.checkout(selected_branch)
@@ -159,9 +171,9 @@ class UpdateManager:
             if build_dockerfile is None:
                 logger.error(f"Build profile {build_profile} not found.")
         if build_dockerfile is None:
-            build_profile, build_dockerfile = ExegolTUI.selectFromList(profiles,
-                                                                       subject="a build profile",
-                                                                       title="Profile")
+            build_profile, build_dockerfile = cast(Tuple[str, str], ExegolTUI.selectFromList(profiles,
+                                                                                             subject="a build profile",
+                                                                                             title="Profile"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile, build_dockerfile)
