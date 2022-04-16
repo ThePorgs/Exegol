@@ -176,7 +176,7 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Download size")
             table.add_column("Size on disk")
-            table.add_column("Build date")
+            table.add_column("Build date (UTC)")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 
 from docker.models.containers import Container
@@ -31,7 +32,7 @@ class ExegolImage(SelectableInterface):
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
         # if it is retrieved from the tags (ex: nightly)
         self.__version_label_mode: bool = False
-        self.__build_date = ":question:"
+        self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
         self.__dl_size: str = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
         # Local uncompressed image's size
@@ -93,7 +94,7 @@ class ExegolImage(SelectableInterface):
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', ':question:')
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
@@ -421,7 +422,10 @@ class ExegolImage(SelectableInterface):
 
     def getBuildDate(self):
         """Build date getter"""
-        return self.__build_date
+        if "N/A" not in self.__build_date:
+            return datetime.strptime(self.__build_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
+        else:
+            return self.__build_date
 
     def isInstall(self) -> bool:
         """Installation status getter"""

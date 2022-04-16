@@ -400,7 +400,7 @@ class DockerUtils:
             if err.status_code == 409:
                 if upgrade_mode:
                     logger.error("This image cannot be deleted yet, "
-                                 "all deprecated containers using this image must be deleted first.")
+                                 "all containers using this old image must be deleted first.")
                 else:
                     logger.error("This image cannot be deleted because it is currently used by a container. Aborting.")
             elif err.status_code == 404:
