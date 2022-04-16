@@ -28,6 +28,9 @@ class ExegolImage(SelectableInterface):
             "[bright_black]N/A[/bright_black]"
         # Version of the docker image installed
         self.__image_version: str = self.__profile_version
+        # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
+        # if it is retrieved from the tags (ex: nightly)
+        self.__version_label_mode: bool = False
         self.__build_date = ":question:"
         # Remote image size
         self.__dl_size: str = ":question:" if size == 0 else self.__processSize(size)
@@ -73,7 +76,7 @@ class ExegolImage(SelectableInterface):
                     self.__must_be_removed = False
                     self.__name = name
                 else:
-                    self.__image_version = '-'.join(name.split('-')[1:])
+                    self.__setImageVersion('-'.join(name.split('-')[1:]))
 
             # if no version has been found, restoring previous name
             if self.__name is None:
@@ -82,11 +85,10 @@ class ExegolImage(SelectableInterface):
             self.__version_specific = "-" in self.__name
             if self.isVersionSpecific():
                 self.__profile_version = '-'.join(name.split('-')[1:])
-                self.__image_version = self.__profile_version
+                self.__setImageVersion(self.__profile_version)
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
-            self.__name = self.__image.labels.get("org.exegol.version", "<none>")
-            self.__image_version = self.__image.labels.get("org.exegol.tag", "[bright_black]N/A[/bright_black]")
+            self.__name = self.__image.labels.get("org.exegol.tag", "<none>")
             self.__must_be_removed = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -98,13 +100,22 @@ class ExegolImage(SelectableInterface):
         self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         if self.__is_remote:
             self.__setDigest(self.__parseDigest(self.__image))
+        self.__labelVersionParsing()
         # Default status, must be refreshed if some parameters are change externally
         self.syncStatus()
+
+    def __labelVersionParsing(self):
+        """Fallback version parsing using image's label (if exist).
+        This method can only be used if version has not been provided from the image's tag."""
+        if "N/A" in self.__image_version:
+            version_label = self.__image.labels.get("org.exegol.version")
+            if version_label is not None:
+                self.__setImageVersion(version_label, source_tag=False)
 
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
-        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued:
+        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__must_be_removed:
             # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache / DockerHubUtils)
             self.__custom_status = "[bright_black]Unknown[/bright_black]"
         else:
@@ -117,7 +128,7 @@ class ExegolImage(SelectableInterface):
         if self.isLocked():
             name = container.attrs["Config"]["Image"].split(":")[1]
             self.__name = f'{name} [bright_black](deprecated' \
-                          f'{f" v{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
+                          f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
             self.__version_specific = "-" in name
 
     def updateCheck(self) -> Optional[str]:
@@ -161,7 +172,9 @@ class ExegolImage(SelectableInterface):
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
             if tmp_name == ConstantConfig.IMAGE_NAME and "-" in tmp_tag:
-                self.__image_version = '-'.join(tmp_tag.split('-')[1:])
+                self.__setImageVersion('-'.join(tmp_tag.split('-')[1:]))
+        # backup plan: Use label to retrieve image version
+        self.__labelVersionParsing()
 
     @classmethod
     def __mergeCommonImages(cls, images: List['ExegolImage']):
@@ -336,7 +349,7 @@ class ExegolImage(SelectableInterface):
 
     def getStatus(self) -> str:
         """Formatted text getter of image's status."""
-        image_version = '' if 'N/A' in self.getImageVersion() else f' (v{self.getImageVersion()})'
+        image_version = '' if 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
         if self.__custom_status != "":
             return self.__custom_status
         elif not self.__is_remote:
@@ -349,7 +362,7 @@ class ExegolImage(SelectableInterface):
             return f"[green]Up to date{image_version}[/green]"
         elif self.__is_install:
             return f"[orange3]Update available" \
-                   f"{'' if 'N/A' in self.getLatestVersion() else f' (v{self.getImageVersion()} :arrow_right: v{self.getLatestVersion()})'}[/orange3]"
+                   f"{'' if 'N/A' in self.getLatestVersion() else f' (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})'}[/orange3]"
         else:
             return "[bright_black]Not installed[/bright_black]"
 
@@ -435,21 +448,24 @@ class ExegolImage(SelectableInterface):
 
     def getLatestVersionName(self) -> str:
         """Image's tag name with latest version getter"""
-        if self.__version_specific or 'N/A' in self.__profile_version:
+        if self.__version_specific or self.__version_label_mode or 'N/A' in self.__profile_version:
             return self.__name
         else:
             return self.__name + "-" + self.__profile_version
 
     def getInstalledVersionName(self) -> str:
         """Image's tag name with latest version getter"""
-        if self.__version_specific or 'N/A' in self.__image_version:
+        if self.__version_specific or self.__version_label_mode or 'N/A' in self.__image_version:
             return self.__name
         else:
             return self.__name + "-" + self.__image_version
 
-    def __setImageVersion(self, version: str):
-        """Image's tag version setter"""
+    def __setImageVersion(self, version: str, source_tag: bool = True):
+        """Image's tag version setter.
+        Set source_tag as true if the information is retrieve from the image's tag name.
+        If the version is retrieve from the label, set source_tag as False."""
         self.__image_version = version
+        self.__version_label_mode = not source_tag
 
     def getImageVersion(self) -> str:
         """Image's tag version getter"""

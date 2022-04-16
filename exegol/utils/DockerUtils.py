@@ -18,7 +18,7 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger
+from exegol.utils.ExeLog import logger, console
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -277,7 +277,9 @@ class DockerUtils:
         # Filter out image non-related to the right repository
         result = []
         for img in images:
-            if ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
+            # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
+            if len(img.attrs.get('RepoTags', [])) == 0 or \
+                    ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
         return result
 
@@ -346,7 +348,7 @@ class DockerUtils:
                 logger.success(f"Image successfully updated")
                 # Remove old image
                 if not install_mode and image.isInstall():
-                    cls.removeImage(image, upgrade_mode=install_mode)
+                    cls.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:
                 if err.status_code == 500:
@@ -388,7 +390,8 @@ class DockerUtils:
                 logger.debug(f"Remove image {image.getFullVersionName()}")
                 cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
             logger.debug(f"Remove image {image.getLocalId()} ({image.getFullName()})")
-            cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
+            with console.status(f"Removing image...", spinner_style="blue"):
+                cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
         except APIError as err:

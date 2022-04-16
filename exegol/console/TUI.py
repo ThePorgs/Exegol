@@ -356,7 +356,7 @@ class ExegolTUI:
         recap.add_column(f"[bold blue]Name[/bold blue]{os.linesep}[bold blue]Image[/bold blue]", justify="right")
         container_info_header = f"{container.name}{os.linesep}{container.image.getName()}"
         if "N/A" not in container.image.getImageVersion():
-            container_info_header += f" - {container.image.getImageVersion()}"
+            container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus()})"
         recap.add_column(container_info_header)
