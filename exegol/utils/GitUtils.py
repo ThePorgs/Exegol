@@ -49,7 +49,7 @@ class GitUtils:
             else:
                 logger.warning("No remote git origin found on repository")
                 logger.debug(self.__gitRepo.remotes)
-            # TODO init submodules
+            self.__initSubmodules()
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
@@ -137,7 +137,15 @@ class GitUtils:
             return True
         return False
 
-    def submoduleUpdate(self, name: str = "sources") -> bool:
+    def __initSubmodules(self):
+        """Init (and update) git sub repositories (not source code)"""
+        logger.verbose("Git init submodules")
+        for subm in self.__gitRepo.iter_submodules():
+            logger.debug(f"Init submodule '{subm.name}'")
+            subm.update(recursive=True)
+
+    def submoduleUpdate(self, name: str) -> bool:
+        """Update source code from the 'name' git submodule"""
         if not self.isAvailable:
             return False
         try:
@@ -154,6 +162,8 @@ class GitUtils:
             return True
         except RepositoryDirtyError:
             logger.warning("Exegol images source code cannot be updated automatically as long as there are local modifications.")
+            logger.error("Aborting git submodule update.")
+        logger.empty_line()
         return False
 
     def checkout(self, branch: str) -> bool:

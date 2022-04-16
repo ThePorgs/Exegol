@@ -96,7 +96,7 @@ class UpdateManager:
     @classmethod
     def updateImageSource(cls) -> bool:
         """Update image source code from git submodule"""
-        return cls.__getGit().submoduleUpdate()
+        return cls.__getGit().submoduleUpdate("sources")
 
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
