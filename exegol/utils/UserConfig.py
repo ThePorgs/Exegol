@@ -15,14 +15,14 @@ class UserConfig(metaclass=MetaSingleton):
 
     def __init__(self):
         # Config file options
-        self.__exegol_path = Path().home() / ".exegol"
-        self.__config_file_path = self.__exegol_path / "config.yml"
-        self.__config_upgrade = False
+        self.__exegol_path: Path = Path().home() / ".exegol"
+        self.__config_file_path: Path = self.__exegol_path / "config.yml"
+        self.__config_upgrade: bool = False
 
         # Defaults User config
-        self.private_volume_path = self.__exegol_path / "workspaces"
-        self.shared_resources_path = str(self.__exegol_path / "shared-resources")
-        self.exegol_resources_path = self.__default_resource_location('exegol-resources')
+        self.private_volume_path: Path = self.__exegol_path / "workspaces"
+        self.shared_resources_path: str = str(self.__exegol_path / "shared-resources")
+        self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
 
         # process
         self.__load_file()

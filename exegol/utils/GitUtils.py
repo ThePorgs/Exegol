@@ -89,6 +89,7 @@ class GitUtils:
         # TODO add console loader / progress bar via TUI
         self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
         self.__init_repo()
+        return True
 
     def getCurrentBranch(self) -> Optional[str]:
         """Get current git branch name"""
@@ -195,8 +196,11 @@ class GitUtils:
             # Disable submodule init from submodule repo
             return
         logger.verbose(f"Git {self.getName()} init submodules")
+        blacklist_heavy_modules = ["exegol-resources"]
         with console.status(f"Initialization of git submodules", spinner_style="blue"):
             for subm in self.__gitRepo.iter_submodules():
+                if subm.name in blacklist_heavy_modules:
+                    continue
                 logger.debug(f"Init submodule '{subm.name}'")
                 subm.update(recursive=True)
 
@@ -211,14 +215,14 @@ class GitUtils:
             logger.debug(f"Git submodule '{name}' not found.")
             return False
         from git.exc import RepositoryDirtyError
-        logger.info("Updating Exegol image source code")
-        logger.debug(f"Updating submodule {name}")
         try:
-            submodule.update(to_latest_revision=True)
-            logger.success("Image source code successfully updated.")
+            # TODO add TUI progress
+            with console.status(f"Updating submodule {name}", spinner_style="blue"):
+                submodule.update(to_latest_revision=True, recursive=True)
+            logger.success(f"Submodule {name} successfully updated.")
             return True
         except RepositoryDirtyError:
-            logger.warning("Exegol images source code cannot be updated automatically as long as there are local modifications.")
+            logger.warning(f"Submodule {name} cannot be updated automatically as long as there are local modifications.")
             logger.error("Aborting git submodule update.")
         logger.empty_line()
         return False

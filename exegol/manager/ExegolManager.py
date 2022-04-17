@@ -62,7 +62,6 @@ class ExegolManager:
     def start(cls):
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         logger.info("Starting exegol")
-        UpdateManager.updateResources()
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
@@ -101,6 +100,7 @@ class ExegolManager:
     @classmethod
     def install(cls):
         """Pull or build a docker exegol image"""
+        UpdateManager.updateResources()
         UpdateManager.updateImage(install_mode=True)
 
     @classmethod
@@ -108,6 +108,7 @@ class ExegolManager:
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         UpdateManager.updateWrapper()
         UpdateManager.updateImageSource()
+        UpdateManager.updateResources()
         UpdateManager.updateImage()
 
     @classmethod
@@ -348,7 +349,11 @@ class ExegolManager:
         if ParametersManager().shared_resources:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
-            config.enableExegolResources()
+            # Check if resources are installed / up-to-date
+            if UpdateManager.isExegolResourcesReady():
+                config.enableExegolResources()
+            else:
+                logger.warning("Exegol resources have not been downloaded, the functionality will be disabled!")
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(

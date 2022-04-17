@@ -30,7 +30,7 @@ class UpdateManager:
     @classmethod
     def __getSourceGit(cls) -> GitUtils:
         """GitUtils source submodule singleton getter"""
-        # Be sure that submodule are init first
+        # Be sure that submodules are init first
         cls.__getGit()
         if cls.__git_source is None:
             cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "image")
@@ -39,8 +39,6 @@ class UpdateManager:
     @classmethod
     def __getResourcesGit(cls):
         """GitUtils resource repo/submodule singleton getter"""
-        # Be sure that submodule are init first
-        cls.__getGit()
         if cls.__git_resources is None:
             cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "")
             if not cls.__git_resources.isAvailable:
@@ -50,7 +48,15 @@ class UpdateManager:
     @classmethod
     def __init_resources_repo(cls):
         if Confirm("Do you want to download exegol resources?", True):
-            cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
+            # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
+            # if not, git clone resources
+            if cls.__getGit().isAvailable and \
+                    UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources':
+                if cls.__getGit().submoduleSourceUpdate("exegol-resources"):
+                    cls.__git_resources = None
+                    cls.__getResourcesGit()
+            else:
+                cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -130,6 +136,11 @@ class UpdateManager:
     def updateResources(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
         return cls.__updateGit(cls.__getResourcesGit())
+
+    @classmethod
+    def isExegolResourcesReady(cls) -> bool:
+        """Update Exegol-resources from git (submodule)"""
+        return cls.__getResourcesGit().isAvailable
 
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:

@@ -203,7 +203,7 @@ class ContainerConfig:
         # Exegol resources config
         if self.__exegol_resources:
             if Confirm("Do you want to [red]disable[/red] the [orange3]exegol resources[/orange3]?", False):
-                self.__disableExegolResources()
+                self.disableExegolResources()
         elif Confirm("Do you want to [green]activate[/green] the [orange3]exegol resources[/orange3]?", False):
             self.enableExegolResources()
         # Command builder info
@@ -307,9 +307,9 @@ class ContainerConfig:
             logger.verbose("Config : Enabling exegol resources volume")
             self.__exegol_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().exegol_resources_path, '/opt/resources')
+            self.addVolume(str(UserConfig().exegol_resources_path), '/opt/resources')
 
-    def __disableExegolResources(self):
+    def disableExegolResources(self):
         """Procedure to disable exegol resources volume feature (Only for interactive config)"""
         if self.__exegol_resources:
             logger.verbose("Config : Disabling exegol resources volume")
