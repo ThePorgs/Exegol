@@ -30,7 +30,8 @@ class ContainerConfig:
         """Container config default value"""
         self.__enable_gui: bool = False
         self.__share_timezone: bool = False
-        self.__common_resources: bool = False
+        self.__shared_resources: bool = False
+        self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
         self.__mounts: List[Mount] = []
@@ -80,7 +81,7 @@ class ContainerConfig:
 
         # Volumes section
         self.__share_timezone = False
-        self.__common_resources = False
+        self.__shared_resources = False
         self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
 
         # Network section
@@ -122,7 +123,9 @@ class ContainerConfig:
             if "/etc/timezone" in share.get('Destination', ''):
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
-                self.__common_resources = True
+                self.__exegol_resources = True
+            elif "/shared" in share.get('Destination', ''):
+                self.__shared_resources = True
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
                 assert src_path is not None
@@ -187,15 +190,25 @@ class ContainerConfig:
         if not self.__share_timezone:
             command_options.append("--disable-shared-timezones")
 
-        # Common resources config
-        if self.__common_resources:
+        # Shared resources config
+        if self.__shared_resources:
             if Confirm("Do you want to [red]disable[/red] the [orange3]shared resources[/orange3]?", False):
-                self.__disableCommonVolume()
+                self.__disableSharedResources()
         elif Confirm("Do you want to [green]activate[/green] the [orange3]shared resources[/orange3]?", False):
-            self.enableCommonVolume()
+            self.enableSharedResources()
         # Command builder info
-        if not self.__common_resources:
-            command_options.append("--disable-common-resources")
+        if not self.__shared_resources:
+            command_options.append("--disable-shared-resources")
+
+        # Exegol resources config
+        if self.__exegol_resources:
+            if Confirm("Do you want to [red]disable[/red] the [orange3]exegol resources[/orange3]?", False):
+                self.__disableExegolResources()
+        elif Confirm("Do you want to [green]activate[/green] the [orange3]exegol resources[/orange3]?", False):
+            self.enableExegolResources()
+        # Command builder info
+        if not self.__exegol_resources:
+            command_options.append("--disable-exegol-resources")
 
         # Network config
         if self.__network_host:
@@ -273,19 +286,34 @@ class ContainerConfig:
             logger.warning("Setting container as privileged (this exposes the host to security risks)")
         self.__privileged = status
 
-    def enableCommonVolume(self):
-        """Procedure to enable common volume feature"""
-        if not self.__common_resources:
-            logger.verbose("Config : Enabling common resources volume")
-            self.__common_resources = True
+    def enableSharedResources(self):
+        """Procedure to enable shared volume feature"""
+        if not self.__shared_resources:
+            logger.verbose("Config : Enabling shared resources volume")
+            self.__shared_resources = True
             # Adding volume config
-            self.addVolume(ConstantConfig.COMMON_SHARE_NAME, '/opt/resources', volume_type='volume')
+            self.addVolume(UserConfig().shared_resources_path, '/shared')
 
-    def __disableCommonVolume(self):
-        """Procedure to disable common volume feature (Only for interactive config)"""
-        if self.__common_resources:
-            logger.verbose("Config : Disabling common resources volume")
-            self.__common_resources = False
+    def __disableSharedResources(self):
+        """Procedure to disable shared volume feature (Only for interactive config)"""
+        if self.__shared_resources:
+            logger.verbose("Config : Disabling shared resources volume")
+            self.__shared_resources = False
+            self.removeVolume(container_path='/shared')
+
+    def enableExegolResources(self):
+        """Procedure to enable exegol resources volume feature"""
+        if not self.__exegol_resources:
+            logger.verbose("Config : Enabling exegol resources volume")
+            self.__exegol_resources = True
+            # Adding volume config
+            self.addVolume(UserConfig().exegol_resources_path, '/opt/resources')
+
+    def __disableExegolResources(self):
+        """Procedure to disable exegol resources volume feature (Only for interactive config)"""
+        if self.__exegol_resources:
+            logger.verbose("Config : Disabling exegol resources volume")
+            self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
     def enableCwdShare(self):
@@ -498,9 +526,13 @@ class ContainerConfig:
         """Get private volume path (None if not set)"""
         return FsUtils.resolvStrPath(self.__workspace_dedicated_path)
 
-    def isCommonResourcesEnable(self) -> bool:
-        """Return if the feature 'common resources' is enabled in this container config"""
-        return self.__common_resources
+    def isSharedResourcesEnable(self) -> bool:
+        """Return if the feature 'shared resources' is enabled in this container config"""
+        return self.__shared_resources
+
+    def isExegolResourcesEnable(self) -> bool:
+        """Return if the feature 'exegol resources' is enabled in this container config"""
+        return self.__exegol_resources
 
     def isGUIEnable(self) -> bool:
         """Return if the feature 'GUI' is enabled in this container config"""
@@ -693,8 +725,10 @@ class ContainerConfig:
             result += f"[green]Network mode: [/green]{'host' if self.__network_host else 'custom'}{os.linesep}"
         if verbose or not self.__share_timezone:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
-        if verbose or not self.__common_resources:
-            result += f"{getColor(self.__common_resources)[0]}Common resources: {boolFormatter(self.__common_resources)}{getColor(self.__common_resources)[1]}{os.linesep}"
+        if verbose or not self.__exegol_resources:
+            result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
+        if verbose or not self.__shared_resources:
+            result += f"{getColor(self.__shared_resources)[0]}Shared resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
         return result.strip()
@@ -743,7 +777,7 @@ class ContainerConfig:
                f"TTY: {self.tty}{os.linesep}" \
                f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
-               f"Common resources: {self.__common_resources}{os.linesep}" \
+               f"Common resources: {self.__shared_resources}{os.linesep}" \
                f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
                f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
                f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \

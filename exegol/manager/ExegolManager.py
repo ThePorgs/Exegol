@@ -62,6 +62,7 @@ class ExegolManager:
     def start(cls):
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         logger.info("Starting exegol")
+        UpdateManager.updateResources()
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
@@ -344,8 +345,10 @@ class ExegolManager:
         if ParametersManager().share_timezone:
             config.enableSharedTimezone()
         config.setNetworkMode(ParametersManager().host_network)
-        if ParametersManager().common_resources:
-            config.enableCommonVolume()
+        if ParametersManager().shared_resources:
+            config.enableSharedResources()
+        if ParametersManager().exegol_resources:
+            config.enableExegolResources()
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(

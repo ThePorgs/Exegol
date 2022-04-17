@@ -67,11 +67,16 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=True,
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
-        self.common_resources = Option("--disable-common-resources",
+        self.shared_resources = Option("--disable-shared-resources",
                                        action="store_false",
                                        default=True,
-                                       dest="common_resources",
-                                       help=f"Disable the mount of the common exegol resources (/opt/resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
+                                       dest="shared_resources",
+                                       help=f"Disable the mount of the shared resources (/shared) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
+        self.exegol_resources = Option("--disable-exegol-resources",
+                                       action="store_false",
+                                       default=True,
+                                       dest="exegol_resources",
+                                       help=f"Disable the mount of the exegol resources (/opt/resources) from the host ({UserConfig().exegol_resources_path}) (default: [green]Enabled[/green])")
         self.host_network = Option("--disable-shared-network",
                                    action="store_false",
                                    default=True,
@@ -125,7 +130,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},
-                                  {"arg": self.common_resources, "required": False},
+                                  {"arg": self.shared_resources, "required": False},
+                                  {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   title="[blue]Container creation options[/blue]"))

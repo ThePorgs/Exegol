@@ -366,8 +366,8 @@ class ExegolTUI:
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
-        recap.add_row("[bold blue]Common resources[/bold blue]",
-                      boolFormatter(container.config.isCommonResourcesEnable()))
+        recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()))
+        recap.add_row("[bold blue]Shared resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()))
         recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         if container.config.getPrivileged() is True:
             recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]')

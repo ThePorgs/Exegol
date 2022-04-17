@@ -19,7 +19,6 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
-from exegol.utils.UserConfig import UserConfig
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
@@ -93,10 +92,12 @@ class DockerUtils:
             # Overwriting container starting command, shouldn't be used, prefer using config.setContainerCommand()
             model.config.setContainerCommand(command)
         logger.debug(model)
-        if model.config.isCommonResourcesEnable():
-            volume = cls.__loadCommonVolume()
-            if volume is None:
-                logger.warning("Error while creating common resources volume")
+        # Preload docker volume before container creation
+        for volume in model.config.getVolumes():
+            if volume.get('Type', '?') == "volume":
+                docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
+                if docker_volume is None:
+                    logger.warning(f"Error while creating docker volume '{volume['Target']}'")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
                                                     command=model.config.getContainerCommand(),
@@ -158,26 +159,26 @@ class DockerUtils:
     # # # Volumes Section # # #
 
     @classmethod
-    def __loadCommonVolume(cls) -> Volume:
-        """Load or create the common resource volume for exegol containers
+    def __loadDockerVolume(cls, volume_path: str, volume_name: str) -> Volume:
+        """Load or create a docker volume for exegol containers
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
         try:
-            os.makedirs(UserConfig().shared_resources_path, exist_ok=True)
+            os.makedirs(volume_path, exist_ok=True)
         except PermissionError:
-            logger.error("Unable to create the shared resource folder on the filesystem locally.")
-            logger.critical(f"Insufficient permission to create the folder: {UserConfig().shared_resources_path}")
+            logger.error("Unable to create the volume folder on the filesystem locally.")
+            logger.critical(f"Insufficient permission to create the folder: {volume_path}")
         try:
             # Check if volume already exist
-            volume = cls.__client.volumes.get(ConstantConfig.COMMON_SHARE_NAME)
+            volume = cls.__client.volumes.get(volume_name)
             path = volume.attrs.get('Options', {}).get('device', '')
-            if path != UserConfig().shared_resources_path:
+            if path != volume_path:
                 try:
-                    cls.__client.api.remove_volume(name=ConstantConfig.COMMON_SHARE_NAME)
+                    cls.__client.api.remove_volume(name=volume_name)
                     raise NotFound('Volume must be reloaded')
                 except APIError as e:
                     if e.status_code == 409:
-                        logger.warning("The path of shared exegol resources specified in the user configuration is not the same as in the existing docker volume. "
+                        logger.warning("The path of the volume specified by the user is not the same as in the existing docker volume. "
                                        "The user path will be [red]ignored[/red] as long as the docker volume already exists.")
                         logger.verbose("The volume is already used by some container and cannot be automatically removed.")
                         logger.debug(e.explanation)
@@ -188,12 +189,12 @@ class DockerUtils:
                 # Creating a docker volume bind to a host path
                 # Docker volume are more easily shared by container
                 # Docker volume can load data from container image on host's folder creation
-                volume = cls.__client.volumes.create(ConstantConfig.COMMON_SHARE_NAME, driver="local",
+                volume = cls.__client.volumes.create(volume_name, driver="local",
                                                      driver_opts={'o': 'bind',
-                                                                  'device': UserConfig().shared_resources_path,
+                                                                  'device': volume_path,
                                                                   'type': 'none'})
             except APIError as err:
-                logger.error(f"Error while creating common share docker volume.")
+                logger.error(f"Error while creating docker volume '{volume_name}'.")
                 logger.debug(err)
                 logger.critical(err.explanation)
                 return None  # type: ignore

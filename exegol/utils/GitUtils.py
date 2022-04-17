@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional, List
 
 from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.ExeLog import logger
+from exegol.utils.ExeLog import logger, console
 
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
@@ -195,9 +195,10 @@ class GitUtils:
             # Disable submodule init from submodule repo
             return
         logger.verbose(f"Git {self.getName()} init submodules")
-        for subm in self.__gitRepo.iter_submodules():
-            logger.debug(f"Init submodule '{subm.name}'")
-            subm.update(recursive=True)
+        with console.status(f"Initialization of git submodules", spinner_style="blue"):
+            for subm in self.__gitRepo.iter_submodules():
+                logger.debug(f"Init submodule '{subm.name}'")
+                subm.update(recursive=True)
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""

@@ -15,8 +15,7 @@ class ConstantConfig:
     # Dockerhub Exegol images repository
     DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol"
-    # Docker common share volume name
-    COMMON_SHARE_NAME: str = "exegol-shared-resources"
+    # Docker volume names (no docker volume used at this moment)
     # Resources repository
     EXEGOL_RESOURCES_REPO: str = "https://github.com/ShutdownRepo/Exegol-resources.git"
 

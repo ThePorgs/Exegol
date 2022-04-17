@@ -41,17 +41,17 @@ class UserConfig(metaclass=MetaSingleton):
                 self.__create_config_file()
 
     def __create_config_file(self):
-        # TODO update comment for docker volume
         config = f"""# Exegol configuration
-        
+
+# Volume path can be changed at any time but existing containers will not be affected by the update
 volumes:
-    # Changing the shared resources path must be set before creating any exegol container (and remove the docker volume {ConstantConfig.COMMON_SHARE_NAME} if exists)
+    # The shared resources volume is a storage space dedicated to the user to customize his environment and tools. This volume can be shared across all exegol containers.
     shared_resources_path: {self.shared_resources_path}
     
-    # Exegol static resources location (can be change at any moment but the update will not affect already created containers)
+    # Exegol resources are data and static tools downloaded in addition to docker images. These tools are complementary and are accessible directly from the host.
     exegol_resources_path: {self.exegol_resources_path}
     
-    # Changing the location of the private workspace parent directory can be done at any moment but the change will not affect already created containers
+    # When containers do not have an explicitly declared workspace, a dedicated folder will be created at this location to share the workspace with the host but also to save the data after deleting the container
     private_workspace_path: {self.private_volume_path}
 """
         # TODO handle default image selection
