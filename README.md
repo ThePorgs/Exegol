@@ -17,9 +17,21 @@
 
 **:bulb: TL;DR: Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements.**
 
-Exegol is a fully configured docker with many useful additional tools, resources (scripts and binaries for privesc, credential theft etc.) and some configuration (oh-my-zsh, history, aliases, colorized output for some tools). It can be used in pentest engagements, bugbounty, CTF, HackTheBox, OSCP lab & exam and so on. Exegol's original fate was to be a ready-to-hack docker in case of emergencies during engagements.
-
-The main features of Exegol are:
+## Wrapper & images
+Exegol is two things in one. Try it, and you'll stop using your old, unstable, risky environment like Kali Linux.
+- **a python wrapper** making everyone's life easier. It handles all docker and git operations so you don't have to and allows for l33t hacking following best-practices. No more messed up history, libraries, and workspaces. **Now's the time to have a clean environment** with one container per engagement without effort. Exegol handles multiple images and multiple containers.
+    - Want to test a new tool without risking messing up your environment? Exegol is here, pop up a new container in 5 seconds and try the tool without risk or effort
+    - Like the idea of using docker containers without effort but don't want to sacrifice GUI tools like BloodHound and Burp? Exegol is here, new containers are created with X11 sharing by default allowing for GUI tools to work.
+    - Like the idea of using docker containers but want to use USB accessories, Wi-Fi, host's network interfaces, etc.? Exegol handles all that flawlessly
+    - Want to stop pentesting your clients with the same environment everytime, interconnecting everything and risking being a weak link? Exegol is here, pop multiple containers without breaking a sweat and lead by example!
+- a set of pre-built **docker images** and dockerfiles that include a neat choice of tools, awesome resources, custom configs and many more.
+    - Fed up with the instability and poor choice of tools of Kali Linux ? Exegol is here, trying to correct all this by being community-driven. Want some not-so-famous tool to be added? Open an issue and let's talk do it!
+    - Tired of always having to open `man` or print the help for every tool because the syntax varies? Exegol includes a command history allowing you to just replace the placeholders with your values, saving you precious time
+    - Want to improve productivity? Exegol includes all sorts of custom configs and tweaks with ease of use and productivity in mind (colored output for Impacket, custom shortcuts and aliases, custom tool configs, ...).
+    - Want to build your own docker images locally? It's absolutely possibe and the wrapper will help in the quest.
+    - Tired of always having to search github for your favorite privesc enumeration script? Exegol includes a set of resources, shared with all exegol containers and your host, including LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus and many more.
+    
+Exegol was built with pentest engagements in mind, but it can also be used in CTFs, Bug Bounties, HackTheBox, OSCP, and so on.
 - [:wrench: Tools](#wrench-tools): many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with only ultra-famous tools, you will find ones that the community loves to use, even if it's in dev/new/not famous. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Responder, custom queries in BloodHound, ...)
 - [:bulb: Resources](#bulb-resources): many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
 - [:scroll: History](#scroll-history): a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
@@ -27,95 +39,100 @@ The main features of Exegol are:
 - [:mag_right: Usage](#mag_right-usage) : a powerful Python3 wrapper used to manage Exegol container and image very easily (handles every docker operations).
 
 Below is an example of a Zerologon attack operated with Exegol.
-![Example](assets/example-zerologon.gif)
+**TODO**
 
 Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/active-directory-domain-services/movement/abusing-aces) operated with Exegol
-![Example](assets/example-rbcd.gif)
+**TODO**
 
 # :fast_forward: Quick start
 
-> Keep in mind that this is only the installation of the exegol wrapper, at least one docker image will be downloaded by the wrapper afterwards.
+> Keep in mind that the wrapper is one thing, but in order to use Exegol, at least one Exegol docker image must be installed.
+> Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
 
 ## Installation using pip
 
-Exegol wrapper can be installed from pip repository:
+Exegol's wrapper can be installed from pip repository. That's the entrypoint of the project, you'll be able to do all the rest from there.
 ```
-pip3 install exegol
+python3 -m pip install exegol
 ```
+Remember that pip install binaries in `~/.local/bin`, which then must be in the `PATH`.
 
-## Installation from source
-Installing the wrapper by the source has the advantage of handling self updates.
+## Installation from sources
+Exegol's wrapper can also be installed from sources. The wrapper then knows how to self-update.
 ```
 git clone https://github.com/ShutdownRepo/Exegol
 cd Exegol
 python3 -m pip install --user --requirement requirements.txt
 ```
 
-Add Exegol to PATH :
+The wrapper can then be added to the `PATH`.
 ```
 sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 ```
 
 ## Exegol images
 
-It is possible to install an exegol image using the wrapper with the command: `exegol install <image_name>`
+It is possible to install an exegol image using the wrapper with the following command: `exegol install <image_name>`
 
 | Image name | Description                                                                                        |
 |------------|----------------------------------------------------------------------------------------------------|
-| full       | This image includes all the tools supported by Exegol. It is however very large.                   |
-| nightly    | This image is for developers containing the latest updates. Warning: this image is unstable!       |
-| ad         | This lighter image only includes the Active Directory tools. Ideal for internal penetration tests. |
-| web        | This lighter image integrates only the web tools. Ideal for web penetration testing.               |
-| light      | This image is the lightest, it integrates only the essential elements.                             |
-| osint      | This image is specialized in OSINT activities.                                                     |
+| full       | Includes all the tools supported by Exegol (warning: this is the heaviest image)                   |
+| nightly    | (for developers and advanced users) contains the latest updates. This image can be unstable!       |
+| ad         | Includes tools for Active Directory / internal pentesting only.                                    |
+| web        | Includes tools for Web pentesting only.                                                            |
+| light      | Includes the lightest and most used tools for various purposes.                                    |
+| osint      | Includes tools for OSINT.                                                                          |
 
 # :mag_right: Usage
-A powerful Python wrapper allows to manage Exegol without having to know docker-fu.
+Below are some examples of usage. For more examples, run the following command: `exegol <action> -h` (action: install/start/stop/etc.).
 
-- Install (pull or build) an image : `exegol install`
+- Install an Exegol image : `exegol install`
 - Create/start/enter a container : `exegol start`
 - Show info on containers and images : `exegol info`
-- Execute a specific command on a container as a daemon : `exegol exec -b bloodhound`
 - Stop a container : `exegol stop`
 - Remove a container : `exegol remove`
 - Uninstall an image : `exegol uninstall`
 - Get help and advanced usage : `exegol --help`
 
-# TODO update gif
-![Example](assets/example-info.gif)
+:warning: remember that Exegol uses Docker images and containers. Understanding the difference is essential to understand Exegol.
+- **image**: think of it as an immutable template. They cannot be executed as-is and serve as input for containers. It's not possible to open a shell in an image.
+- **container**: a container rests upon an image. A container is created for a certain image at a certain time. It's possible to open a shell in a container. Careful though, once a container is created, updating the image it was created upon won't have any impact on the container. In order to enjoy the new things, a new container must be created upon that updated image.
 
-By default, Exegol will start with display sharing allowing GUI-based programs to run, here is an example with BloodHound.
+**TODO: usage GIF**
 
-![Example](assets/example-display-sharing.gif)
+By default, Exegol will create containers with display sharing allowing GUI-based programs to run, with network host sharing, and a few others things.
+Below is an example of a GUI app running in an Exegol container.
+
+**TODO: example with BloodHound and Burp?**
 
 # :closed_lock_with_key: Credentials
 Some tools are pre-configured with the following credentials
+
 | Element | User | Password |
 | ------- | ---- | -------- |
-| wso-webshell (PHP) | | exegol4thewin |
 | neo4j database | neo4j | exegol4thewin |
 | bettercap ui | bettercap | exegol4thewin |
 | trilium | trilium | exegol4thewin |
+| wso-webshell (PHP) | | exegol4thewin |
 
 # :pushpin: Pre-requisites
-You need python3 and docker :whale:, and at least 10GB of free storage (*What did you expect? A fully featured pentesting environment for less than 2GB? If you've got ideas I'm all ears*).
+You need python3 and docker :whale:, and at least 20GB of free storage.
+You also need python libraries listed in [requirements.txt](./requirements.txt).
 
 # :wrench: Tools
-The tools installed in Exegol are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
-- CrackMapExec (https://github.com/byt3bl33d3r/CrackMapExec)
+The tools installed in [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
 - Impacket (https://github.com/SecureAuthCorp/impacket)
 - BloodHound (https://github.com/BloodHoundAD/BloodHound)
 - Ghidra (https://ghidra-sre.org/)
-- Powershell Empire (https://github.com/BC-SECURITY/Empire)
 - ffuf (https://github.com/ffuf/ffuf)
-- shellerator (https://github.com/ShutdownRepo/shellerator)
+- Burp (https://portswigger.net/burp)
 - [and many others...](https://github.com/ShutdownRepo/Exegol/wiki/Tools)
 
 # :bulb: Resources
-In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
-- Linux Smart Enumeration (lse.sh) (https://github.com/diego-treitos/linux-smart-enumeration)
+In addition to the many tools pre-installed and configured for some, you will find many useful pre-fetched resources ([Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources)) like scripts and binaries in `/opt/resources`. There some pre-EoP enumeration scripts (EoP: Escalation of Privileges) and other useful binaries like Rubeus or mimikatz.
 - mimikatz (https://github.com/gentilkiwi/mimikatz)
 - linPEAS & winPEAS (https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite)
+- Linux Smart Enumeration (lse.sh) (https://github.com/diego-treitos/linux-smart-enumeration)
 - sysinternals (https://docs.microsoft.com/en-us/sysinternals/downloads/)
 - PowerSploit (https://github.com/PowerShellMafia/PowerSploit)
 - [and many others...](https://github.com/ShutdownRepo/Exegol/wiki/Resources)
@@ -129,7 +146,10 @@ Since many tools are manually installed in `/opt/tools/`, aliases could be heplf
 Other aliases are set to save time while hacking (`http-server`, `php-server`, `urlencode`,`ipa`, ...).
 
 # :loudspeaker: Credits & thanks
-Credits and thanks go to every infosec addicts that contribute and share but most specifically to [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
+Credits and thanks go to every infosec addicts that contribute and share but most specifically to 
+- [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
+- [dramelac_](https://twitter.com/dramelac_) for working on [Exegol](https://github.com/ShutdownRepo/Exegol) (the wrapper)
+- LamaBzh for working on [Exegol-images](https://github.com/ShutdownRepo/Exegol-images)
 
 # :movie_camera: Introducing Exegol (in french w/ english subs)
 <p align="center">

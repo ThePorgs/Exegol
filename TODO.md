@@ -4,3 +4,4 @@
   - export (allow export of exegol containers and images)
   - import (allow import of exegol containers and images)
 - handle encrypted volumes
+- after interactive mode: show the full command for next time so that users don't always have to go through interactive mode
