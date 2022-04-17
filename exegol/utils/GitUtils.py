@@ -10,27 +10,32 @@ from exegol.utils.ExeLog import logger
 class GitUtils:
     """Utility class between exegol and the Git SDK"""
 
-    def __init__(self, path_str: Optional[str] = None, name: str = "wrapper"):
+    def __init__(self, path: Optional[Path] = None, name: str = "wrapper", subject: str = "source code"):
         """Init git local repository object / SDK"""
-        if path_str is None:
+        if path is None:
             path = ConstantConfig.src_root_path_obj
-        else:
-            path = ConstantConfig.src_root_path_obj / path_str
         self.isAvailable = False
         self.__is_submodule = False
+        self.__repo_path = path
+        self.__git_name: str = name
+        self.__git_subject: str = subject
+        abort_loading = False
         # Check if .git directory exist
         try:
-            test_git_dir = path / '.git'
+            test_git_dir = self.__repo_path / '.git'
             if test_git_dir.is_file():
                 logger.debug("Git submodule repository detected")
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
         except ReferenceError:
-            logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
-            if path.name == "site-packages":
-                logger.info("If you have installed Exegol with pip, check for an update with the command "
-                            "[green]pip3 install exegol --upgrade[/green]")
+            if self.__git_name == "wrapper":
+                logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
+                if self.__repo_path.name == "site-packages":
+                    logger.info("If you have installed Exegol with pip, check for an update with the command "
+                                "[green]pip3 install exegol --upgrade[/green]")
+            # TODO check pip with submodules
+            abort_loading = True
         # locally import git in case git is not installed of the system
         try:
             from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
@@ -40,25 +45,50 @@ class GitUtils:
         except ImportError:
             logger.error("Unable to find git tool locally. Skipping git operations.")
             return
-        logger.debug(f"Loading git at {path}")
         self.__gitRepo: Optional[Repo] = None
         self.__gitRemote: Optional[Remote] = None
         self.__fetchBranchInfo: Optional[FetchInfo] = None
-        self.__git_name: str = name
 
+        if abort_loading:
+            return
+        logger.debug(f"Loading git at {self.__repo_path}")
         try:
-            self.__gitRepo = Repo(str(path))
-            self.isAvailable = True
-            logger.debug("Git repository successfully loaded")
-            if len(self.__gitRepo.remotes) > 0:
-                self.__gitRemote = self.__gitRepo.remotes['origin']
-            else:
-                logger.warning("No remote git origin found on repository")
-                logger.debug(self.__gitRepo.remotes)
-            self.__initSubmodules()
+            self.__gitRepo = Repo(str(self.__repo_path))
+            self.__init_repo()
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
+
+    def __init_repo(self):
+        self.isAvailable = True
+        logger.debug("Git repository successfully loaded")
+        if len(self.__gitRepo.remotes) > 0:
+            self.__gitRemote = self.__gitRepo.remotes['origin']
+        else:
+            logger.warning("No remote git origin found on repository")
+            logger.debug(self.__gitRepo.remotes)
+        self.__initSubmodules()
+
+    def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
+        if self.isAvailable:
+            logger.warning(f"The {self.getName()} repo is already cloned.")
+            return False
+        # locally import git in case git is not installed of the system
+        try:
+            from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
+        except ModuleNotFoundError:
+            logger.debug("Git module is not installed.")
+            return False
+        except ImportError:
+            logger.error(f"Unable to find git on your machine. The {self.getName()} repository cannot be cloned.")
+            logger.warning("Please install git to support this feature.")
+            return False
+        custom_options = []
+        if optimize_disk_space:
+            custom_options.append('--depth=1')
+        # TODO add console loader / progress bar via TUI
+        self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+        self.__init_repo()
 
     def getCurrentBranch(self) -> Optional[str]:
         """Get current git branch name"""
@@ -164,7 +194,7 @@ class GitUtils:
         if self.isSubModule():
             # Disable submodule init from submodule repo
             return
-        logger.verbose("Git init submodules")
+        logger.verbose(f"Git {self.getName()} init submodules")
         for subm in self.__gitRepo.iter_submodules():
             logger.debug(f"Init submodule '{subm.name}'")
             subm.update(recursive=True)
@@ -205,7 +235,7 @@ class GitUtils:
         try:
             # If git local branch didn't exist, change HEAD to the origin branch and create a new local branch
             if branch not in self.__gitRepo.heads:
-                self.__gitRepo.references['origin/'+branch].checkout()
+                self.__gitRepo.references['origin/' + branch].checkout()
                 self.__gitRepo.create_head(branch)
             self.__gitRepo.heads[branch].checkout()
         except GitCommandError as e:
@@ -222,6 +252,10 @@ class GitUtils:
     def getName(self) -> str:
         """Git name getter"""
         return self.__git_name
+
+    def getSubject(self) -> str:
+        """Git subject getter"""
+        return self.__git_subject
 
     def isSubModule(self) -> bool:
         """Git submodule status getter"""

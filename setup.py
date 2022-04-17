@@ -52,7 +52,8 @@ setup(
         'docker~=5.0.3',
         'requests',
         'rich~=11.2.0',
-        'PyYAML'
+        'PyYAML',
+        'GitPython'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,

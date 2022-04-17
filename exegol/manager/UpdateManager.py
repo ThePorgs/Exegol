@@ -11,12 +11,14 @@ from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
+from exegol.utils.UserConfig import UserConfig
 
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
     __git: Optional[GitUtils] = None
     __git_source: Optional[GitUtils] = None
+    __git_resources: Optional[GitUtils] = None
 
     @classmethod
     def __getGit(cls) -> GitUtils:
@@ -28,9 +30,27 @@ class UpdateManager:
     @classmethod
     def __getSourceGit(cls) -> GitUtils:
         """GitUtils source submodule singleton getter"""
+        # Be sure that submodule are init first
+        cls.__getGit()
         if cls.__git_source is None:
-            cls.__git_source = GitUtils("exegol-docker-build", "image")
+            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "image")
         return cls.__git_source
+
+    @classmethod
+    def __getResourcesGit(cls):
+        """GitUtils resource repo/submodule singleton getter"""
+        # Be sure that submodule are init first
+        cls.__getGit()
+        if cls.__git_resources is None:
+            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "")
+            if not cls.__git_resources.isAvailable:
+                cls.__init_resources_repo()
+        return cls.__git_resources
+
+    @classmethod
+    def __init_resources_repo(cls):
+        if Confirm("Do you want to download exegol resources?", True):
+            cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -106,13 +126,18 @@ class UpdateManager:
         """Update image source code from git submodule"""
         return cls.__updateGit(cls.__getSourceGit())
 
+    @classmethod
+    def updateResources(cls) -> bool:
+        """Update Exegol-resources from git (submodule)"""
+        return cls.__updateGit(cls.__getResourcesGit())
+
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
         """User procedure to update local git repository"""
         if not gitUtils.isAvailable:
             logger.empty_line()
             return False
-        logger.info(f"Updating Exegol {gitUtils.getName()} source code")
+        logger.info(f"Updating Exegol {gitUtils.getName()} {gitUtils.getSubject()}")
         # Check if pending change -> cancel
         if not gitUtils.safeCheck():
             logger.error("Aborting git update.")

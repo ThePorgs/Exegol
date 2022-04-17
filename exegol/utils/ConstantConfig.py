@@ -17,6 +17,8 @@ class ConstantConfig:
     IMAGE_NAME: str = "nwodtuhs/exegol"
     # Docker common share volume name
     COMMON_SHARE_NAME: str = "exegol-shared-resources"
+    # Resources repository
+    EXEGOL_RESOURCES_REPO: str = "https://github.com/ShutdownRepo/Exegol-resources.git"
 
     @classmethod
     def findBuildContextPath(cls) -> Path:
