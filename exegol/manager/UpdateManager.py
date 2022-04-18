@@ -160,7 +160,7 @@ class UpdateManager:
         if not gitUtils.isAvailable:
             logger.empty_line()
             return False
-        logger.info(f"Updating Exegol {gitUtils.getName()} {gitUtils.getSubject()}")
+        logger.info(f"Updating Exegol [green]{gitUtils.getName()}[/green] {gitUtils.getSubject()}")
         # Check if pending change -> cancel
         if not gitUtils.safeCheck():
             logger.error("Aborting git update.")
