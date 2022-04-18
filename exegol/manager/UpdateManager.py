@@ -47,11 +47,15 @@ class UpdateManager:
 
     @classmethod
     def __init_resources_repo(cls):
-        if Confirm("Do you want to download exegol resources?", True):
+        if Confirm("Do you want to download exegol resources? (~1G)", True):
             # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
             # if not, git clone resources
-            if cls.__getGit().isAvailable and \
-                    UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources':
+            # TODO check if .git directory should also be exclude for AV scan (in case of submodule download from wrapper repository)
+            logger.warning(f"If you are using an AV on your host, you should exclude the {UserConfig().exegol_resources_path} folder before starting the download.")
+            while not Confirm(f"Are you ready to start the download?", True):
+                pass
+            if UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
+                    cls.__getGit().isAvailable:
                 if cls.__getGit().submoduleSourceUpdate("exegol-resources"):
                     cls.__git_resources = None
                     cls.__getResourcesGit()
@@ -159,13 +163,22 @@ class UpdateManager:
             logger.warning("HEAD is detached. Please checkout to an existing branch.")
             current_branch = "unknown"
         if logger.isEnabledFor(ExeLog.VERBOSE) or current_branch not in ["master", "main"]:
-            logger.info(f"Current git branch : {current_branch}")
-            # List & Select git branch
-            default_choice = current_branch if current_branch != 'unknown' else None
-            selected_branch = cast(str, ExegolTUI.selectFromList(gitUtils.listBranch(),
-                                                                 subject="a git branch",
-                                                                 title="Branch",
-                                                                 default=default_choice))
+            available_branches = gitUtils.listBranch()
+            # Ask to checkout only if there is more than one branch available
+            if len(available_branches) > 1:
+                logger.info(f"Current git branch : {current_branch}")
+                # List & Select git branch
+                default_choice = current_branch if current_branch != 'unknown' else None
+                selected_branch = cast(str, ExegolTUI.selectFromList(gitUtils.listBranch(),
+                                                                     subject="a git branch",
+                                                                     title="Branch",
+                                                                     default=default_choice))
+            elif len(available_branches) == 0:
+                logger.warning("No branch were detected!")
+                selected_branch = None
+            else:
+                # Automatically select the only branch in case of HEAD detachment
+                selected_branch = available_branches[0]
             # Checkout new branch
             if selected_branch is not None and selected_branch != current_branch:
                 gitUtils.checkout(selected_branch)

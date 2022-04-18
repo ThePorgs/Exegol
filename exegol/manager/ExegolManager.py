@@ -100,7 +100,8 @@ class ExegolManager:
     @classmethod
     def install(cls):
         """Pull or build a docker exegol image"""
-        UpdateManager.updateResources()
+        if not UpdateManager.isExegolResourcesReady():
+            logger.warning("Exegol resources have not been downloaded, the functionality will not be available!")
         UpdateManager.updateImage(install_mode=True)
 
     @classmethod

@@ -86,8 +86,9 @@ class GitUtils:
         custom_options = []
         if optimize_disk_space:
             custom_options.append('--depth=1')
-        # TODO add console loader / progress bar via TUI
-        self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+        # TODO add progress bar via TUI
+        with console.status(f"Downloading {self.getName()} git repository", spinner_style="blue"):
+            self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
         self.__init_repo()
         return True
 
@@ -191,17 +192,19 @@ class GitUtils:
         return False
 
     def __initSubmodules(self):
-        """Init (and update) git sub repositories (not source code)"""
-        if self.isSubModule():
-            # Disable submodule init from submodule repo
-            return
+        """Init (and update git object not source code) git sub repositories (only depth=1)"""
         logger.verbose(f"Git {self.getName()} init submodules")
+        # These module are init / updated manually
         blacklist_heavy_modules = ["exegol-resources"]
-        with console.status(f"Initialization of git submodules", spinner_style="blue"):
+        # Submodules dont have depth submodule limits
+        depth_limit = not self.__is_submodule
+        with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
             for subm in self.__gitRepo.iter_submodules():
-                if subm.name in blacklist_heavy_modules:
+                # Submodule update are skipped if blacklisted or if the depth limit is set
+                if subm.name in blacklist_heavy_modules or \
+                        (depth_limit and ('/' in subm.name or '\\' in subm.name)):
                     continue
-                logger.debug(f"Init submodule '{subm.name}'")
+                s.update(f"Downloading git submodules [green]{subm.name}[/green]",)
                 subm.update(recursive=True)
 
     def submoduleSourceUpdate(self, name: str) -> bool:
@@ -217,9 +220,9 @@ class GitUtils:
         from git.exc import RepositoryDirtyError
         try:
             # TODO add TUI progress
-            with console.status(f"Updating submodule {name}", spinner_style="blue"):
-                submodule.update(to_latest_revision=True, recursive=True)
-            logger.success(f"Submodule {name} successfully updated.")
+            with console.status(f"Downloading submodule [green]{name}[/green]", spinner_style="blue"):
+                submodule.update(to_latest_revision=True)
+            logger.success(f"Submodule [green]{name}[/green] successfully updated.")
             return True
         except RepositoryDirtyError:
             logger.warning(f"Submodule {name} cannot be updated automatically as long as there are local modifications.")
