@@ -145,6 +145,8 @@ class UpdateManager:
     @classmethod
     def updateResources(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
+        if not Confirm('Do you want to update exegol resources.', default=True):
+            return False
         return cls.__updateGit(cls.__getResourcesGit())
 
     @classmethod
