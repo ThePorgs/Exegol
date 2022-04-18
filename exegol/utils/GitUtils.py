@@ -186,7 +186,7 @@ class GitUtils:
             return False
         if self.__gitRemote is not None:
             logger.info(f"Using branch '{self.getCurrentBranch()}' on {self.getName()} repository")
-            self.__gitRemote.pull()
+            self.__gitRemote.pull(refspec=self.getCurrentBranch())
             logger.success("Git successfully updated")
             return True
         return False
