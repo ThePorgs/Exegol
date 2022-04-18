@@ -21,7 +21,7 @@ class UserConfig(metaclass=MetaSingleton):
 
         # Defaults User config
         self.private_volume_path: Path = self.__exegol_path / "workspaces"
-        self.shared_resources_path: str = str(self.__exegol_path / "shared-resources")
+        self.shared_resources_path: str = str(self.__exegol_path / "my-resources")
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
 
         # process
@@ -46,7 +46,7 @@ class UserConfig(metaclass=MetaSingleton):
 # Volume path can be changed at any time but existing containers will not be affected by the update
 volumes:
     # The shared resources volume is a storage space dedicated to the user to customize his environment and tools. This volume can be shared across all exegol containers.
-    shared_resources_path: {self.shared_resources_path}
+    my_resources_path: {self.shared_resources_path}
     
     # Exegol resources are data and static tools downloaded in addition to docker images. These tools are complementary and are accessible directly from the host.
     exegol_resources_path: {self.exegol_resources_path}
@@ -95,7 +95,7 @@ volumes:
         # Catch existing but empty section
         if volumes_data is None:
             volumes_data = {}
-        self.shared_resources_path = str(self.__load_config_path(volumes_data, 'shared_resources_path', self.shared_resources_path))
+        self.shared_resources_path = str(self.__load_config_path(volumes_data, 'my_resources_path', self.shared_resources_path))
         self.private_volume_path = self.__load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self.__load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
 
