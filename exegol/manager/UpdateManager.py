@@ -1,4 +1,5 @@
-from typing import Optional, Dict, cast, Tuple
+from pathlib import Path
+from typing import Optional, Dict, cast, Tuple, Union
 
 from rich.prompt import Prompt
 
@@ -50,17 +51,22 @@ class UpdateManager:
         if Confirm("Do you want to download exegol resources? (~1G)", True):
             # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
             # if not, git clone resources
-            # TODO check if .git directory should also be exclude for AV scan (in case of submodule download from wrapper repository)
-            logger.warning(f"If you are using an AV on your host, you should exclude the {UserConfig().exegol_resources_path} folder before starting the download.")
-            while not Confirm(f"Are you ready to start the download?", True):
-                pass
             if UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
                     cls.__getGit().isAvailable:
+                # When resources are load from git submodule, git objects are stored in the root .git directory
+                cls.__warningExcludeFolderAV(ConstantConfig.src_root_path_obj)
                 if cls.__getGit().submoduleSourceUpdate("exegol-resources"):
                     cls.__git_resources = None
                     cls.__getResourcesGit()
             else:
+                cls.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
                 cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
+
+    @staticmethod
+    def __warningExcludeFolderAV(directory: Union[str, Path]):
+        logger.warning(f"If you are using an [orange3][g]AV[/g][/orange3] on your host, you should exclude the {directory} folder before starting the download.")
+        while not Confirm(f"Are you ready to start the download?", True):
+            pass
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
