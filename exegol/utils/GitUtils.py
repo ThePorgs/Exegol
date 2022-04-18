@@ -10,7 +10,11 @@ from exegol.utils.ExeLog import logger, console
 class GitUtils:
     """Utility class between exegol and the Git SDK"""
 
-    def __init__(self, path: Optional[Path] = None, name: str = "wrapper", subject: str = "source code"):
+    def __init__(self,
+                 path: Optional[Path] = None,
+                 name: str = "wrapper",
+                 subject: str = "source code",
+                 skip_submodule_update: bool = False):
         """Init git local repository object / SDK"""
         if path is None:
             path = ConstantConfig.src_root_path_obj
@@ -54,12 +58,12 @@ class GitUtils:
         logger.debug(f"Loading git at {self.__repo_path}")
         try:
             self.__gitRepo = Repo(str(self.__repo_path))
-            self.__init_repo()
+            self.__init_repo(skip_submodule_update)
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
 
-    def __init_repo(self):
+    def __init_repo(self, skip_submodule_update: bool = False):
         self.isAvailable = True
         logger.debug("Git repository successfully loaded")
         if len(self.__gitRepo.remotes) > 0:
@@ -67,7 +71,8 @@ class GitUtils:
         else:
             logger.warning("No remote git origin found on repository")
             logger.debug(self.__gitRepo.remotes)
-        self.__initSubmodules()
+        if not skip_submodule_update:
+            self.__initSubmodules()
 
     def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
         if self.isAvailable:
@@ -204,7 +209,7 @@ class GitUtils:
                 if subm.name in blacklist_heavy_modules or \
                         (depth_limit and ('/' in subm.name or '\\' in subm.name)):
                     continue
-                s.update(f"Downloading git submodules [green]{subm.name}[/green]",)
+                s.update(f"Downloading git submodules [green]{subm.name}[/green]")
                 subm.update(recursive=True)
 
     def submoduleSourceUpdate(self, name: str) -> bool:

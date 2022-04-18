@@ -366,8 +366,10 @@ class ExegolTUI:
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
-        recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()))
-        recap.add_row("[bold blue]Shared resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()))
+        recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +
+                      f"{'[bright_black](/opt/resources)[/bright_black]' if container.config.isExegolResourcesEnable() else ''}")
+        recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()) +
+                      f"{'[bright_black](/my-resources)[/bright_black]' if container.config.isSharedResourcesEnable() else ''}")
         recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         if container.config.getPrivileged() is True:
             recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]')
@@ -378,9 +380,9 @@ class ExegolTUI:
                           f"[{privilege_color}]{', '.join(capabilities)}[/{privilege_color}]")
         if container.config.isWorkspaceCustom():
             recap.add_row("[bold blue]Workspace[/bold blue]",
-                          f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}]')
+                          f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}] [bright_black](/workspace)[/bright_black]')
         else:
-            recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta]')
+            recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta] [bright_black](/workspace)[/bright_black]')
         if len(devices) > 0:
             recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(envs) > 0:

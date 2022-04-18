@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 def boolFormatter(val: bool) -> str:
     """Generic text formatter for bool value"""
-    return '[green]On :heavy_check_mark:[/green]  ' if val else '[orange3]Off :axe:[/orange3]'
+    return '[green]On :heavy_check_mark:[/green] ' if val else '[orange3]Off :axe:[/orange3]'
 
 
 def getColor(val: Union[bool, int, str]) -> Tuple[str, str]:

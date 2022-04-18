@@ -102,7 +102,7 @@ volumes:
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
-            f"Shared resources = {self.shared_resources_path}",
+            f"My resources = {self.shared_resources_path}",
             f"Exegol resources = {self.exegol_resources_path}",
             f"Private workspace = {self.private_volume_path}"
         ]

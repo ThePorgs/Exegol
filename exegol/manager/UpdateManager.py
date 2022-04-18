@@ -38,10 +38,10 @@ class UpdateManager:
         return cls.__git_source
 
     @classmethod
-    def __getResourcesGit(cls):
+    def __getResourcesGit(cls, fast_load: bool = False):
         """GitUtils resource repo/submodule singleton getter"""
         if cls.__git_resources is None:
-            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "")
+            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "", skip_submodule_update=fast_load)
             if not cls.__git_resources.isAvailable:
                 cls.__init_resources_repo()
         return cls.__git_resources
@@ -152,7 +152,7 @@ class UpdateManager:
     @classmethod
     def isExegolResourcesReady(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
-        return cls.__getResourcesGit().isAvailable
+        return cls.__getResourcesGit(fast_load=True).isAvailable
 
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:

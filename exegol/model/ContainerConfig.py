@@ -124,7 +124,7 @@ class ContainerConfig:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
-            elif "/shared" in share.get('Destination', ''):
+            elif "/my-resources" in share.get('Destination', ''):
                 self.__shared_resources = True
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
@@ -292,14 +292,14 @@ class ContainerConfig:
             logger.verbose("Config : Enabling shared resources volume")
             self.__shared_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().shared_resources_path, '/shared')
+            self.addVolume(UserConfig().shared_resources_path, '/my-resources')
 
     def __disableSharedResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
         if self.__shared_resources:
             logger.verbose("Config : Disabling shared resources volume")
             self.__shared_resources = False
-            self.removeVolume(container_path='/shared')
+            self.removeVolume(container_path='/my-resources')
 
     def enableExegolResources(self):
         """Procedure to enable exegol resources volume feature"""
@@ -730,7 +730,7 @@ class ContainerConfig:
         if verbose or not self.__exegol_resources:
             result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
         if verbose or not self.__shared_resources:
-            result += f"{getColor(self.__shared_resources)[0]}Shared resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
+            result += f"{getColor(self.__shared_resources)[0]}My resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
         return result.strip()
 
     def getTextMounts(self, verbose: bool = False) -> str:
@@ -739,7 +739,7 @@ class ContainerConfig:
         for mount in self.__mounts:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                                                       '/etc/timezone']:
+                                                       '/etc/timezone', '/my-resources']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result
