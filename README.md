@@ -44,10 +44,14 @@ Below is an example of a Zerologon attack operated with Exegol.
 Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/active-directory-domain-services/movement/abusing-aces) operated with Exegol
 **TODO**
 
-# :fast_forward: Quick start
+# :fast_forward: Get started
 
 > Keep in mind that the wrapper is one thing, but in order to use Exegol, at least one Exegol docker image must be installed.
 > Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
+
+## :pushpin: Pre-requisites
+You need python3 and docker :whale:, and at least 20GB of free storage.
+You also need python libraries listed in [requirements.txt](./requirements.txt).
 
 ## Installation using pip
 
@@ -115,10 +119,6 @@ Some tools are pre-configured with the following credentials
 | trilium | trilium | exegol4thewin |
 | wso-webshell (PHP) | | exegol4thewin |
 
-# :pushpin: Pre-requisites
-You need python3 and docker :whale:, and at least 20GB of free storage.
-You also need python libraries listed in [requirements.txt](./requirements.txt).
-
 # :wrench: Tools
 The tools installed in [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) are mostly installed from sources in order to have the latest version when deploying Exegol. Some installs are made with go, pip, apt, gem etc. You will find most of the tools in `/opt/tools`.
 - Impacket (https://github.com/SecureAuthCorp/impacket)
@@ -145,7 +145,7 @@ The history is easily usable with [oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh
 Since many tools are manually installed in `/opt/tools/`, aliases could be heplful to use these without having to change directory manually.
 Other aliases are set to save time while hacking (`http-server`, `php-server`, `urlencode`,`ipa`, ...).
 
-# :loudspeaker: Credits & thanks
+# :loudspeaker: Acknowledgments
 Credits and thanks go to every infosec addicts that contribute and share but most specifically to 
 - [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
 - [dramelac_](https://twitter.com/dramelac_) for working on [Exegol](https://github.com/ShutdownRepo/Exegol) (the wrapper)
