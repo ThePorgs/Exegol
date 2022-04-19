@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Dict, cast, Tuple, Union
+from typing import Optional, Dict, cast, Tuple, Union, Sequence
 
 from rich.prompt import Prompt
 
@@ -22,26 +22,28 @@ class UpdateManager:
     __git_resources: Optional[GitUtils] = None
 
     @classmethod
-    def __getGit(cls) -> GitUtils:
+    def __getGit(cls, fast_load: bool = False) -> GitUtils:
         """GitUtils local singleton getter"""
         if cls.__git is None:
-            cls.__git = GitUtils()
+            cls.__git = GitUtils(skip_submodule_update=fast_load)
         return cls.__git
 
     @classmethod
-    def __getSourceGit(cls) -> GitUtils:
+    def __getSourceGit(cls, fast_load: bool = False) -> GitUtils:
         """GitUtils source submodule singleton getter"""
         # Be sure that submodules are init first
         cls.__getGit()
         if cls.__git_source is None:
-            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "image")
+            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "image",
+                                        skip_submodule_update=fast_load)
         return cls.__git_source
 
     @classmethod
     def __getResourcesGit(cls, fast_load: bool = False):
         """GitUtils resource repo/submodule singleton getter"""
         if cls.__git_resources is None:
-            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "", skip_submodule_update=fast_load)
+            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "",
+                                           skip_submodule_update=fast_load)
             if not cls.__git_resources.isAvailable:
                 cls.__init_resources_repo()
         return cls.__git_resources
@@ -258,3 +260,15 @@ class UpdateManager:
             profiles[profile_name] = filename
         logger.debug(f"List docker build profiles : {profiles}")
         return profiles
+
+    @classmethod
+    def listGitStatus(cls) -> Sequence[Dict[str, str]]:
+        status = []
+        gits = [cls.__getGit(fast_load=True),
+                cls.__getSourceGit(fast_load=True),
+                cls.__getResourcesGit(fast_load=True)]
+
+        with console.status(f"Loading modules information", spinner_style="blue"):
+            for git in gits:
+                status.append({"name": git.getName().capitalize(), "status": git.getTextStatus(), "current branch": git.getCurrentBranch()})
+        return status

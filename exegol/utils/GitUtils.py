@@ -262,6 +262,20 @@ class GitUtils:
         logger.success(f"Git successfully checkout to '{branch}'")
         return True
 
+    def getTextStatus(self) -> str:
+        """Get text status from git object for rich print."""
+        if self.isAvailable:
+            if self.isUpToDate():
+                result = "[green]Up to date[/green]"
+            else:
+                result = "[orange3]Update available[/orange3]"
+        else:
+            if self.__git_name in ["wrapper", "image"]:
+                result = "[bright_black]Auto-update not supported[/bright_black]"
+            else:
+                result = "[bright_black]Not installed[/bright_black]"
+        return result
+
     def getName(self) -> str:
         """Git name getter"""
         return self.__git_name

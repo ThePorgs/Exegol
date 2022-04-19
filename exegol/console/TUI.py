@@ -139,7 +139,7 @@ class ExegolTUI:
             logfile.close()
 
     @staticmethod
-    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str]], title: Optional[str] = None):
+    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]], title: Optional[str] = None):
         """Printing Rich table for a list of object"""
         logger.empty_line()
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
@@ -157,6 +157,8 @@ class ExegolTUI:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
                 else:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data))
+            elif type(data[0]) is dict:
+                ExegolTUI.__buildDictTable(table, cast(Sequence[Dict[str, str]], data))
             else:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
@@ -230,6 +232,17 @@ class ExegolTUI:
         # Load data into the table
         for string in data:
             table.add_row(string)
+
+    @staticmethod
+    def __buildDictTable(table: Table, data_array: Sequence[Dict[str, str]]):
+        """Building a simple Rich table from a list of string"""
+        # Define columns from dict keys
+        for column in data_array[0].keys():
+            table.add_column(column.capitalize())
+        # Load data into the table
+        for data in data_array:
+            # Array is directly pass as *args to handle dynamic columns number
+            table.add_row(*data.values())
 
     @classmethod
     def selectFromTable(cls,
