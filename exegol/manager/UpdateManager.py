@@ -39,12 +39,12 @@ class UpdateManager:
         return cls.__git_source
 
     @classmethod
-    def __getResourcesGit(cls, fast_load: bool = False):
+    def __getResourcesGit(cls, fast_load: bool = False, skip_install: bool = False):
         """GitUtils resource repo/submodule singleton getter"""
         if cls.__git_resources is None:
             cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "",
                                            skip_submodule_update=fast_load)
-            if not cls.__git_resources.isAvailable:
+            if not cls.__git_resources.isAvailable and not skip_install:
                 cls.__init_resources_repo()
         return cls.__git_resources
 
@@ -266,9 +266,14 @@ class UpdateManager:
         status = []
         gits = [cls.__getGit(fast_load=True),
                 cls.__getSourceGit(fast_load=True),
-                cls.__getResourcesGit(fast_load=True)]
+                cls.__getResourcesGit(fast_load=True, skip_install=True)]
 
         with console.status(f"Loading modules information", spinner_style="blue"):
             for git in gits:
-                status.append({"name": git.getName().capitalize(), "status": git.getTextStatus(), "current branch": git.getCurrentBranch()})
+                branch = git.getCurrentBranch()
+                if branch is None:
+                    branch = "[bright_black][g]?[/g][/bright_black]"
+                status.append({"name": git.getName().capitalize(),
+                               "status": git.getTextStatus(),
+                               "current branch": branch})
         return status

@@ -99,7 +99,8 @@ class GitUtils:
 
     def getCurrentBranch(self) -> Optional[str]:
         """Get current git branch name"""
-        assert self.isAvailable
+        if not self.isAvailable:
+            return None
         assert self.__gitRepo is not None
         try:
             return str(self.__gitRepo.active_branch)
