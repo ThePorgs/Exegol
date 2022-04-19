@@ -102,9 +102,9 @@ volumes:
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
-            f"My resources = {self.shared_resources_path}",
-            f"Exegol resources = {self.exegol_resources_path}",
-            f"Private workspace = {self.private_volume_path}"
+            f"Private workspace: [magenta]{self.private_volume_path}[/magenta]",
+            f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
+            f"My resources: [magenta]{self.shared_resources_path}[/magenta]"
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

@@ -295,7 +295,7 @@ class GitUtils:
                 # Offline error catch
                 result = "[green]Installed[/green] [bright_black](offline)[/bright_black]"
         else:
-            if self.__git_name in ["wrapper", "image"]:
+            if self.__git_name in ["wrapper", "images"]:
                 result = "[bright_black]Auto-update not supported[/bright_black]"
             else:
                 result = "[bright_black]Not installed[/bright_black]"

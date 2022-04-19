@@ -37,11 +37,10 @@ class ExegolManager:
         ExegolManager.print_version()
         if logger.isEnabledFor(ExeLog.VERBOSE):
             logger.verbose("Listing user configurations")
-            ExegolTUI.printTable(UserConfig().get_configs(), title="User configurations")
+            ExegolTUI.printTable(UserConfig().get_configs(), title="[not italic]:brain: [/not italic][gold3][g]User configurations[/g][/gold3]")
         if logger.isEnabledFor(ExeLog.ADVANCED):
             logger.verbose("Listing git repositories")
-            # TODO add emoji for uniformity with other tables
-            ExegolTUI.printTable(UpdateManager.listGitStatus(), title="[gold3][g]Project modules[/g][/gold3]")
+            ExegolTUI.printTable(UpdateManager.listGitStatus(), title="[not italic]:octopus: [/not italic][gold3][g]Project modules[/g][/gold3]")
         if bool(ParametersManager().containertag):
             # If the user have supplied a container name, show container config
             container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)

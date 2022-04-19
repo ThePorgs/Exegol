@@ -226,9 +226,10 @@ class ExegolTUI:
     @staticmethod
     def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key"):
         """Building a simple Rich table from a list of string"""
-        table.title = None
+        table.title = title
         # Define columns
         table.add_column(title)
+        table.show_header = False
         # Load data into the table
         for string in data:
             table.add_row(string)

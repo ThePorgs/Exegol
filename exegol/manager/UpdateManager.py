@@ -34,7 +34,7 @@ class UpdateManager:
         # Be sure that submodules are init first
         cls.__getGit()
         if cls.__git_source is None:
-            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "image",
+            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "images",
                                         skip_submodule_update=fast_load)
         return cls.__git_source
 
@@ -275,11 +275,11 @@ class UpdateManager:
                 cls.__getSourceGit(fast_load=True),
                 cls.__getResourcesGit(fast_load=True, skip_install=True)]
 
-        with console.status(f"Loading modules information", spinner_style="blue"):
-            for git in gits:
+        for git in gits:
+            with console.status(f"Loading module [green]'{git.getName()}'[/green] information", spinner_style="blue"):
                 branch = git.getCurrentBranch()
                 if branch is None:
-                    branch = "[bright_black][g]?[/g][/bright_black]"
+                    branch = "[bright_black][g]? :person_shrugging:[/g][/bright_black]"
                 status.append({"name": git.getName().capitalize(),
                                "status": git.getTextStatus(),
                                "current branch": branch})
