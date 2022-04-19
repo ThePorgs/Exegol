@@ -109,7 +109,7 @@ class ExegolManager:
                 raise ModuleNotFoundError
         except ModuleNotFoundError:
             # Error during installation, skipping operation
-            logger.warning("Exegol resources have not been downloaded, the functionality will not be available!")
+            logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
         UpdateManager.updateImage(install_mode=True)
 
     @classmethod
@@ -366,7 +366,7 @@ class ExegolManager:
                     raise ModuleNotFoundError
             except ModuleNotFoundError:
                 # Error during installation, skipping operation
-                logger.warning("Exegol resources have not been downloaded, the functionality will be disabled!")
+                logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(
