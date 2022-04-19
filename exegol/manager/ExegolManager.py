@@ -104,7 +104,11 @@ class ExegolManager:
     @classmethod
     def install(cls):
         """Pull or build a docker exegol image"""
-        if not UpdateManager.isExegolResourcesReady():
+        try:
+            if not UpdateManager.isExegolResourcesReady():
+                raise ModuleNotFoundError
+        except ModuleNotFoundError:
+            # Error during installation, skipping operation
             logger.warning("Exegol resources have not been downloaded, the functionality will not be available!")
         UpdateManager.updateImage(install_mode=True)
 
@@ -355,9 +359,13 @@ class ExegolManager:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
             # Check if resources are installed / up-to-date
-            if UpdateManager.isExegolResourcesReady():
-                config.enableExegolResources()
-            else:
+            try:
+                if UpdateManager.isExegolResourcesReady():
+                    config.enableExegolResources()
+                else:
+                    raise ModuleNotFoundError
+            except ModuleNotFoundError:
+                # Error during installation, skipping operation
                 logger.warning("Exegol resources have not been downloaded, the functionality will be disabled!")
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:

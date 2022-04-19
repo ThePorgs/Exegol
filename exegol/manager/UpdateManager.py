@@ -60,6 +60,9 @@ class UpdateManager:
                 if cls.__getGit().submoduleSourceUpdate("exegol-resources"):
                     cls.__git_resources = None
                     cls.__getResourcesGit()
+                else:
+                    # Error during install, raise error to avoid update process
+                    raise ModuleNotFoundError
             else:
                 cls.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
                 cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
@@ -147,9 +150,13 @@ class UpdateManager:
     @classmethod
     def updateResources(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
-        if not cls.isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
+        try:
+            if not cls.isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
+                return False
+            return cls.__updateGit(cls.__getResourcesGit())
+        except ModuleNotFoundError:
+            # Error during installation, skipping operation
             return False
-        return cls.__updateGit(cls.__getResourcesGit())
 
     @classmethod
     def isExegolResourcesReady(cls) -> bool:

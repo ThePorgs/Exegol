@@ -211,7 +211,16 @@ class GitUtils:
                         (depth_limit and ('/' in subm.name or '\\' in subm.name)):
                     continue
                 s.update(f"Downloading git submodules [green]{subm.name}[/green]")
-                subm.update(recursive=True)
+                from git.exc import GitCommandError
+                try:
+                    subm.update(recursive=True)
+                except GitCommandError as e:
+                    logger.debug(f"Unable tu update git submodule {subm.name}: {e}")
+                    if "unable to access" in e.stderr:
+                        logger.error("You don't have internet to update git submodule. Skipping operation.")
+                    else:
+                        logger.error("Unable to update git submodule. Skipping operation.")
+                        logger.error(e.stderr)
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
@@ -225,9 +234,19 @@ class GitUtils:
             return False
         from git.exc import RepositoryDirtyError
         try:
-            # TODO add TUI progress
-            with console.status(f"Downloading submodule [green]{name}[/green]", spinner_style="blue"):
-                submodule.update(to_latest_revision=True)
+            from git.exc import GitCommandError
+            try:
+                # TODO add TUI progress
+                with console.status(f"Downloading submodule [green]{name}[/green]", spinner_style="blue"):
+                    submodule.update(to_latest_revision=True)
+            except GitCommandError as e:
+                logger.debug(f"Unable tu update git submodule {name}: {e}")
+                if "unable to access" in e.stderr:
+                    logger.error("You don't have internet to update git submodule. Skipping operation.")
+                else:
+                    logger.error("Unable to update git submodule. Skipping operation.")
+                    logger.error(e.stderr)
+                return False
             logger.success(f"Submodule [green]{name}[/green] successfully updated.")
             return True
         except RepositoryDirtyError:
@@ -266,10 +285,15 @@ class GitUtils:
     def getTextStatus(self) -> str:
         """Get text status from git object for rich print."""
         if self.isAvailable:
-            if self.isUpToDate():
-                result = "[green]Up to date[/green]"
-            else:
-                result = "[orange3]Update available[/orange3]"
+            from git.exc import GitCommandError
+            try:
+                if self.isUpToDate():
+                    result = "[green]Up to date[/green]"
+                else:
+                    result = "[orange3]Update available[/orange3]"
+            except GitCommandError:
+                # Offline error catch
+                result = "[green]Installed[/green] [bright_black](offline)[/bright_black]"
         else:
             if self.__git_name in ["wrapper", "image"]:
                 result = "[bright_black]Auto-update not supported[/bright_black]"
