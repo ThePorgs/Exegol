@@ -51,12 +51,6 @@ Below are some bullet points to better understand how Exegol works
 - The [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo is loaded as a submodule. It includes all resources mentioned previously (LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus, PowerSploit and many more.).
 - Getting started with the Exegol project comes down to using the wrapper, which can be installed through pip or with the sources directly (see. [get started](#fast_forward-get-started)).
 
-Below is an example of a Zerologon attack operated with Exegol.
-**TODO**
-
-Below is an example of a [ACE abuse/RBCD attack](https://www.thehacker.recipes/active-directory-domain-services/movement/abusing-aces) operated with Exegol
-**TODO**
-
 # :fast_forward: Get started
 
 > Keep in mind that the wrapper is one thing, but in order to use Exegol, at least one Exegol docker image must be installed.
@@ -116,12 +110,13 @@ Below are some examples of usage. For more examples, run the following command: 
 > - **image**: think of it as an immutable template. They cannot be executed as-is and serve as input for containers. It's not possible to open a shell in an image.
 > - **container**: a container rests upon an image. A container is created for a certain image at a certain time. It's possible to open a shell in a container. Careful though, once a container is created, updating the image it was created upon won't have any impact on the container. In order to enjoy the new things, a new container must be created upon that updated image.
 
-![help](./.assets/exegol-help.png)
+![help](.assets/exegol-help.png)
 
 By default, Exegol will create containers with display sharing allowing GUI-based programs to run, with network host sharing, and a few others things.
 Below is an example of a GUI app running in an Exegol container.
 
-**TODO: example with BloodHound and Burp?**
+![display_sharing](.assets/example-display-sharing.gif)
+
 
 ## Default container configuration
 
@@ -135,7 +130,7 @@ When creating a new container with `exegol start`, it gets the following configu
 
 > Users should keep in mind that when a container is created, it's configuration cannot be modified. If you want another configuration, create another one.
 
-![display_sharing](./.assets/example-display-sharing.gif)
+![start_verbose](.assets/exegol-start-verbose.png)
 
 ## :closed_lock_with_key: Credentials
 Some tools are pre-configured with the following credentials
