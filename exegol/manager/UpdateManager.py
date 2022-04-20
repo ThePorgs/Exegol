@@ -68,6 +68,9 @@ class UpdateManager:
                 if not cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
                     # Error during install, raise error to avoid update process
                     raise CancelOperation
+        else:
+            # User cancel installation, skip update update
+            raise CancelOperation
 
     @staticmethod
     def __warningExcludeFolderAV(directory: Union[str, Path]):
