@@ -90,6 +90,9 @@ class ExeLog(logging.Logger):
         self.raw(os.linesep, level=logging.INFO)
 
 
+# Global rich console object
+console: Console = Console()
+
 # Main logging default config
 # Set default Logger class as ExeLog
 logging.setLoggerClass(ExeLog)
@@ -101,13 +104,15 @@ logging.addLevelName(ExeLog.ADVANCED, "ADVANCED")
 # Logging setup using RichHandler and minimalist text format
 logging.basicConfig(
     format="%(message)s",
-    handlers=[RichHandler(rich_tracebacks=True, show_time=False, markup=True, show_level=False, show_path=False)]
+    handlers=[RichHandler(rich_tracebacks=True,
+                          show_time=False,
+                          markup=True,
+                          show_level=False,
+                          show_path=False,
+                          console=console)]
 )
 
 # Global logger object
 logger: ExeLog = cast(ExeLog, logging.getLogger("main"))
 # Default log level
 logger.setLevel(logging.INFO)
-
-# Global rich console object
-console: Console = Console()

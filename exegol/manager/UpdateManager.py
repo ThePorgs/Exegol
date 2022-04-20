@@ -6,7 +6,7 @@ from rich.prompt import Prompt
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
 from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
@@ -62,10 +62,12 @@ class UpdateManager:
                     cls.__getResourcesGit()
                 else:
                     # Error during install, raise error to avoid update process
-                    raise ModuleNotFoundError
+                    raise CancelOperation
             else:
                 cls.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
-                cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO)
+                if not cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
+                    # Error during install, raise error to avoid update process
+                    raise CancelOperation
 
     @staticmethod
     def __warningExcludeFolderAV(directory: Union[str, Path]):
@@ -154,7 +156,7 @@ class UpdateManager:
             if not cls.isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
                 return False
             return cls.__updateGit(cls.__getResourcesGit())
-        except ModuleNotFoundError:
+        except CancelOperation:
             # Error during installation, skipping operation
             return False
 
@@ -185,7 +187,15 @@ class UpdateManager:
             if len(available_branches) > 1:
                 logger.info(f"Current git branch : {current_branch}")
                 # List & Select git branch
-                default_choice = current_branch if current_branch != 'unknown' else None
+                if current_branch == 'unknown' or current_branch not in available_branches:
+                    if "main" in available_branches:
+                        default_choice = "main"
+                    elif "master" in available_branches:
+                        default_choice = "master"
+                    else:
+                        default_choice = None
+                else:
+                    default_choice = current_branch
                 selected_branch = cast(str, ExegolTUI.selectFromList(gitUtils.listBranch(),
                                                                      subject="a git branch",
                                                                      title="Branch",
@@ -275,8 +285,9 @@ class UpdateManager:
                 cls.__getSourceGit(fast_load=True),
                 cls.__getResourcesGit(fast_load=True, skip_install=True)]
 
-        for git in gits:
-            with console.status(f"Loading module [green]'{git.getName()}'[/green] information", spinner_style="blue"):
+        with console.status(f"Loading module information", spinner_style="blue") as s:
+            for git in gits:
+                s.update(f"Loading module [green]{git.getName()}[/green] information")
                 branch = git.getCurrentBranch()
                 if branch is None:
                     branch = "[bright_black][g]? :person_shrugging:[/g][/bright_black]"

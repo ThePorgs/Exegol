@@ -92,8 +92,15 @@ class GitUtils:
         if optimize_disk_space:
             custom_options.append('--depth=1')
         # TODO add progress bar via TUI
-        with console.status(f"Downloading {self.getName()} git repository", spinner_style="blue"):
-            self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+        from git import GitCommandError
+        try:
+            with console.status(f"Downloading {self.getName()} git repository", spinner_style="blue"):
+                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+        except GitCommandError as e:
+            # GitPython user \n only
+            error = GitUtils.formatStderr(e.stderr)
+            logger.error(f"Unable to clone the git repository. {error}")
+            return False
         self.__init_repo()
         return True
 
@@ -215,12 +222,13 @@ class GitUtils:
                 try:
                     subm.update(recursive=True)
                 except GitCommandError as e:
+                    error = GitUtils.formatStderr(e.stderr)
                     logger.debug(f"Unable tu update git submodule {subm.name}: {e}")
-                    if "unable to access" in e.stderr:
+                    if "unable to access" in error:
                         logger.error("You don't have internet to update git submodule. Skipping operation.")
                     else:
                         logger.error("Unable to update git submodule. Skipping operation.")
-                        logger.error(e.stderr)
+                        logger.error(error)
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
@@ -312,3 +320,7 @@ class GitUtils:
     def isSubModule(self) -> bool:
         """Git submodule status getter"""
         return self.__is_submodule
+
+    @classmethod
+    def formatStderr(cls, stderr):
+        return stderr.replace('\n', '').replace('stderr:', '').strip().strip("'")

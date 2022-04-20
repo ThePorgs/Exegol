@@ -7,3 +7,8 @@ class ObjectNotFound(Exception):
 class ProtocolNotSupported(Exception):
     """Custom exception when a specific network protocol is not supported"""
     pass
+
+
+class CancelOperation(Exception):
+    """Custom exception when an error occurred and the operation must be canceled ou skipped"""
+    pass

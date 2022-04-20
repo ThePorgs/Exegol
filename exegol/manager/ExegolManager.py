@@ -7,7 +7,7 @@ from exegol.console.ExegolPrompt import Confirm
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.console.cli.actions.GenericParameters import ContainerCreation
-from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
 from exegol.manager.UpdateManager import UpdateManager
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainer import ExegolContainer
@@ -105,8 +105,8 @@ class ExegolManager:
         """Pull or build a docker exegol image"""
         try:
             if not UpdateManager.isExegolResourcesReady():
-                raise ModuleNotFoundError
-        except ModuleNotFoundError:
+                raise CancelOperation
+        except CancelOperation:
             # Error during installation, skipping operation
             logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
         UpdateManager.updateImage(install_mode=True)
@@ -362,8 +362,8 @@ class ExegolManager:
                 if UpdateManager.isExegolResourcesReady():
                     config.enableExegolResources()
                 else:
-                    raise ModuleNotFoundError
-            except ModuleNotFoundError:
+                    raise CancelOperation
+            except CancelOperation:
                 # Error during installation, skipping operation
                 logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
         if ParametersManager().workspace_path:
