@@ -283,7 +283,7 @@ class UpdateManager:
 
     @classmethod
     def listGitStatus(cls) -> Sequence[Dict[str, str]]:
-        status = []
+        result = []
         gits = [cls.__getGit(fast_load=True),
                 cls.__getSourceGit(fast_load=True),
                 cls.__getResourcesGit(fast_load=True, skip_install=True)]
@@ -291,10 +291,14 @@ class UpdateManager:
         with console.status(f"Loading module information", spinner_style="blue") as s:
             for git in gits:
                 s.update(f"Loading module [green]{git.getName()}[/green] information")
+                status = git.getTextStatus()
                 branch = git.getCurrentBranch()
                 if branch is None:
-                    branch = "[bright_black][g]? :person_shrugging:[/g][/bright_black]"
-                status.append({"name": git.getName().capitalize(),
-                               "status": git.getTextStatus(),
+                    if "not supported" in status:
+                        branch = "[bright_black]N/A[/bright_black]"
+                    else:
+                        branch = "[bright_black][g]? :person_shrugging:[/g][/bright_black]"
+                result.append({"name": git.getName().capitalize(),
+                               "status": status,
                                "current branch": branch})
-        return status
+        return result

@@ -35,10 +35,9 @@ class GitUtils:
         except ReferenceError:
             if self.__git_name == "wrapper":
                 logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
-                if self.__repo_path.name == "site-packages":
+                if self.__repo_path.parent.name == "site-packages":
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
-            # TODO check pip with submodules
             abort_loading = True
         # locally import git in case git is not installed of the system
         try:
