@@ -114,9 +114,10 @@ class ExegolManager:
     @classmethod
     def update(cls):
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
-        UpdateManager.updateWrapper()
-        UpdateManager.updateImageSource()
-        UpdateManager.updateResources()
+        if not ParametersManager().skip_git:
+            UpdateManager.updateWrapper()
+            UpdateManager.updateImageSource()
+            UpdateManager.updateResources()
         UpdateManager.updateImage()
 
     @classmethod

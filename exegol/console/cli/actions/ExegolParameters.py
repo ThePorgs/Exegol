@@ -105,6 +105,15 @@ class Update(Command, ImageSelector):
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
+        self.skip_git = Option("--skip-git",
+                               dest="skip_git",
+                               action="store_true",
+                               help="Skip git updates (wrapper, image sources and exegol resources).")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.skip_git, "required": False},
+                                       title="[bold cyan]Update[/bold cyan] [blue]specific options[/blue]"))
+
         self._usages = {
             "Install or update interactively an exegol image": "exegol update",
             "Install or update the [bright_blue]full[/bright_blue] image": "exegol update [bright_blue]full[/bright_blue]"
