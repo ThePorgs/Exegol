@@ -20,6 +20,22 @@ class ContainerSelector:
                                   title="[blue]Container selection options[/blue]"))
 
 
+class ContainerMultiSelector:
+    """Generic parameter class for container multi selection"""
+
+    def __init__(self, groupArgs: List[GroupArg]):
+        # Create container selector arguments
+        self.multicontainertag = Option("multicontainertag",
+                                        metavar="CONTAINER",
+                                        nargs='*',
+                                        action="store",
+                                        help="Tag used to target one or multiple Exegol container")
+
+        # Create group parameter for container multi selection
+        groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
+                                  title="[blue]Containers selection options[/blue]"))
+
+
 class ContainerStart:
     """Generic parameter class for container selection"""
 
@@ -33,13 +49,13 @@ class ContainerStart:
                                 "configured during the creation of the container will be persistent in all shells. "
                                 "If the container already exists, the variable will be present only in the current shell")
 
-        # Create group parameter for container selection
+        # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
                                   title="[blue]Container start options[/blue]"))
 
 
 class ImageSelector:
-    """Generic parameter class for container selection"""
+    """Generic parameter class for image selection"""
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create image selector arguments
@@ -49,9 +65,25 @@ class ImageSelector:
                                action="store",
                                help="Tag used to target an Exegol image")
 
-        # Create group parameter for container selection
+        # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
                                   title="[blue]Image selection options[/blue]"))
+
+
+class ImageMultiSelector:
+    """Generic parameter class for image multi selection"""
+
+    def __init__(self, groupArgs: List[GroupArg]):
+        # Create image multi selector arguments
+        self.multiimagetag = Option("multiimagetag",
+                                    metavar="IMAGE",
+                                    nargs='*',
+                                    action="store",
+                                    help="Tag used to target one or multiple Exegol image")
+
+        # Create group parameter for image multi selection
+        groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},
+                                  title="[blue]Images selection options[/blue]"))
 
 
 class ContainerCreation(ContainerSelector, ImageSelector):

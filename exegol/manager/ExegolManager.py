@@ -65,6 +65,7 @@ class ExegolManager:
     def start(cls):
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         logger.info("Starting exegol")
+        # TODO add console logging capabilities
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
@@ -184,16 +185,22 @@ class ExegolManager:
             # Return cache
             return cls.__image
         image_tag = override_image if override_image is not None else ParametersManager().imagetag
-        image_selection = None
+        image_tags = ParametersManager().multiimagetag
+        image_selection: Union[Optional[ExegolImage], List[ExegolImage]] = None
         # While an image have not been selected
         while image_selection is None:
             try:
-                if image_tag is None:
+                if image_tag is None and (image_tags is None or len(image_tags) == 0):
                     # Interactive (TUI) image selection
                     image_selection = cls.__interactiveSelection(ExegolImage, multiple, must_exist)
                 else:
                     # Select image by tag name (non-interactive)
-                    image_selection = DockerUtils.getInstalledImage(image_tag)
+                    if multiple:
+                        image_selection = []
+                        for image_tag in image_tags:
+                            image_selection.append(DockerUtils.getInstalledImage(image_tag))
+                    else:
+                        image_selection = DockerUtils.getInstalledImage(image_tag)
             except ObjectNotFound:
                 # ObjectNotFound is raised when the image_tag provided by the user does not match any existing image.
                 if image_tag is not None:
@@ -235,8 +242,11 @@ class ExegolManager:
         return cls.__image
 
     @classmethod
-    def __checkImageInstallationStatus(cls, image_selection, multiple: bool = False, must_exist: bool = False) -> Tuple[
-        bool, Optional[Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]]]:
+    def __checkImageInstallationStatus(cls,
+                                       image_selection: Union[Optional[ExegolImage], List[ExegolImage]],
+                                       multiple: bool = False,
+                                       must_exist: bool = False
+                                       ) -> Tuple[bool, Optional[Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]]]:
         """Checks if the selected images are installed and ready for use.
         returns false if the images are supposed to be already installed."""
         # Checks if one or more images have been selected and unifies the format into a list.
@@ -285,18 +295,31 @@ class ExegolManager:
             # Return cache
             return cls.__container
         container_tag = override_container if override_container is not None else ParametersManager().containertag
+        container_tags = ParametersManager().multicontainertag
         try:
-            if container_tag is None:
+            if container_tag is None and (container_tags is None or len(container_tags) == 0):
                 # Interactive container selection
                 cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
                                        cls.__interactiveSelection(ExegolContainer, multiple, must_exist))
             else:
                 # Try to find the corresponding container
-                container = DockerUtils.getContainer(container_tag)
                 if multiple:
-                    cls.__container = [container]
+                    cls.__container = []
+                    # test each user tag
+                    for container_tag in container_tags:
+                        try:
+                            cls.__container.append(DockerUtils.getContainer(container_tag))
+                        except ObjectNotFound:
+                            # on multi select, an object not found is not critical
+                            if must_exist:
+                                # If the selected tag doesn't match any container, print an alert and continue
+                                logger.warning(f"The container named '{container_tag}' has not been found")
+                            else:
+                                # If there is a multi select without must_exist flag, raise an error
+                                # because multi container creation is not supported
+                                raise NotImplemented
                 else:
-                    cls.__container = container
+                    cls.__container = DockerUtils.getContainer(container_tag)
         except (ObjectNotFound, IndexError):
             # ObjectNotFound is raised when the container_tag provided by the user does not match any existing container.
             # IndexError is raise when no container exist (raised from TUI interactive selection)
@@ -402,7 +425,8 @@ class ExegolManager:
         # Recap
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
-            if not model.image.isUpToDate() and Confirm("Do you want to [green]update[/green] the selected image?", False):
+            if not model.image.isUpToDate() and \
+                    Confirm("Do you want to [green]update[/green] the selected image?", False):
                 image = UpdateManager.updateImage(model.image.getName())
                 if image is not None:
                     model.image = image

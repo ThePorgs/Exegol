@@ -45,12 +45,12 @@ class Start(Command, ContainerCreation, ContainerStart):
         return ExegolManager.start
 
 
-class Stop(Command, ContainerSelector):
+class Stop(Command, ContainerMultiSelector):
     """Stop an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
-        ContainerSelector.__init__(self, self.groupArgs)
+        ContainerMultiSelector.__init__(self, self.groupArgs)
 
         self._usages = {
             "Stop interactively one or multiple container": "exegol stop",
@@ -124,12 +124,12 @@ class Update(Command, ImageSelector):
         return ExegolManager.update
 
 
-class Uninstall(Command, ImageSelector):
+class Uninstall(Command, ImageMultiSelector):
     """Remove Exegol [default not bold]image(s)[/default not bold]"""
 
     def __init__(self):
         Command.__init__(self)
-        ImageSelector.__init__(self, self.groupArgs)
+        ImageMultiSelector.__init__(self, self.groupArgs)
 
         self.force_mode = Option("-F", "--force",
                                  dest="force_mode",
@@ -150,12 +150,12 @@ class Uninstall(Command, ImageSelector):
         return ExegolManager.uninstall
 
 
-class Remove(Command, ContainerSelector):
+class Remove(Command, ContainerMultiSelector):
     """Remove Exegol [default not bold]container(s)[/default not bold]"""
 
     def __init__(self):
         Command.__init__(self)
-        ContainerSelector.__init__(self, self.groupArgs)
+        ContainerMultiSelector.__init__(self, self.groupArgs)
 
         self.force_mode = Option("-F", "--force",
                                  dest="force_mode",
