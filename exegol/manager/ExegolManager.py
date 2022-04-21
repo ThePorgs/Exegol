@@ -426,7 +426,7 @@ class ExegolManager:
                     ExegolTUI.printContainerRecap(model)
             command_options = []
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
-                command_options = model.config.interactiveConfig()
+                command_options = model.config.interactiveConfig(name)
                 ExegolTUI.printContainerRecap(model)
             logger.info(f"Command line of the configuration: "
                         f"[green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")

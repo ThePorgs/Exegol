@@ -146,7 +146,7 @@ class ContainerConfig:
                 self.__vpn_path = obj_path
                 logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
 
-    def interactiveConfig(self) -> List[str]:
+    def interactiveConfig(self, container_name: str) -> List[str]:
         """Interactive procedure allowing the user to configure its new container"""
         logger.info("Starting interactive configuration")
 
@@ -158,9 +158,8 @@ class ContainerConfig:
                 default=False):
             self.enableCwdShare()
             command_options.append("-cwd")
-        # todo : dynamically obtain the container name to prevent hardcoding the "<container_name>"
         elif Confirm(
-                f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path}/<container_name>/[/magenta])?",
+                f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path / container_name}[/magenta])?",
                 default=False):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
