@@ -201,7 +201,7 @@ class UpdateManager:
                     default_choice = current_branch
                 selected_branch = cast(str, ExegolTUI.selectFromList(gitUtils.listBranch(),
                                                                      subject="a git branch",
-                                                                     title="Branch",
+                                                                     title="[not italic]:palm_tree: [/not italic][gold3]Branch[gold3]",
                                                                      default=default_choice))
             elif len(available_branches) == 0:
                 logger.warning("No branch were detected!")
@@ -252,7 +252,7 @@ class UpdateManager:
         if build_dockerfile is None:
             build_profile, build_dockerfile = cast(Tuple[str, str], ExegolTUI.selectFromList(profiles,
                                                                                              subject="a build profile",
-                                                                                             title="Profile"))
+                                                                                             title="[not italic]:dog: [/not italic][gold3]Profile[/gold3]"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
         DockerUtils.buildImage(build_name, build_profile, build_dockerfile)

@@ -245,7 +245,7 @@ class ContainerConfig:
             return
         if not self.__enable_gui:
             self.__enable_gui = True
-            logger.verbose("Config : Enabling display sharing")
+            logger.verbose("Config: Enabling display sharing")
             self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix")
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             self.addEnv("QT_X11_NO_MITSHM", "1")
@@ -255,7 +255,7 @@ class ContainerConfig:
         """Procedure to enable GUI feature (Only for interactive config)"""
         if self.__enable_gui:
             self.__enable_gui = False
-            logger.verbose("Config : Disabling display sharing")
+            logger.verbose("Config: Disabling display sharing")
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
             self.removeEnv("QT_X11_NO_MITSHM")
@@ -267,7 +267,7 @@ class ContainerConfig:
             return
         if not self.__share_timezone:
             self.__share_timezone = True
-            logger.verbose("Config : Enabling host timezones")
+            logger.verbose("Config: Enabling host timezones")
             self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
             self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
 
@@ -275,13 +275,13 @@ class ContainerConfig:
         """Procedure to disable shared timezone feature (Only for interactive config)"""
         if self.__share_timezone:
             self.__share_timezone = False
-            logger.verbose("Config : Disabling host timezones")
+            logger.verbose("Config: Disabling host timezones")
             self.removeVolume("/etc/timezone")
             self.removeVolume("/etc/localtime")
 
     def setPrivileged(self, status: bool = True):
         """Set container as privileged"""
-        logger.verbose(f"Config : Setting container privileged as {status}")
+        logger.verbose(f"Config: Setting container privileged as {status}")
         if status:
             logger.warning("Setting container as privileged (this exposes the host to security risks)")
         self.__privileged = status
@@ -289,7 +289,7 @@ class ContainerConfig:
     def enableSharedResources(self):
         """Procedure to enable shared volume feature"""
         if not self.__shared_resources:
-            logger.verbose("Config : Enabling shared resources volume")
+            logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
             # Adding volume config
             self.addVolume(UserConfig().shared_resources_path, '/my-resources')
@@ -297,14 +297,14 @@ class ContainerConfig:
     def __disableSharedResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
         if self.__shared_resources:
-            logger.verbose("Config : Disabling shared resources volume")
+            logger.verbose("Config: Disabling shared resources volume")
             self.__shared_resources = False
             self.removeVolume(container_path='/my-resources')
 
     def enableExegolResources(self):
         """Procedure to enable exegol resources volume feature"""
         if not self.__exegol_resources:
-            logger.verbose("Config : Enabling exegol resources volume")
+            logger.verbose("Config: Enabling exegol resources volume")
             self.__exegol_resources = True
             # Adding volume config
             self.addVolume(str(UserConfig().exegol_resources_path), '/opt/resources')
@@ -312,21 +312,21 @@ class ContainerConfig:
     def disableExegolResources(self):
         """Procedure to disable exegol resources volume feature (Only for interactive config)"""
         if self.__exegol_resources:
-            logger.verbose("Config : Disabling exegol resources volume")
+            logger.verbose("Config: Disabling exegol resources volume")
             self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
         self.__workspace_custom_path = os.getcwd()
-        logger.verbose(f"Config : Sharing current workspace directory {self.__workspace_custom_path}")
+        logger.verbose(f"Config: Sharing current workspace directory {self.__workspace_custom_path}")
 
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""
         path = Path(host_directory).expanduser().absolute()
         if not path.is_dir():
             logger.critical("The specified workspace is not a directory")
-        logger.verbose(f"Config : Sharing workspace directory {path}")
+        logger.verbose(f"Config: Sharing workspace directory {path}")
         self.__workspace_custom_path = str(path)
 
     def enableVPN(self, config_path: Optional[str] = None):
