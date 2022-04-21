@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from rich.prompt import Prompt
 
@@ -9,7 +10,7 @@ from exegol.model.ExegolImage import ExegolImage
 class ExegolContainerTemplate:
     """Exegol template class used to create a new container"""
 
-    def __init__(self, name: str, config: ContainerConfig, image: ExegolImage):
+    def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage):
         if name is None:
             name = Prompt.ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
         self.name: str = name.replace('exegol-', '')

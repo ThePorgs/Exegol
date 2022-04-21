@@ -298,8 +298,8 @@ class ExegolManager:
         if cls.__container is not None:
             # Return cache
             return cls.__container
-        container_tag = override_container if override_container is not None else ParametersManager().containertag
-        container_tags = ParametersManager().multicontainertag
+        container_tag: Optional[str] = override_container if override_container is not None else ParametersManager().containertag
+        container_tags: Optional[Sequence[str]] = ParametersManager().multicontainertag
         try:
             if container_tag is None and (container_tags is None or len(container_tags) == 0):
                 # Interactive container selection
@@ -409,7 +409,7 @@ class ExegolManager:
         return config
 
     @classmethod
-    def __createContainer(cls, name: str) -> ExegolContainer:
+    def __createContainer(cls, name: Optional[str]) -> ExegolContainer:
         """Create an ExegolContainer"""
         logger.verbose("Configuring new exegol container")
         # Create exegol config
@@ -429,10 +429,10 @@ class ExegolManager:
                     ExegolTUI.printContainerRecap(model)
             command_options = []
             while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
-                command_options = model.config.interactiveConfig(name)
+                command_options = model.config.interactiveConfig(model.name)
                 ExegolTUI.printContainerRecap(model)
             logger.info(f"Command line of the configuration: "
-                        f"[green]exegol start {name} {model.image.getName()} {' '.join(command_options)}[/green]")
+                        f"[green]exegol start {model.name} {model.image.getName()} {' '.join(command_options)}[/green]")
             logger.info("To use exegol [orange3]without interaction[/orange3], "
                         "read CLI options with [green]exegol start -h[/green]")
 
