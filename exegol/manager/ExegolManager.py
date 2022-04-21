@@ -126,6 +126,9 @@ class ExegolManager:
     def uninstall(cls):
         """Remove an exegol image"""
         logger.info("Uninstalling an exegol image")
+        # Set log level to verbose in order to show every image installed including the outdated.
+        if not logger.isEnabledFor(ExeLog.VERBOSE):
+            logger.setLevel(ExeLog.VERBOSE)
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
         if len(images) == 0:
             logger.error("No images were selected. Exiting.")
