@@ -283,7 +283,7 @@ class ExegolTUI:
                 f"{' from local sources' if object_type is ExegolImage else ''}")
         while True:
             choice = Prompt.ask(
-                f"[blue][?][/blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",
+                f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",
                 default=default, choices=choices,
                 show_choices=False)
             for o in data:
@@ -345,7 +345,7 @@ class ExegolTUI:
         cls.printTable(submit_data, title=title)
         if default is None:
             default = submit_data[0]
-        choice = Prompt.ask(f"[blue][?][/blue] Select {subject}", default=default, choices=submit_data,
+        choice = Prompt.ask(f"[bold blue][?][/bold blue] Select {subject}", default=default, choices=submit_data,
                             show_choices=False)
         if type(data) is dict:
             return choice, data[choice]

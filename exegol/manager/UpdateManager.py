@@ -239,7 +239,7 @@ class UpdateManager:
         while build_name is None or build_name in blacklisted_build_name:
             if build_name is not None:
                 logger.error("This name is reserved and cannot be used for local build. Please choose another one.")
-            build_name = Prompt.ask("[blue][?][/blue] Choice a name for your build",
+            build_name = Prompt.ask("[bold blue][?][/bold blue] Choice a name for your build",
                                     default="local")
         # Choose dockerfile
         profiles = cls.listBuildProfiles()
