@@ -64,6 +64,7 @@ class GitUtils:
 
     def __init_repo(self, skip_submodule_update: bool = False):
         self.isAvailable = True
+        assert self.__gitRepo is not None
         logger.debug("Git repository successfully loaded")
         if len(self.__gitRepo.remotes) > 0:
             self.__gitRemote = self.__gitRepo.remotes['origin']

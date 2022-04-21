@@ -13,6 +13,7 @@ class ExegolContainerTemplate:
     def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage):
         if name is None:
             name = Prompt.ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
+        assert name is not None
         self.name: str = name.replace('exegol-', '')
         self.hostname: str = name if name.startswith("exegol-") else f'exegol-{name}'
         self.image: ExegolImage = image

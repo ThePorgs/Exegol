@@ -196,7 +196,8 @@ class ExegolManager:
             try:
                 if image_tag is None and (image_tags is None or len(image_tags) == 0):
                     # Interactive (TUI) image selection
-                    image_selection = cls.__interactiveSelection(ExegolImage, multiple, must_exist)
+                    image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
+                                           cls.__interactiveSelection(ExegolImage, multiple, must_exist))
                 else:
                     # Select image by tag name (non-interactive)
                     if multiple:
@@ -247,7 +248,7 @@ class ExegolManager:
 
     @classmethod
     def __checkImageInstallationStatus(cls,
-                                       image_selection: Union[Optional[ExegolImage], List[ExegolImage]],
+                                       image_selection: Union[ExegolImage, List[ExegolImage]],
                                        multiple: bool = False,
                                        must_exist: bool = False
                                        ) -> Tuple[bool, Optional[Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]]]]:
@@ -255,12 +256,15 @@ class ExegolManager:
         returns false if the images are supposed to be already installed."""
         # Checks if one or more images have been selected and unifies the format into a list.
         reverse_type = False
+        check_img: List[ExegolImage]
         if type(image_selection) is ExegolImage:
             check_img = [image_selection]
             # Tag of the operation to reverse it before the return
             reverse_type = True
-        else:
+        elif type(image_selection) is list:
             check_img = image_selection
+        else:
+            check_img = []
 
         # Check if every image are installed
         for i in range(len(check_img)):
@@ -309,6 +313,7 @@ class ExegolManager:
                 # Try to find the corresponding container
                 if multiple:
                     cls.__container = []
+                    assert container_tags is not None
                     # test each user tag
                     for container_tag in container_tags:
                         try:
@@ -323,6 +328,7 @@ class ExegolManager:
                                 # because multi container creation is not supported
                                 raise NotImplemented
                 else:
+                    assert container_tag is not None
                     cls.__container = DockerUtils.getContainer(container_tag)
         except (ObjectNotFound, IndexError):
             # ObjectNotFound is raised when the container_tag provided by the user does not match any existing container.
