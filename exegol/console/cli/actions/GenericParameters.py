@@ -170,4 +170,4 @@ class ContainerCreation(ContainerSelector, ImageSelector):
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
-                                  title="[blue]Container VPN options[/blue]"))
+                                  title="[blue]Container creation VPN options[/blue]"))

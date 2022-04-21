@@ -22,11 +22,8 @@ class Start(Command, ContainerCreation, ContainerStart):
             "Create a container [blue]htb[/blue] with a VPN": "exegol start [blue]htb[/blue] [bright_blue]full[/bright_blue] --vpn [magenta]~/vpn/[/magenta][bright_magenta]lab_Dramelac.ovpn[/bright_magenta]",
             "Create a container [blue]app[/blue] with custom volume": "exegol start [blue]app[/blue] [bright_blue]full[/bright_blue] -V [bright_magenta]'/var/app/:/app/'[/bright_magenta]",
             "Get a [blue]tmux[/blue] shell": "exegol start --shell [blue]tmux[/blue]",
-            "Use a Proxmark": "exegol start -d /dev/ttyACM0",  # TODO review usages
-            "Use a LOGITacker": "exegol start -d /dev/ttyACM0",
-            "Use an ACR122u": "exegol start -d /dev/bus/usb/",
+            "Use a Proxmark": "exegol start -d /dev/ttyACM0",
             "Use an HackRF One": "exegol start -d /dev/bus/usb/",
-            "Use an Crazyradio PA": "exegol start -d /dev/bus/usb/",
         }
 
         # Create container start / exec arguments
