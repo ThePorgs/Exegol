@@ -57,8 +57,8 @@ Below are some bullet points to better understand how Exegol works
 > Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
 
 ## :pushpin: Pre-requisites
-You need python3 and docker :whale:, and at least 20GB of free storage.
-You also need python libraries listed in [requirements.txt](./requirements.txt).
+You need git, python3 and docker :whale:, and at least 20GB of free storage.
+You also need python libraries listed in [requirements.txt](./requirements.txt) (installed automatically or manually depending in the install method you choose).
 
 ## Installation using pip
 
@@ -130,7 +130,7 @@ When creating a new container with `exegol start`, it gets the following configu
 
 > Users should keep in mind that when a container is created, it's configuration cannot be modified. If you want another configuration, create another one.
 
-![start_verbose](.assets/exegol-start-verbose.png)
+![start_verbose](.assets/exegol-start.png)
 
 ## :closed_lock_with_key: Credentials
 Some tools are pre-configured with the following credentials
