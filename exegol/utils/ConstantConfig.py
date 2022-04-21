@@ -14,7 +14,7 @@ class ConstantConfig:
     build_context_path: str
     # Dockerhub Exegol images repository
     DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
-    IMAGE_NAME: str = "nwodtuhs/exegol-dev"
+    IMAGE_NAME: str = "nwodtuhs/exegol"
     # Docker volume names (no docker volume used at this moment)
     # Resources repository
     EXEGOL_RESOURCES_REPO: str = "https://github.com/ShutdownRepo/Exegol-resources.git"

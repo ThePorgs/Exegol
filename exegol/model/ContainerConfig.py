@@ -10,9 +10,9 @@ from rich.prompt import Prompt
 from exegol.console.ConsoleFormat import boolFormatter, getColor
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.exceptions.ExegolExceptions import ProtocolNotSupported
+from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation
+from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
-from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
@@ -160,7 +160,7 @@ class ContainerConfig:
             command_options.append("-cwd")
         # todo : dynamically obtain the container name to prevent hardcoding the "<container_name>"
         elif Confirm(
-                f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path}/<container_name>[/magenta])?",
+                f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path}/<container_name>/[/magenta])?",
                 default=False):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
@@ -302,13 +302,22 @@ class ContainerConfig:
             self.__shared_resources = False
             self.removeVolume(container_path='/my-resources')
 
-    def enableExegolResources(self):
+    def enableExegolResources(self) -> bool:
         """Procedure to enable exegol resources volume feature"""
         if not self.__exegol_resources:
+            # Check if resources are installed / up-to-date
+            try:
+                if not ExegolModules().isExegolResourcesReady():
+                    raise CancelOperation
+            except CancelOperation:
+                # Error during installation, skipping operation
+                logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
+                return False
             logger.verbose("Config: Enabling exegol resources volume")
             self.__exegol_resources = True
             # Adding volume config
             self.addVolume(str(UserConfig().exegol_resources_path), '/opt/resources')
+        return True
 
     def disableExegolResources(self):
         """Procedure to disable exegol resources volume feature (Only for interactive config)"""

@@ -13,6 +13,7 @@ from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
+from exegol.model.ExegolModules import ExegolModules
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
@@ -105,7 +106,7 @@ class ExegolManager:
     def install(cls):
         """Pull or build a docker exegol image"""
         try:
-            if not UpdateManager.isExegolResourcesReady():
+            if not ExegolModules().isExegolResourcesReady():
                 raise CancelOperation
         except CancelOperation:
             # Error during installation, skipping operation
@@ -381,15 +382,7 @@ class ExegolManager:
         if ParametersManager().shared_resources:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
-            # Check if resources are installed / up-to-date
-            try:
-                if UpdateManager.isExegolResourcesReady():
-                    config.enableExegolResources()
-                else:
-                    raise CancelOperation
-            except CancelOperation:
-                # Error during installation, skipping operation
-                logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
+            config.enableExegolResources()
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(

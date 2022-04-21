@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Optional, Dict, cast, Tuple, Union, Sequence
+from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
 
@@ -8,75 +7,15 @@ from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
 from exegol.model.ExegolImage import ExegolImage
+from exegol.model.ExegolModules import ExegolModules
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
-from exegol.utils.UserConfig import UserConfig
 
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
-    __git: Optional[GitUtils] = None
-    __git_source: Optional[GitUtils] = None
-    __git_resources: Optional[GitUtils] = None
-
-    @classmethod
-    def __getGit(cls, fast_load: bool = False) -> GitUtils:
-        """GitUtils local singleton getter"""
-        if cls.__git is None:
-            cls.__git = GitUtils(skip_submodule_update=fast_load)
-        return cls.__git
-
-    @classmethod
-    def __getSourceGit(cls, fast_load: bool = False) -> GitUtils:
-        """GitUtils source submodule singleton getter"""
-        # Be sure that submodules are init first
-        cls.__getGit()
-        if cls.__git_source is None:
-            cls.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "images",
-                                        skip_submodule_update=fast_load)
-        return cls.__git_source
-
-    @classmethod
-    def __getResourcesGit(cls, fast_load: bool = False, skip_install: bool = False):
-        """GitUtils resource repo/submodule singleton getter"""
-        if cls.__git_resources is None:
-            cls.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "",
-                                           skip_submodule_update=fast_load)
-            if not cls.__git_resources.isAvailable and not skip_install:
-                cls.__init_resources_repo()
-        return cls.__git_resources
-
-    @classmethod
-    def __init_resources_repo(cls):
-        if Confirm("Do you want to download exegol resources? (~1G)", True):
-            # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
-            # if not, git clone resources
-            if UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
-                    cls.__getGit().isAvailable:
-                # When resources are load from git submodule, git objects are stored in the root .git directory
-                cls.__warningExcludeFolderAV(ConstantConfig.src_root_path_obj)
-                if cls.__getGit().submoduleSourceUpdate("exegol-resources"):
-                    cls.__git_resources = None
-                    cls.__getResourcesGit()
-                else:
-                    # Error during install, raise error to avoid update process
-                    raise CancelOperation
-            else:
-                cls.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
-                if not cls.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
-                    # Error during install, raise error to avoid update process
-                    raise CancelOperation
-        else:
-            # User cancel installation, skip update update
-            raise CancelOperation
-
-    @staticmethod
-    def __warningExcludeFolderAV(directory: Union[str, Path]):
-        logger.warning(f"If you are using an [orange3][g]AV[/g][/orange3] on your host, you should exclude the {directory} folder before starting the download.")
-        while not Confirm(f"Are you ready to start the download?", True):
-            pass
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -145,28 +84,23 @@ class UpdateManager:
     @classmethod
     def updateWrapper(cls) -> bool:
         """Update wrapper source code from git"""
-        return cls.__updateGit(cls.__getGit())
+        return cls.__updateGit(ExegolModules().getWrapperGit())
 
     @classmethod
     def updateImageSource(cls) -> bool:
         """Update image source code from git submodule"""
-        return cls.__updateGit(cls.__getSourceGit())
+        return cls.__updateGit(ExegolModules().getSourceGit())
 
     @classmethod
     def updateResources(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
         try:
-            if not cls.isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
+            if not ExegolModules().isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
                 return False
-            return cls.__updateGit(cls.__getResourcesGit())
+            return cls.__updateGit(ExegolModules().getResourcesGit())
         except CancelOperation:
             # Error during installation, skipping operation
             return False
-
-    @classmethod
-    def isExegolResourcesReady(cls) -> bool:
-        """Update Exegol-resources from git (submodule)"""
-        return cls.__getResourcesGit(fast_load=True).isAvailable
 
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
@@ -218,7 +152,7 @@ class UpdateManager:
         return True
 
     @classmethod
-    def buildSource(cls, build_name: Optional[str] = None) -> str:
+    def __buildSource(cls, build_name: Optional[str] = None) -> str:
         """build user process :
         Ask user is he want to update the git source (to get new& updated build profiles),
         User choice a build name (if not supplied)
@@ -227,9 +161,8 @@ class UpdateManager:
         Return the name of the built image"""
         # Ask to update git
         try:
-            if cls.__getGit().isAvailable and not cls.__getGit().isUpToDate() and Confirm(
-                    "Do you want to update git (in order to update local build profiles)?",
-                    default=True):
+            if ExegolModules().getSourceGit().isAvailable and not ExegolModules().getSourceGit().isUpToDate() and \
+                    Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True):
                 cls.updateImageSource()
         except AssertionError:
             # Catch None git object assertions
@@ -261,7 +194,7 @@ class UpdateManager:
     @classmethod
     def buildAndLoad(cls, tag: str):
         """Build an image and load it"""
-        build_name = cls.buildSource(tag)
+        build_name = cls.__buildSource(tag)
         return DockerUtils.getInstalledImage(build_name)
 
     @classmethod
@@ -284,9 +217,9 @@ class UpdateManager:
     @classmethod
     def listGitStatus(cls) -> Sequence[Dict[str, str]]:
         result = []
-        gits = [cls.__getGit(fast_load=True),
-                cls.__getSourceGit(fast_load=True),
-                cls.__getResourcesGit(fast_load=True, skip_install=True)]
+        gits = [ExegolModules().getWrapperGit(fast_load=True),
+                ExegolModules().getSourceGit(fast_load=True),
+                ExegolModules().getResourcesGit(fast_load=True, skip_install=True)]
 
         with console.status(f"Loading module information", spinner_style="blue") as s:
             for git in gits:
