@@ -283,7 +283,7 @@ class ExegolTUI:
                 f"{' from local sources' if object_type is ExegolImage else ''}")
         while True:
             choice = Prompt.ask(
-                f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by his name",
+                f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
                 default=default, choices=choices,
                 show_choices=False)
             for o in data:

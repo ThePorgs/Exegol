@@ -154,12 +154,13 @@ class ContainerConfig:
 
         # Workspace config
         if Confirm(
-                "Do you want to [green]share[/green] your [orange3]current working directory[/orange3] in the new container?",
+                "Do you want to [green]share[/green] your [blue]current host working directory[/blue] in the new container's worskpace?",
                 default=False):
             self.enableCwdShare()
             command_options.append("-cwd")
+        # todo : dynamically obtain the container name to prevent hardcoding the "<container_name>"
         elif Confirm(
-                "Do you want to [green]share[/green] a [orange3]workspace directory[/orange3] in the new container?",
+                f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path}/<container_name>[/magenta])?",
                 default=False):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
@@ -172,9 +173,9 @@ class ContainerConfig:
 
         # GUI Config
         if self.__enable_gui:
-            if Confirm("Do you want to [red]disable[/red] [orange3]GUI[/orange3]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]GUI[/blue]?", False):
                 self.__disableGUI()
-        elif Confirm("Do you want to [green]enable[/green] [orange3]GUI[/orange3]?", False):
+        elif Confirm("Do you want to [green]enable[/green] [blue]GUI[/blue]?", False):
             self.enableGUI()
         # Command builder info
         if not self.__enable_gui:
@@ -182,9 +183,9 @@ class ContainerConfig:
 
         # Timezone config
         if self.__share_timezone:
-            if Confirm("Do you want to [red]remove[/red] your [orange3]shared timezone[/orange3] config?", False):
+            if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
                 self.__disableSharedTimezone()
-        elif Confirm("Do you want to [green]share[/green] your [orange3]host's timezone[/orange3]?", False):
+        elif Confirm("Do you want to [green]share[/green] your [blue]host's timezone[/blue]?", False):
             self.enableSharedTimezone()
         # Command builder info
         if not self.__share_timezone:
@@ -192,9 +193,9 @@ class ContainerConfig:
 
         # Shared resources config
         if self.__shared_resources:
-            if Confirm("Do you want to [red]disable[/red] the [orange3]shared resources[/orange3]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]shared resources[/blue]?", False):
                 self.__disableSharedResources()
-        elif Confirm("Do you want to [green]activate[/green] the [orange3]shared resources[/orange3]?", False):
+        elif Confirm("Do you want to [green]activate[/green] the [blue]shared resources[/blue]?", False):
             self.enableSharedResources()
         # Command builder info
         if not self.__shared_resources:
@@ -202,9 +203,9 @@ class ContainerConfig:
 
         # Exegol resources config
         if self.__exegol_resources:
-            if Confirm("Do you want to [red]disable[/red] the [orange3]exegol resources[/orange3]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]exegol resources[/blue]?", False):
                 self.disableExegolResources()
-        elif Confirm("Do you want to [green]activate[/green] the [orange3]exegol resources[/orange3]?", False):
+        elif Confirm("Do you want to [green]activate[/green] the [blue]exegol resources[/blue]?", False):
             self.enableExegolResources()
         # Command builder info
         if not self.__exegol_resources:
@@ -212,9 +213,9 @@ class ContainerConfig:
 
         # Network config
         if self.__network_host:
-            if Confirm("Do you want to use a [green]dedicated private[/green] [orange3]network[/orange3]?", False):
+            if Confirm("Do you want to use a [blue]dedicated private network[/blue]?", False):
                 self.setNetworkMode(False)
-        elif Confirm("Do you want to share the [green]host's[/green] [orange3]networks[/orange3]?", False):
+        elif Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False):
             self.setNetworkMode(True)
         # Command builder info
         if not self.__network_host:
@@ -222,7 +223,7 @@ class ContainerConfig:
 
         # VPN config
         if self.__vpn_path is None and Confirm(
-                "Do you want to [green]config[/green] a [orange3]VPN[/orange3] for this container", False):
+                "Do you want to [green]enable[/green] a [blue]VPN[/blue] for this container", False):
             while True:
                 vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
                 if Path(vpn_path).expanduser().is_file():
@@ -231,7 +232,7 @@ class ContainerConfig:
                 else:
                     logger.error("No config files were found.")
         elif self.__vpn_path and Confirm(
-                "Do you want to [red]remove[/red] your [orange3]VPN configuration[/orange3] in this container", False):
+                "Do you want to [orange3]remove[/orange3] your [blue]VPN configuration[/blue] in this container", False):
             self.__disableVPN()
         if self.__vpn_path:
             command_options.append(f"--vpn {self.__vpn_path}")
