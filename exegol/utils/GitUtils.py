@@ -20,6 +20,7 @@ class GitUtils:
             path = ConstantConfig.src_root_path_obj
         self.isAvailable = False
         self.__is_submodule = False
+        self.__git_disable = False
         self.__repo_path = path
         self.__git_name: str = name
         self.__git_subject: str = subject
@@ -43,6 +44,7 @@ class GitUtils:
         try:
             from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
         except ModuleNotFoundError:
+            self.__git_disable = True
             logger.debug("Git module is not installed.")
             return
         except ImportError:
@@ -217,7 +219,7 @@ class GitUtils:
                 if subm.name in blacklist_heavy_modules or \
                         (depth_limit and ('/' in subm.name or '\\' in subm.name)):
                     continue
-                s.update(f"Downloading git submodules [green]{subm.name}[/green]")
+                s.update(status=f"Downloading git submodules [green]{subm.name}[/green]")
                 from git.exc import GitCommandError
                 try:
                     subm.update(recursive=True)
@@ -303,7 +305,9 @@ class GitUtils:
                 # Offline error catch
                 result = "[green]Installed[/green] [bright_black](offline)[/bright_black]"
         else:
-            if self.__git_name in ["wrapper", "images"]:
+            if self.__git_disable:
+                result = "[red]Missing dependencies[/red]"
+            elif self.__git_name in ["wrapper", "images"]:
                 result = "[bright_black]Auto-update not supported[/bright_black]"
             else:
                 result = "[bright_black]Not installed[/bright_black]"

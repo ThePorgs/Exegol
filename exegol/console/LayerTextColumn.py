@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from rich.console import JustifyMethod
@@ -29,7 +30,8 @@ class LayerTextColumn(TextColumn, DownloadColumn):
         try:
             TextColumn.__init__(self, text_format, style, justify, markup, highlighter, table_column)
         except TypeError:
-            logger.critical("Your version of Rich does not correspond to the project requirements. Please update your dependencies with pip.")
+            logger.critical(f"Your version of Rich does not correspond to the project requirements. Please update your dependencies with pip:{os.linesep}"
+                            f"[bright_magenta]python3 -m pip install --user --requirement requirements.txt[/bright_magenta]")
         DownloadColumn.__init__(self, binary_units, table_column)
 
     def render(self, task: "Task") -> Text:

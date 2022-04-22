@@ -223,7 +223,7 @@ class UpdateManager:
 
         with console.status(f"Loading module information", spinner_style="blue") as s:
             for git in gits:
-                s.update(f"Loading module [green]{git.getName()}[/green] information")
+                s.update(status=f"Loading module [green]{git.getName()}[/green] information")
                 status = git.getTextStatus()
                 branch = git.getCurrentBranch()
                 if branch is None:
