@@ -9,6 +9,7 @@ from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
 from docker.models.volumes import Volume
+from requests import ReadTimeout
 
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
@@ -408,6 +409,8 @@ class DockerUtils:
                 logger.error("This image doesn't exist locally. Aborting.")
             else:
                 logger.critical(f"An error occurred while removing this image : {err}")
+        except ReadTimeout:
+            logger.error("The deletion of the image has timeout, the deletion may be incomplete.")
         return False
 
     @classmethod
