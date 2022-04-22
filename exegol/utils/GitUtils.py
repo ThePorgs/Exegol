@@ -48,6 +48,7 @@ class GitUtils:
             logger.debug("Git module is not installed.")
             return
         except ImportError:
+            self.__git_disable = True
             logger.error("Unable to find git tool locally. Skipping git operations.")
             return
         self.__gitRepo: Optional[Repo] = None
