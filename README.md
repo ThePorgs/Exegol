@@ -5,7 +5,7 @@
 <p align="center">
   <img alt="DockerHub build type" src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol">
   <img alt="DockerHub build state" src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol">
-  <img alt="image (compressed) max size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/nightly">
+  <img alt="image (compressed) max size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/nightly?label=image (compressed) max size">
   <br>
   <img alt="PyPi" src="https://img.shields.io/pypi/v/Exegol?color=informational">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.6-informational">
