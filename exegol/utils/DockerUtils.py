@@ -293,32 +293,35 @@ class DockerUtils:
         remote_results = []
         url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags"
         # Handle multi-page tags from registry
-        while url is not None:
-            remote_images_request = None
-            try:
-                remote_images_request = requests.get(
-                    url=url,
-                    timeout=(5, 10), verify=ParametersManager().verify)
-            except requests.exceptions.HTTPError as e:
-                logger.error(f"Response error: {e.response.text}")
-            except requests.exceptions.ConnectionError as err:
-                logger.error(f"Error: {err}")
-                logger.error("Connection Error: you probably have no internet.")
-            except requests.exceptions.ReadTimeout:
-                logger.error(
-                    "[green]Dockerhub[/green] request has [red]timeout[/red]. Do you have a slow internet connection? Retry later.")
-            except requests.exceptions.RequestException as err:
-                logger.error(f"Unknown connection error: {err}")
-            if remote_images_request is None:
-                logger.warning("Skipping online queries.")
-                return []
-            docker_repo_response = json.loads(remote_images_request.text)
-            for docker_image in docker_repo_response["results"]:
-                exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
-                                           digest=docker_image["images"][0]["digest"],
-                                           size=docker_image.get("full_size"))
-                remote_results.append(exegol_image)
-            url = docker_repo_response["next"]  # handle multiple page tags
+        with console.status(f"Loading information", spinner_style="blue") as s:
+            while url is not None:
+                remote_images_request = None
+                logger.debug(f"Fetching information from: {url}")
+                s.update(status=f"Fetching information from [green]{url}[/green]")
+                try:
+                    remote_images_request = requests.get(
+                        url=url,
+                        timeout=(5, 10), verify=ParametersManager().verify)
+                except requests.exceptions.HTTPError as e:
+                    logger.error(f"Response error: {e.response.text}")
+                except requests.exceptions.ConnectionError as err:
+                    logger.error(f"Error: {err}")
+                    logger.error("Connection Error: you probably have no internet.")
+                except requests.exceptions.ReadTimeout:
+                    logger.error(
+                        "[green]Dockerhub[/green] request has [red]timed out[/red]. Do you have a slow internet connection, or is the remote service slow/down? Retry later.")
+                except requests.exceptions.RequestException as err:
+                    logger.error(f"Unknown connection error: {err}")
+                if remote_images_request is None:
+                    logger.warning("Skipping online queries.")
+                    return []
+                docker_repo_response = json.loads(remote_images_request.text)
+                for docker_image in docker_repo_response["results"]:
+                    exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
+                                               digest=docker_image["images"][0]["digest"],
+                                               size=docker_image.get("full_size"))
+                    remote_results.append(exegol_image)
+                url = docker_repo_response["next"]  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results
 
