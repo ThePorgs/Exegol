@@ -87,6 +87,14 @@ The wrapper can then be added to the `PATH`.
 sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 ```
 
+## User configuration
+
+Exegol installs and uses a yaml configuration file, located in the user's home directory: `~/.exegol` (or `/home/<user>/.exegol`).
+The configuration file indicates paths to three host directories shared with the containers:
+- "my resources": dedicated to the user to customize his environment and tools. Defaults to `/home/<user>/.exegol/my-resources`.
+- "exegol resources": official exegol resources from the [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo. Defaults to `/path/to/Exegol/exegol-resources`.
+- "private workspace": a dedicated workspace for each container, shared with the host. Defaults to `/home/<user>/.exegol/workspaces`.
+
 ## Exegol images
 
 It is possible to install an exegol image using the wrapper with the following command: `exegol install <image_name>`
