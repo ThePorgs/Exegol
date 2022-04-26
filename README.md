@@ -89,9 +89,9 @@ python3 -m pip install --user --requirement requirements.txt
 <details>
   <summary><h4>On Linux</h4></summary>
 
-The exegol wrapper can then be added to the `PATH` for direct access.
+The exegol wrapper can then be added to the `PATH` throw symlink for direct access.
 
-```
+```bash
 sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 ```
 
