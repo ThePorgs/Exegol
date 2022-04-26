@@ -27,13 +27,13 @@ class GuiUtils:
             logger.debug("Testing WSLg availability")
             # WSL + WSLg must be available on the Windows host for the GUI to work
             if not cls.__wsl_available():
-                logger.error("WSL is not available on your system. GUI is not supported.")
+                logger.error("WSL is [orange3]not available[/orange3] on your system. GUI is not supported.")
                 return False
             # Only WSL2 support WSLg
             if EnvInfo.getDockerEngine() != "wsl2":
-                logger.error("Docker must be run with WSL2 engine in order to support GUI applications.")
+                logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
                 return False
-            logger.debug("WSL is available and docker is using WSL2")
+            logger.debug("WSL is [green]available[/green] and docker is using WSL2")
             if cls.__wslg_installed():
                 # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
                 if EnvInfo.current_platform != "WSL":
@@ -44,12 +44,12 @@ class GuiUtils:
                         raise KeyboardInterrupt
                 return True
             elif cls.__wslg_eligible():
-                logger.info("WSLg is available on your system but not installed.")
-                logger.info("Make sure, WSLg is installed on your Windows by running 'wsl --update' as admin.")
+                logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
+                logger.info("Make sure, [green]WSLg[/green] is installed on your Windows by running 'wsl --update' as [orange3]admin[/orange3].")
                 return True
-            logger.debug("WSLg is not available")
+            logger.debug("WSLg is [orange3]not available[/orange3]")
             logger.warning(
-                "Display sharing is not supported on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+                "Display sharing is [orange3]not supported[/orange3] on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
             return False
         # TODO check mac compatibility (default: same as linux)
         return True
@@ -126,7 +126,7 @@ class GuiUtils:
             os_version_raw, _, build_number_raw = EnvInfo.getWindowsRelease().split('.')[:3]
         except ValueError:
             logger.debug(f"Impossible to find the version of windows: '{EnvInfo.getWindowsRelease()}'")
-            logger.error("Exegol can't know if your version of Windows can support dockerized GUIs.")
+            logger.error("Exegol can't know if your [orange3]version of Windows[/orange3] can support dockerized GUIs.")
             return False
         # Available from Windows 10 Build 21364
         # Available from Windows 11 Build 22000
@@ -171,7 +171,7 @@ class GuiUtils:
                     while not cls.__check_wsl_docker_integration(name):
                         eligible = False
                         logger.warning(
-                            f"The '{name}' WSL distribution could be used to enable the GUI on exegol but the docker integration is [orange3]not enabled[/orange3].")
+                            f"The '{name}' WSL distribution could be used to [green]enable the GUI[/green] on exegol but the docker integration is [orange3]not enabled[/orange3].")
                         if not Confirm(
                                 f"Do you want to [red]manually[/red] enable docker integration for WSL '{name}'?",
                                 default=True):

@@ -166,7 +166,7 @@ class UpdateManager:
                 cls.updateImageSource()
         except AssertionError:
             # Catch None git object assertions
-            logger.warning("Git update is not available. Skipping.")
+            logger.warning("Git update is [orange3]not available[/orange3]. Skipping.")
         # Choose tag name
         blacklisted_build_name = ["stable", "full"]
         while build_name is None or build_name in blacklisted_build_name:

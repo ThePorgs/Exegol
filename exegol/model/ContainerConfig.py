@@ -241,7 +241,7 @@ class ContainerConfig:
     def enableGUI(self):
         """Procedure to enable GUI feature"""
         if not GuiUtils.isGuiAvailable():
-            logger.error("GUI feature is not available on your environment. Skipping.")
+            logger.error("GUI feature is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
             return
         if not self.__enable_gui:
             self.__enable_gui = True
