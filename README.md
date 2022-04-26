@@ -75,25 +75,57 @@ python3 -m pip install exegol
 > Remember that pip install binaries in `~/.local/bin`, which then must be in the `PATH` environment variable.
 
 ## Installation from sources
+
 Exegol's wrapper can also be installed from sources. The wrapper then knows how to self-update.
+
 ```
 git clone https://github.com/ShutdownRepo/Exegol
 cd Exegol
 python3 -m pip install --user --requirement requirements.txt
 ```
 
-The wrapper can then be added to the `PATH`.
+### Add exegol command
+
+<details>
+  <summary><h4>On Linux</h4></summary>
+
+The exegol wrapper can then be added to the `PATH` for direct access.
+
 ```
 sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 ```
 
+</details>
+
+<details>
+  <summary><h4>On Windows (powershell)</h4></summary>
+
+The exegol wrapper can be added as a powershell command aliases and saved for persistence
+in `$HOME\PowershellAliasesExport.txt`
+then load from `$PROFILE` script at powershell startup.
+
+```powershell
+$AliasFile = "$HOME\PowershellAliasesExport.txt"
+Set-Alias -Name exegol -Value "$(pwd)\exegol.py"
+Get-Alias -Name "exegol" | Export-Alias -Path $AliasFile
+echo "Import-Alias '$AliasFile'" >> $PROFILE
+```
+
+</details>
+
 ## User configuration
 
-Exegol installs and uses a yaml configuration file, located in the user's home directory: `~/.exegol` (or `/home/<user>/.exegol`).
+Exegol installs and uses a yaml configuration file, located in the user's home directory: `~/.exegol` (
+or `/home/<user>/.exegol`).
 The configuration file indicates paths to three host directories shared with the containers:
-- "my resources": dedicated to the user to customize his environment and tools. Defaults to `/home/<user>/.exegol/my-resources`.
-- "exegol resources": official exegol resources from the [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo. Defaults to `/path/to/Exegol/exegol-resources`.
-- "private workspace": a dedicated workspace for each container, shared with the host. Defaults to `/home/<user>/.exegol/workspaces`.
+
+- "my resources": dedicated to the user to customize his environment and tools. Defaults
+  to `/home/<user>/.exegol/my-resources`.
+- "exegol resources": official exegol resources from
+  the [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo. Defaults
+  to `/path/to/Exegol/exegol-resources`.
+- "private workspace": a dedicated workspace for each container, shared with the host. Defaults
+  to `/home/<user>/.exegol/workspaces`.
 
 ## Exegol images
 
