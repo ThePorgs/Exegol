@@ -36,7 +36,7 @@ class GitUtils:
         except ReferenceError:
             if self.__git_name == "wrapper":
                 logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
-                if self.__repo_path.parent.name == "site-packages":
+                if ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
             abort_loading = True
@@ -59,7 +59,8 @@ class GitUtils:
             return
         logger.debug(f"Loading git at {self.__repo_path}")
         try:
-            self.__gitRepo = Repo(str(self.__repo_path))
+            self.__gitRepo = Repo(self.__repo_path)
+            logger.debug(f"Repo path: {self.__gitRepo.git_dir}")
             self.__init_repo(skip_submodule_update)
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
@@ -116,6 +117,9 @@ class GitUtils:
             return str(self.__gitRepo.active_branch)
         except TypeError:
             logger.debug("Git HEAD is detached, cant find the current branch.")
+            return None
+        except ValueError:
+            logger.error(f"Unable to find current git branch in the {self.__git_name} repository. Check the path in the .git file from {self.__repo_path / '.git'}")
             return None
 
     def listBranch(self) -> List[str]:
@@ -215,7 +219,12 @@ class GitUtils:
         # Submodules dont have depth submodule limits
         depth_limit = not self.__is_submodule
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
-            for subm in self.__gitRepo.iter_submodules():
+            try:
+                submodules = self.__gitRepo.iter_submodules()
+            except ValueError:
+                logger.error(f"Unable to find any git submodule from '{self.getName()}' repository. Check the path in the file {self.__repo_path / '.git'}")
+                return
+            for subm in submodules:
                 # Submodule update are skipped if blacklisted or if the depth limit is set
                 if subm.name in blacklist_heavy_modules or \
                         (depth_limit and ('/' in subm.name or '\\' in subm.name)):
@@ -232,6 +241,8 @@ class GitUtils:
                     else:
                         logger.error("Unable to update git submodule. Skipping operation.")
                         logger.error(error)
+                except ValueError:
+                    logger.error(f"Unable to update git submodule '{subm.name}'. Check the path in the file '{Path(subm.path) / '.git'}'")
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
@@ -308,7 +319,7 @@ class GitUtils:
         else:
             if self.__git_disable:
                 result = "[red]Missing dependencies[/red]"
-            elif self.__git_name in ["wrapper", "images"]:
+            elif self.__git_name in ["wrapper", "images"] and ConstantConfig.pip_installed:
                 result = "[bright_black]Auto-update not supported[/bright_black]"
             else:
                 result = "[bright_black]Not installed[/bright_black]"
@@ -329,3 +340,7 @@ class GitUtils:
     @classmethod
     def formatStderr(cls, stderr):
         return stderr.replace('\n', '').replace('stderr:', '').strip().strip("'")
+
+    def __repr__(self) -> str:
+        """Developer debug object representation"""
+        return f"GitUtils '{self.__git_name}': {'Active' if self.isAvailable else 'Disable'}"

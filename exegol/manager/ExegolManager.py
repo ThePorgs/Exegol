@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
+from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
@@ -18,7 +19,7 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -166,6 +167,8 @@ class ExegolManager:
         """Show exegol version (and context configuration on debug mode)"""
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}",
                    level=logging.INFO, markup=True)
+        logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
+        logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
         if EnvInfo.isWindowsHost():
             logger.debug(f"Python environment: {EnvInfo.current_platform}")

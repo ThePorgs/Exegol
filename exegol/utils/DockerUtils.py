@@ -321,7 +321,7 @@ class DockerUtils:
                                                digest=docker_image["images"][0]["digest"],
                                                size=docker_image.get("full_size"))
                     remote_results.append(exegol_image)
-                url = docker_repo_response["next"]  # handle multiple page tags
+                url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results
 
