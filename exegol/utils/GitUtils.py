@@ -319,7 +319,8 @@ class GitUtils:
         else:
             if self.__git_disable:
                 result = "[red]Missing dependencies[/red]"
-            elif self.__git_name in ["wrapper", "images"] and ConstantConfig.pip_installed:
+            elif self.__git_name == ["wrapper", "images"] and \
+                    (ConstantConfig.pip_installed or not ConstantConfig.git_source_installation):
                 result = "[bright_black]Auto-update not supported[/bright_black]"
             else:
                 result = "[bright_black]Not installed[/bright_black]"
