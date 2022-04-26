@@ -122,16 +122,21 @@ class GuiUtils:
         Check if the current Windows version support WSLg
         :return:
         """
-        # Windows build release not available on  WSL env
-        if EnvInfo.is_linux_shell:
-            logger.error("Exegol running from a linux terminal can't know "
-                         "if your version of Windows can support dockerized GUIs.")
+        try:
+            os_version_raw, _, build_number_raw = EnvInfo.getWindowsRelease().split('.')[:3]
+        except ValueError:
+            logger.debug(f"Impossible to find the version of windows: '{EnvInfo.getWindowsRelease()}'")
+            logger.error("Exegol can't know if your version of Windows can support dockerized GUIs.")
             return False
-        else:
-            os_version, _, build_number = EnvInfo.windows_release.split('.')[:3]
-            # Available from Windows 10 Build 21364
-            # Available from Windows 11 Build 22000
-            return int(os_version) >= 10 and int(build_number) >= 21364
+        # Available from Windows 10 Build 21364
+        # Available from Windows 11 Build 22000
+        os_version = int(os_version_raw)
+        build_number = int(build_number_raw)
+        if os_version == 10 and build_number >= 21364:
+            return True
+        elif os_version > 10:
+            return True
+        return False
 
     @classmethod
     def __find_wsl_distro(cls) -> str:

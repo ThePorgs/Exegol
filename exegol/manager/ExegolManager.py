@@ -173,10 +173,7 @@ class ExegolManager:
         if EnvInfo.isWindowsHost():
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
-            if EnvInfo.is_linux_shell:
-                logger.debug(f"Windows release: Not available on a linux shell")
-            else:
-                logger.debug(f"Windows release: {EnvInfo.windows_release}")
+            logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
 
     @classmethod
     def __loadOrInstallImage(cls,

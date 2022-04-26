@@ -1,4 +1,6 @@
 import platform
+import re
+import subprocess
 from typing import Optional
 
 
@@ -8,7 +10,7 @@ class EnvInfo:
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
     is_linux_shell: bool = current_platform in ["WSL", "Linux"]  # TODO test mac platform
     is_windows_shell: bool = current_platform == "Windows"
-    windows_release: str = platform.win32_ver()[1]
+    __windows_release: Optional[str] = None
     # Host OS
     __docker_host_os: Optional[str] = None
     __docker_engine: Optional[str] = None
@@ -37,6 +39,31 @@ class EnvInfo:
         # initData must be called from DockerUtils on client initialisation
         assert cls.__docker_host_os is not None
         return cls.__docker_host_os
+
+    @classmethod
+    def getWindowsRelease(cls) -> str:
+        # Cache check
+        if cls.__windows_release is None:
+            if cls.is_windows_shell:
+                # From a Windows shell, python supply an approximate (close enough) version of windows
+                cls.__windows_release = platform.win32_ver()[1]
+            elif cls.current_platform == "WSL":
+                # From a WSL shell, we must create a process to retrieve the host's version
+                # Find version using MS-DOS command 'ver'
+                proc = subprocess.Popen(["cmd.exe", "/c", "ver"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                proc.wait()
+                assert proc.stdout is not None
+                # Try to match Windows version
+                matches = re.search(r"version (\d+\.\d+\.\d+)(\.\d*)?", proc.stdout.read().decode('utf-8'))
+                if matches:
+                    # Select match 1 and apply to the attribute
+                    cls.__windows_release = matches.group(1)
+                else:
+                    # If there is any match, fallback to empty
+                    cls.__windows_release = ""
+            else:
+                cls.__windows_release = ""
+        return cls.__windows_release
 
     @classmethod
     def isWindowsHost(cls) -> bool:
