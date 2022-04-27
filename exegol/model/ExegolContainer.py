@@ -120,16 +120,17 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Sequence[str], as_daemon: bool = True):
+    def exec(self, command: Sequence[str], as_daemon: bool = True, quiet: bool = False):
         """Execute a command / process on the docker container"""
         if not self.isRunning():
             self.start()
-        logger.info("Executing command on Exegol")
-        if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
-            logger.info("Hint: use verbose mode to see command output (-v).")
-        cmd = self.formatShellCommand(command)
+        if not quiet:
+            logger.info("Executing command on Exegol")
+            if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
+                logger.info("Hint: use verbose mode to see command output (-v).")
+        cmd = self.formatShellCommand(command, quiet)
         stream = self.__container.exec_run(cmd, detach=as_daemon, stream=not as_daemon)
-        if as_daemon:
+        if as_daemon and not quiet:
             logger.success("Command successfully executed in background")
         else:
             try:
@@ -137,17 +138,20 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 # stream[1] : text stream
                 for log in stream[1]:
                     logger.raw(log.decode("utf-8"))
-                logger.success("End of the command")
+                if not quiet:
+                    logger.success("End of the command")
             except KeyboardInterrupt:
-                logger.info("Detaching process logging")
-                logger.warning("Exiting this command does NOT stop the process in the container")
+                if not quiet:
+                    logger.info("Detaching process logging")
+                    logger.warning("Exiting this command does NOT stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: Sequence[str]):
+    def formatShellCommand(command: Sequence[str], quiet: bool = False):
         """Generic method to format a shell command and support zsh aliases"""
         # Using base64 to escape special characters
         str_cmd = ' '.join(command)
-        logger.success(f"Command received: {str_cmd}")
+        if not quiet:
+            logger.success(f"Command received: {str_cmd}")
         cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
         cmd = f'zsh -c "source /opt/.zsh_aliases; eval $(echo {cmd_b64} | base64 -d)"'
@@ -156,6 +160,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def remove(self):
         """Stop and remove the docker container"""
+        self.__removeVolume()
         self.stop(timeout=2)
         logger.info(f"Removing container {self.name}")
         try:
@@ -164,35 +169,50 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         except NotFound:
             logger.error(
                 f"The container {self.name} has already been removed (probably created as a temporary container).")
-        self.__removeVolume()
 
     def __removeVolume(self):
         """Remove private workspace volume directory if exist"""
         volume_path = self.config.getPrivateVolumePath()
         # TODO add backup
-        # TODO add remove root files
         if volume_path != '':
+            if volume_path.startswith('/wsl/') or volume_path.startswith('\\wsl\\'):
+                # Docker volume defines from WSL don't return the real path, they cannot be automatically removed
+                # TODO review WSL workspace volume
+                logger.warning("Warning: WSL workspace directory cannot be removed automatically.")
+                return
             logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
             try:
-                if os.listdir(volume_path):
+                is_file_present = os.listdir(volume_path)
+            except PermissionError:
+                if Confirm(f"Insufficient permission to view workspace files {volume_path}, "
+                           f"do you still want to delete them?", default=False):
+                    # Set is_file_present as false to skip user prompt again
+                    is_file_present = False
+                else:
+                    return
+            try:
+                if is_file_present:
                     # Directory is not empty
-                    if not Confirm(f"Workspace {volume_path} is not empty, do you want to delete it?",
+                    if not Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
                                    default=False):
                         # User can choose not to delete the workspace on the host
                         return
+                # Try to remove files from the host with user permission (work only without sub-directory)
                 shutil.rmtree(volume_path)
-                logger.success("Private workspace volume removed successfully")
             except PermissionError:
-                logger.warning(f"I don't have the rights to remove {volume_path} (do it yourself)")
+                logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
+                # If the host can't remove the container's file and folders, the rm command is exec from the container itself as root
+                self.exec(["rm", "-rf", "/workspace"], as_daemon=False, quiet=True)
+                try:
+                    shutil.rmtree(volume_path)
+                except PermissionError:
+                    logger.warning(f"I don't have the rights to remove [magenta]{volume_path}[/magenta] (do it yourself)")
+                    return
             except Exception as err:
                 logger.error(err)
-        else:
-            # Check if container workspace is a WSL volume or a custom one
-            path = self.config.getHostWorkspacePath()
-            if path.startswith('/wsl/') or path.startswith('\\wsl\\'):
-                # Docker volume defines from WSL don't return the real path, they cannot be automatically removed
-                logger.warning("Warning: WSL workspace directory cannot be removed automatically.")
+                return
+            logger.success("Private workspace volume removed successfully")
 
     def postStartSetup(self):
         self.__applyXhostACL()
