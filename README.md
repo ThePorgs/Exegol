@@ -165,6 +165,7 @@ Below is an example of a GUI app running in an Exegol container.
 <details>
   <summary><h2>Default container configuration</h2></summary>
   When creating a new container with `exegol start`, it gets the following configuration by default (which can be tweaked, see `exegol start -h`)
+
   - GUI (X11 sharing) enabled
   - Host network sharing enabled (host's network interfaces are shared with the container)
   - Timezone sharing enabled
