@@ -1,3 +1,4 @@
+- add `--skip-images` to update function
 - improve Windows integration
 - add other actions to exegol wrapper like 
   - backup (generic and specific modes of backuping to save valuable info before a removal like: history, home dir files, etc.)

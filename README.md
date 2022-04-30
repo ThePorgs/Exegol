@@ -8,7 +8,7 @@
   <img alt="image (compressed) max size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/nightly?label=image (compressed) max size">
   <br>
   <img alt="PyPi" src="https://img.shields.io/pypi/v/Exegol?color=informational">
-  <img alt="Python" src="https://img.shields.io/badge/Python-3.6-informational">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.6+-informational">
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20dev">
   <br>
@@ -17,6 +17,7 @@
   <img alt="current version" src="https://img.shields.io/badge/mac-unknown-important">
   <br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
+  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social"></a>
   <br><br>
 </p>
 
