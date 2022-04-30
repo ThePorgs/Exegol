@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 try:
     from exegol.manager.ExegolController import main
 except ModuleNotFoundError as e:
@@ -7,6 +5,5 @@ except ModuleNotFoundError as e:
     print("Please install them with pip3 install -r requirements.txt")
     exit(1)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
