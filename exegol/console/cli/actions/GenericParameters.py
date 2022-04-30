@@ -99,7 +99,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=True,
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
-        self.shared_resources = Option("--disable-shared-resources",
+        self.shared_resources = Option("--disable-my-resources",
                                        action="store_false",
                                        default=True,
                                        dest="shared_resources",
