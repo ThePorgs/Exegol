@@ -120,7 +120,8 @@ class ExegolManager:
             UpdateManager.updateWrapper()
             UpdateManager.updateImageSource()
             UpdateManager.updateResources()
-        UpdateManager.updateImage()
+        if not ParametersManager().skip_images:
+            UpdateManager.updateImage()
 
     @classmethod
     def uninstall(cls):
