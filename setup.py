@@ -39,7 +39,7 @@ setup(
     url='https://github.com/ShutdownRepo/Exegol',
     keywords='pentest redteam ctf exegol',
     classifiers=[
-        'Development Status :: 4 - Beta',  # TODO change status: Development Status :: 5 - Production/Stable
+        'Development Status :: 5 - Production/Stable',
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
@@ -68,7 +68,7 @@ setup(
     project_urls={
         'Bug Reports': 'https://github.com/ShutdownRepo/Exegol/issues',
         'Source': 'https://github.com/ShutdownRepo/Exegol',
-        'Documentation': 'https://github.com/ShutdownRepo/Exegol/wiki',  # TODO add doc url
+        'Documentation': 'https://github.com/ShutdownRepo/Exegol/blob/master/README.md',  # TODO Create proper documentation
         'Funding': 'https://patreon.com/nwodtuhs',
     },
     test_suite='tests'
