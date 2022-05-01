@@ -19,7 +19,7 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger, console, ExeLog
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
@@ -293,11 +293,12 @@ class DockerUtils:
         remote_results = []
         url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags"
         # Handle multi-page tags from registry
-        with console.status(f"Loading information", spinner_style="blue") as s:
+        with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:
                 remote_images_request = None
                 logger.debug(f"Fetching information from: {url}")
-                s.update(status=f"Fetching information from [green]{url}[/green]")
+                if logger.isEnabledFor(ExeLog.VERBOSE):
+                    s.update(status=f"Fetching registry information from [green]{url}[/green]")
                 try:
                     remote_images_request = requests.get(
                         url=url,
