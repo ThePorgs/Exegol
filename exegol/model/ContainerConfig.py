@@ -253,6 +253,7 @@ class ContainerConfig:
             # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             self.addEnv("QT_X11_NO_MITSHM", "1")
+            self.addEnv("_JAVA_AWT_WM_NONREPARENTING", "1")
             self.__enable_gui = True
 
     def __disableGUI(self):
@@ -263,6 +264,7 @@ class ContainerConfig:
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
             self.removeEnv("QT_X11_NO_MITSHM")
+            self.removeEnv("_JAVA_AWT_WM_NONREPARENTING")
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -800,7 +802,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in ["QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
+            if not verbose and k in ["_JAVA_AWT_WM_NONREPARENTING", "QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
