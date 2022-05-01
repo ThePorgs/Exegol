@@ -1,8 +1,8 @@
 import os
-import re
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
+from exegol.console.ConsoleFormat import richLen
 from exegol.utils.ExeLog import logger
 
 
@@ -133,7 +133,7 @@ class Command:
         keys_len = {}
         # Replace [.*] rich tag for line length count
         for k in self._usages.keys():
-            keys_len[k] = len(re.sub(r"\[/?[^]]+]", '', k, 0, re.MULTILINE))
+            keys_len[k] = richLen(k)
         max_key = max(keys_len.values())
         for k, v in self._usages.items():
             space = ' ' * (max_key - keys_len.get(k, 0) + 2)

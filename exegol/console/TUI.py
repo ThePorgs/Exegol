@@ -7,7 +7,7 @@ from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapse
 from rich.prompt import Prompt
 from rich.table import Table
 
-from exegol.console.ConsoleFormat import boolFormatter, getColor
+from exegol.console.ConsoleFormat import boolFormatter, getColor, richLen
 from exegol.console.ExegolProgress import ExegolProgress
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.LayerTextColumn import LayerTextColumn
@@ -227,6 +227,7 @@ class ExegolTUI:
     def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key"):
         """Building a simple Rich table from a list of string"""
         table.title = title
+        table.min_width = richLen(title)
         # Define columns
         table.add_column(title)
         table.show_header = False
