@@ -106,9 +106,14 @@ class Update(Command, ImageSelector):
                                dest="skip_git",
                                action="store_true",
                                help="Skip git updates (wrapper, image sources and exegol resources).")
+        self.skip_images = Option("--skip-images",
+                                  dest="skip_images",
+                                  action="store_true",
+                                  help="Skip images updates (exegol docker images).")
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.skip_git, "required": False},
+                                       {"arg": self.skip_images, "required": False},
                                        title="[bold cyan]Update[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
