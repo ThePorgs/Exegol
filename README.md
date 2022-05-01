@@ -2,12 +2,12 @@
 
 # The Exegol project
 
-<div style="text-align: center;">
+<div align="center">
 
   [![DockerHub type](https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol)](https://hub.docker.com/r/nwodtuhs/exegol)
   [![DockerHub state](https://img.shields.io/docker/cloud/build/nwodtuhs/exegol)](https://hub.docker.com/r/nwodtuhs/exegol)
   [![image (compressed) max size](https://img.shields.io/docker/image-size/nwodtuhs/exegol/nightly?label=image%20(compressed)%20max%20size)](https://hub.docker.com/r/nwodtuhs/exegol)
-
+  <br>
   [![PyPI](https://img.shields.io/pypi/v/Exegol?color=informational)](https://pypi.org/project/Exegol/)
   [![Python](https://img.shields.io/badge/Python-3.6+-informational)](https://pypi.org/project/Exegol/)
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
