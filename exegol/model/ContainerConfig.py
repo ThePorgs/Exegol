@@ -249,6 +249,7 @@ class ContainerConfig:
             self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix")
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             self.addEnv("QT_X11_NO_MITSHM", "1")
+            self.addEnv("_JAVA_AWT_WM_NONREPARENTING", "1")
             # TODO support pulseaudio
 
     def __disableGUI(self):
