@@ -15,7 +15,7 @@
   <br>
   <img alt="current version" src="https://img.shields.io/badge/linux-supported-success">
   <img alt="current version" src="https://img.shields.io/badge/windows-supported-success">
-  <img alt="current version" src="https://img.shields.io/badge/mac-unknown-important">
+  <img alt="current version" src="https://img.shields.io/badge/mac-need%20testing-important">
   <br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
   <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social"></a>
