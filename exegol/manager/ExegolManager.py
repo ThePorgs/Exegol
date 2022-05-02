@@ -65,6 +65,7 @@ class ExegolManager:
     @classmethod
     def start(cls):
         """Create and/or start an exegol container to finally spawn an interactive shell"""
+        ExegolManager.print_version()
         logger.info("Starting exegol")
         # TODO add console logging capabilities
         # Check if the first positional parameter have been supplied
@@ -82,6 +83,7 @@ class ExegolManager:
     def exec(cls):
         """Create and/or start an exegol container to execute a specific command.
         The execution can be seen in console output or be relayed in the background as a daemon."""
+        ExegolManager.print_version()
         logger.info("Starting exegol")
         if ParametersManager().tmp:
             container = cls.__createTmpContainer(ParametersManager().selector)
@@ -97,6 +99,7 @@ class ExegolManager:
     @classmethod
     def stop(cls):
         """Stop an exegol container"""
+        ExegolManager.print_version()
         logger.info("Stopping exegol")
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         for c in container:
@@ -105,6 +108,7 @@ class ExegolManager:
     @classmethod
     def install(cls):
         """Pull or build a docker exegol image"""
+        ExegolManager.print_version()
         try:
             if not ExegolModules().isExegolResourcesReady():
                 raise CancelOperation
@@ -116,15 +120,18 @@ class ExegolManager:
     @classmethod
     def update(cls):
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
+        ExegolManager.print_version()
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
             UpdateManager.updateImageSource()
             UpdateManager.updateResources()
-        UpdateManager.updateImage()
+        if not ParametersManager().skip_images:
+            UpdateManager.updateImage()
 
     @classmethod
     def uninstall(cls):
         """Remove an exegol image"""
+        ExegolManager.print_version()
         logger.info("Uninstalling an exegol image")
         # Set log level to verbose in order to show every image installed including the outdated.
         if not logger.isEnabledFor(ExeLog.VERBOSE):
@@ -145,6 +152,7 @@ class ExegolManager:
     @classmethod
     def remove(cls):
         """Remove an exegol container"""
+        ExegolManager.print_version()
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         if len(containers) == 0:
@@ -165,7 +173,7 @@ class ExegolManager:
     @classmethod
     def print_version(cls):
         """Show exegol version (and context configuration on debug mode)"""
-        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version v{ConstantConfig.version}{os.linesep}",
+        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
                    level=logging.INFO, markup=True)
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")

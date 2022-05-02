@@ -244,12 +244,17 @@ class ContainerConfig:
             logger.error("GUI feature is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
             return
         if not self.__enable_gui:
-            self.__enable_gui = True
             logger.verbose("Config: Enabling display sharing")
-            self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix")
+            try:
+                self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix", must_exist=True)
+            except CancelOperation as e:
+                logger.warning(f"Graphical interface sharing could not be enabled: {e}")
+                return
+            # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             self.addEnv("QT_X11_NO_MITSHM", "1")
-            # TODO support pulseaudio
+            self.addEnv("_JAVA_AWT_WM_NONREPARENTING", "1")
+            self.__enable_gui = True
 
     def __disableGUI(self):
         """Procedure to enable GUI feature (Only for interactive config)"""
@@ -259,6 +264,7 @@ class ContainerConfig:
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
             self.removeEnv("QT_X11_NO_MITSHM")
+            self.removeEnv("_JAVA_AWT_WM_NONREPARENTING")
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -266,10 +272,25 @@ class ContainerConfig:
             logger.warning("Timezone sharing is not supported from a Windows shell. Skipping.")
             return
         if not self.__share_timezone:
-            self.__share_timezone = True
             logger.verbose("Config: Enabling host timezones")
-            self.addVolume("/etc/timezone", "/etc/timezone", read_only=True)
-            self.addVolume("/etc/localtime", "/etc/localtime", read_only=True)
+            # Try to share /etc/timezone (deprecated old timezone file)
+            try:
+                self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
+                timezone_loaded = True
+            except CancelOperation:
+                logger.verbose("File /etc/timezone is missing on your host.")
+                timezone_loaded = False
+            # Try to share /etc/localtime (new timezone file)
+            try:
+                self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
+            except CancelOperation as e:
+                if not timezone_loaded:
+                    # If neither file was found, disable the functionality
+                    logger.error(f"The host's timezone could not be shared: {e}")
+                    return
+                else:
+                    logger.warning("File /etc/localtime is missing on your host. Only using /etc/timezone (deprecated).")
+            self.__share_timezone = True
 
     def __disableSharedTimezone(self):
         """Procedure to disable shared timezone feature (Only for interactive config)"""
@@ -558,13 +579,22 @@ class ContainerConfig:
     def addVolume(self,
                   host_path: str,
                   container_path: str,
+                  must_exist: bool = False,
                   read_only: bool = False,
                   volume_type: str = 'bind'):
-        """Add a volume to the container configuration"""
+        """Add a volume to the container configuration.
+        When the host path does not exist (neither file nor folder):
+        if must_exist is set, an CancelOperation exception will be thrown.
+        Otherwise, a folder will attempt to be created at the specified path"""
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             try:
-                os.makedirs(host_path, exist_ok=True)
+                path = Path(host_path)
+                if not (path.is_file() or path.is_dir()):
+                    if must_exist:
+                        raise CancelOperation(f"{host_path} does not exist on your host.")
+                    else:
+                        os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
                 logger.critical(f"Insufficient permissions to create the folder: {host_path}")
@@ -772,7 +802,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in ["QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
+            if not verbose and k in ["_JAVA_AWT_WM_NONREPARENTING", "QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
