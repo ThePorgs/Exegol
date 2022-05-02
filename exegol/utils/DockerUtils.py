@@ -297,8 +297,7 @@ class DockerUtils:
             while url is not None:
                 remote_images_request = None
                 logger.debug(f"Fetching information from: {url}")
-                if logger.isEnabledFor(ExeLog.VERBOSE):
-                    s.update(status=f"Fetching registry information from [green]{url}[/green]")
+                s.update(status=f"Fetching registry information from [green]{url}[/green]")
                 try:
                     remote_images_request = requests.get(
                         url=url,
