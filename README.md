@@ -86,7 +86,7 @@ cd Exegol
 python3 -m pip install --user --requirement requirements.txt
 ```
 
-### Add exegol command
+## Add exegol command
 
 <details>
   <summary><h4>On Linux</h4></summary>
@@ -111,6 +111,15 @@ $AliasFile = "$HOME\PowershellAliasesExport.txt"
 Set-Alias -Name exegol -Value "$(pwd)\exegol.py"
 Get-Alias -Name "exegol" | Export-Alias -Path $AliasFile
 echo "Import-Alias '$AliasFile'" >> $PROFILE
+```
+
+> Warning! To automatically load aliases from the .ps1 file, the `Get-ExecutionPolicy` powershell must be set
+> to `RemoteSigned`
+
+If the configuration is not correct it can be configured as **administrator** with the following command:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 ```
 
 </details>
