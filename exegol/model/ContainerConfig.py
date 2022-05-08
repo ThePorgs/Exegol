@@ -473,10 +473,17 @@ class ContainerConfig:
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
             self.addVolume(volume_path, '/workspace')
 
-    def setNetworkMode(self, host_mode: bool):
+    def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
         if host_mode is None:
             host_mode = True
+        if len(self.__ports) > 0 and host_mode:
+            logger.warning("Host mode cannot be set with NAT ports configured. Skipping.")
+            host_mode = False
+        if EnvInfo.isDockerDesktop() and host_mode:
+            logger.warning("Docker desktop does not support sharing of host network interfaces.")
+            logger.info("To share network ports between the host and exegol, use the --port parameter.")
+            host_mode = False
         self.__network_host = host_mode
 
     def setContainerCommand(self, cmd: str):
@@ -521,8 +528,15 @@ class ContainerConfig:
             return False
 
     def getNetworkMode(self) -> str:
-        """Network mode, text getter"""
+        """Network mode, docker term getter"""
         return "host" if self.__network_host else "bridge"
+
+    def getTextNetworkMode(self) -> str:
+        """Network mode, text getter"""
+        network_mode = "host" if self.__network_host else "bridge"
+        if self.__vpn_path:
+            network_mode += " with VPN"
+        return network_mode
 
     def getPrivileged(self) -> bool:
         """Privileged getter"""
@@ -782,7 +796,7 @@ class ContainerConfig:
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
-            result += f"[green]Network mode: [/green]{'host' if self.__network_host else 'custom'}{os.linesep}"
+            result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
         if verbose or not self.__share_timezone:
@@ -871,7 +885,7 @@ class ContainerConfig:
                f"Sysctls: {self.__sysctls}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
-               f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
+               f"Network host: {self.getNetworkMode()}{os.linesep}" \
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__shared_resources}{os.linesep}" \
