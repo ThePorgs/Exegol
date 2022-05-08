@@ -26,6 +26,9 @@ class ContainerConfig:
     __default_entrypoint = "bash"
     __default_shm_size = "64M"
 
+    # Reference static config data
+    __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
@@ -252,8 +255,8 @@ class ContainerConfig:
                 return
             # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
-            self.addEnv("QT_X11_NO_MITSHM", "1")
-            self.addEnv("_JAVA_AWT_WM_NONREPARENTING", "1")
+            for k, v in self.__static_gui_envs.items():
+                self.addEnv(k, v)
             self.__enable_gui = True
 
     def __disableGUI(self):
@@ -263,8 +266,8 @@ class ContainerConfig:
             logger.verbose("Config: Disabling display sharing")
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
-            self.removeEnv("QT_X11_NO_MITSHM")
-            self.removeEnv("_JAVA_AWT_WM_NONREPARENTING")
+            for k in self.__static_gui_envs.keys():
+                self.removeEnv(k)
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -837,7 +840,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in ["_JAVA_AWT_WM_NONREPARENTING", "QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
