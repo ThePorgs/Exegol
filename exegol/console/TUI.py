@@ -211,6 +211,7 @@ class ExegolTUI:
         if verbose_mode:
             table.add_column("Mounts")
             table.add_column("Devices")
+            table.add_column("Ports")
             table.add_column("Envs")
         # Load data into the table
         for container in data:
@@ -218,7 +219,9 @@ class ExegolTUI:
                 table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
-                              container.config.getTextDevices(debug_mode), container.config.getTextEnvs(debug_mode))
+                              container.config.getTextDevices(debug_mode),
+                              container.config.getTextPorts(),
+                              container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.name, container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode))
@@ -358,6 +361,7 @@ class ExegolTUI:
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
+        ports = container.config.getTextPorts()
         sysctls = container.config.getSysctls()
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -402,6 +406,8 @@ class ExegolTUI:
             recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(envs) > 0:
             recap.add_row("[bold blue]Envs[/bold blue]", envs.strip())
+        if len(ports) > 0:
+            recap.add_row("[bold blue]Ports[/bold blue]", ports.strip())
         if len(volumes) > 0:
             recap.add_row("[bold blue]Volumes[/bold blue]", volumes.strip())
         if len(sysctls) > 0:

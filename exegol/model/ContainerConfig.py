@@ -39,7 +39,7 @@ class ContainerConfig:
         self.__capabilities: List[str] = []
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
-        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
         self.interactive: bool = True
         self.tty: bool = True
         self.shm_size: str = self.__default_shm_size
@@ -756,6 +756,7 @@ class ContainerConfig:
         match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+):?(\d+)?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
             logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[:<container_port>][:<protocol>][/green]")
+            return
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
         protocol = "tcp" if match.group(5) is None else match.group(5)
         try:
@@ -768,7 +769,7 @@ class ContainerConfig:
             return
         self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
 
-    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]]:
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
         """Ports config getter"""
         return self.__ports
 
@@ -827,6 +828,42 @@ class ContainerConfig:
             result += f"{k}={v}{os.linesep}"
         return result
 
+    def getTextPorts(self) -> str:
+        """Text formatter for Ports configuration.
+        Dict Port key = container port/protocol
+        Dict Port Values:
+          None = Random port
+          int = open port ont he host
+          tuple = (host_ip, port)
+          list of int = open multiple host port
+          list of dict = open one or multiple port on host, key ('HostIp' / 'HostPort') and value ip or port"""
+        result = ''
+        for container_config, host_config in self.__ports.items():
+            host_info = "Unknown"
+            if host_config is None:
+                host_info = "0.0.0.0:<Random port>"
+            elif type(host_config) is int:
+                host_info = f"0.0.0.0:{host_config}"
+            elif type(host_config) is tuple:
+                assert len(host_config) == 2
+                host_info = f"{host_config[0]}:{host_config[1]}"
+            elif type(host_config) is list:
+                sub_info = []
+                for sub_host_config in host_config:
+                    if type(sub_host_config) is int:
+                        sub_info.append(f"0.0.0.0:{sub_host_config}")
+                    elif type(sub_host_config) is dict:
+                        sub_port = sub_host_config.get('HostPort', '<Random port>')
+                        if sub_port is None:
+                            sub_port = "<Random port>"
+                        sub_info.append(f"{sub_host_config.get('HostIp', '0.0.0.0')}:{sub_port}")
+                if len(sub_info) > 0:
+                    host_info = ", ".join(sub_info)
+            else:
+                logger.debug(f"Unknown port config: {type(host_config)}={host_config}")
+            result += f"{host_info} :right_arrow: {container_config}{os.linesep}"
+        return result
+
     def __str__(self):
         """Default object text formatter, debug only"""
         return f"Privileged: {self.__privileged}{os.linesep}" \
@@ -835,6 +872,7 @@ class ContainerConfig:
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
                f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
+               f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__shared_resources}{os.linesep}" \
                f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
