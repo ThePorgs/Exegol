@@ -398,6 +398,9 @@ class ExegolManager:
         if ParametersManager().share_timezone:
             config.enableSharedTimezone()
         config.setNetworkMode(ParametersManager().host_network)
+        if ParametersManager().ports is not None:
+            for port in ParametersManager().ports:
+                config.addRawPort(port)
         if ParametersManager().shared_resources:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:

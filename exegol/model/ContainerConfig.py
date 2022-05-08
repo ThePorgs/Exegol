@@ -734,19 +734,39 @@ class ContainerConfig:
         return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
 
     def addPort(self,
-                port_host: Union[int, str],
+                port_host: int,
                 port_container: Union[int, str],
                 protocol: str = 'tcp',
                 host_ip: str = '0.0.0.0'):
         """Add port NAT config, only applicable on bridge network mode."""
         if self.__network_host:
-            logger.warning(
-                "This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
-            logger.warning("Please set network mode to bridge in order to expose specific network ports.")
-            return
+            logger.warning("Port sharing is configured, disabling the host network mode.")
+            self.setNetworkMode(False)
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
-        self.__ports[f"{port_container}/{protocol}"] = (host_ip, int(port_host))
+        logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
+        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
+
+    def addRawPort(self, user_test_port: str):
+        """Add port config from user input.
+        Format must be [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]
+        If host_ipv4 is not set, default to 0.0.0.0
+        If container_port is not set, default is the same as host port
+        If protocol is not set, default is 'tcp'"""
+        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+):?(\d+)?:?(udp|tcp|sctp)?$", user_test_port)
+        if match is None:
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[:<container_port>][:<protocol>][/green]")
+        host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
+        protocol = "tcp" if match.group(5) is None else match.group(5)
+        try:
+            host_port = int(match.group(3))
+            container_port = host_port if match.group(4) is None else int(match.group(4))
+            if host_port > 65535 or container_port > 65535:
+                raise ValueError
+        except ValueError:
+            logger.critical(f"The syntax for opening prot in NAT is incorrect. The ports must be numbers between 0 and 65535. ({match.group(3)}:{match.group(4)})")
+            return
+        self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
 
     def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]]:
         """Ports config getter"""
