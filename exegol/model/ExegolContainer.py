@@ -220,6 +220,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def __applyXhostACL(self):
         # If GUI is enabled, allow X11 access on host ACL (if not already allowed)
         # + X11 GUI on Windows host don't need xhost command
+        # TODO check if mac need xhost
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")

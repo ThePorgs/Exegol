@@ -179,9 +179,12 @@ class ExegolManager:
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
         if EnvInfo.isWindowsHost():
+            logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
-            logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
+        logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
+        logger.debug(f"Shell type: {EnvInfo.getShellType()}")
+        logger.empty_line(log_level=logging.DEBUG)
 
     @classmethod
     def __loadOrInstallImage(cls,

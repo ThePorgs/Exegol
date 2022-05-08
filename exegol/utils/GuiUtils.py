@@ -70,6 +70,10 @@ class GuiUtils:
         Get the current DISPLAY env to access X11 socket
         :return:
         """
+        # TODO Update DISPLAY env for MAC
+        if EnvInfo.isMacHost():
+            # xquartz Mac mode
+            return "host.docker.internal:0"
         return os.getenv('DISPLAY', ":0")
 
     @staticmethod

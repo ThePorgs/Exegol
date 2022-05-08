@@ -85,9 +85,9 @@ class ExeLog(logging.Logger):
             self._log(ExeLog.SUCCESS,
                       "{}[+]{} {}".format("[bold green]", "[/bold green]", msg), args, **kwargs)
 
-    def empty_line(self) -> None:
+    def empty_line(self, log_level: int = logging.INFO) -> None:
         """Print an empty line."""
-        self.raw(os.linesep, level=logging.INFO)
+        self.raw(os.linesep, level=log_level)
 
 
 # Global rich console object
