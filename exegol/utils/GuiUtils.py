@@ -109,8 +109,11 @@ class GuiUtils:
 
         Uses presence of /etc/os-release in the WSL image to say Linux is there.
         This is a de facto file standard across Linux distros.
+
+        Tests the existence of WSL by searching in the default WSL first.
+        However, if the default wsl is 'docker-desktop-data', the result will be false, so you have to test with docker-desktop.
         """
-        return cls.__wsl_test("/etc/os-release", name=None)
+        return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 
     @classmethod
     def __wslg_installed(cls) -> bool:
