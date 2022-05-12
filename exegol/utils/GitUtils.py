@@ -45,7 +45,7 @@ class GitUtils:
             from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
         except ModuleNotFoundError:
             self.__git_disable = True
-            logger.debug("Git module is not installed.")
+            logger.warning("Git module is not installed. Python module 'GitPython' is missing, please install it with pip.")
             return
         except ImportError:
             self.__git_disable = True
