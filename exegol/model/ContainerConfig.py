@@ -279,20 +279,22 @@ class ContainerConfig:
             # Try to share /etc/timezone (deprecated old timezone file)
             try:
                 self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
+                logger.verbose("Volume was successfully added for /etc/timezone")
                 timezone_loaded = True
             except CancelOperation:
-                logger.verbose("File /etc/timezone is missing on your host.")
+                logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
                 timezone_loaded = False
             # Try to share /etc/localtime (new timezone file)
             try:
                 self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
+                logger.verbose("Volume was successfully added for /etc/localtime instead")
             except CancelOperation as e:
                 if not timezone_loaded:
                     # If neither file was found, disable the functionality
                     logger.error(f"The host's timezone could not be shared: {e}")
                     return
                 else:
-                    logger.warning("File /etc/localtime is missing on your host. Only using /etc/timezone (deprecated).")
+                    logger.warning("File /etc/localtime is missing on host, cannot create volume for this. Using /etc/timezone instead (deprecated).")
             self.__share_timezone = True
 
     def __disableSharedTimezone(self):
