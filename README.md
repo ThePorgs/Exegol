@@ -15,7 +15,7 @@
   <br>
   <img alt="current version" src="https://img.shields.io/badge/linux-supported-success">
   <img alt="current version" src="https://img.shields.io/badge/windows-supported-success">
-  <img alt="current version" src="https://img.shields.io/badge/mac-need%20testing-important">
+  <img alt="current version" src="https://img.shields.io/badge/mac-in%20progress-important">
   <br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
   <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social"></a>
@@ -89,7 +89,7 @@ python3 -m pip install --user --requirement requirements.txt
 ## Add exegol command
 
 <details>
-  <summary><h4>On Linux</h4></summary>
+  <summary><h4>On Linux / macOS</h4></summary>
 
 The exegol wrapper can then be added to the `PATH` throw symlink for direct access.
 
@@ -100,7 +100,7 @@ sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
 </details>
 
 <details>
-  <summary><h4>On Windows (powershell)</h4></summary>
+  <summary><h4>On Windows (with Powershell)</h4></summary>
 
 The exegol wrapper can be added as a powershell command aliases and saved for persistence
 in `$HOME\PowershellAliasesExport.txt`
