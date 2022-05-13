@@ -24,8 +24,9 @@ class EnvInfo:
     """Contain information about the environment (host, OS, platform, etc)"""
     # Shell env
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
-    is_linux_shell: bool = current_platform in ["WSL", "Linux"]  # TODO test mac platform
+    is_linux_shell: bool = current_platform in ["WSL", "Linux"]
     is_windows_shell: bool = current_platform == "Windows"
+    is_mac_shell = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
     __is_docker_desktop: bool = False
     __windows_release: Optional[str] = None
     # Host OS
@@ -120,5 +121,7 @@ class EnvInfo:
             return cls.HostOs.LINUX
         elif cls.is_windows_shell:
             return cls.HostOs.WINDOWS
+        elif cls.is_mac_shell:
+            return cls.HostOs.MAC
         else:
             return "Unknown"

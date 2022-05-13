@@ -51,7 +51,13 @@ class GuiUtils:
             logger.warning(
                 "Display sharing is [orange3]not supported[/orange3] on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
             return False
-        # TODO check mac compatibility (default: same as linux)
+        elif EnvInfo.isMacHost():
+            if "xquartz" not in os.getenv('DISPLAY', "").lower():
+                # TODO review mac xquartz install message
+                logger.warning("Display sharing is [orange3]not supported[/orange3] on your mac without XQuartz installed. "
+                               "You need to manually install [turquoise2]XQuartz[/turquoise2] and check the configuration 'Allow connections from network clients'.")
+                return False
+            # TODO add check for xquartz config "Allow connections from network clients"
         return True
 
     @classmethod
@@ -61,6 +67,7 @@ class GuiUtils:
         :return:
         """
         if cls.__distro_name:
+            # Distro name can only be set if the current host OS is Windows
             return f"\\\\wsl.localhost\\{cls.__distro_name}\\mnt\\wslg\\.X11-unix"
         return "/tmp/.X11-unix"
 
