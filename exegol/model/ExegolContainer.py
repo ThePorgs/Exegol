@@ -215,17 +215,25 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success("Private workspace volume removed successfully")
 
     def postStartSetup(self):
+        """
+        Operation to be performed after starting or creating a container
+        :return:
+        """
         self.__applyXhostACL()
 
     def __applyXhostACL(self):
-        # If GUI is enabled, allow X11 access on host ACL (if not already allowed)
-        # + X11 GUI on Windows host don't need xhost command
+        """
+        If GUI is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
+        On Windows host, WSLg X11 don't have xhost ACL.
+        :return:
+        """
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")
             if EnvInfo.isMacHost():
-                # xquartz inet ACL
-                os.system(f"xhost + localhost > /dev/null")
+                # add xquartz inet ACL
+                with console.status(f"Starting XQuartz...", spinner_style="blue"):
+                    os.system(f"xhost + localhost > /dev/null")
             else:
-                # linux local ACL
+                # add linux local ACL
                 os.system(f"xhost +local:{self.hostname} > /dev/null")
