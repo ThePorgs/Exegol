@@ -120,8 +120,8 @@ class GuiUtils:
             logger.error("xhost command not found, check your XQuartz installation")
             return False
         # Starting xquartz
-        logger.debug("Starting [green]XQuartz[/green] using xhost command")
-        with console.status(f"Starting XQuartz...", spinner_style="blue"):
+        logger.debug("Starting XQuartz using xhost command")
+        with console.status(f"Starting [green]XQuartz[/green]...", spinner_style="blue"):
             run_xhost = subprocess.run([xhost_path], shell=True,
                                        stdout=subprocess.DEVNULL,
                                        stderr=subprocess.DEVNULL)
