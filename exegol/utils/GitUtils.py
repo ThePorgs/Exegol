@@ -202,7 +202,7 @@ class GitUtils:
         if self.getCurrentBranch() is None:
             return False
         if self.isUpToDate():
-            logger.success(f"Git branch [green]{self.getCurrentBranch()}[/green] is already up-to-date.")
+            logger.info(f"Git branch [green]{self.getCurrentBranch()}[/green] is already up-to-date.")
             return False
         if self.__gitRemote is not None:
             logger.info(f"Using branch [green]{self.getCurrentBranch()}[/green] on {self.getName()} repository")
