@@ -123,7 +123,7 @@ class ContainerConfig:
                                        type=share.get('Type', 'volume'),
                                        read_only=(not share.get("RW", True)),
                                        propagation=share.get('Propagation', '')))
-            if "/etc/timezone" in share.get('Destination', ''):
+            if share.get('Destination', '') in ["/etc/timezone", "/etc/localtime"]:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
