@@ -75,10 +75,8 @@ class GuiUtils:
         logger.debug("XQuartz detected.")
         if not cls.__xquartzAllowNetworkClients():
             # Notify user to change configuration
-            # TODO test xquartz with network config
             logger.error("XQuartz does not allow network connections. "
-                         "You need to manually change the configuration 'Allow connections from network clients' "
-                         "and [green]restart[/green] the service.")
+                         "You need to manually change the configuration to 'Allow connections from network clients'")
             return False
 
         # Check if XQuartz is started, check is dir exist and if there is at least one socket
@@ -99,7 +97,7 @@ class GuiUtils:
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
         logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout}'")
-        return conf_check.stdout.strip() == "0"
+        return conf_check.stdout.strip() == b'0'
 
     @classmethod
     def __isXQuartzRunning(cls) -> bool:
@@ -122,7 +120,7 @@ class GuiUtils:
             logger.error("xhost command not found, check your XQuartz installation")
             return False
         # Starting xquartz
-        logger.debug("Starting XQuartz using xhost command")
+        logger.debug("Starting [green]XQuartz[/green] using xhost command")
         with console.status(f"Starting XQuartz...", spinner_style="blue"):
             run_xhost = subprocess.run([xhost_path], shell=True,
                                        stdout=subprocess.DEVNULL,
