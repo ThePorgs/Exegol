@@ -5,11 +5,29 @@ from typing import Optional
 
 
 class EnvInfo:
+    """Class to identify the environment in which exegol runs to adapt
+    the configurations, processes and messages for the user"""
+
+    class HostOs:
+        """Dictionary class for static OS Name"""
+        WINDOWS = "Windows"
+        LINUX = "Linux"
+        MAC = "Mac"
+
+    class DockerEngine:
+        """Dictionary class for static Docker engine name"""
+        WLS2 = "wsl2"
+        HYPERV = "hyper-v"
+        MAC = "mac"
+        LINUX = "kernel"
+
     """Contain information about the environment (host, OS, platform, etc)"""
     # Shell env
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
-    is_linux_shell: bool = current_platform in ["WSL", "Linux"]  # TODO test mac platform
+    is_linux_shell: bool = current_platform in ["WSL", "Linux"]
     is_windows_shell: bool = current_platform == "Windows"
+    is_mac_shell = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
+    __is_docker_desktop: bool = False
     __windows_release: Optional[str] = None
     # Host OS
     __docker_host_os: Optional[str] = None
@@ -22,20 +40,28 @@ class EnvInfo:
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
         docker_kernel = docker_info.get("KernelVersion", "unknown").lower()
         # Deduct a Windows Host from data
-        is_host_windows = docker_os == "docker desktop" and "microsoft" in docker_kernel  # TODO handle mac docker-desktop
-        cls.__docker_host_os = "Windows" if is_host_windows else "Unix"
+        cls.__is_docker_desktop = docker_os == "docker desktop"
+        is_host_windows = cls.__is_docker_desktop and "microsoft" in docker_kernel
         if is_host_windows:
             # Check docker engine with Windows host
-            is_wsl2 = "wsl2" in docker_kernel
-            cls.__docker_engine = "wsl2" if is_wsl2 else "hyper-v"
+            if "wsl2" in docker_kernel:
+                cls.__docker_engine = cls.DockerEngine.WLS2
+            else:
+                cls.__docker_engine = cls.DockerEngine.HYPERV
+            cls.__docker_host_os = cls.HostOs.WINDOWS
+        elif cls.__is_docker_desktop:
+            # If docker desktop is detected but not a Windows engine/kernel, it's (probably) a mac
+            cls.__docker_engine = cls.DockerEngine.MAC
+            cls.__docker_host_os = cls.HostOs.MAC
         else:
-            cls.__docker_engine = "Kernel"
-        pass
+            # Every other case it's a linux distro and docker is powered from the kernel
+            cls.__docker_engine = cls.DockerEngine.LINUX
+            cls.__docker_host_os = cls.HostOs.LINUX
 
     @classmethod
     def getHostOs(cls) -> str:
         """Return Host OS
-        Can be 'Windows' or 'Unix'"""
+        Can be 'Windows', 'Mac' or 'Linux'"""
         # initData must be called from DockerUtils on client initialisation
         assert cls.__docker_host_os is not None
         return cls.__docker_host_os
@@ -67,12 +93,35 @@ class EnvInfo:
 
     @classmethod
     def isWindowsHost(cls) -> bool:
-        return cls.getHostOs() == "Windows"
+        """Return true if Windows is detected on the host"""
+        return cls.getHostOs() == cls.HostOs.WINDOWS
+
+    @classmethod
+    def isMacHost(cls) -> bool:
+        """Return true if macOS is detected on the host"""
+        return cls.getHostOs() == cls.HostOs.MAC
+
+    @classmethod
+    def isDockerDesktop(cls) -> bool:
+        """Return true if docker desktop is used on the host"""
+        return cls.__is_docker_desktop
 
     @classmethod
     def getDockerEngine(cls) -> str:
         """Return Docker engine type.
-        Can be 'Kernel', 'wsl2' or 'hyper-v'"""
+        Can be 'kernel', 'mac', 'wsl2' or 'hyper-v'"""
         # initData must be called from DockerUtils on client initialisation
         assert cls.__docker_engine is not None
         return cls.__docker_engine
+
+    @classmethod
+    def getShellType(cls):
+        """Return the type of shell exegol is executed from"""
+        if cls.is_linux_shell:
+            return cls.HostOs.LINUX
+        elif cls.is_windows_shell:
+            return cls.HostOs.WINDOWS
+        elif cls.is_mac_shell:
+            return cls.HostOs.MAC
+        else:
+            return "Unknown"

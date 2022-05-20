@@ -88,9 +88,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
+            self.preStartSetup()
             with console.status(f"Waiting to start {self.name}", spinner_style="blue"):
                 self.__container.start()
-            self.postStartSetup()
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""
@@ -214,13 +214,33 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
             logger.success("Private workspace volume removed successfully")
 
-    def postStartSetup(self):
+    def preStartSetup(self):
+        """
+        Operation to be performed before starting a container
+        :return:
+        """
+        self.__applyXhostACL()
+
+    def postCreateSetup(self):
+        """
+        Operation to be performed after creating a container
+        :return:
+        """
         self.__applyXhostACL()
 
     def __applyXhostACL(self):
-        # If GUI is enabled, allow X11 access on host ACL (if not already allowed)
-        # + X11 GUI on Windows host don't need xhost command
+        """
+        If GUI is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
+        On Windows host, WSLg X11 don't have xhost ACL.
+        :return:
+        """
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             logger.debug(f"Adding xhost ACL to local:{self.hostname}")
-            os.system(f"xhost +local:{self.hostname} > /dev/null")
+            if EnvInfo.isMacHost():
+                # add xquartz inet ACL
+                with console.status(f"Starting XQuartz...", spinner_style="blue"):
+                    os.system(f"xhost + localhost > /dev/null")
+            else:
+                # add linux local ACL
+                os.system(f"xhost +local:{self.hostname} > /dev/null")

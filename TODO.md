@@ -7,3 +7,4 @@
 - after interactive mode: show the full command for next time so that users don't always have to go through interactive mode
 - add multi image selection to `exegol install`
 - add templates and help for contributors: PRs and issues docs and templates, etc.
+- implement an update checker similar to oh-my-zsh for the wrapper

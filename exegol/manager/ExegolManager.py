@@ -179,9 +179,12 @@ class ExegolManager:
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
         if EnvInfo.isWindowsHost():
+            logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
-            logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
+        logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
+        logger.debug(f"Shell type: {EnvInfo.getShellType()}")
+        logger.empty_line(log_level=logging.DEBUG)
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -395,6 +398,9 @@ class ExegolManager:
         if ParametersManager().share_timezone:
             config.enableSharedTimezone()
         config.setNetworkMode(ParametersManager().host_network)
+        if ParametersManager().ports is not None:
+            for port in ParametersManager().ports:
+                config.addRawPort(port)
         if ParametersManager().shared_resources:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
@@ -413,7 +419,7 @@ class ExegolManager:
                 config.addRawVolume(volume)
         if ParametersManager().devices is not None:
             for device in ParametersManager().devices:
-                config.addDevice(device)
+                config.addUserDevice(device)
         if ParametersManager().vpn is not None:
             config.enableVPN()
         if ParametersManager().envs is not None:
@@ -450,7 +456,7 @@ class ExegolManager:
                         "read CLI options with [green]exegol start -h[/green]")
 
         container = DockerUtils.createContainer(model)
-        container.postStartSetup()
+        container.postCreateSetup()
         return container
 
     @classmethod
@@ -471,7 +477,7 @@ class ExegolManager:
         model = ExegolContainerTemplate(name, config, image)
 
         container = DockerUtils.createContainer(model, temporary=True)
-        container.postStartSetup()
+        container.postCreateSetup()
         return container
 
     @classmethod

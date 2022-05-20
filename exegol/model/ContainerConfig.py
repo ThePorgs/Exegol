@@ -26,6 +26,9 @@ class ContainerConfig:
     __default_entrypoint = "bash"
     __default_shm_size = "64M"
 
+    # Reference static config data
+    __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
@@ -39,7 +42,7 @@ class ContainerConfig:
         self.__capabilities: List[str] = []
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
-        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
         self.interactive: bool = True
         self.tty: bool = True
         self.shm_size: str = self.__default_shm_size
@@ -120,7 +123,7 @@ class ContainerConfig:
                                        type=share.get('Type', 'volume'),
                                        read_only=(not share.get("RW", True)),
                                        propagation=share.get('Propagation', '')))
-            if "/etc/timezone" in share.get('Destination', ''):
+            if share.get('Destination', '') in ["/etc/timezone", "/etc/localtime"]:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
@@ -252,8 +255,8 @@ class ContainerConfig:
                 return
             # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
-            self.addEnv("QT_X11_NO_MITSHM", "1")
-            self.addEnv("_JAVA_AWT_WM_NONREPARENTING", "1")
+            for k, v in self.__static_gui_envs.items():
+                self.addEnv(k, v)
             self.__enable_gui = True
 
     def __disableGUI(self):
@@ -263,8 +266,8 @@ class ContainerConfig:
             logger.verbose("Config: Disabling display sharing")
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
-            self.removeEnv("QT_X11_NO_MITSHM")
-            self.removeEnv("_JAVA_AWT_WM_NONREPARENTING")
+            for k in self.__static_gui_envs.keys():
+                self.removeEnv(k)
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -276,20 +279,23 @@ class ContainerConfig:
             # Try to share /etc/timezone (deprecated old timezone file)
             try:
                 self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
+                logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
                 timezone_loaded = True
             except CancelOperation:
-                logger.verbose("File /etc/timezone is missing on your host.")
+                logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
                 timezone_loaded = False
             # Try to share /etc/localtime (new timezone file)
             try:
                 self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
+                logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
             except CancelOperation as e:
                 if not timezone_loaded:
                     # If neither file was found, disable the functionality
                     logger.error(f"The host's timezone could not be shared: {e}")
                     return
                 else:
-                    logger.warning("File /etc/localtime is missing on your host. Only using /etc/timezone (deprecated).")
+                    logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
+                                   "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
             self.__share_timezone = True
 
     def __disableSharedTimezone(self):
@@ -309,6 +315,7 @@ class ContainerConfig:
 
     def enableSharedResources(self):
         """Procedure to enable shared volume feature"""
+        # TODO test my resources cross shell source (WSL / PSH) on Windows
         if not self.__shared_resources:
             logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
@@ -374,7 +381,7 @@ class ContainerConfig:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
-        self.addDevice("/dev/net/tun", mknod=True)
+        self.__addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
@@ -473,10 +480,18 @@ class ContainerConfig:
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
             self.addVolume(volume_path, '/workspace')
 
-    def setNetworkMode(self, host_mode: bool):
+    def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
         if host_mode is None:
             host_mode = True
+        if len(self.__ports) > 0 and host_mode:
+            logger.warning("Host mode cannot be set with NAT ports configured. Skipping.")
+            host_mode = False
+        if EnvInfo.isDockerDesktop() and host_mode:
+            logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
+            logger.verbose("Official doc: https://docs.docker.com/network/host/")
+            logger.info("To share network ports between the host and exegol, use the --port parameter.")
+            host_mode = False
         self.__network_host = host_mode
 
     def setContainerCommand(self, cmd: str):
@@ -521,8 +536,15 @@ class ContainerConfig:
             return False
 
     def getNetworkMode(self) -> str:
-        """Network mode, text getter"""
+        """Network mode, docker term getter"""
         return "host" if self.__network_host else "bridge"
+
+    def getTextNetworkMode(self) -> str:
+        """Network mode, text getter"""
+        network_mode = "host" if self.__network_host else "bridge"
+        if self.__vpn_path:
+            network_mode += " with VPN"
+        return network_mode
 
     def getPrivileged(self) -> bool:
         """Privileged getter"""
@@ -648,11 +670,11 @@ class ContainerConfig:
         """Volume config getter"""
         return self.__mounts
 
-    def addDevice(self,
-                  device_source: str,
-                  device_dest: Optional[str] = None,
-                  readonly: bool = False,
-                  mknod: bool = False):
+    def __addDevice(self,
+                    device_source: str,
+                    device_dest: Optional[str] = None,
+                    readonly: bool = False,
+                    mknod: bool = False):
         """Add a device to the container configuration"""
         if device_dest is None:
             device_dest = device_source
@@ -662,6 +684,14 @@ class ContainerConfig:
         if mknod:
             perm += 'm'
         self.__devices.append(f"{device_source}:{device_dest}:{perm}")
+
+    def addUserDevice(self, user_device_config: str):
+        """Add a device from a user parameters"""
+        if EnvInfo.isDockerDesktop():
+            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+            logger.critical("Device configuration cannot be applied, aborting operation.")
+        self.__addDevice(user_device_config)
 
     def removeDevice(self, device_source: str) -> bool:
         """Remove a device from the container configuration (Only before container creation)"""
@@ -734,21 +764,42 @@ class ContainerConfig:
         return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
 
     def addPort(self,
-                port_host: Union[int, str],
+                port_host: int,
                 port_container: Union[int, str],
                 protocol: str = 'tcp',
                 host_ip: str = '0.0.0.0'):
         """Add port NAT config, only applicable on bridge network mode."""
         if self.__network_host:
-            logger.warning(
-                "This container is configured to share the network with the host. You cannot open specific ports. Skipping.")
-            logger.warning("Please set network mode to bridge in order to expose specific network ports.")
-            return
+            logger.warning("Port sharing is configured, disabling the host network mode.")
+            self.setNetworkMode(False)
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
-        self.__ports[f"{port_container}/{protocol}"] = (host_ip, int(port_host))
+        logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
+        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
 
-    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int]]]]:
+    def addRawPort(self, user_test_port: str):
+        """Add port config from user input.
+        Format must be [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]
+        If host_ipv4 is not set, default to 0.0.0.0
+        If container_port is not set, default is the same as host port
+        If protocol is not set, default is 'tcp'"""
+        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+):?(\d+)?:?(udp|tcp|sctp)?$", user_test_port)
+        if match is None:
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[:<container_port>][:<protocol>][/green]")
+            return
+        host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
+        protocol = "tcp" if match.group(5) is None else match.group(5)
+        try:
+            host_port = int(match.group(3))
+            container_port = host_port if match.group(4) is None else int(match.group(4))
+            if host_port > 65535 or container_port > 65535:
+                raise ValueError
+        except ValueError:
+            logger.critical(f"The syntax for opening prot in NAT is incorrect. The ports must be numbers between 0 and 65535. ({match.group(3)}:{match.group(4)})")
+            return
+        self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
+
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
         """Ports config getter"""
         return self.__ports
 
@@ -761,7 +812,7 @@ class ContainerConfig:
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
-            result += f"[green]Network mode: [/green]{'host' if self.__network_host else 'custom'}{os.linesep}"
+            result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
         if verbose or not self.__share_timezone:
@@ -802,9 +853,45 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in ["_JAVA_AWT_WM_NONREPARENTING", "QT_X11_NO_MITSHM", "DISPLAY", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
+        return result
+
+    def getTextPorts(self) -> str:
+        """Text formatter for Ports configuration.
+        Dict Port key = container port/protocol
+        Dict Port Values:
+          None = Random port
+          int = open port ont he host
+          tuple = (host_ip, port)
+          list of int = open multiple host port
+          list of dict = open one or multiple port on host, key ('HostIp' / 'HostPort') and value ip or port"""
+        result = ''
+        for container_config, host_config in self.__ports.items():
+            host_info = "Unknown"
+            if host_config is None:
+                host_info = "0.0.0.0:<Random port>"
+            elif type(host_config) is int:
+                host_info = f"0.0.0.0:{host_config}"
+            elif type(host_config) is tuple:
+                assert len(host_config) == 2
+                host_info = f"{host_config[0]}:{host_config[1]}"
+            elif type(host_config) is list:
+                sub_info = []
+                for sub_host_config in host_config:
+                    if type(sub_host_config) is int:
+                        sub_info.append(f"0.0.0.0:{sub_host_config}")
+                    elif type(sub_host_config) is dict:
+                        sub_port = sub_host_config.get('HostPort', '<Random port>')
+                        if sub_port is None:
+                            sub_port = "<Random port>"
+                        sub_info.append(f"{sub_host_config.get('HostIp', '0.0.0.0')}:{sub_port}")
+                if len(sub_info) > 0:
+                    host_info = ", ".join(sub_info)
+            else:
+                logger.debug(f"Unknown port config: {type(host_config)}={host_config}")
+            result += f"{host_info} :right_arrow: {container_config}{os.linesep}"
         return result
 
     def __str__(self):
@@ -814,7 +901,8 @@ class ContainerConfig:
                f"Sysctls: {self.__sysctls}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
-               f"Network host: {'host' if self.__network_host else 'custom'}{os.linesep}" \
+               f"Network host: {self.getNetworkMode()}{os.linesep}" \
+               f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__shared_resources}{os.linesep}" \
                f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \

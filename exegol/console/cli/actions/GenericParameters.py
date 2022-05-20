@@ -133,6 +133,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               dest="volumes",
                               help="Share a new volume between host and exegol (format: --volume /host/path/:/exegol/mount/)")
+        self.ports = Option("-p", "--port",
+                            action="append",
+                            default=[],
+                            dest="ports",
+                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
         self.privileged = Option("--privileged",
                                  dest="privileged",
                                  action="store_true",
@@ -159,6 +164,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.volumes, "required": False},
+                                  {"arg": self.ports, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},

@@ -3,9 +3,11 @@ import os
 import shutil
 import subprocess
 import time
+from pathlib import Path
 from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
+from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
@@ -24,34 +26,10 @@ class GuiUtils:
         """
         # GUI was not supported on Windows before WSLg
         if EnvInfo.isWindowsHost():
-            logger.debug("Testing WSLg availability")
-            # WSL + WSLg must be available on the Windows host for the GUI to work
-            if not cls.__wsl_available():
-                logger.error("WSL is [orange3]not available[/orange3] on your system. GUI is not supported.")
-                return False
-            # Only WSL2 support WSLg
-            if EnvInfo.getDockerEngine() != "wsl2":
-                logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
-                return False
-            logger.debug("WSL is [green]available[/green] and docker is using WSL2")
-            if cls.__wslg_installed():
-                # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
-                if EnvInfo.current_platform != "WSL":
-                    cls.__distro_name = cls.__find_wsl_distro()
-                    # If no WSL is found, propose to continue without GUI
-                    if not cls.__distro_name and not Confirm(
-                            "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
-                        raise KeyboardInterrupt
-                return True
-            elif cls.__wslg_eligible():
-                logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
-                logger.info("Make sure, [green]WSLg[/green] is installed on your Windows by running 'wsl --update' as [orange3]admin[/orange3].")
-                return True
-            logger.debug("WSLg is [orange3]not available[/orange3]")
-            logger.warning(
-                "Display sharing is [orange3]not supported[/orange3] on your version of Windows. You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
-            return False
-        # TODO check mac compatibility (default: same as linux)
+            return cls.__windowsGuiChecks()
+        elif EnvInfo.isMacHost():
+            return cls.__macGuiChecks()
+        # Linux default is True
         return True
 
     @classmethod
@@ -61,7 +39,12 @@ class GuiUtils:
         :return:
         """
         if cls.__distro_name:
+            # Distro name can only be set if the current host OS is Windows
             return f"\\\\wsl.localhost\\{cls.__distro_name}\\mnt\\wslg\\.X11-unix"
+        elif EnvInfo.isWindowsHost():
+            raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
+                                  "without having performed the availability tests before.")
+        # Other distributions (Linux / Mac) have the default socket path
         return "/tmp/.X11-unix"
 
     @classmethod
@@ -70,7 +53,116 @@ class GuiUtils:
         Get the current DISPLAY env to access X11 socket
         :return:
         """
+        if EnvInfo.isMacHost():
+            # xquartz Mac mode
+            return "host.docker.internal:0"
+        # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
+
+    # # # # # # Mac specific methods # # # # # #
+
+    @classmethod
+    def __macGuiChecks(cls) -> bool:
+        """
+        Procedure to check if the Mac host supports GUI with docker through XQuartz
+        :return: bool
+        """
+        if not cls.__isXQuartzInstalled():
+            # TODO review mac xquartz install message
+            logger.warning("Display sharing is [orange3]not supported[/orange3] on your mac without XQuartz installed. "
+                           "You need to manually install [turquoise2]XQuartz[/turquoise2] and check the configuration 'Allow connections from network clients'.")
+            return False
+        logger.debug("XQuartz detected.")
+        if not cls.__xquartzAllowNetworkClients():
+            # Notify user to change configuration
+            logger.error("XQuartz does not allow network connections. "
+                         "You need to manually change the configuration to 'Allow connections from network clients'")
+            return False
+
+        # Check if XQuartz is started, check is dir exist and if there is at least one socket
+        if not cls.__isXQuartzRunning():
+            if not cls.__startXQuartz():
+                logger.warning("Unable to start XQuartz service.")
+                return False
+        return True
+
+    @staticmethod
+    def __isXQuartzInstalled() -> bool:
+        return 'xquartz' in os.getenv('DISPLAY', "").lower()
+
+    @staticmethod
+    def __xquartzAllowNetworkClients() -> bool:
+        # defaults read org.xquartz.X11.plist nolisten_tcp
+        conf_check = subprocess.run(["defaults", "read", "org.xquartz.X11.plist", "nolisten_tcp"],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout}'")
+        return conf_check.stdout.strip() == b'0'
+
+    @classmethod
+    def __isXQuartzRunning(cls) -> bool:
+        """
+        Check if xquartz service is up by testing sockets
+        """
+        socket_path = Path(cls.getX11SocketPath())
+        socket_x11_found = False
+        if socket_path.is_dir():
+            for file in socket_path.glob("*"):
+                if file.is_socket():
+                    socket_x11_found = True
+                    break
+        return socket_x11_found
+
+    @staticmethod
+    def __startXQuartz() -> bool:
+        xhost_path = shutil.which("xhost")
+        if not xhost_path:
+            logger.error("xhost command not found, check your XQuartz installation")
+            return False
+        # Starting xquartz
+        logger.debug("Starting XQuartz using xhost command")
+        with console.status(f"Starting [green]XQuartz[/green]...", spinner_style="blue"):
+            run_xhost = subprocess.run([xhost_path], shell=True,
+                                       stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL)
+        return run_xhost.returncode == 0
+
+    # # # # # # Windows specific methods # # # # # #
+
+    @classmethod
+    def __windowsGuiChecks(cls) -> bool:
+        """
+        Procedure to check if the Windows host supports GUI with docker through WSLg
+        :return: bool
+        """
+        logger.debug("Testing WSLg availability")
+        # WSL + WSLg must be available on the Windows host for the GUI to work
+        if not cls.__wsl_available():
+            logger.error("WSL is [orange3]not available[/orange3] on your system. GUI is not supported.")
+            return False
+        # Only WSL2 support WSLg
+        if EnvInfo.getDockerEngine() != "wsl2":
+            logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
+            return False
+        logger.debug("WSL is [green]available[/green] and docker is using WSL2")
+        if cls.__wslg_installed():
+            # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
+            if EnvInfo.current_platform != "WSL":
+                cls.__distro_name = cls.__find_wsl_distro()
+                # If no WSL is found, propose to continue without GUI
+                if not cls.__distro_name and not Confirm(
+                        "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                    raise KeyboardInterrupt
+            return True
+        elif cls.__wslg_eligible():
+            logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
+            logger.info("Make sure, [green]WSLg[/green] is installed on your Windows by running "
+                        "'wsl --update' as [orange3]admin[/orange3].")
+            return True
+        logger.debug("WSLg is [orange3]not available[/orange3]")
+        logger.warning("Display sharing is [orange3]not supported[/orange3] on your version of Windows. "
+                       "You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+        return False
 
     @staticmethod
     def __wsl_test(path, name: Optional[str] = "docker-desktop") -> bool:
@@ -105,8 +197,11 @@ class GuiUtils:
 
         Uses presence of /etc/os-release in the WSL image to say Linux is there.
         This is a de facto file standard across Linux distros.
+
+        Tests the existence of WSL by searching in the default WSL first.
+        However, if the default wsl is 'docker-desktop-data', the result will be false, so you have to test with docker-desktop.
         """
-        return cls.__wsl_test("/etc/os-release", name=None)
+        return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 
     @classmethod
     def __wslg_installed(cls) -> bool:
