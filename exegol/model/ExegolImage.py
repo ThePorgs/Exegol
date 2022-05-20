@@ -33,6 +33,7 @@ class ExegolImage(SelectableInterface):
         self.__image_version: str = self.__profile_version
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
         # if it is retrieved from the tags (ex: nightly)
+        self.__arch_label_mode: bool = False
         self.__version_label_mode: bool = False
         self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
@@ -74,7 +75,8 @@ class ExegolImage(SelectableInterface):
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
                     # Ignoring external images (set container using external image as outdated)
                     continue
-                version_parsed, self.__arch = self.__tagNameParsing(name)
+                version_parsed, arch_parsed = self.__tagNameParsing(name)
+                self.__setArch(arch_parsed)
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if not version_parsed:
                     self.__outdated = False
@@ -86,7 +88,8 @@ class ExegolImage(SelectableInterface):
             if self.__name is None:
                 self.__name = name
 
-            version_parsed, self.__arch = self.__tagNameParsing(name)
+            version_parsed, arch_parsed = self.__tagNameParsing(name)
+            self.__setArch(arch_parsed)
             self.__version_specific = bool(version_parsed)
             if self.isVersionSpecific():
                 self.__profile_version = version_parsed
@@ -116,12 +119,16 @@ class ExegolImage(SelectableInterface):
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
+        if not self.__arch:
+            arch_label = self.__image.labels.get("org.exegol.arch")
+            if arch_label is not None:
+                self.__setArch(arch_label, source_tag=False)
 
     @staticmethod
     def __tagNameParsing(tag_name: str) -> Tuple[str, str]:
         version = ""
-        # Default arch is amd64
-        arch = "amd64"
+        # Default arch is set to '' if not fetch from tag name, it will be considered as amd64
+        arch = ""
         parts = tag_name.split('-')
         # Try to detect legacy tag name or new latest name
         if len(parts) == 2:
@@ -157,9 +164,10 @@ class ExegolImage(SelectableInterface):
             original_name = container.attrs["Config"]["Image"].split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
-                version_parsed, self.__arch = self.__tagNameParsing(self.__name)
+                version_parsed, arch_parsed = self.__tagNameParsing(self.__name)
                 self.__version_specific = bool(version_parsed)
                 self.__setImageVersion(version_parsed)
+                self.__setArch(arch_parsed)
             self.__alt_name = f'{original_name} [bright_black](outdated' \
                               f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
 
@@ -205,7 +213,7 @@ class ExegolImage(SelectableInterface):
             tmp_name, tmp_tag = repo_tag.split(':')
             version_parsed, arch_parsed = self.__tagNameParsing(tmp_tag)
             if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
-                self.__arch = arch_parsed
+                self.__setArch(arch_parsed)
                 self.__setImageVersion(version_parsed)
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
@@ -492,25 +500,35 @@ class ExegolImage(SelectableInterface):
         """Image's display name getter"""
         return self.__alt_name if self.__alt_name else self.__name
 
+    def getArch(self) -> str:
+        """Image's arch getter"""
+        return self.__arch if self.__arch else "amd64"
+
+    def __setArch(self, arch: str, source_tag: bool = True):
+        """Image's arch setter.
+        Set source_tag as true if the information is retrieve from the image's tag name.
+        If the version is retrieve from the label, set source_tag as False."""
+        self.__arch = arch
+        self.__arch_label_mode = not source_tag
+
     def getLatestVersionName(self) -> str:
         """Image's tag name with latest version getter"""
-        if self.__version_specific or self.__version_label_mode or 'N/A' in self.__profile_version:
-            return self.__name
-        else:
-            if self.__arch != "amd64":
-                # If not amd64, must be precise
-                return self.__name + "-" + self.__arch + "-" + self.__profile_version
-            return self.__name + "-" + self.__profile_version
+        return self.__formatVersionName(self.__profile_version)
 
     def getInstalledVersionName(self) -> str:
-        """Image's tag name with latest version getter"""
-        if self.__version_specific or self.__version_label_mode or 'N/A' in self.__image_version:
-            return self.__name
-        else:
-            if self.__arch != "amd64":
-                # If not amd64, must be precise
-                return self.__name + "-" + self.__arch + "-" + self.__image_version
-            return self.__name + "-" + self.__image_version
+        """Image's tag name with installed version getter"""
+        return self.__formatVersionName(self.__image_version)
+
+    def __formatVersionName(self, version):
+        """From the selected version, format the image tag name"""
+        result_name = self.__name
+        if self.__arch and not self.__arch_label_mode:
+            # If an arch is set, it must be precise
+            # TODO to debug, by have some duplication with version_specific tag name
+            result_name += "-" + self.__arch
+        if not (self.__version_specific or self.__version_label_mode or 'N/A' in version):
+            result_name += "-" + version
+        return result_name
 
     def __setImageVersion(self, version: str, source_tag: bool = True):
         """Image's tag version setter.
