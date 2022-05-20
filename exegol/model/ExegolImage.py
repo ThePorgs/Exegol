@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from docker.models.containers import Container
 from docker.models.images import Image
@@ -24,9 +24,10 @@ class ExegolImage(SelectableInterface):
         self.__image: Image = docker_image
         self.__name: str = name
         self.__alt_name: str = ''
-        self.__version_specific: bool = "-" in name
+        version_parsed, self.__arch = self.__tagNameParsing(name)
+        self.__version_specific: bool = bool(version_parsed)
         # Latest version available of the current image (or current version if version specific)
-        self.__profile_version: str = '-'.join(name.split('-')[1:]) if self.isVersionSpecific() else \
+        self.__profile_version: str = version_parsed if self.isVersionSpecific() else \
             "[bright_black]N/A[/bright_black]"
         # Version of the docker image installed
         self.__image_version: str = self.__profile_version
@@ -73,20 +74,22 @@ class ExegolImage(SelectableInterface):
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
                     # Ignoring external images (set container using external image as outdated)
                     continue
+                version_parsed, self.__arch = self.__tagNameParsing(name)
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
-                if "-" not in name:
+                if not version_parsed:
                     self.__outdated = False
                     self.__name = name
                 else:
-                    self.__setImageVersion('-'.join(name.split('-')[1:]))
+                    self.__setImageVersion(version_parsed)
 
             # if no version has been found, restoring previous name
             if self.__name is None:
                 self.__name = name
 
-            self.__version_specific = "-" in self.__name
+            version_parsed, self.__arch = self.__tagNameParsing(name)
+            self.__version_specific = bool(version_parsed)
             if self.isVersionSpecific():
-                self.__profile_version = '-'.join(name.split('-')[1:])
+                self.__profile_version = version_parsed
                 self.__setImageVersion(self.__profile_version)
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
@@ -114,6 +117,29 @@ class ExegolImage(SelectableInterface):
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
 
+    @staticmethod
+    def __tagNameParsing(tag_name: str) -> Tuple[str, str]:
+        version = ""
+        # Default arch is amd64
+        arch = "amd64"
+        parts = tag_name.split('-')
+        # Try to detect legacy tag name or new latest name
+        if len(parts) == 2:
+            # If there is any '.' in the second part, it's a version format
+            if "." in parts[1]:
+                # Legacy version format
+                version = parts[1]
+            else:
+                # Latest arch specific image
+                arch = parts[1]
+        elif len(parts) >= 3:
+            # Arch + version format
+            arch = parts[1]
+            # Additional - stored in version
+            version = '-'.join(parts[2:])
+
+        return version, arch
+
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
@@ -131,7 +157,9 @@ class ExegolImage(SelectableInterface):
             original_name = container.attrs["Config"]["Image"].split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
-                self.__version_specific = "-" in self.__name
+                version_parsed, self.__arch = self.__tagNameParsing(self.__name)
+                self.__version_specific = bool(version_parsed)
+                self.__setImageVersion(version_parsed)
             self.__alt_name = f'{original_name} [bright_black](outdated' \
                               f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
 
@@ -175,8 +203,10 @@ class ExegolImage(SelectableInterface):
         # Add version tag (if available)
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
-            if tmp_name == ConstantConfig.IMAGE_NAME and "-" in tmp_tag:
-                self.__setImageVersion('-'.join(tmp_tag.split('-')[1:]))
+            version_parsed, arch_parsed = self.__tagNameParsing(tmp_tag)
+            if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
+                self.__arch = arch_parsed
+                self.__setImageVersion(version_parsed)
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
 
@@ -186,7 +216,8 @@ class ExegolImage(SelectableInterface):
         latest_images, version_images = [], []
         # Splitting images by type : latest or version specific
         for img in images:
-            if '-' in img.getName():
+            version_parsed, _ = cls.__tagNameParsing(img.getName())
+            if version_parsed:
                 version_images.append(img)
             else:
                 latest_images.append(img)
@@ -246,8 +277,9 @@ class ExegolImage(SelectableInterface):
             if len(local_img.attrs["RepoTags"]) > 0:
                 for repo_tag in local_img.attrs["RepoTags"]:
                     tmp_name, tmp_tag = repo_tag.split(':')
+                    version_parsed, _ = cls.__tagNameParsing(tmp_tag)
                     # Selecting tags from the good repository + filtering out version tag (handle by digest_id earlier)
-                    if tmp_name == ConstantConfig.IMAGE_NAME and "-" not in tmp_tag:
+                    if tmp_name == ConstantConfig.IMAGE_NAME and not version_parsed:
                         names.append(tmp_name)
                         tags.append(tmp_tag)
             # Temporary data structure
@@ -299,7 +331,7 @@ class ExegolImage(SelectableInterface):
             # First up-to-date
             if img.isUpToDate():
                 uptodate.append(img)  # The current image if added to the corresponding groups
-                images.remove(img)    # and is removed from the pool (last image without any match will be last)
+                images.remove(img)  # and is removed from the pool (last image without any match will be last)
             # Second need upgrade
             elif (not img.isLocal()) and img.isInstall():
                 outdated.append(img)
@@ -465,6 +497,9 @@ class ExegolImage(SelectableInterface):
         if self.__version_specific or self.__version_label_mode or 'N/A' in self.__profile_version:
             return self.__name
         else:
+            if self.__arch != "amd64":
+                # If not amd64, must be precise
+                return self.__name + "-" + self.__arch + "-" + self.__profile_version
             return self.__name + "-" + self.__profile_version
 
     def getInstalledVersionName(self) -> str:
@@ -472,6 +507,9 @@ class ExegolImage(SelectableInterface):
         if self.__version_specific or self.__version_label_mode or 'N/A' in self.__image_version:
             return self.__name
         else:
+            if self.__arch != "amd64":
+                # If not amd64, must be precise
+                return self.__name + "-" + self.__arch + "-" + self.__image_version
             return self.__name + "-" + self.__image_version
 
     def __setImageVersion(self, version: str, source_tag: bool = True):
