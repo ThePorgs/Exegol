@@ -419,7 +419,7 @@ class ExegolManager:
                 config.addRawVolume(volume)
         if ParametersManager().devices is not None:
             for device in ParametersManager().devices:
-                config.addDevice(device)
+                config.addUserDevice(device)
         if ParametersManager().vpn is not None:
             config.enableVPN()
         if ParametersManager().envs is not None:

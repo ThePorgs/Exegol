@@ -315,6 +315,7 @@ class ContainerConfig:
 
     def enableSharedResources(self):
         """Procedure to enable shared volume feature"""
+        # TODO test my resources cross shell source (WSL / PSH) on Windows
         if not self.__shared_resources:
             logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
@@ -380,7 +381,7 @@ class ContainerConfig:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
-        self.addDevice("/dev/net/tun", mknod=True)
+        self.__addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
@@ -487,7 +488,8 @@ class ContainerConfig:
             logger.warning("Host mode cannot be set with NAT ports configured. Skipping.")
             host_mode = False
         if EnvInfo.isDockerDesktop() and host_mode:
-            logger.warning("Docker desktop does not support sharing of host network interfaces.")
+            logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
+            logger.verbose("Official doc: https://docs.docker.com/network/host/")
             logger.info("To share network ports between the host and exegol, use the --port parameter.")
             host_mode = False
         self.__network_host = host_mode
@@ -668,11 +670,11 @@ class ContainerConfig:
         """Volume config getter"""
         return self.__mounts
 
-    def addDevice(self,
-                  device_source: str,
-                  device_dest: Optional[str] = None,
-                  readonly: bool = False,
-                  mknod: bool = False):
+    def __addDevice(self,
+                    device_source: str,
+                    device_dest: Optional[str] = None,
+                    readonly: bool = False,
+                    mknod: bool = False):
         """Add a device to the container configuration"""
         if device_dest is None:
             device_dest = device_source
@@ -682,6 +684,14 @@ class ContainerConfig:
         if mknod:
             perm += 'm'
         self.__devices.append(f"{device_source}:{device_dest}:{perm}")
+
+    def addUserDevice(self, user_device_config: str):
+        """Add a device from a user parameters"""
+        if EnvInfo.isDockerDesktop():
+            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+            logger.critical("Device configuration cannot be applied, aborting operation.")
+        self.__addDevice(user_device_config)
 
     def removeDevice(self, device_source: str) -> bool:
         """Remove a device from the container configuration (Only before container creation)"""
