@@ -456,7 +456,7 @@ class ExegolManager:
                         "read CLI options with [green]exegol start -h[/green]")
 
         container = DockerUtils.createContainer(model)
-        container.postStartSetup()
+        container.postCreateSetup()
         return container
 
     @classmethod
@@ -477,7 +477,7 @@ class ExegolManager:
         model = ExegolContainerTemplate(name, config, image)
 
         container = DockerUtils.createContainer(model, temporary=True)
-        container.postStartSetup()
+        container.postCreateSetup()
         return container
 
     @classmethod
