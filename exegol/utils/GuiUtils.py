@@ -42,9 +42,14 @@ class GuiUtils:
             # Distro name can only be set if the current host OS is Windows
             return f"\\\\wsl.localhost\\{cls.__distro_name}\\mnt\\wslg\\.X11-unix"
         elif EnvInfo.isWindowsHost():
-            logger.debug(f"No WSL distro found: '{cls.__distro_name}'")
-            raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
-                                  "without having performed the availability tests before.")
+            if EnvInfo.current_platform == "WSL":
+                # Mount point from a WSL shell context
+                return f"/mnt/wslg/.X11-unix"
+            else:
+                # From a Windows context, a WSL distro should have been supply during GUI checks
+                logger.debug(f"No WSL distro have been previously found: '{cls.__distro_name}'")
+                raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
+                                      "without having performed the availability tests before.")
         # Other distributions (Linux / Mac) have the default socket path
         return "/tmp/.X11-unix"
 
@@ -147,14 +152,18 @@ class GuiUtils:
             return False
         logger.debug("WSL is [green]available[/green] and docker is using WSL2")
         if cls.__wslg_installed():
+            logger.debug("WSLg seems to be installed.")
             # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
             if EnvInfo.current_platform != "WSL":
+                logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
                 cls.__distro_name = cls.__find_wsl_distro()
                 logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
                 # If no WSL is found, propose to continue without GUI
                 if not cls.__distro_name and not Confirm(
                         "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
                     raise KeyboardInterrupt
+            else:
+                logger.debug("Using current WSL context for X11 socket sharing")
             return True
         elif cls.__wslg_eligible():
             logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
