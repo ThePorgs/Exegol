@@ -291,10 +291,19 @@ class DockerUtils:
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
         remote_results = []
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags"
+        # Define max number of tags to download from dockerhub (in order to limit download time and discard historical versions)
+        page_size = 20
+        page_max = 2
+        current_page = 0
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
         # Handle multi-page tags from registry
         with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:
+                if current_page == page_max:
+                    logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
+                    if not logger.isEnabledFor(ExeLog.VERBOSE):
+                        break
+                current_page += 1
                 remote_images_request = None
                 logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
