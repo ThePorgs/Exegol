@@ -821,7 +821,10 @@ class ContainerConfig:
             result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
         if verbose or not self.__shared_resources:
             result += f"{getColor(self.__shared_resources)[0]}My resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
-        return result.strip()
+        result = result.strip()
+        if not result:
+            return "[i][bright_black]Default configuration[/bright_black][/i]"
+        return result
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
