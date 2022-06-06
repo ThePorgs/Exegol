@@ -1,6 +1,7 @@
 import binascii
 import logging
 import os
+import random
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
 from exegol.console.ConsoleFormat import boolFormatter
@@ -185,7 +186,15 @@ class ExegolManager:
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
-        logger.empty_line(log_level=logging.DEBUG)
+        # Check for update with 30% chance
+        if not UpdateManager.isUpdateTag() and random.randrange(100) >= 70:
+            UpdateManager.checkForWrapperUpdate()
+        if UpdateManager.isUpdateTag():
+            logger.empty_line()
+            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True):
+                UpdateManager.updateWrapper()
+        else:
+            logger.empty_line(log_level=logging.DEBUG)
 
     @classmethod
     def __loadOrInstallImage(cls,

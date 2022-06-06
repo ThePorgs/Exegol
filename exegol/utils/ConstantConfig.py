@@ -12,6 +12,8 @@ class ConstantConfig:
     # Path of the Dockerfile
     build_context_path_obj: Path
     build_context_path: str
+    # Exegol config directory
+    exegol_config_path: Path = Path().home() / ".exegol"
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.parent.name == "site-packages"

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, List
 
+from git.exc import GitCommandError
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger, console
 
@@ -163,7 +164,11 @@ class GitUtils:
         # Get last local commit
         current_commit = self.__gitRepo.heads[branch].commit
         # Get last remote commit
-        fetch_result = self.__gitRemote.fetch()
+        try:
+            fetch_result = self.__gitRemote.fetch()
+        except GitCommandError:
+            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
+            return True
         try:
             self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
         except IndexError:

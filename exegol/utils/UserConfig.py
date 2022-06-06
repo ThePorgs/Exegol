@@ -15,22 +15,21 @@ class UserConfig(metaclass=MetaSingleton):
 
     def __init__(self):
         # Config file options
-        self.__exegol_path: Path = Path().home() / ".exegol"
-        self.__config_file_path: Path = self.__exegol_path / "config.yml"
+        self.__config_file_path: Path = ConstantConfig.exegol_config_path / "config.yml"
         self.__config_upgrade: bool = False
 
         # Defaults User config
-        self.private_volume_path: Path = self.__exegol_path / "workspaces"
-        self.shared_resources_path: str = str(self.__exegol_path / "my-resources")
+        self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
+        self.shared_resources_path: str = str(ConstantConfig.exegol_config_path / "my-resources")
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
 
         # process
         self.__load_file()
 
     def __load_file(self):
-        if not self.__exegol_path.is_dir():
-            logger.verbose(f"Creating exegol home folder: {self.__exegol_path}")
-            os.mkdir(self.__exegol_path)
+        if not ConstantConfig.exegol_config_path.is_dir():
+            logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
+            os.mkdir(ConstantConfig.exegol_config_path)
         if not self.__config_file_path.is_file():
             logger.verbose(f"Creating default exegol config: {self.__config_file_path}")
             self.__create_config_file()
@@ -61,14 +60,15 @@ volumes:
         with open(self.__config_file_path, 'w') as file:
             file.write(config)
 
-    def __default_resource_location(self, folder_name: str) -> Path:
+    @staticmethod
+    def __default_resource_location(folder_name: str) -> Path:
         local_src = ConstantConfig.src_root_path_obj / folder_name
         if local_src.is_dir():
             # If exegol is clone from github, exegol-resources submodule is accessible from root src
             return local_src
         else:
             # Default path for pip installation
-            return self.__exegol_path / folder_name
+            return ConstantConfig.exegol_config_path / folder_name
 
     def __load_config_path(self, data: dict, config_name: str, default: Union[Path, str]) -> Union[Path, str]:
         try:

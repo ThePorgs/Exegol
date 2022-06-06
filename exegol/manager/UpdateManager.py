@@ -1,3 +1,4 @@
+import os
 from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
@@ -16,6 +17,7 @@ from exegol.utils.GitUtils import GitUtils
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
+    __UPDATE_TAG_FILE = ".update.lck"
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -84,7 +86,10 @@ class UpdateManager:
     @classmethod
     def updateWrapper(cls) -> bool:
         """Update wrapper source code from git"""
-        return cls.__updateGit(ExegolModules().getWrapperGit())
+        result = cls.__updateGit(ExegolModules().getWrapperGit())
+        if result:
+            cls.__untagUpdateAvailable()
+        return result
 
     @classmethod
     def updateImageSource(cls) -> bool:
@@ -150,6 +155,33 @@ class UpdateManager:
         gitUtils.update()
         logger.empty_line()
         return True
+
+    @classmethod
+    def checkForWrapperUpdate(cls) -> bool:
+        with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
+            isUpToDate = ExegolModules().getWrapperGit(fast_load=True).isUpToDate()
+        if not isUpToDate:
+            cls.__tagUpdateAvailable()
+        return not isUpToDate
+
+    @classmethod
+    def __tagUpdateAvailable(cls):
+        if not ConstantConfig.exegol_config_path.is_dir():
+            logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
+            os.mkdir(ConstantConfig.exegol_config_path)
+        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
+        if not tag_file.is_file():
+            open(tag_file, 'w').close()
+
+    @classmethod
+    def isUpdateTag(cls) -> bool:
+        return (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file()
+
+    @classmethod
+    def __untagUpdateAvailable(cls):
+        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
+        if tag_file.is_file():
+            os.remove(tag_file)
 
     @classmethod
     def __buildSource(cls, build_name: Optional[str] = None) -> str:
