@@ -5,6 +5,7 @@ from typing import Dict, List, Union
 import yaml
 import yaml.parser
 
+from exegol.console.ConsoleFormat import boolFormatter
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
@@ -22,6 +23,7 @@ class UserConfig(metaclass=MetaSingleton):
         self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
         self.shared_resources_path: str = str(ConstantConfig.exegol_config_path / "my-resources")
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
+        self.auto_check_updates: bool = True
 
         # process
         self.__load_file()
@@ -52,6 +54,10 @@ volumes:
     
     # When containers do not have an explicitly declared workspace, a dedicated folder will be created at this location to share the workspace with the host but also to save the data after deleting the container
     private_workspace_path: {self.private_volume_path}
+
+config:
+    # Automatically check for wrapper update some time to time (only for git based installation)
+    auto_check_update: {self.auto_check_updates}
 """
         # TODO handle default image selection
         # TODO handle default start container
@@ -82,6 +88,18 @@ volumes:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
+    def __load_config(self, data: dict, config_name: str, default: bool) -> bool:
+        try:
+            result = data.get(config_name)
+            if result is None:
+                logger.debug(f"Config {config_name} has not been found in exegol config file. Config file will be upgrade.")
+                self.__config_upgrade = True
+                return default
+            return result
+        except TypeError:
+            logger.error(f"Error while loading {config_name}! Using default config.")
+        return default
+
     def __parse_config(self):
         with open(self.__config_file_path, 'r') as file:
             try:
@@ -89,8 +107,9 @@ volumes:
             except yaml.parser.ParserError:
                 data = {}
                 logger.error("Error while parsing exegol config file ! Check for syntax error.")
-        # bug: logger verbosity not set at this time
+        # TODO bug: logger verbosity not set at this time
         logger.debug(data)
+        # Volume section
         volumes_data = data.get("volumes", {})
         # Catch existing but empty section
         if volumes_data is None:
@@ -99,12 +118,20 @@ volumes:
         self.private_volume_path = self.__load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self.__load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
 
+        # Config section
+        config_data = data.get("config", {})
+        # Catch existing but empty section
+        if config_data is None:
+            config_data = {}
+        self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
+
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
             f"Private workspace: [magenta]{self.private_volume_path}[/magenta]",
             f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
-            f"My resources: [magenta]{self.shared_resources_path}[/magenta]"
+            f"My resources: [magenta]{self.shared_resources_path}[/magenta]",
+            f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

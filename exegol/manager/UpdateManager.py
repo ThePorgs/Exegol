@@ -158,6 +158,8 @@ class UpdateManager:
 
     @classmethod
     def checkForWrapperUpdate(cls) -> bool:
+        """Check if there is an exegol wrapper update available."""
+        # TODO check update with git fetch (opti fetch time)
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             isUpToDate = ExegolModules().getWrapperGit(fast_load=True).isUpToDate()
         if not isUpToDate:
@@ -166,6 +168,7 @@ class UpdateManager:
 
     @classmethod
     def __tagUpdateAvailable(cls):
+        """Create the 'update available' cache file."""
         if not ConstantConfig.exegol_config_path.is_dir():
             logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
             os.mkdir(ConstantConfig.exegol_config_path)
@@ -175,10 +178,12 @@ class UpdateManager:
 
     @classmethod
     def isUpdateTag(cls) -> bool:
+        """Check if the cache file is present to announce an available update of the exegol wrapper."""
         return (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file()
 
     @classmethod
     def __untagUpdateAvailable(cls):
+        """Remove the 'update available' cache file."""
         tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
         if tag_file.is_file():
             os.remove(tag_file)
@@ -248,6 +253,7 @@ class UpdateManager:
 
     @classmethod
     def listGitStatus(cls) -> Sequence[Dict[str, str]]:
+        """Get status of every git modules"""
         result = []
         gits = [ExegolModules().getWrapperGit(fast_load=True),
                 ExegolModules().getSourceGit(fast_load=True),

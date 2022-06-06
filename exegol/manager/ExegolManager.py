@@ -187,7 +187,7 @@ class ExegolManager:
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
         # Check for update with 30% chance
-        if not UpdateManager.isUpdateTag() and random.randrange(100) >= 70:
+        if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates and random.randrange(100) >= 80:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():
             logger.empty_line()
