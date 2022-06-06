@@ -24,7 +24,8 @@ class ExegolImage(SelectableInterface):
         self.__image: Image = docker_image
         self.__name: str = name
         self.__alt_name: str = ''
-        version_parsed, self.__arch = self.__tagNameParsing(name)
+        self.__arch = "Unknown"
+        version_parsed = self.__tagNameParsing(name)
         self.__version_specific: bool = bool(version_parsed)
         # Latest version available of the current image (or current version if version specific)
         self.__profile_version: str = version_parsed if self.isVersionSpecific() else \
@@ -33,7 +34,6 @@ class ExegolImage(SelectableInterface):
         self.__image_version: str = self.__profile_version
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
         # if it is retrieved from the tags (ex: nightly)
-        self.__arch_label_mode: bool = False
         self.__version_label_mode: bool = False
         self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
@@ -75,8 +75,7 @@ class ExegolImage(SelectableInterface):
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
                     # Ignoring external images (set container using external image as outdated)
                     continue
-                version_parsed, arch_parsed = self.__tagNameParsing(name)
-                self.__setArch(arch_parsed)
+                version_parsed = self.__tagNameParsing(name)
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if not version_parsed:
                     self.__outdated = False
@@ -88,8 +87,7 @@ class ExegolImage(SelectableInterface):
             if self.__name is None:
                 self.__name = name
 
-            version_parsed, arch_parsed = self.__tagNameParsing(name)
-            self.__setArch(arch_parsed)
+            version_parsed = self.__tagNameParsing(name)
             self.__version_specific = bool(version_parsed)
             if self.isVersionSpecific():
                 self.__profile_version = version_parsed
@@ -108,6 +106,7 @@ class ExegolImage(SelectableInterface):
         self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         if self.__is_remote:
             self.__setDigest(self.__parseDigest(self.__image))
+        self.__setArch(self.__image.attrs["Architecture"])
         self.__labelVersionParsing()
         # Default status, must be refreshed if some parameters are change externally
         self.syncStatus()
@@ -119,17 +118,14 @@ class ExegolImage(SelectableInterface):
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
-        if not self.__arch:
-            arch_label = self.__image.labels.get("org.exegol.arch")
-            if arch_label is not None:
-                self.__setArch(arch_label, source_tag=False)
 
     @staticmethod
-    def __tagNameParsing(tag_name: str) -> Tuple[str, str]:
-        version = ""
-        # Default arch is set to '' if not fetch from tag name, it will be considered as amd64
-        arch = ""
+    def __tagNameParsing(tag_name: str) -> str:
         parts = tag_name.split('-')
+        version = '-'.join(parts[1:])
+        # Code for future multi parameter from tag name (e.g. ad-debian-1.2.3)
+        """
+        first_parameter = ""
         # Try to detect legacy tag name or new latest name
         if len(parts) == 2:
             # If there is any '.' in the second part, it's a version format
@@ -138,14 +134,16 @@ class ExegolImage(SelectableInterface):
                 version = parts[1]
             else:
                 # Latest arch specific image
-                arch = parts[1]
+                first_parameter = parts[1]
         elif len(parts) >= 3:
             # Arch + version format
-            arch = parts[1]
+            first_parameter = parts[1]
             # Additional - stored in version
             version = '-'.join(parts[2:])
 
-        return version, arch
+        return version, first_parameter
+        """
+        return version
 
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
@@ -164,10 +162,9 @@ class ExegolImage(SelectableInterface):
             original_name = container.attrs["Config"]["Image"].split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
-                version_parsed, arch_parsed = self.__tagNameParsing(self.__name)
+                version_parsed = self.__tagNameParsing(self.__name)
                 self.__version_specific = bool(version_parsed)
                 self.__setImageVersion(version_parsed)
-                self.__setArch(arch_parsed)
             self.__alt_name = f'{original_name} [bright_black](outdated' \
                               f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
 
@@ -211,9 +208,8 @@ class ExegolImage(SelectableInterface):
         # Add version tag (if available)
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
-            version_parsed, arch_parsed = self.__tagNameParsing(tmp_tag)
+            version_parsed = self.__tagNameParsing(tmp_tag)
             if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
-                self.__setArch(arch_parsed)
                 self.__setImageVersion(version_parsed)
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
@@ -224,7 +220,7 @@ class ExegolImage(SelectableInterface):
         latest_images, version_images = [], []
         # Splitting images by type : latest or version specific
         for img in images:
-            version_parsed, _ = cls.__tagNameParsing(img.getName())
+            version_parsed = cls.__tagNameParsing(img.getName())
             if version_parsed:
                 version_images.append(img)
             else:
@@ -285,7 +281,7 @@ class ExegolImage(SelectableInterface):
             if len(local_img.attrs["RepoTags"]) > 0:
                 for repo_tag in local_img.attrs["RepoTags"]:
                     tmp_name, tmp_tag = repo_tag.split(':')
-                    version_parsed, _ = cls.__tagNameParsing(tmp_tag)
+                    version_parsed = cls.__tagNameParsing(tmp_tag)
                     # Selecting tags from the good repository + filtering out version tag (handle by digest_id earlier)
                     if tmp_name == ConstantConfig.IMAGE_NAME and not version_parsed:
                         names.append(tmp_name)
@@ -384,7 +380,7 @@ class ExegolImage(SelectableInterface):
 
     def __str__(self):
         """Default object text formatter, debug only"""
-        return f"{self.__name} ({self.__image_version}/{self.__profile_version}) - {self.__disk_size} - " + \
+        return f"{self.__name} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
                (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
     def setCustomStatus(self, status: str):
@@ -504,12 +500,9 @@ class ExegolImage(SelectableInterface):
         """Image's arch getter"""
         return self.__arch if self.__arch else "amd64"
 
-    def __setArch(self, arch: str, source_tag: bool = True):
-        """Image's arch setter.
-        Set source_tag as true if the information is retrieve from the image's tag name.
-        If the version is retrieve from the label, set source_tag as False."""
+    def __setArch(self, arch: str):
+        """Image's arch setter."""
         self.__arch = arch
-        self.__arch_label_mode = not source_tag
 
     def getLatestVersionName(self) -> str:
         """Image's tag name with latest version getter"""
@@ -522,10 +515,6 @@ class ExegolImage(SelectableInterface):
     def __formatVersionName(self, version):
         """From the selected version, format the image tag name"""
         result_name = self.__name
-        if self.__arch and not self.__arch_label_mode:
-            # If an arch is set, it must be precise
-            # TODO to debug, by have some duplication with version_specific tag name
-            result_name += "-" + self.__arch
         if not (self.__version_specific or self.__version_label_mode or 'N/A' in version):
             result_name += "-" + version
         return result_name
