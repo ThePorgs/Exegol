@@ -47,7 +47,7 @@ class ExegolImage(SelectableInterface):
         # Status
         self.__is_remote: bool = size > 0
         self.__is_install: bool = False
-        self.__is_update: bool = isUpToDate
+        self.__is_update: bool = isUpToDate  # Default is false except if the image has been updated in the current runtime context
         self.__is_discontinued: bool = False
         # The latest version is merged with the latest one, every other version is old and must be removed
         self.__outdated: bool = self.__version_specific
@@ -322,6 +322,7 @@ class ExegolImage(SelectableInterface):
                     # If there are no remote images left, the user probably doesn't have internet and can't know the status of the images from the registry
                     new_image.setCustomStatus("[bright_black]Unknown[/bright_black]")
                 else:
+                    logger.debug(f"The image '{new_image.getName()}' (digest: {new_image.getRemoteId()}) has not been found remotely, considering it as discontinued.")
                     # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
                     new_image.__is_discontinued = True
                     # Discontinued image can no longer be updated
