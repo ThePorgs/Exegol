@@ -91,8 +91,10 @@ class ExegolImage(SelectableInterface):
                 self.__name = name
 
             if self.isVersionSpecific():
-                self.__profile_version = self.__image_version
-                self.__setImageVersion(self.__profile_version)
+                if "N/A" in self.__image_version:
+                    logger.debug(f"Current '{self.__name}' image is version specific but no version tag were found!")
+                else:
+                    self.__profile_version = self.__image_version
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.__image.labels.get("org.exegol.tag", "<none>")
@@ -116,9 +118,12 @@ class ExegolImage(SelectableInterface):
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
         if "N/A" in self.__image_version:
+            logger.debug("Try to retrieve image version from labels")
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
+                if self.isVersionSpecific():
+                    self.__profile_version = self.__image_version
 
     @staticmethod
     def __tagNameParsing(tag_name: str) -> str:
