@@ -58,7 +58,7 @@ class ExegolImage(SelectableInterface):
         else:
             self.__setDigest(digest)
             self.__setImageId(image_id)
-        logger.debug("└── {}\t→ ({}) {}".format(self.__name, self.getType(), self.__digest))
+        logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
     def __initFromDockerImage(self):
         """Parse Docker object to set up self configuration on creation."""
@@ -68,6 +68,8 @@ class ExegolImage(SelectableInterface):
         if len(self.__image.attrs["RepoTags"]) > 0:
             # Tag as outdated until the latest tag is found
             self.__outdated = True
+            # Tag as a version specific until the latest tag is found
+            self.__version_specific = True
             name = self.__name  # Init with old name
             self.__name = None
             for repo_tag in self.__image.attrs["RepoTags"]:
@@ -79,6 +81,7 @@ class ExegolImage(SelectableInterface):
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if not version_parsed:
                     self.__outdated = False
+                    self.__version_specific = False
                     self.__name = name
                 else:
                     self.__setImageVersion(version_parsed)
@@ -87,10 +90,8 @@ class ExegolImage(SelectableInterface):
             if self.__name is None:
                 self.__name = name
 
-            version_parsed = self.__tagNameParsing(name)
-            self.__version_specific = bool(version_parsed)
             if self.isVersionSpecific():
-                self.__profile_version = version_parsed
+                self.__profile_version = self.__image_version
                 self.__setImageVersion(self.__profile_version)
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
