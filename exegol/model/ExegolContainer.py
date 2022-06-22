@@ -154,7 +154,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Command received: {str_cmd}")
         cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'zsh -c "source /opt/.zsh_aliases; eval $(echo {cmd_b64} | base64 -d)"'
+        # TODO remove grep -v (time for user to update exegol image)
+        cmd = f'zsh -c "source <(grep -v plugins ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
         logger.debug(f"Formatting zsh command: {cmd}")
         return cmd
 
