@@ -105,6 +105,7 @@ class DockerUtils:
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
+                                                    extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),
                                                     environment=model.config.getEnvs(),
                                                     network_mode=model.config.getNetworkMode(),
