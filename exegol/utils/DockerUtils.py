@@ -232,10 +232,20 @@ class DockerUtils:
         """Get an ExegolImage from tag name."""
         # Fetch every images available
         images = cls.listImages()
+        match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
             if i.getName() == tag:
-                return i
+                # If there is a locked image keep it as default
+                if i.isLocked():
+                    match = i
+                else:
+                    # Return the first non-outdated image
+                    return i
+        # If there is any match without lock (outdated) status, return the last outdated image found.
+        if match is not None:
+            return match
+        # If there is no match at all, raise ObjectNotFound to handle the error
         raise ObjectNotFound
 
     @classmethod

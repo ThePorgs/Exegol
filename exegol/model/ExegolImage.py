@@ -305,10 +305,9 @@ class ExegolImage(SelectableInterface):
                         break
                 # if latest mode, must match with tag (to find already installed outdated version)
                 for tag in data.get('tags', []):
-                    # Check if the tag is matching and
+                    # Check if the tag is matching and if the image is not already up-to-date (with version specific digest matching)
                     if current_image.getName() == tag and not current_image.isUpToDate():
-                        current_image.setDockerObject(
-                            data["image"])  # Handle latest image matching (up-to-date / outdated)
+                        current_image.setDockerObject(data["image"])  # Handle latest image matching (up-to-date / outdated)
                         data["match"] = True
             # If remote image don't find any match, fallback to default => not installed
 
