@@ -24,6 +24,7 @@ class UserConfig(metaclass=MetaSingleton):
         self.shared_resources_path: str = str(ConstantConfig.exegol_config_path / "my-resources")
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
         self.auto_check_updates: bool = True
+        self.auto_remove_images: bool = True
 
         # process
         self.__load_file()
@@ -58,11 +59,13 @@ volumes:
 config:
     # Automatically check for wrapper update some time to time (only for git based installation)
     auto_check_update: {self.auto_check_updates}
+    
+    # Automatically remove outdated image when they are no longer used
+    auto_remove_image: {self.auto_remove_images}
 """
         # TODO handle default image selection
         # TODO handle default start container
         # TODO add custom build profiles path
-        # TODO add auto_remove flag True/False to remove outdated images
         with open(self.__config_file_path, 'w') as file:
             file.write(config)
 
@@ -124,6 +127,7 @@ config:
         if config_data is None:
             config_data = {}
         self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
+        self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
@@ -132,6 +136,7 @@ config:
             f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
             f"My resources: [magenta]{self.shared_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
+            f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

@@ -20,6 +20,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.UserConfig import UserConfig
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
@@ -372,7 +373,7 @@ class DockerUtils:
                                           decode=True))
                 logger.success(f"Image successfully updated")
                 # Remove old image
-                if not install_mode and image.isInstall():
+                if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
                     cls.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:

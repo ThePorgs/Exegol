@@ -168,7 +168,7 @@ class ExegolManager:
         for c in containers:
             c.remove()
             # If the image used is deprecated, it must be deleted after the removal of its container
-            if c.image.isLocked():
+            if c.image.isLocked() and UserConfig().auto_remove_images:
                 DockerUtils.removeImage(c.image, upgrade_mode=True)
 
     @classmethod
@@ -186,7 +186,7 @@ class ExegolManager:
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
-        # Check for update with 30% chance
+        # Check for update with 20% chance
         if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates and random.randrange(100) >= 80:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():

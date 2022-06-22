@@ -74,7 +74,6 @@ class GuiUtils:
         :return: bool
         """
         if not cls.__isXQuartzInstalled():
-            # TODO review mac xquartz install message
             logger.warning("Display sharing is [orange3]not supported[/orange3] on your mac without XQuartz installed. "
                            "You need to manually install [turquoise2]XQuartz[/turquoise2] and check the configuration 'Allow connections from network clients'.")
             return False
