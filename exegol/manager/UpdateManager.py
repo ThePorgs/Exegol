@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
@@ -13,6 +14,7 @@ from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
+from exegol.utils.WebUtils import WebUtils
 
 
 class UpdateManager:
@@ -159,12 +161,37 @@ class UpdateManager:
     @classmethod
     def checkForWrapperUpdate(cls) -> bool:
         """Check if there is an exegol wrapper update available."""
-        # TODO check update with git fetch (opti fetch time)
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
-            isUpToDate = ExegolModules().getWrapperGit(fast_load=True).isUpToDate()
+            if re.match(r'\w', ConstantConfig.version):
+                # Dev version have a letter in the version code and must check updates via git
+                module = ExegolModules().getWrapperGit(fast_load=True)
+                if module.isAvailable:
+                    isUpToDate = module.isUpToDate()
+                else:
+                    # If Exegol have not been installed from git clone. Auto-check update in this case is only available from mates release
+                    return False
+            else:
+                # If there is no letter, it's a stable release, and we can compare faster with the latest git tag
+                remote_version = WebUtils.getLatestWrapperRelease()
+                isUpToDate = cls.__compareVersion(remote_version)
+
         if not isUpToDate:
             cls.__tagUpdateAvailable()
         return not isUpToDate
+
+    @classmethod
+    def __compareVersion(cls, version) -> bool:
+        isUpToDate = True
+        try:
+            for i in range(len(version.split('.'))):
+                remote = int(version.split('.')[i])
+                local = int(ConstantConfig.version.split('.')[i])
+                if remote > local:
+                    isUpToDate = False
+                    break
+        except ValueError:
+            logger.warning(f'Unable to parse Exegol version : {version} / {ConstantConfig.version}')
+        return isUpToDate
 
     @classmethod
     def __tagUpdateAvailable(cls):
@@ -174,12 +201,25 @@ class UpdateManager:
             os.mkdir(ConstantConfig.exegol_config_path)
         tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
         if not tag_file.is_file():
-            open(tag_file, 'w').close()
+            with open(tag_file, 'w') as lockfile:
+                lockfile.write(ConstantConfig.version)
 
     @classmethod
     def isUpdateTag(cls) -> bool:
         """Check if the cache file is present to announce an available update of the exegol wrapper."""
-        return (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file()
+        if (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file():
+            # Fetch the previously locked version
+            with open(ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE, 'r') as lockfile:
+                locked_version = lockfile.read()
+            # If the current version is the same, no external update had occurred
+            if locked_version == ConstantConfig.version:
+                return True
+            else:
+                # If the version changed, exegol have been updated externally (via pip for example)
+                cls.__untagUpdateAvailable()
+                return False
+        else:
+            return False
 
     @classmethod
     def __untagUpdateAvailable(cls):
