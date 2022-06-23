@@ -89,7 +89,7 @@ class ExegolManager:
         if ParametersManager().tmp:
             container = cls.__createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:
-                container.exec(command=ParametersManager().exec, as_daemon=False)
+                container.exec(command=ParametersManager().exec, as_daemon=False, is_tmp=True)
                 container.stop(timeout=2)
             else:
                 logger.success(f"Command executed as entrypoint of the container {container.hostname}")
