@@ -162,7 +162,7 @@ class UpdateManager:
     def checkForWrapperUpdate(cls) -> bool:
         """Check if there is an exegol wrapper update available."""
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
-            if re.match(r'\w', ConstantConfig.version):
+            if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
                 # Dev version have a letter in the version code and must check updates via git
                 module = ExegolModules().getWrapperGit(fast_load=True)
                 if module.isAvailable:

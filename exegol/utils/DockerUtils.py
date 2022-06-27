@@ -320,7 +320,7 @@ class DockerUtils:
                 current_page += 1
                 logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
-                docker_repo_response = WebUtils.runJsonRequest(url)
+                docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
                 if docker_repo_response is None:
                     logger.warning("Skipping online queries.")
                     return []

@@ -16,7 +16,7 @@ class ConstantConfig:
     exegol_config_path: Path = Path().home() / ".exegol"
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
-    pip_installed: bool = src_root_path_obj.parent.name == "site-packages"
+    pip_installed: bool = src_root_path_obj.name == "site-packages"
     # Dockerhub Exegol images repository
     DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol"
