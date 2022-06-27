@@ -1,4 +1,5 @@
 import os
+import random
 import re
 from typing import Optional, Dict, cast, Tuple, Sequence
 
@@ -19,7 +20,8 @@ from exegol.utils.WebUtils import WebUtils
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
-    __UPDATE_TAG_FILE = ".update.lck"
+    __UPDATE_TAG_FILE = ".update.meta"
+    __LAST_CHECK_FILE = ".lastcheck.meta"
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -160,7 +162,24 @@ class UpdateManager:
 
     @classmethod
     def checkForWrapperUpdate(cls) -> bool:
-        """Check if there is an exegol wrapper update available."""
+        """Check if there is an exegol wrapper update available.
+        Return true if an update is available."""
+        # Skipping update check
+        if cls.__triggerUpdateCheck():
+            return cls.__checkUpdate()
+        return False
+
+    @classmethod
+    def __triggerUpdateCheck(cls):
+        """Check if an update check must be triggered.
+        Return true to check for new update"""
+        # Check for update with 10% chance
+        if random.randrange(100) >= 10:
+            return True
+        return False
+
+    @classmethod
+    def __checkUpdate(cls):
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
                 # Dev version have a letter in the version code and must check updates via git

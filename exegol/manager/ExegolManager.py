@@ -1,7 +1,6 @@
 import binascii
 import logging
 import os
-import random
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
 from exegol.console.ConsoleFormat import boolFormatter
@@ -186,8 +185,7 @@ class ExegolManager:
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
-        # Check for update with 20% chance
-        if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates and random.randrange(100) >= 80:
+        if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():
             logger.empty_line()
