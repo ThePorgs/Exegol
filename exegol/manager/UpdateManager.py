@@ -1,6 +1,6 @@
 import os
-import random
 import re
+from datetime import datetime, timedelta, date
 from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
@@ -22,6 +22,7 @@ class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
     __UPDATE_TAG_FILE = ".update.meta"
     __LAST_CHECK_FILE = ".lastcheck.meta"
+    __TIME_FORMAT = "%d/%m/%Y"
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -166,6 +167,7 @@ class UpdateManager:
         Return true if an update is available."""
         # Skipping update check
         if cls.__triggerUpdateCheck():
+            logger.debug("Running update check")
             return cls.__checkUpdate()
         return False
 
@@ -173,30 +175,52 @@ class UpdateManager:
     def __triggerUpdateCheck(cls):
         """Check if an update check must be triggered.
         Return true to check for new update"""
-        # Check for update with 10% chance
-        if random.randrange(100) >= 10:
+        if (ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE).is_file():
+            with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'r') as metafile:
+                lastcheck = datetime.strptime(metafile.read().strip(), cls.__TIME_FORMAT)
+        else:
             return True
-        return False
+        logger.debug(f"Last update check: {lastcheck.strftime(cls.__TIME_FORMAT)}")
+        now = datetime.now()
+        if lastcheck > now:
+            logger.debug("Incoherent last check date detected. Updating metafile.")
+            return True
+        # Check for a new update after at least 15 days
+        time_delta = timedelta(days=15)
+        return (lastcheck + time_delta) < now
 
     @classmethod
     def __checkUpdate(cls):
+        isUpToDate = True
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
                 # Dev version have a letter in the version code and must check updates via git
+                logger.debug("Checking update using: dev mode")
                 module = ExegolModules().getWrapperGit(fast_load=True)
                 if module.isAvailable:
                     isUpToDate = module.isUpToDate()
                 else:
                     # If Exegol have not been installed from git clone. Auto-check update in this case is only available from mates release
-                    return False
+                    logger.verbose("Auto-update checking is not available in the current context")
             else:
                 # If there is no letter, it's a stable release, and we can compare faster with the latest git tag
-                remote_version = WebUtils.getLatestWrapperRelease()
-                isUpToDate = cls.__compareVersion(remote_version)
+                logger.debug("Checking update using: stable mode")
+                try:
+                    remote_version = WebUtils.getLatestWrapperRelease()
+                    isUpToDate = cls.__compareVersion(remote_version)
+                except CancelOperation:
+                    # No internet, postpone update check
+                    pass
 
         if not isUpToDate:
             cls.__tagUpdateAvailable()
+        cls.__updateLastCheckFile()
         return not isUpToDate
+
+    @classmethod
+    def __updateLastCheckFile(cls):
+        with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'w') as metafile:
+            metafile.write(date.today().strftime(cls.__TIME_FORMAT))
 
     @classmethod
     def __compareVersion(cls, version) -> bool:
