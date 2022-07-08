@@ -389,7 +389,8 @@ class ExegolTUI:
                       f"{'[bright_black](/opt/resources)[/bright_black]' if container.config.isExegolResourcesEnable() else ''}")
         recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()) +
                       f"{'[bright_black](/my-resources)[/bright_black]' if container.config.isSharedResourcesEnable() else ''}")
-        recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
+        if "N/A" not in container.config.getVpnName():
+            recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         if container.config.getPrivileged() is True:
             recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]')
         else:

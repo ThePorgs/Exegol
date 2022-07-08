@@ -5,6 +5,7 @@ from typing import Dict, List, Union
 import yaml
 import yaml.parser
 
+from exegol.console.ConsoleFormat import boolFormatter
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
@@ -15,22 +16,23 @@ class UserConfig(metaclass=MetaSingleton):
 
     def __init__(self):
         # Config file options
-        self.__exegol_path: Path = Path().home() / ".exegol"
-        self.__config_file_path: Path = self.__exegol_path / "config.yml"
+        self.__config_file_path: Path = ConstantConfig.exegol_config_path / "config.yml"
         self.__config_upgrade: bool = False
 
         # Defaults User config
-        self.private_volume_path: Path = self.__exegol_path / "workspaces"
-        self.shared_resources_path: str = str(self.__exegol_path / "my-resources")
+        self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
+        self.shared_resources_path: str = str(ConstantConfig.exegol_config_path / "my-resources")
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
+        self.auto_check_updates: bool = True
+        self.auto_remove_images: bool = True
 
         # process
         self.__load_file()
 
     def __load_file(self):
-        if not self.__exegol_path.is_dir():
-            logger.verbose(f"Creating exegol home folder: {self.__exegol_path}")
-            os.mkdir(self.__exegol_path)
+        if not ConstantConfig.exegol_config_path.is_dir():
+            logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
+            os.mkdir(ConstantConfig.exegol_config_path)
         if not self.__config_file_path.is_file():
             logger.verbose(f"Creating default exegol config: {self.__config_file_path}")
             self.__create_config_file()
@@ -53,22 +55,29 @@ volumes:
     
     # When containers do not have an explicitly declared workspace, a dedicated folder will be created at this location to share the workspace with the host but also to save the data after deleting the container
     private_workspace_path: {self.private_volume_path}
+
+config:
+    # Automatically check for wrapper update some time to time (only for git based installation)
+    auto_check_update: {self.auto_check_updates}
+    
+    # Automatically remove outdated image when they are no longer used
+    auto_remove_image: {self.auto_remove_images}
 """
         # TODO handle default image selection
         # TODO handle default start container
         # TODO add custom build profiles path
-        # TODO add auto_remove flag True/False to remove outdated images
         with open(self.__config_file_path, 'w') as file:
             file.write(config)
 
-    def __default_resource_location(self, folder_name: str) -> Path:
+    @staticmethod
+    def __default_resource_location(folder_name: str) -> Path:
         local_src = ConstantConfig.src_root_path_obj / folder_name
         if local_src.is_dir():
             # If exegol is clone from github, exegol-resources submodule is accessible from root src
             return local_src
         else:
             # Default path for pip installation
-            return self.__exegol_path / folder_name
+            return ConstantConfig.exegol_config_path / folder_name
 
     def __load_config_path(self, data: dict, config_name: str, default: Union[Path, str]) -> Union[Path, str]:
         try:
@@ -82,6 +91,18 @@ volumes:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
+    def __load_config(self, data: dict, config_name: str, default: bool) -> bool:
+        try:
+            result = data.get(config_name)
+            if result is None:
+                logger.debug(f"Config {config_name} has not been found in exegol config file. Config file will be upgrade.")
+                self.__config_upgrade = True
+                return default
+            return result
+        except TypeError:
+            logger.error(f"Error while loading {config_name}! Using default config.")
+        return default
+
     def __parse_config(self):
         with open(self.__config_file_path, 'r') as file:
             try:
@@ -89,8 +110,9 @@ volumes:
             except yaml.parser.ParserError:
                 data = {}
                 logger.error("Error while parsing exegol config file ! Check for syntax error.")
-        # bug: logger verbosity not set at this time
+        # TODO bug: logger verbosity not set at this time
         logger.debug(data)
+        # Volume section
         volumes_data = data.get("volumes", {})
         # Catch existing but empty section
         if volumes_data is None:
@@ -99,12 +121,22 @@ volumes:
         self.private_volume_path = self.__load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self.__load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
 
+        # Config section
+        config_data = data.get("config", {})
+        # Catch existing but empty section
+        if config_data is None:
+            config_data = {}
+        self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
+        self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
+
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
             f"Private workspace: [magenta]{self.private_volume_path}[/magenta]",
             f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
-            f"My resources: [magenta]{self.shared_resources_path}[/magenta]"
+            f"My resources: [magenta]{self.shared_resources_path}[/magenta]",
+            f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
+            f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

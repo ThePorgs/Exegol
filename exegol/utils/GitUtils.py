@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional, List
 
+from git.exc import GitCommandError
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger, console
 
@@ -35,7 +36,7 @@ class GitUtils:
                 raise ReferenceError
         except ReferenceError:
             if self.__git_name == "wrapper":
-                logger.warning("Exegol has not been installed via git clone. Skipping wrapper auto-update operation.")
+                logger.warning("Exegol has [red]not[/red] been installed via git clone. Skipping wrapper auto-update operation.")
                 if ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
@@ -163,7 +164,11 @@ class GitUtils:
         # Get last local commit
         current_commit = self.__gitRepo.heads[branch].commit
         # Get last remote commit
-        fetch_result = self.__gitRemote.fetch()
+        try:
+            fetch_result = self.__gitRemote.fetch()
+        except GitCommandError:
+            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
+            return True
         try:
             self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
         except IndexError:

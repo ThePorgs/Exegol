@@ -64,7 +64,12 @@ Below are some bullet points to better understand how Exegol works
 > Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
 
 ## Pre-requisites
-You need git, python3 and docker, and at least 20GB of free storage.
+You need :
+- git
+- python3 
+- docker (running and accessible from user context. Tips for running docker without sudo: `sudo usermod -aG docker $(id -u -n)`)
+- and at least 20GB of free storage
+
 You also need python libraries listed in [requirements.txt](./requirements.txt) (installed automatically or manually depending on the installation method you choose).
 
 ## Installation using pip
@@ -198,6 +203,7 @@ Below is an example of a GUI app running in an Exegol container.
   | neo4j database | neo4j | exegol4thewin |
   | bettercap ui | bettercap | exegol4thewin |
   | trilium | trilium | exegol4thewin |
+  | empire | empireadmin | exegol4thewin |
   | wso-webshell (PHP) | | exegol4thewin |
 </details>
 

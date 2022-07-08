@@ -15,14 +15,20 @@ class ExegolModules(metaclass=MetaSingleton):
 
     def __init__(self):
         """Init project git modules to None until their first call"""
+        # Git modules
         self.__git_wrapper: Optional[GitUtils] = None
         self.__git_source: Optional[GitUtils] = None
         self.__git_resources: Optional[GitUtils] = None
 
+        # Git loading mode
+        self.__wrapper_fast_loaded = False
+
     def getWrapperGit(self, fast_load: bool = False) -> GitUtils:
         """GitUtils local singleton getter.
         Set fast_load to True to disable submodule init/update."""
-        if self.__git_wrapper is None:
+        # If the module have been previously fast loaded and must be reuse later in standard mode, it can be recreated
+        if self.__git_wrapper is None or (not fast_load and self.__wrapper_fast_loaded):
+            self.__wrapper_fast_loaded = fast_load
             self.__git_wrapper = GitUtils(skip_submodule_update=fast_load)
         return self.__git_wrapper
 

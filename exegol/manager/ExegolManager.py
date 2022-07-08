@@ -88,7 +88,7 @@ class ExegolManager:
         if ParametersManager().tmp:
             container = cls.__createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:
-                container.exec(command=ParametersManager().exec, as_daemon=False)
+                container.exec(command=ParametersManager().exec, as_daemon=False, is_tmp=True)
                 container.stop(timeout=2)
             else:
                 logger.success(f"Command executed as entrypoint of the container {container.hostname}")
@@ -167,7 +167,7 @@ class ExegolManager:
         for c in containers:
             c.remove()
             # If the image used is deprecated, it must be deleted after the removal of its container
-            if c.image.isLocked():
+            if c.image.isLocked() and UserConfig().auto_remove_images:
                 DockerUtils.removeImage(c.image, upgrade_mode=True)
 
     @classmethod
@@ -178,13 +178,21 @@ class ExegolManager:
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
+        logger.debug(f"Arch: {EnvInfo.arch}")
         if EnvInfo.isWindowsHost():
             logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
-        logger.empty_line(log_level=logging.DEBUG)
+        if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates:
+            UpdateManager.checkForWrapperUpdate()
+        if UpdateManager.isUpdateTag():
+            logger.empty_line()
+            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True):
+                UpdateManager.updateWrapper()
+        else:
+            logger.empty_line(log_level=logging.DEBUG)
 
     @classmethod
     def __loadOrInstallImage(cls,

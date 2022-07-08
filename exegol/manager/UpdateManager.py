@@ -1,3 +1,6 @@
+import os
+import re
+from datetime import datetime, timedelta, date
 from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
@@ -12,10 +15,14 @@ from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
+from exegol.utils.WebUtils import WebUtils
 
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
+    __UPDATE_TAG_FILE = ".update.meta"
+    __LAST_CHECK_FILE = ".lastcheck.meta"
+    __TIME_FORMAT = "%d/%m/%Y"
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -84,7 +91,10 @@ class UpdateManager:
     @classmethod
     def updateWrapper(cls) -> bool:
         """Update wrapper source code from git"""
-        return cls.__updateGit(ExegolModules().getWrapperGit())
+        result = cls.__updateGit(ExegolModules().getWrapperGit())
+        if result:
+            cls.__untagUpdateAvailable()
+        return result
 
     @classmethod
     def updateImageSource(cls) -> bool:
@@ -152,6 +162,116 @@ class UpdateManager:
         return True
 
     @classmethod
+    def checkForWrapperUpdate(cls) -> bool:
+        """Check if there is an exegol wrapper update available.
+        Return true if an update is available."""
+        # Skipping update check
+        if cls.__triggerUpdateCheck():
+            logger.debug("Running update check")
+            return cls.__checkUpdate()
+        return False
+
+    @classmethod
+    def __triggerUpdateCheck(cls):
+        """Check if an update check must be triggered.
+        Return true to check for new update"""
+        if (ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE).is_file():
+            with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'r') as metafile:
+                lastcheck = datetime.strptime(metafile.read().strip(), cls.__TIME_FORMAT)
+        else:
+            return True
+        logger.debug(f"Last update check: {lastcheck.strftime(cls.__TIME_FORMAT)}")
+        now = datetime.now()
+        if lastcheck > now:
+            logger.debug("Incoherent last check date detected. Updating metafile.")
+            return True
+        # Check for a new update after at least 15 days
+        time_delta = timedelta(days=15)
+        return (lastcheck + time_delta) < now
+
+    @classmethod
+    def __checkUpdate(cls):
+        isUpToDate = True
+        with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
+            if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+                # Dev version have a letter in the version code and must check updates via git
+                logger.debug("Checking update using: dev mode")
+                module = ExegolModules().getWrapperGit(fast_load=True)
+                if module.isAvailable:
+                    isUpToDate = module.isUpToDate()
+                else:
+                    # If Exegol have not been installed from git clone. Auto-check update in this case is only available from mates release
+                    logger.verbose("Auto-update checking is not available in the current context")
+            else:
+                # If there is no letter, it's a stable release, and we can compare faster with the latest git tag
+                logger.debug("Checking update using: stable mode")
+                try:
+                    remote_version = WebUtils.getLatestWrapperRelease()
+                    isUpToDate = cls.__compareVersion(remote_version)
+                except CancelOperation:
+                    # No internet, postpone update check
+                    pass
+
+        if not isUpToDate:
+            cls.__tagUpdateAvailable()
+        cls.__updateLastCheckFile()
+        return not isUpToDate
+
+    @classmethod
+    def __updateLastCheckFile(cls):
+        with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'w') as metafile:
+            metafile.write(date.today().strftime(cls.__TIME_FORMAT))
+
+    @classmethod
+    def __compareVersion(cls, version) -> bool:
+        isUpToDate = True
+        try:
+            for i in range(len(version.split('.'))):
+                remote = int(version.split('.')[i])
+                local = int(ConstantConfig.version.split('.')[i])
+                if remote > local:
+                    isUpToDate = False
+                    break
+        except ValueError:
+            logger.warning(f'Unable to parse Exegol version : {version} / {ConstantConfig.version}')
+        return isUpToDate
+
+    @classmethod
+    def __tagUpdateAvailable(cls):
+        """Create the 'update available' cache file."""
+        if not ConstantConfig.exegol_config_path.is_dir():
+            logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
+            os.mkdir(ConstantConfig.exegol_config_path)
+        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
+        if not tag_file.is_file():
+            with open(tag_file, 'w') as lockfile:
+                lockfile.write(ConstantConfig.version)
+
+    @classmethod
+    def isUpdateTag(cls) -> bool:
+        """Check if the cache file is present to announce an available update of the exegol wrapper."""
+        if (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file():
+            # Fetch the previously locked version
+            with open(ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE, 'r') as lockfile:
+                locked_version = lockfile.read()
+            # If the current version is the same, no external update had occurred
+            if locked_version == ConstantConfig.version:
+                return True
+            else:
+                # If the version changed, exegol have been updated externally (via pip for example)
+                cls.__untagUpdateAvailable()
+                return False
+        else:
+            return False
+
+    @classmethod
+    def __untagUpdateAvailable(cls):
+        """Remove the 'update available' cache file."""
+        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
+        if tag_file.is_file():
+            os.remove(tag_file)
+
+    @classmethod
     def __buildSource(cls, build_name: Optional[str] = None) -> str:
         """build user process :
         Ask user is he want to update the git source (to get new& updated build profiles),
@@ -216,6 +336,7 @@ class UpdateManager:
 
     @classmethod
     def listGitStatus(cls) -> Sequence[Dict[str, str]]:
+        """Get status of every git modules"""
         result = []
         gits = [ExegolModules().getWrapperGit(fast_load=True),
                 ExegolModules().getSourceGit(fast_load=True),

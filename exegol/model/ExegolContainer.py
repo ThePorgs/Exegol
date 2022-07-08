@@ -120,8 +120,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Sequence[str], as_daemon: bool = True, quiet: bool = False):
-        """Execute a command / process on the docker container"""
+    def exec(self, command: Sequence[str], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
+        """Execute a command / process on the docker container.
+        Set as_daemon to not follow the command stream and detach the execution
+        Set quiet to disable logs message
+        Set is_tmp if the container will automatically be removed after execution"""
         if not self.isRunning():
             self.start()
         if not quiet:
@@ -141,9 +144,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if not quiet:
                     logger.success("End of the command")
             except KeyboardInterrupt:
-                if not quiet:
+                if not quiet and not is_tmp:
                     logger.info("Detaching process logging")
-                    logger.warning("Exiting this command does NOT stop the process in the container")
+                    logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
 
     @staticmethod
     def formatShellCommand(command: Sequence[str], quiet: bool = False):
@@ -154,7 +157,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Command received: {str_cmd}")
         cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'zsh -c "source /opt/.zsh_aliases; eval $(echo {cmd_b64} | base64 -d)"'
+        # TODO remove grep -v (time for user to update exegol image)
+        cmd = f'zsh -c "source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
         logger.debug(f"Formatting zsh command: {cmd}")
         return cmd
 

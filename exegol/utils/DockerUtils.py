@@ -20,9 +20,12 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.UserConfig import UserConfig
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
+from exegol.utils.WebUtils import WebUtils
+
 
 class DockerUtils:
     """Utility class between exegol and the Docker SDK"""
@@ -105,6 +108,7 @@ class DockerUtils:
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
+                                                    extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),
                                                     environment=model.config.getEnvs(),
                                                     network_mode=model.config.getNetworkMode(),
@@ -232,10 +236,20 @@ class DockerUtils:
         """Get an ExegolImage from tag name."""
         # Fetch every images available
         images = cls.listImages()
+        match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
             if i.getName() == tag:
-                return i
+                # If there is a locked image keep it as default
+                if i.isLocked():
+                    match = i
+                else:
+                    # Return the first non-outdated image
+                    return i
+        # If there is any match without lock (outdated) status, return the last outdated image found.
+        if match is not None:
+            return match
+        # If there is no match at all, raise ObjectNotFound to handle the error
         raise ObjectNotFound
 
     @classmethod
@@ -291,31 +305,25 @@ class DockerUtils:
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
         remote_results = []
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags"
+        # Define max number of tags to download from dockerhub (in order to limit download time and discard historical versions)
+        page_size = 20
+        page_max = 2
+        current_page = 0
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
         # Handle multi-page tags from registry
         with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:
-                remote_images_request = None
+                if current_page == page_max:
+                    logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
+                    if not logger.isEnabledFor(ExeLog.VERBOSE):
+                        break
+                current_page += 1
                 logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
-                try:
-                    remote_images_request = requests.get(
-                        url=url,
-                        timeout=(5, 10), verify=ParametersManager().verify)
-                except requests.exceptions.HTTPError as e:
-                    logger.error(f"Response error: {e.response.text}")
-                except requests.exceptions.ConnectionError as err:
-                    logger.error(f"Error: {err}")
-                    logger.error("Connection Error: you probably have no internet.")
-                except requests.exceptions.ReadTimeout:
-                    logger.error(
-                        "[green]Dockerhub[/green] request has [red]timed out[/red]. Do you have a slow internet connection, or is the remote service slow/down? Retry later.")
-                except requests.exceptions.RequestException as err:
-                    logger.error(f"Unknown connection error: {err}")
-                if remote_images_request is None:
+                docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
+                if docker_repo_response is None:
                     logger.warning("Skipping online queries.")
                     return []
-                docker_repo_response = json.loads(remote_images_request.text)
                 for docker_image in docker_repo_response["results"]:
                     exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
                                                digest=docker_image["images"][0]["digest"],
@@ -352,7 +360,7 @@ class DockerUtils:
                                           decode=True))
                 logger.success(f"Image successfully updated")
                 # Remove old image
-                if not install_mode and image.isInstall():
+                if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
                     cls.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:

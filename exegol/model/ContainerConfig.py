@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from pathlib import Path, PurePath
@@ -379,6 +380,7 @@ class ContainerConfig:
         self.__addCapability("NET_ADMIN")
         if not self.__network_host:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
+            # TODO test with ipv6 disable with kernel modules
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
@@ -419,18 +421,20 @@ class ContainerConfig:
         logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
         self.__vpn_path = vpn_path
         if vpn_path.is_file():
+            self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
             self.addVolume(str(vpn_path.absolute()), "/vpn/config/client.ovpn", read_only=True)
             ovpn_parameters.append("--config /vpn/config/client.ovpn")
         else:
             # Configure VPN with directory
-            logger.verbose(
-                "Folder detected for VPN configuration. only the first *.ovpn file will be automatically launched when the container starts.")
+            logger.verbose("Folder detected for VPN configuration. "
+                           "Only the first *.ovpn file will be automatically launched when the container starts.")
             self.addVolume(str(vpn_path.absolute()), "/vpn/config", read_only=True)
             vpn_filename = None
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
                 logger.info(f"Using VPN config: {file}")
+                self.__checkVPNConfigDNS(file)
                 # Get filename only to match the future container path
                 vpn_filename = file.name
                 ovpn_parameters.append(f"--config /vpn/config/{vpn_filename}")
@@ -441,6 +445,24 @@ class ContainerConfig:
                 return None
 
         return ' '.join(ovpn_parameters)
+
+    @staticmethod
+    def __checkVPNConfigDNS(vpn_path: Union[str, Path]):
+        logger.verbose("Checking OpenVPN config file")
+        configs = ["script-security 2", "up /etc/openvpn/update-resolv-conf", "down /etc/openvpn/update-resolv-conf"]
+        with open(vpn_path, 'r') as vpn_file:
+            for line in vpn_file:
+                line = line.strip()
+                if line in configs:
+                    configs.remove(line)
+        if len(configs) > 0:
+            logger.warning("Some OpenVPN config are [red]missing[/red] to support VPN [orange3]dynamic DNS servers[/orange3]! Please add the following line to your configuration file:")
+            logger.empty_line()
+            logger.raw(os.linesep.join(configs), level=logging.WARNING)
+            logger.empty_line()
+            logger.empty_line()
+            logger.info("Press enter to continue or Ctrl+C to cancel the operation")
+            input()
 
     def __disableVPN(self) -> bool:
         """Remove a VPN profile for container startup (Only for interactive config)"""
@@ -821,7 +843,10 @@ class ContainerConfig:
             result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
         if verbose or not self.__shared_resources:
             result += f"{getColor(self.__shared_resources)[0]}My resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
-        return result.strip()
+        result = result.strip()
+        if not result:
+            return "[i][bright_black]Default configuration[/bright_black][/i]"
+        return result
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
