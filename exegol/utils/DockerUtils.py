@@ -415,13 +415,14 @@ class DockerUtils:
                     logger.error(f"The '{image.getName()}' image cannot be deleted yet, "
                                  "all containers using this old image must be deleted first.")
                 else:
-                    logger.error("This image cannot be deleted because it is currently used by a container. Aborting.")
+                    logger.error(f"The '{image.getName()}' image cannot be deleted because "
+                                 f"it is currently used by a container. Aborting.")
             elif err.status_code == 404:
-                logger.error("This image doesn't exist locally. Aborting.")
+                logger.error(f"This image doesn't exist locally {image.getLocalId()} ({image.getFullName()}). Aborting.")
             else:
                 logger.critical(f"An error occurred while removing this image : {err}")
         except ReadTimeout:
-            logger.error("The deletion of the image has timeout, the deletion may be incomplete.")
+            logger.error(f"The deletion of the image has timeout, the deletion may be incomplete.")
         return False
 
     @classmethod
