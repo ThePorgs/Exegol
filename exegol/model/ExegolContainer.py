@@ -3,7 +3,7 @@ import os
 import shutil
 from typing import Optional, Dict, Sequence
 
-from docker.errors import NotFound
+from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
 
 from exegol.console.ExegolPrompt import Confirm
@@ -25,10 +25,20 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__id: str = docker_container.id
         self.__xhost_applied = False
         if model is None:
+            image_name = ""
+            try:
+                # Try to find the attached docker image
+                docker_image = docker_container.image
+            except ImageNotFound:
+                # If it is not found, the user has probably forcibly deleted it manually
+                logger.warning(f"Some images were forcibly removed by docker when they were used by existing containers!")
+                logger.error(f"The '{docker_container.name}' containers might not work properly anymore and should also be deleted and recreated with a new image.")
+                docker_image = None
+                image_name = "[red]BROKEN[/red]"
             # Create Exegol container from an existing docker container
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
-                             image=ExegolImage(docker_image=docker_container.image))
+                             image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
             self.__new_container = False
         else:
