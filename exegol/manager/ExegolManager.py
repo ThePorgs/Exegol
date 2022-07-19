@@ -413,6 +413,8 @@ class ExegolManager:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
+        if ParametersManager().log:
+            config.enableShellLogging()
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(

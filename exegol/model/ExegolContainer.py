@@ -112,7 +112,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         options = ""
         if len(envs) > 0:
             options += f" -e {' -e '.join(envs)}"
-        cmd = f"docker exec{options} -ti {self.getFullId()} {ParametersManager().shell}"
+        cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
         os.system(cmd)
         # Docker SDK doesn't support (yet) stdin properly

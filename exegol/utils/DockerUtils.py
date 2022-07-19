@@ -104,13 +104,14 @@ class DockerUtils:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
-                                                    command=model.config.getContainerCommand(),
+                                                    command=model.config.getEntrypointCommand(),
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
                                                     extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),
                                                     environment=model.config.getEnvs(),
+                                                    labels=model.config.getLabels(),
                                                     network_mode=model.config.getNetworkMode(),
                                                     ports=model.config.getPorts(),
                                                     privileged=model.config.getPrivileged(),

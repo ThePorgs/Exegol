@@ -160,6 +160,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                default=None,
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
+        self.log = Option("-l", "--log",
+                          dest="log",
+                          action="store_true",
+                          default=False,
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disable[/red])")
 
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
@@ -172,6 +177,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
+                                  {"arg": self.log, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
