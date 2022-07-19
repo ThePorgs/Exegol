@@ -1,4 +1,6 @@
+import logging
 import re
+import stat
 import subprocess
 from pathlib import Path, PurePosixPath, PurePath
 from typing import Optional
@@ -48,3 +50,36 @@ def resolvStrPath(path: Optional[str]) -> str:
     if path is None:
         return ''
     return resolvPath(Path(path))
+
+
+def setGidPermission(root_folder: Path):
+    """Set the setgid permission bit to every recursive directory"""
+    logger.debug(f"Adding setgid permission recursively on directories from {root_folder}")
+    perm_alert = False
+    # Set permission to root directory
+    try:
+        root_folder.chmod(root_folder.stat().st_mode | stat.S_ISGID)
+    except PermissionError:
+        # Trigger the error only if the permission is not already set
+        if not root_folder.stat().st_mode & stat.S_ISGID:
+            logger.warning(f"The permission of this directory ({root_folder}) cannot be automatically changed.")
+            perm_alert = True
+    for sub_item in root_folder.rglob('*'):
+        # Find every subdirectory
+        if not sub_item.is_dir():
+            continue
+        # If the permission is already set, skip
+        if sub_item.stat().st_mode & stat.S_ISGID:
+            continue
+        # Set the permission (g+s) to every child directory
+        try:
+            sub_item.chmod(sub_item.stat().st_mode | stat.S_ISGID)
+        except PermissionError:
+            logger.warning(f"The permission of this directory ({sub_item}) cannot be automatically changed.")
+            perm_alert = True
+    if perm_alert:
+        logger.warning(f"In order to share files between your host and exegol (without changing the permission), you can run manually this command from your host:")
+        logger.empty_line()
+        logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+s {{}} \;", level=logging.WARNING)
+        logger.empty_line()
+        logger.empty_line()

@@ -536,14 +536,14 @@ class ContainerConfig:
                 # Volume is already prepared
                 return
         if self.__workspace_custom_path is not None:
-            self.addVolume(self.__workspace_custom_path, '/workspace')
+            self.addVolume(self.__workspace_custom_path, '/workspace', set_sticky_group=True)
         elif self.__disable_workspace:
             # Skip default volume workspace if disabled
             return
         else:
             # Add shared-data-volumes private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
-            self.addVolume(volume_path, '/workspace')
+            self.addVolume(volume_path, '/workspace', set_sticky_group=True)
 
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
@@ -680,15 +680,17 @@ class ContainerConfig:
                   container_path: str,
                   must_exist: bool = False,
                   read_only: bool = False,
+                  set_sticky_group: bool = False,
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration.
         When the host path does not exist (neither file nor folder):
         if must_exist is set, an CancelOperation exception will be thrown.
-        Otherwise, a folder will attempt to be created at the specified path"""
+        Otherwise, a folder will attempt to be created at the specified path.
+        if set_sticky_group is set (on a Linux host), the permission setgid will be added to every folder on the volume."""
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
+            path = Path(host_path)
             try:
-                path = Path(host_path)
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
@@ -700,6 +702,8 @@ class ContainerConfig:
             except FileExistsError:
                 # The volume targets a file that already exists on the file system
                 pass
+            if set_sticky_group and not EnvInfo.isWindowsHost() and path.is_dir():
+                FsUtils.setGidPermission(path)
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
