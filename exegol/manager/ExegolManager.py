@@ -193,6 +193,13 @@ class ExegolManager:
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
+        cls.print_sponsors()
+
+    @classmethod
+    def print_sponsors(cls):
+        """Show exegol sponsors"""
+        logger.success("""Exegol thanks [blue]Capgemini[/blue] for supporting the project [bright_black](dev contributors)[/bright_black] :pray:""")
+        logger.success("""Want to join us? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
 
     @classmethod
     def __loadOrInstallImage(cls,
