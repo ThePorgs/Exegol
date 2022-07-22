@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List, Dict, Any
 
 from docker.models.containers import Container
 from docker.models.images import Image
@@ -14,9 +14,8 @@ class ExegolImage(SelectableInterface):
 
     def __init__(self,
                  name: str = "NONAME",
-                 digest: Optional[str] = None,
+                 dockerhub_data: Optional[Dict[str, Any]] = None,
                  image_id: Optional[str] = None,
-                 size: int = 0,
                  docker_image: Optional[Image] = None,
                  isUpToDate: bool = False):
         """Docker image default value"""
@@ -37,7 +36,7 @@ class ExegolImage(SelectableInterface):
         self.__version_label_mode: bool = False
         self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
-        self.__dl_size: str = "[bright_black]N/A[/bright_black]" if size == 0 else self.__processSize(size)
+        self.__dl_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # Remote image ID
@@ -45,7 +44,7 @@ class ExegolImage(SelectableInterface):
         # Local docker image ID
         self.__image_id: str = "[bright_black]Not installed[/bright_black]"
         # Status
-        self.__is_remote: bool = size > 0
+        self.__is_remote: bool = False
         self.__is_install: bool = False
         self.__is_update: bool = isUpToDate  # Default is false except if the image has been updated in the current runtime context
         self.__is_discontinued: bool = False
@@ -56,7 +55,11 @@ class ExegolImage(SelectableInterface):
         if docker_image is not None:
             self.__initFromDockerImage()
         else:
-            self.__setDigest(digest)
+            if dockerhub_data:
+                self.__is_remote = True
+                self.__setDigest(dockerhub_data.get("digest"))
+                self.__setArch(dockerhub_data.get("architecture"))
+                self.__dl_size = self.__processSize(dockerhub_data.get("size"))
             self.__setImageId(image_id)
         logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 

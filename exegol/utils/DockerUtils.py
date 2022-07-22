@@ -322,14 +322,16 @@ class DockerUtils:
                 logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
                 docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
+                error_message = docker_repo_response.get("message")
+                if error_message:
+                    logger.error(f"Dockerhub send an error message: {error_message}")
                 if docker_repo_response is None:
                     logger.warning("Skipping online queries.")
                     return []
-                for docker_image in docker_repo_response["results"]:
-                    exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
-                                               digest=docker_image["images"][0]["digest"],
-                                               size=docker_image.get("full_size"))
-                    remote_results.append(exegol_image)
+                for docker_images in docker_repo_response.get("results", []):
+                    for docker_image in docker_images.get("images", []):
+                        exegol_image = ExegolImage(name=docker_images.get('name', 'NONAME'), dockerhub_data=docker_image)
+                        remote_results.append(exegol_image)
                 url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results
