@@ -4,9 +4,11 @@ from typing import Optional, List, Dict, Any
 from docker.models.containers import Container
 from docker.models.images import Image
 
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.ExeLog import logger
+from exegol.utils.EnvInfo import EnvInfo
+from exegol.utils.ExeLog import logger, ExeLog
 
 
 class ExegolImage(SelectableInterface):
@@ -23,7 +25,7 @@ class ExegolImage(SelectableInterface):
         self.__image: Image = docker_image
         self.__name: str = name
         self.__alt_name: str = ''
-        self.__arch = "Unknown"
+        self.__arch = ""
         version_parsed = self.__tagNameParsing(name)
         self.__version_specific: bool = bool(version_parsed)
         # Latest version available of the current image (or current version if version specific)
@@ -255,6 +257,13 @@ class ExegolImage(SelectableInterface):
                     except ValueError:
                         # already been removed
                         pass
+                elif not version_specific.isInstall() and version_specific.getArch() != ParametersManager().arch:
+                    try:
+                        images.remove(version_specific)
+                    except ValueError:
+                        pass
+            if not main_image.isInstall() and main_image.getArch() != ParametersManager().arch:
+                images.remove(main_image)
 
     @classmethod
     def mergeImages(cls, remote_images: List['ExegolImage'], local_images: List[Image]) -> List['ExegolImage']:
@@ -295,8 +304,10 @@ class ExegolImage(SelectableInterface):
                     if tmp_name == ConstantConfig.IMAGE_NAME and not version_parsed:
                         names.append(tmp_name)
                         tags.append(tmp_tag)
+            # Image Arch
+            arch = local_img.attrs["Architecture"]
             # Temporary data structure
-            local_data[digest] = {"tags": tags, "image": local_img, "match": False}
+            local_data[digest] = {"tags": tags, "arch": arch, "image": local_img, "match": False}
 
         for current_image in remote_images:
             for digest, data in local_data.items():
@@ -309,7 +320,7 @@ class ExegolImage(SelectableInterface):
                 # if latest mode, must match with tag (to find already installed outdated version)
                 for tag in data.get('tags', []):
                     # Check if the tag is matching and if the image is not already up-to-date (with version specific digest matching)
-                    if current_image.getName() == tag and not current_image.isUpToDate():
+                    if current_image.getName() == tag and current_image.getArch() == data.get("arch", "") and not current_image.isUpToDate():
                         current_image.setDockerObject(data["image"])  # Handle latest image matching (up-to-date / outdated)
                         data["match"] = True
             # If remote image don't find any match, fallback to default => not installed
@@ -503,7 +514,13 @@ class ExegolImage(SelectableInterface):
 
     def getDisplayName(self) -> str:
         """Image's display name getter"""
-        return self.__alt_name if self.__alt_name else self.__name
+        result = self.__alt_name if self.__alt_name else self.__name
+        default_arch = ParametersManager().arch
+        if default_arch is None:
+            default_arch = EnvInfo.arch
+        if self.getArch() != default_arch or logger.isEnabledFor(ExeLog.VERBOSE):
+            result += f" [bright_black]({self.getArch()})[/bright_black]"
+        return result
 
     def getArch(self) -> str:
         """Image's arch getter"""

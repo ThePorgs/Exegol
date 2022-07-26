@@ -19,7 +19,7 @@ class ConstantConfig:
     pip_installed: bool = src_root_path_obj.name == "site-packages"
     # Dockerhub Exegol images repository
     DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
-    IMAGE_NAME: str = "nwodtuhs/exegol"
+    IMAGE_NAME: str = "nwodtuhs/exegol-dev-ghactions"
     GITHUB_REPO: str = "ShutdownRepo/Exegol"
     # Docker volume names (no docker volume used at this moment)
     # Resources repository

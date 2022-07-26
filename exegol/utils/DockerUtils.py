@@ -322,15 +322,34 @@ class DockerUtils:
                 logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
                 docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
-                error_message = docker_repo_response.get("message")
-                if error_message:
-                    logger.error(f"Dockerhub send an error message: {error_message}")
                 if docker_repo_response is None:
                     logger.warning("Skipping online queries.")
                     return []
+                error_message = docker_repo_response.get("message")
+                if error_message:
+                    logger.error(f"Dockerhub send an error message: {error_message}")
                 for docker_images in docker_repo_response.get("results", []):
+                    default = None
+                    preferred = None
+                    # Parse every images available under this name
                     for docker_image in docker_images.get("images", []):
                         exegol_image = ExegolImage(name=docker_images.get('name', 'NONAME'), dockerhub_data=docker_image)
+                        """
+                        # Select a preferred image when arch is matching
+                        default_arch = ParametersManager().arch
+                        if default_arch is None:
+                            default_arch = EnvInfo.arch
+                        if exegol_image.getArch() == default_arch:
+                            preferred = exegol_image
+                            break
+                        # Select a fallback default image
+                        if exegol_image.getArch() == "amd64" or default is None:
+                            default = exegol_image
+                    if preferred:
+                        remote_results.append(preferred)
+                    else:
+                        remote_results.append(default)
+                    """
                         remote_results.append(exegol_image)
                 url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
@@ -355,12 +374,14 @@ class DockerUtils:
         name = image.updateCheck()
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
+            logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
                     cls.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
                                           tag=name,
                                           stream=True,
-                                          decode=True))
+                                          decode=True,
+                                          platform=image.getArch()))
                 logger.success(f"Image successfully updated")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
@@ -382,7 +403,8 @@ class DockerUtils:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
-                                             tag=image.getLatestVersionName())
+                                             tag=image.getLatestVersionName(),
+                                             platform=image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
