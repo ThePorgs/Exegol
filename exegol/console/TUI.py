@@ -390,7 +390,7 @@ class ExegolTUI:
         recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()) +
                       f"{'[bright_black](/my-resources)[/bright_black]' if container.config.isSharedResourcesEnable() else ''}")
         recap.add_row("[bold blue]Shell logging[/bold blue]", boolFormatter(container.config.isShellLoggingEnable()) +
-                      f"{'[bright_black](/my-resources)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
+                      f"{'[bright_black](/workspace/logs)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
         if "N/A" not in container.config.getVpnName():
             recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         if container.config.getPrivileged() is True:

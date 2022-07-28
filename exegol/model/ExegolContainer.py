@@ -34,7 +34,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.warning(f"Some images were forcibly removed by docker when they were used by existing containers!")
                 logger.error(f"The '{docker_container.name}' containers might not work properly anymore and should also be deleted and recreated with a new image.")
                 docker_image = None
-                image_name = "[red]BROKEN[/red]"
+                image_name = "[red bold]BROKEN[/red bold]"
             # Create Exegol container from an existing docker container
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
