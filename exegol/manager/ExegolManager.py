@@ -199,7 +199,7 @@ class ExegolManager:
     def print_sponsors(cls):
         """Show exegol sponsors"""
         logger.success("""Exegol thanks [blue]Capgemini[/blue] for supporting the project [bright_black](dev contributors)[/bright_black] :pray:""")
-        logger.success("""Want to join us? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
+        logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
 
     @classmethod
     def __loadOrInstallImage(cls,
