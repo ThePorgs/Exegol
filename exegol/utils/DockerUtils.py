@@ -310,7 +310,7 @@ class DockerUtils:
         page_size = 20
         page_max = 2
         current_page = 0
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
         # Handle multi-page tags from registry
         with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:

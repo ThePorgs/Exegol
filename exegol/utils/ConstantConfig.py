@@ -18,7 +18,8 @@ class ConstantConfig:
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"
     # Dockerhub Exegol images repository
-    DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
+    DOCKER_HUB: str = "hub.docker.com"  # Don't handle docker login operations
+    DOCKER_REGISTRY: str = "registry-1.docker.io"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol-dev-ghactions"
     GITHUB_REPO: str = "ShutdownRepo/Exegol"
     # Docker volume names (no docker volume used at this moment)
