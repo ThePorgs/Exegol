@@ -54,6 +54,7 @@ def resolvStrPath(path: Optional[str]) -> str:
 
 def setGidPermission(root_folder: Path):
     """Set the setgid permission bit to every recursive directory"""
+    logger.verbose(f"Updating the permissions of {root_folder} (and sub-folders) to allow file sharing between the container and the host user")
     logger.debug(f"Adding setgid permission recursively on directories from {root_folder}")
     perm_alert = False
     # Set permission to root directory

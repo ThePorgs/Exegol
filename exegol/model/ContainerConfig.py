@@ -690,11 +690,15 @@ class ContainerConfig:
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
+            # Choose to update fs directory perms if available and depending on user choice
+            execute_update_fs = set_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms)
             try:
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
+                        # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
+                        execute_update_fs = set_sticky_group
                         os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
@@ -702,8 +706,16 @@ class ContainerConfig:
             except FileExistsError:
                 # The volume targets a file that already exists on the file system
                 pass
-            if set_sticky_group and not EnvInfo.isWindowsHost() and path.is_dir():
-                FsUtils.setGidPermission(path)
+            # Update FS don't work on Windows and only for directory
+            if not EnvInfo.isWindowsHost() and path.is_dir():
+                if execute_update_fs:
+                    # TODO test on WSL and Mac
+                    # Apply perms update
+                    FsUtils.setGidPermission(path)
+                elif set_sticky_group:
+                    # If user choose not to update, print tips
+                    logger.warning(f"The file sharing permissions between the container and the host will not be applied automatically by Exegol. ("
+                                   f"{'Currently enabled by default according to the user config' if UserConfig().auto_update_workspace_fs else 'Use the --update-fs option to enable the feature'})")
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 

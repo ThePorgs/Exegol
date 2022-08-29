@@ -134,6 +134,12 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      dest="workspace_path",
                                      action="store",
                                      help="The specified host folder will be linked to the /workspace folder in the container")
+        self.update_fs_perms = Option("--update-fs", "-fs",
+                                      action="store_true",
+                                      default=False,
+                                      dest="update_fs_perms",
+                                      help=f"Modifies the permissions of folders and sub-folders shared in your workspace to access the files created within the container using your host user account. "
+                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[red]Disable[/red]'})")
         self.volumes = Option("-V", "--volume",
                               action="append",
                               default=[],
@@ -169,6 +175,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
 
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
+                                  {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
                                   {"arg": self.privileged, "required": False},
