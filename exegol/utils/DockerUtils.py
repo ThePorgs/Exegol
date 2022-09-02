@@ -334,7 +334,6 @@ class DockerUtils:
                     # Parse every images available under this name
                     for docker_image in docker_images.get("images", []):
                         exegol_image = ExegolImage(name=docker_images.get('name', 'NONAME'), dockerhub_data=docker_image)
-                        """
                         # Select a preferred image when arch is matching
                         default_arch = ParametersManager().arch
                         if default_arch is None:
@@ -349,8 +348,6 @@ class DockerUtils:
                         remote_results.append(preferred)
                     else:
                         remote_results.append(default)
-                    """
-                        remote_results.append(exegol_image)
                 url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results

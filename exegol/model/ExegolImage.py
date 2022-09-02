@@ -9,6 +9,7 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.WebUtils import WebUtils
 
 
 class ExegolImage(SelectableInterface):
@@ -59,7 +60,12 @@ class ExegolImage(SelectableInterface):
         else:
             if dockerhub_data:
                 self.__is_remote = True
-                self.__setDigest(dockerhub_data.get("digest"))
+                if self.__version_specific:
+                    self.__setDigest(dockerhub_data.get("digest"))
+                else:
+                    logger.debug(f"Fetch virtual digest for {self.__name}")
+                    # Fetching virtual multi-arch digestId is a single web request and time-consuming, reducing request to only latest tag
+                    self.__setDigest(WebUtils.getMetaDigestId(self.__name))
                 self.__setArch(dockerhub_data.get("architecture"))
                 self.__dl_size = self.__processSize(dockerhub_data.get("size"))
             self.__setImageId(image_id)
