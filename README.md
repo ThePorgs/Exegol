@@ -66,9 +66,14 @@ Below are some bullet points to better understand how Exegol works
 ## Pre-requisites
 You need :
 - git
-- python3 
-- docker (running and accessible from user context. Tips for running docker without sudo: `sudo usermod -aG docker $(id -u -n)`)
+- python3
+- docker
 - and at least 20GB of free storage
+
+> To run exegol from the user environment without `sudo`, the user must have privileged rights equivalent to root.
+> To grant yourself these rights, you can use the following command: `sudo usermod -aG docker $(id -u -n)`
+>
+> For more information: https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
 
 You also need python libraries listed in [requirements.txt](./requirements.txt) (installed automatically or manually depending on the installation method you choose).
 
