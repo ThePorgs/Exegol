@@ -186,9 +186,6 @@ class ExegolTUI:
         table.add_column("Status")
         # Load data into the table
         for image in data:
-            # ToBeRemoved images are only shown in verbose mode
-            if image.isLocked() and not verbose_mode:
-                continue
             if verbose_mode:
                 table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
                               image.getRealSize(), image.getBuildDate(), image.getStatus())

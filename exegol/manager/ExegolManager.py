@@ -380,7 +380,10 @@ class ExegolManager:
             object_list = DockerUtils.listContainers()
         elif object_type is ExegolImage:
             # List all images available
-            object_list = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+            object_list: List[ExegolImage] = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+            # ToBeRemoved images are only shown in verbose mode
+            if not logger.isEnabledFor(ExeLog.VERBOSE):
+                object_list = [i for i in object_list if not i.isLocked()]
         else:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception
@@ -389,8 +392,7 @@ class ExegolManager:
         if multiple:
             user_selection = ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
         else:
-            user_selection = ExegolTUI.selectFromTable(object_list, object_type=object_type,
-                                                       allow_None=not must_exist)
+            user_selection = ExegolTUI.selectFromTable(object_list, object_type=object_type, allow_None=not must_exist)
             # Check if the user has chosen an existing object
             if type(user_selection) is str:
                 # Otherwise, create a new object with the supplied name
