@@ -709,7 +709,7 @@ class ContainerConfig:
             # Update FS don't work on Windows and only for directory
             if not EnvInfo.isWindowsHost() and path.is_dir():
                 if execute_update_fs:
-                    # TODO test on WSL and Mac
+                    # TODO test on WSL
                     # Apply perms update
                     FsUtils.setGidPermission(path)
                 elif set_sticky_group:

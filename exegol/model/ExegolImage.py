@@ -97,7 +97,7 @@ class ExegolImage(SelectableInterface):
                     self.__profile_version = self.__image_version
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
-            self.__name = self.__image.labels.get("org.exegol.tag", "<none>")
+            self.__name = self.__image.labels.get("org.exegol.tag", "<none>") + "-" + self.__image.labels.get("org.exegol.version", "v?")
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])

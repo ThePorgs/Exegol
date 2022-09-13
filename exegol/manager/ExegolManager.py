@@ -67,7 +67,6 @@ class ExegolManager:
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         ExegolManager.print_version()
         logger.info("Starting exegol")
-        # TODO add console logging capabilities
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
