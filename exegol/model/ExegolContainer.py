@@ -3,7 +3,7 @@ import os
 import shutil
 from typing import Optional, Dict, Sequence
 
-from docker.errors import NotFound
+from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
 
 from exegol.console.ExegolPrompt import Confirm
@@ -25,10 +25,20 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__id: str = docker_container.id
         self.__xhost_applied = False
         if model is None:
+            image_name = ""
+            try:
+                # Try to find the attached docker image
+                docker_image = docker_container.image
+            except ImageNotFound:
+                # If it is not found, the user has probably forcibly deleted it manually
+                logger.warning(f"Some images were forcibly removed by docker when they were used by existing containers!")
+                logger.error(f"The '{docker_container.name}' containers might not work properly anymore and should also be deleted and recreated with a new image.")
+                docker_image = None
+                image_name = "[red bold]BROKEN[/red bold]"
             # Create Exegol container from an existing docker container
             super().__init__(docker_container.name,
                              config=ContainerConfig(docker_container),
-                             image=ExegolImage(docker_image=docker_container.image))
+                             image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
             self.__new_container = False
         else:
@@ -112,7 +122,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         options = ""
         if len(envs) > 0:
             options += f" -e {' -e '.join(envs)}"
-        cmd = f"docker exec{options} -ti {self.getFullId()} {ParametersManager().shell}"
+        cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
         os.system(cmd)
         # Docker SDK doesn't support (yet) stdin properly
@@ -157,7 +167,6 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Command received: {str_cmd}")
         cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
-        # TODO remove grep -v (time for user to update exegol image)
         cmd = f'zsh -c "source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
         logger.debug(f"Formatting zsh command: {cmd}")
         return cmd

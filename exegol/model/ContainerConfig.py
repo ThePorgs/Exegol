@@ -30,6 +30,9 @@ class ContainerConfig:
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
 
+    # Label features (wrapper method to enable the feature / label name)
+    __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
+
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
@@ -43,6 +46,7 @@ class ContainerConfig:
         self.__capabilities: List[str] = []
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
+        self.__labels: Dict[str, str] = {}
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
         self.interactive: bool = True
         self.tty: bool = True
@@ -52,6 +56,7 @@ class ContainerConfig:
         self.__disable_workspace: bool = False
         self.__container_command: str = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
+        self.__shell_logging: bool = False
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -61,6 +66,7 @@ class ContainerConfig:
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
         self.__parseEnvs(container_config.get("Env", []))
+        self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
         self.__enable_gui = False
         for env in self.__envs:
@@ -99,6 +105,18 @@ class ContainerConfig:
             logger.debug(f"Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
             self.addRawEnv(env.strip("'").strip('"'))
+
+    def __parseLabels(self, labels: Dict[str, str]):
+        """Parse envs object syntax"""
+        for key, value in labels.items():
+            if not key.startswith("org.exegol.feature."):
+                continue
+            logger.debug(f"Parsing label : {key}")
+            # Find corresponding feature and attributes
+            for attribute, label in self.__label_features.items():
+                if label == key:
+                    # reflective execution of the feature enable method (add label & set attributes)
+                    getattr(self, attribute)()
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -223,6 +241,16 @@ class ContainerConfig:
         # Command builder info
         if not self.__network_host:
             command_options.append("--disable-shared-network")
+
+        # Shell logging config
+        if self.__shell_logging:
+            if Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
+                self.__disableShellLogging()
+        elif Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
+            self.enableShellLogging()
+        # Command builder info
+        if self.__shell_logging:
+            command_options.append("--log")
 
         # VPN config
         if self.__vpn_path is None and Confirm(
@@ -354,6 +382,20 @@ class ContainerConfig:
             self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
+    def enableShellLogging(self):
+        """Procedure to enable exegol shell logging feature"""
+        if not self.__shell_logging:
+            logger.verbose("Config: Enabling shell logging")
+            self.__shell_logging = True
+            self.addLabel(self.__label_features.get('enableShellLogging'), "Enabled")
+
+    def __disableShellLogging(self):
+        """Procedure to disable exegol shell logging feature"""
+        if self.__shell_logging:
+            logger.verbose("Config: Disabling shell logging")
+            self.__shell_logging = False
+            self.removeLabel(self.__label_features.get('enableShellLogging'))
+
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
         self.__workspace_custom_path = os.getcwd()
@@ -456,7 +498,8 @@ class ContainerConfig:
                 if line in configs:
                     configs.remove(line)
         if len(configs) > 0:
-            logger.warning("Some OpenVPN config are [red]missing[/red] to support VPN [orange3]dynamic DNS servers[/orange3]! Please add the following line to your configuration file:")
+            logger.warning("Some OpenVPN config are [red]missing[/red] to support VPN [orange3]dynamic DNS servers[/orange3]! "
+                           "Please add the following line to your configuration file:")
             logger.empty_line()
             logger.raw(os.linesep.join(configs), level=logging.WARNING)
             logger.empty_line()
@@ -493,14 +536,14 @@ class ContainerConfig:
                 # Volume is already prepared
                 return
         if self.__workspace_custom_path is not None:
-            self.addVolume(self.__workspace_custom_path, '/workspace')
+            self.addVolume(self.__workspace_custom_path, '/workspace', set_sticky_group=True)
         elif self.__disable_workspace:
             # Skip default volume workspace if disabled
             return
         else:
             # Add shared-data-volumes private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
-            self.addVolume(volume_path, '/workspace')
+            self.addVolume(volume_path, '/workspace', set_sticky_group=True)
 
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
@@ -584,9 +627,17 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getContainerCommand(self) -> str:
+    def getEntrypointCommand(self) -> str:
         """Get container entrypoint path"""
         return self.__container_command
+
+    def getShellCommand(self) -> str:
+        """Get container command for opening a new shell"""
+        # If shell logging was enabled at container creation, it'll always be enabled for every shell.
+        # If not, it can be activated per shell basis
+        if self.__shell_logging or ParametersManager().log:
+            return f"bash -c \"mkdir -p /workspace/logs/; script -q -a -f -c {ParametersManager().shell} /workspace/logs/$(date +'%d-%m-%Y_%H-%M-%S')_shell.log; exit\""
+        return ParametersManager().shell
 
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
@@ -608,6 +659,10 @@ class ContainerConfig:
         """Return if the feature 'exegol resources' is enabled in this container config"""
         return self.__exegol_resources
 
+    def isShellLoggingEnable(self) -> bool:
+        """Return if the feature 'shell logging' is enabled in this container config"""
+        return self.__shell_logging
+
     def isGUIEnable(self) -> bool:
         """Return if the feature 'GUI' is enabled in this container config"""
         return self.__enable_gui
@@ -625,19 +680,25 @@ class ContainerConfig:
                   container_path: str,
                   must_exist: bool = False,
                   read_only: bool = False,
+                  set_sticky_group: bool = False,
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration.
         When the host path does not exist (neither file nor folder):
         if must_exist is set, an CancelOperation exception will be thrown.
-        Otherwise, a folder will attempt to be created at the specified path"""
+        Otherwise, a folder will attempt to be created at the specified path.
+        if set_sticky_group is set (on a Linux host), the permission setgid will be added to every folder on the volume."""
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
+            path = Path(host_path)
+            # Choose to update fs directory perms if available and depending on user choice
+            execute_update_fs = set_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms)
             try:
-                path = Path(host_path)
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
+                        # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
+                        execute_update_fs = set_sticky_group
                         os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
@@ -645,6 +706,16 @@ class ContainerConfig:
             except FileExistsError:
                 # The volume targets a file that already exists on the file system
                 pass
+            # Update FS don't work on Windows and only for directory
+            if not EnvInfo.isWindowsHost() and path.is_dir():
+                if execute_update_fs:
+                    # TODO test on WSL
+                    # Apply perms update
+                    FsUtils.setGidPermission(path)
+                elif set_sticky_group:
+                    # If user choose not to update, print tips
+                    logger.warning(f"The file sharing permissions between the container and the host will not be applied automatically by Exegol. ("
+                                   f"{'Currently enabled by default according to the user config' if UserConfig().auto_update_workspace_fs else 'Use the --update-fs option to enable the feature'})")
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
@@ -779,6 +850,23 @@ class ContainerConfig:
                 result.append(env)
         return result
 
+    def addLabel(self, key: str, value: str):
+        """Add a custom label to the container configuration"""
+        self.__labels[key] = value
+
+    def removeLabel(self, key: str) -> bool:
+        """Remove a custom label from the container configuration (Only before container creation)"""
+        try:
+            self.__labels.pop(key)
+            return True
+        except KeyError:
+            # When the Key is not present in the dictionary
+            return False
+
+    def getLabels(self) -> Dict[str, str]:
+        """Labels config getter"""
+        return self.__labels
+
     def getVpnName(self):
         """Get VPN Config name"""
         if self.__vpn_path is None:
@@ -843,6 +931,8 @@ class ContainerConfig:
             result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
         if verbose or not self.__shared_resources:
             result += f"{getColor(self.__shared_resources)[0]}My resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
+        if verbose or self.__shell_logging:
+            result += f"{getColor(self.__shell_logging)[0]}Shell logging: {boolFormatter(self.__shell_logging)}{getColor(self.__shell_logging)[1]}{os.linesep}"
         result = result.strip()
         if not result:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
@@ -930,7 +1020,8 @@ class ContainerConfig:
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__shared_resources}{os.linesep}" \
-               f"Env ({len(self.__envs)}): {self.__envs}{os.linesep}" \
+               f"Envs ({len(self.__envs)}): {self.__envs}{os.linesep}" \
+               f"Labels ({len(self.__labels)}): {self.__labels}{os.linesep}" \
                f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
                f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \
                f"VPN: {self.getVpnName()}"

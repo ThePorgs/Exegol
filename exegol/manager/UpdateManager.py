@@ -33,9 +33,11 @@ class UpdateManager:
         if image_args is not None and tag is None:
             tag = image_args
         if tag is None:
+            # Filter for updatable images
+            available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
             try:
                 # Interactive selection
-                selected_image = ExegolTUI.selectFromTable(DockerUtils.listImages(),
+                selected_image = ExegolTUI.selectFromTable(available_images,
                                                            object_type=ExegolImage,
                                                            allow_None=install_mode)
             except IndexError:

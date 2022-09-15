@@ -67,7 +67,6 @@ class ExegolManager:
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         ExegolManager.print_version()
         logger.info("Starting exegol")
-        # TODO add console logging capabilities
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
@@ -193,6 +192,13 @@ class ExegolManager:
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
+        cls.print_sponsors()
+
+    @classmethod
+    def print_sponsors(cls):
+        """Show exegol sponsors"""
+        logger.success("""Exegol thanks [blue]Capgemini[/blue] for supporting the project [bright_black](dev contributors)[/bright_black] :pray:""")
+        logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -374,7 +380,10 @@ class ExegolManager:
             object_list = DockerUtils.listContainers()
         elif object_type is ExegolImage:
             # List all images available
-            object_list = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+            object_list: List[ExegolImage] = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+            # ToBeRemoved images are only shown in verbose mode
+            if not logger.isEnabledFor(ExeLog.VERBOSE):
+                object_list = [i for i in object_list if not i.isLocked()]
         else:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception
@@ -383,8 +392,7 @@ class ExegolManager:
         if multiple:
             user_selection = ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
         else:
-            user_selection = ExegolTUI.selectFromTable(object_list, object_type=object_type,
-                                                       allow_None=not must_exist)
+            user_selection = ExegolTUI.selectFromTable(object_list, object_type=object_type, allow_None=not must_exist)
             # Check if the user has chosen an existing object
             if type(user_selection) is str:
                 # Otherwise, create a new object with the supplied name
@@ -413,6 +421,8 @@ class ExegolManager:
             config.enableSharedResources()
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
+        if ParametersManager().log:
+            config.enableShellLogging()
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(

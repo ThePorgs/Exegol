@@ -104,13 +104,14 @@ class DockerUtils:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
         try:
             container = cls.__client.containers.run(model.image.getFullName(),
-                                                    command=model.config.getContainerCommand(),
+                                                    command=model.config.getEntrypointCommand(),
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
                                                     extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),
                                                     environment=model.config.getEnvs(),
+                                                    labels=model.config.getLabels(),
                                                     network_mode=model.config.getNetworkMode(),
                                                     ports=model.config.getPorts(),
                                                     privileged=model.config.getPrivileged(),
@@ -393,7 +394,7 @@ class DockerUtils:
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
-        logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image '{image.getName()}' ...")
+        logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
@@ -403,7 +404,7 @@ class DockerUtils:
                 logger.debug(f"Remove image {image.getFullVersionName()}")
                 cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
             logger.debug(f"Remove image {image.getLocalId()} ({image.getFullName()})")
-            with console.status(f"Removing {'previous ' if upgrade_mode else ''}image '{image.getName()}' ...", spinner_style="blue"):
+            with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
                 cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
@@ -415,13 +416,14 @@ class DockerUtils:
                     logger.error(f"The '{image.getName()}' image cannot be deleted yet, "
                                  "all containers using this old image must be deleted first.")
                 else:
-                    logger.error("This image cannot be deleted because it is currently used by a container. Aborting.")
+                    logger.error(f"The '{image.getName()}' image cannot be deleted because "
+                                 f"it is currently used by a container. Aborting.")
             elif err.status_code == 404:
-                logger.error("This image doesn't exist locally. Aborting.")
+                logger.error(f"This image doesn't exist locally {image.getLocalId()} ({image.getFullName()}). Aborting.")
             else:
                 logger.critical(f"An error occurred while removing this image : {err}")
         except ReadTimeout:
-            logger.error("The deletion of the image has timeout, the deletion may be incomplete.")
+            logger.error(f"The deletion of the image has timeout, the deletion may be incomplete.")
         return False
 
     @classmethod

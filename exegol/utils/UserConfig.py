@@ -25,6 +25,7 @@ class UserConfig(metaclass=MetaSingleton):
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
         self.auto_check_updates: bool = True
         self.auto_remove_images: bool = True
+        self.auto_update_workspace_fs: bool = False
 
         # process
         self.__load_file()
@@ -62,6 +63,9 @@ config:
     
     # Automatically remove outdated image when they are no longer used
     auto_remove_image: {self.auto_remove_images}
+    
+    # Automatically modifies the permissions of folders and sub-folders in your workspace by default to enable file sharing between the container with your host user.
+    auto_update_workspace_fs: {self.auto_update_workspace_fs}
 """
         # TODO handle default image selection
         # TODO handle default start container
@@ -128,6 +132,7 @@ config:
             config_data = {}
         self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
         self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
+        self.auto_update_workspace_fs = self.__load_config(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
@@ -137,6 +142,7 @@ config:
             f"My resources: [magenta]{self.shared_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
+            f"Auto-update fs: {boolFormatter(self.auto_update_workspace_fs)}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

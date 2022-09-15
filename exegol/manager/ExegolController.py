@@ -37,4 +37,7 @@ def main():
         logger.empty_line()
         logger.info("Exiting")
     except Exception:
+        logger.error("It seems that something unexpected happened ...")
+        logger.error("To draw our attention to the problem and allow us to fix it, you can share your error with us (by [orange3]copying and pasting[/orange3] it with this syntax: ``` <error> ```) by creating a GitHub issue at this address: https://github.com/ShutdownRepo/Exegol/issues")
+        logger.success("Thank you for your collaboration!")
         console.print_exception(show_locals=True)
