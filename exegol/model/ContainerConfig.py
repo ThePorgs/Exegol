@@ -390,7 +390,7 @@ class ContainerConfig:
             self.addLabel(self.__label_features.get('enableShellLogging'), "Enabled")
 
     def __disableShellLogging(self):
-        """Procedure to enable exegol shell logging feature"""
+        """Procedure to disable exegol shell logging feature"""
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
