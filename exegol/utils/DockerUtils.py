@@ -1,10 +1,8 @@
-import json
 import os
 from datetime import datetime
 from typing import List, Optional, Union
 
 import docker
-import requests
 from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
@@ -12,19 +10,19 @@ from docker.models.volumes import Volume
 from requests import ReadTimeout
 
 from exegol.console.TUI import ExegolTUI
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
+from exegol.model.MetaImages import MetaImages
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.UserConfig import UserConfig
+from exegol.utils.WebUtils import WebUtils
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
-from exegol.utils.WebUtils import WebUtils
 
 
 class DockerUtils:
@@ -218,8 +216,7 @@ class DockerUtils:
         if cls.__images is None:
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
-            images = ExegolImage.mergeImages(remote_images, local_images)
-            cls.__images = ExegolImage.reorderImages(images)
+            cls.__images = ExegolImage.mergeImages(remote_images, local_images)
         if not include_version_tag:
             return [img for img in cls.__images if not img.isVersionSpecific() or img.isInstall()]
         return cls.__images
@@ -301,7 +298,7 @@ class DockerUtils:
         return result
 
     @classmethod
-    def __listRemoteImages(cls) -> List[ExegolImage]:
+    def __listRemoteImages(cls) -> List[MetaImages]:
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
@@ -329,25 +326,8 @@ class DockerUtils:
                 if error_message:
                     logger.error(f"Dockerhub send an error message: {error_message}")
                 for docker_images in docker_repo_response.get("results", []):
-                    default = None
-                    preferred = None
-                    # Parse every images available under this name
-                    for docker_image in docker_images.get("images", []):
-                        exegol_image = ExegolImage(name=docker_images.get('name', 'NONAME'), dockerhub_data=docker_image)
-                        # Select a preferred image when arch is matching
-                        default_arch = ParametersManager().arch
-                        if default_arch is None:
-                            default_arch = EnvInfo.arch
-                        if exegol_image.getArch() == default_arch:
-                            preferred = exegol_image
-                            break
-                        # Select a fallback default image
-                        if exegol_image.getArch() == "amd64" or default is None:
-                            default = exegol_image
-                    if preferred:
-                        remote_results.append(preferred)
-                    else:
-                        remote_results.append(default)
+                    meta_image = MetaImages(docker_images)
+                    remote_results.append(meta_image)
                 url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results

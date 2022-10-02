@@ -5,11 +5,11 @@ from docker.models.containers import Container
 from docker.models.images import Image
 
 from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
-from exegol.utils.WebUtils import WebUtils
 
 
 class ExegolImage(SelectableInterface):
@@ -18,20 +18,26 @@ class ExegolImage(SelectableInterface):
     def __init__(self,
                  name: str = "NONAME",
                  dockerhub_data: Optional[Dict[str, Any]] = None,
+                 meta_img: MetaImages = None,
                  image_id: Optional[str] = None,
                  docker_image: Optional[Image] = None,
                  isUpToDate: bool = False):
         """Docker image default value"""
+        # Prepare parameters
+        if meta_img:
+            version_parsed = meta_img.version
+            name = meta_img.name
+            self.__version_specific = not meta_img.is_latest
+        else:
+            version_parsed = MetaImages.tagNameParsing(name)
+            self.__version_specific: bool = bool(version_parsed)
         # Init attributes
         self.__image: Image = docker_image
         self.__name: str = name
         self.__alt_name: str = ''
         self.__arch = ""
-        version_parsed = self.__tagNameParsing(name)
-        self.__version_specific: bool = bool(version_parsed)
         # Latest version available of the current image (or current version if version specific)
-        self.__profile_version: str = version_parsed if self.isVersionSpecific() else \
-            "[bright_black]N/A[/bright_black]"
+        self.__profile_version: str = version_parsed if version_parsed else "[bright_black]N/A[/bright_black]"
         # Version of the docker image installed
         self.__image_version: str = self.__profile_version
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
@@ -58,23 +64,20 @@ class ExegolImage(SelectableInterface):
         if docker_image is not None:
             self.__initFromDockerImage()
         else:
+            self.__setImageId(image_id)
             if dockerhub_data:
                 self.__is_remote = True
-                if self.__version_specific:
-                    self.__setDigest(dockerhub_data.get("digest"))
-                else:
-                    logger.debug(f"Fetch virtual digest for {self.__name}")
-                    # Fetching virtual multi-arch digestId is a single web request and time-consuming, reducing request to only latest tag
-                    self.__setDigest(WebUtils.getMetaDigestId(self.__name))
                 self.__setArch(dockerhub_data.get("architecture"))
                 self.__dl_size = self.__processSize(dockerhub_data.get("size"))
-            self.__setImageId(image_id)
+            if meta_img:
+                self.__setDigest(meta_img.meta_id)
         logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
     def __initFromDockerImage(self):
         """Parse Docker object to set up self configuration on creation."""
         # If docker object exists, image is already installed
         self.__is_install = True
+        self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
             # Tag as outdated until the latest tag is found
@@ -88,7 +91,7 @@ class ExegolImage(SelectableInterface):
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
                     # Ignoring external images (set container using external image as outdated)
                     continue
-                version_parsed = self.__tagNameParsing(name)
+                version_parsed = MetaImages.tagNameParsing(name)
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if not version_parsed:
                     self.__outdated = False
@@ -122,7 +125,39 @@ class ExegolImage(SelectableInterface):
             self.__setDigest(self.__parseDigest(self.__image))
         self.__setArch(self.__image.attrs["Architecture"])
         self.__labelVersionParsing()
-        # Default status, must be refreshed if some parameters are change externally
+        # Default status, must be refreshed later if some parameters will be changed externally
+        self.syncStatus()
+
+    def setDockerObject(self, docker_image: Image):
+        """Docker object setter. Parse object to set up self configuration."""
+        self.__image = docker_image
+        # When a docker image exist, image is locally installed
+        self.__is_install = True
+        # Set real size on disk
+        self.__setRealSize(self.__image.attrs["Size"])
+        # Set local image ID
+        self.__setImageId(docker_image.attrs["Id"])
+        # Set build date from labels
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
+        # Check if local image is sync with remote digest id (check up-to-date status)
+        self.__is_update = self.__digest == self.__parseDigest(docker_image)
+        # Add version tag (if available)
+        for repo_tag in docker_image.attrs["RepoTags"]:
+            tmp_name, tmp_tag = repo_tag.split(':')
+            version_parsed = MetaImages.tagNameParsing(tmp_tag)
+            if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
+                self.__setImageVersion(version_parsed)
+        # backup plan: Use label to retrieve image version
+        self.__labelVersionParsing()
+
+    def setMetaImage(self, meta: MetaImages):
+        dockerhub_data = meta.getDockerhubImageForArch(self.getArch())
+        self.__is_remote = True
+        self.__dl_size = self.__processSize(dockerhub_data.get("size"))
+        self.__setLatestVersion(meta.version)
+        # Check if local image is sync with remote digest id (check up-to-date status)
+        self.__is_update = self.__digest == meta.meta_id
+        # Refresh status after metadata update
         self.syncStatus()
 
     def __labelVersionParsing(self):
@@ -135,32 +170,6 @@ class ExegolImage(SelectableInterface):
                 self.__setImageVersion(version_label, source_tag=False)
                 if self.isVersionSpecific():
                     self.__profile_version = self.__image_version
-
-    @staticmethod
-    def __tagNameParsing(tag_name: str) -> str:
-        parts = tag_name.split('-')
-        version = '-'.join(parts[1:])
-        # Code for future multi parameter from tag name (e.g. ad-debian-1.2.3)
-        """
-        first_parameter = ""
-        # Try to detect legacy tag name or new latest name
-        if len(parts) == 2:
-            # If there is any '.' in the second part, it's a version format
-            if "." in parts[1]:
-                # Legacy version format
-                version = parts[1]
-            else:
-                # Latest arch specific image
-                first_parameter = parts[1]
-        elif len(parts) >= 3:
-            # Arch + version format
-            first_parameter = parts[1]
-            # Additional - stored in version
-            version = '-'.join(parts[2:])
-
-        return version, first_parameter
-        """
-        return version
 
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
@@ -179,7 +188,7 @@ class ExegolImage(SelectableInterface):
             original_name = container.attrs["Config"]["Image"].split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
-                version_parsed = self.__tagNameParsing(self.__name)
+                version_parsed = MetaImages.tagNameParsing(self.__name)
                 self.__version_specific = bool(version_parsed)
                 self.__setImageVersion(version_parsed)
             self.__alt_name = f'{original_name} [bright_black](outdated' \
@@ -209,152 +218,98 @@ class ExegolImage(SelectableInterface):
             logger.error("This image is not installed locally. Skipping.")
             return None
 
-    def setDockerObject(self, docker_image: Image):
-        """Docker object setter. Parse object to set up self configuration."""
-        self.__image = docker_image
-        # When a docker image exist, image is locally installed
-        self.__is_install = True
-        # Set real size on disk
-        self.__setRealSize(self.__image.attrs["Size"])
-        # Set local image ID
-        self.__setImageId(docker_image.attrs["Id"])
-        # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
-        # Check if local image is sync with remote digest id (check up-to-date status)
-        self.__is_update = self.__digest == self.__parseDigest(docker_image)
-        # Add version tag (if available)
-        for repo_tag in docker_image.attrs["RepoTags"]:
-            tmp_name, tmp_tag = repo_tag.split(':')
-            version_parsed = self.__tagNameParsing(tmp_tag)
-            if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
-                self.__setImageVersion(version_parsed)
-        # backup plan: Use label to retrieve image version
-        self.__labelVersionParsing()
-
     @classmethod
-    def __mergeCommonImages(cls, images: List['ExegolImage']):
-        """Select latest images and merge them with their version's specific equivalent (installed and/or latest)."""
+    def __mergeMetaImages(cls, images: List[MetaImages]):
+        """Select latest (remote) images and merge them with their version's specific equivalent"""
         latest_images, version_images = [], []
         # Splitting images by type : latest or version specific
         for img in images:
-            version_parsed = cls.__tagNameParsing(img.getName())
-            if version_parsed:
-                version_images.append(img)
-            else:
+            if img.is_latest:
                 latest_images.append(img)
+            else:
+                version_images.append(img)
 
         # Test each combination
         for main_image in latest_images:
             for version_specific in version_images:
-                match = False
-                if main_image.getRemoteId() == version_specific.getRemoteId():
+                if main_image.meta_id == version_specific.meta_id:
                     # Set exact profile version to the remaining latest image
-                    main_image.__setLatestVersion(version_specific.getImageVersion())
-                    match = True
-                # Try to find a matching version (If 2 local id images are the same, this version is actually installed as latest)
-                if main_image.isInstall() and main_image.getLocalId() == version_specific.getLocalId():
-                    # Set version to the remaining latest image
-                    main_image.__setImageVersion(version_specific.getImageVersion())
-                    match = True
-                if match:
+                    main_image.setVersionSpecific(version_specific)
                     try:
                         # Remove duplicates image from the result array (don't need to be returned, same object)
                         images.remove(version_specific)
                     except ValueError:
                         # already been removed
                         pass
-                elif not version_specific.isInstall() and version_specific.getArch() != ParametersManager().arch:
-                    try:
-                        images.remove(version_specific)
-                    except ValueError:
-                        pass
-            if not main_image.isInstall() and main_image.getArch() != ParametersManager().arch:
-                images.remove(main_image)
 
     @classmethod
-    def mergeImages(cls, remote_images: List['ExegolImage'], local_images: List[Image]) -> List['ExegolImage']:
+    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Image]) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
             - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
             - outdated : Don't match digest_id but match (latest) tag
             - local image : don't have any 'RepoDigests' because they are local
-            - discontinued : image with 'RepoDigests' properties but not found in remote
+            - discontinued : image with 'RepoDigests' properties but not found in remote images (maybe too old)
             - unknown : no internet connection = no information from the registry
             - not install : other remote images without any match
-        Return a list of ExegolImage."""
+        Return a list of ordered ExegolImage."""
         results = []
-        # build data
-        local_data = {}
-        for local_img in local_images:
-            # Check if custom local build
-            if len(local_img.attrs["RepoDigests"]) == 0:
-                # This image is build locally
-                new_image = ExegolImage(docker_image=local_img)
-                results.append(new_image)
+        cls.__mergeMetaImages(remote_images)
+        # Convert array to dict
+        remote_img_dict = {}
+        for r_img in remote_images:
+            remote_img_dict[r_img.name] = r_img
+
+        # Find a match for each local image
+        for img in local_images:
+            current_local_img = ExegolImage(docker_image=img)
+            # quick handle of local images
+            if current_local_img.isLocal():
+                results.append(current_local_img)
                 continue
-            # find digest id
-            digest = local_img.attrs["RepoDigests"][0].split('@')[1]
-            for digest_id in local_img.attrs["RepoDigests"]:
-                if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
-                    digest = digest_id.split('@')[1]
-                    break
-            # Load variables - find current image tags
-            names: List[str] = []
-            tags: List[str] = []
-            # handle tag
-            if len(local_img.attrs["RepoTags"]) > 0:
-                for repo_tag in local_img.attrs["RepoTags"]:
-                    tmp_name, tmp_tag = repo_tag.split(':')
-                    version_parsed = cls.__tagNameParsing(tmp_tag)
-                    # Selecting tags from the good repository + filtering out version tag (handle by digest_id earlier)
-                    if tmp_name == ConstantConfig.IMAGE_NAME and not version_parsed:
-                        names.append(tmp_name)
-                        tags.append(tmp_tag)
-            # Image Arch
-            arch = local_img.attrs["Architecture"]
-            # Temporary data structure
-            local_data[digest] = {"tags": tags, "arch": arch, "image": local_img, "match": False}
-
-        for current_image in remote_images:
-            for digest, data in local_data.items():
-                # Same digest id = up-to-date
-                if current_image.getRemoteId() == digest:
-                    current_image.setDockerObject(data["image"])  # Handle up-to-date, version specific
-                    data["match"] = True
-                    if current_image.isVersionSpecific():  # If the image is latest, tag must be also check
-                        break
-                # if latest mode, must match with tag (to find already installed outdated version)
-                for tag in data.get('tags', []):
-                    # Check if the tag is matching and if the image is not already up-to-date (with version specific digest matching)
-                    if current_image.getName() == tag and current_image.getArch() == data.get("arch", "") and not current_image.isUpToDate():
-                        current_image.setDockerObject(data["image"])  # Handle latest image matching (up-to-date / outdated)
-                        data["match"] = True
-            # If remote image don't find any match, fallback to default => not installed
-
-        results.extend(remote_images)  # Every remote images is kept (even if not installed)
-
-        for data in local_data.values():
-            if not data["match"]:
-                # Matching image not found - there is no match with remote image list
-                new_image = ExegolImage(docker_image=data["image"])
-                if len(remote_images) == 0:
-                    # If there are no remote images left, the user probably doesn't have internet and can't know the status of the images from the registry
-                    new_image.setCustomStatus("[bright_black]Unknown[/bright_black]")
-                else:
-                    logger.debug(f"The image '{new_image.getName()}' (digest: {new_image.getRemoteId()}) has not been found remotely, considering it as discontinued.")
+            current_arch = current_local_img.getArch()
+            selected = None
+            default = None
+            for sub_image in img.attrs.get('RepoTags'):
+                # parse multi-tag images (latest tag / version specific tag)
+                current_tag = sub_image.split(':')[1]
+                tag_match = remote_img_dict.get(current_tag)
+                if tag_match and current_arch in tag_match.list_arch:
+                    default = tag_match
+                    # if the selected remote image have a meta_id, it's a latest tag
+                    if default.is_latest:
+                        selected = default
+            if selected is None:
+                # if no latest tag have been found, use version specific metadata
+                selected = default
+            if selected:
+                # Remote match found
+                current_local_img.setMetaImage(selected)
+            else:
+                if len(remote_images) > 0:
+                    logger.debug(
+                        f"The image '{current_local_img.getName()}' (digest: {current_local_img.getRemoteId()}) has not been found remotely, considering it as discontinued.")
                     # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
-                    new_image.__is_discontinued = True
+                    current_local_img.__is_discontinued = True
                     # Discontinued image can no longer be updated
-                    new_image.__is_update = True
+                    current_local_img.__is_update = True
                     # Status must be updated after changing previous criteria
-                    new_image.syncStatus()
-                results.append(new_image)
+                    current_local_img.syncStatus()
+                # If there are no remote images, the user probably doesn't have internet and can't know the status of the images from the registry
+            results.append(current_local_img)
 
-        cls.__mergeCommonImages(results)
-        return results
+        # Add remote image left
+        for current_remote in remote_images:
+            for img in current_remote.getImagesLeft():
+                # the remaining uninstalled images are filtered with the currently selected architecture
+                if img.get('architecture', 'amd64') == ParametersManager().arch:
+                    results.append(ExegolImage(meta_img=current_remote, dockerhub_data=img))
+
+        # the merged images are finally reorganized for greater readability
+        return cls.__reorderImages(results)
 
     @classmethod
-    def reorderImages(cls, images: List['ExegolImage']) -> List['ExegolImage']:
+    def __reorderImages(cls, images: List['ExegolImage']) -> List['ExegolImage']:
         """Reorder ExegolImages depending on their status"""
         uptodate, outdated, local_build, deprecated = [], [], [], []
         for img in images.copy():
@@ -396,7 +351,7 @@ class ExegolImage(SelectableInterface):
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
         if type(other) is ExegolImage:
-            return self.__name == other.__name and self.__digest == other.__digest
+            return self.__name == other.__name and self.__digest == other.__digest and self.__arch == other.__arch
         # How to compare ExegolImage with str
         elif type(other) is str:
             return self.__name == other

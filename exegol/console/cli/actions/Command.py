@@ -3,6 +3,7 @@ from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
 from exegol.console.ConsoleFormat import richLen
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 
@@ -79,6 +80,11 @@ class Command:
                                 action="count",
                                 default=0,
                                 help="Verbosity level (-v for verbose, -vv for advanced, -vvv for debug)")
+        self.arch = Option("--arch",
+                           dest="arch",
+                           action="store",
+                           default=EnvInfo.arch,
+                           help=f"Overwrite default image architecture (default: [blue]{EnvInfo.arch}[/blue])")
         # TODO review non-interactive mode
         #self.interactive_mode = Option("--non-interactive",
         #                               dest="interactive_mode",
@@ -92,6 +98,7 @@ class Command:
                      {"arg": self.quiet, "required": False},
                      #{"arg": self.interactive_mode, "required": False},
                      {"arg": self.verbosity, "required": False},
+                     {"arg": self.arch, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)
         ]

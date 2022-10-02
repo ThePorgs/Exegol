@@ -71,15 +71,9 @@ class ImageSelector:
                                nargs='?',
                                action="store",
                                help="Tag used to target an Exegol image")
-        self.arch = Option("--arch",
-                           dest="arch",
-                           action="store",
-                           default=EnvInfo.arch,
-                           help=f"Overwrite default image architecture (default: [blue]{EnvInfo.arch}[/blue])")
 
         # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
-                                  {"arg": self.arch, "required": False},
                                   title="[blue]Image selection options[/blue]"))
 
 
