@@ -160,6 +160,16 @@ class ExegolImage(SelectableInterface):
         # Refresh status after metadata update
         self.syncStatus()
 
+    def setAsDiscontinued(self):
+        logger.debug(f"The image '{self.getName()}' (digest: {self.getRemoteId()}) has not been found remotely, "
+                     f"considering it as discontinued.")
+        # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
+        self.__is_discontinued = True
+        # Discontinued image can no longer be updated
+        self.__is_update = True
+        # Status must be updated after changing previous criteria
+        self.syncStatus()
+
     def __labelVersionParsing(self):
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
@@ -287,15 +297,9 @@ class ExegolImage(SelectableInterface):
                 current_local_img.setMetaImage(selected)
             else:
                 if len(remote_images) > 0:
-                    logger.debug(
-                        f"The image '{current_local_img.getName()}' (digest: {current_local_img.getRemoteId()}) has not been found remotely, considering it as discontinued.")
-                    # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
-                    current_local_img.__is_discontinued = True
-                    # Discontinued image can no longer be updated
-                    current_local_img.__is_update = True
-                    # Status must be updated after changing previous criteria
-                    current_local_img.syncStatus()
-                # If there are no remote images, the user probably doesn't have internet and can't know the status of the images from the registry
+                    # If there is some result from internet but no match and this is not a local image, this image is probably discontinued or the remote image is too old (relative to other images)
+                    current_local_img.setAsDiscontinued()
+                # If there are no remote images, the user probably doesn't have internet and can't know the status of the images from the registry (default: Unknown)
             results.append(current_local_img)
 
         # Add remote image left
