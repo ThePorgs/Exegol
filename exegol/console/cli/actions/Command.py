@@ -84,7 +84,7 @@ class Command:
                            dest="arch",
                            action="store",
                            default=EnvInfo.arch,
-                           help=f"Overwrite default image architecture (default: [blue]{EnvInfo.arch}[/blue])")
+                           help=f"Overwrite default image architecture (default, host's arch: [blue]{EnvInfo.arch}[/blue])")
         # TODO review non-interactive mode
         #self.interactive_mode = Option("--non-interactive",
         #                               dest="interactive_mode",
