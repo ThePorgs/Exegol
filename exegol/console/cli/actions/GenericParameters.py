@@ -134,7 +134,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      dest="workspace_path",
                                      action="store",
                                      help="The specified host folder will be linked to the /workspace folder in the container")
-        self.update_fs_perms = Option("--update-fs", "-fs",
+        self.update_fs_perms = Option("-fs", "--update-fs",
                                       action="store_true",
                                       default=False,
                                       dest="update_fs_perms",
