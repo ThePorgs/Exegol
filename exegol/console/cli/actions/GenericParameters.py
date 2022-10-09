@@ -52,7 +52,7 @@ class ContainerStart:
                           dest="log",
                           action="store_true",
                           default=False,
-                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disable[/red])")
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
 
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
@@ -139,7 +139,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                       default=False,
                                       dest="update_fs_perms",
                                       help=f"Modifies the permissions of folders and sub-folders shared in your workspace to access the files created within the container using your host user account. "
-                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[red]Disable[/red]'})")
+                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[red]Disabled[/red]'})")
         self.volumes = Option("-V", "--volume",
                               action="append",
                               default=[],
