@@ -70,8 +70,11 @@ class WebUtils:
     def runJsonRequest(cls, url: str, service_name: str, headers: Optional[Dict] = None, method: str = "GET", data: Any = None, retry_count: int = 2) -> Any:
         """Fetch a web page from url and parse the result as json."""
         data = cls.__runRequest(url, service_name, headers, method, data, retry_count)
-        if data is not None:
+        if data is not None and data.status_code == 200:
             data = json.loads(data.text)
+        elif data is not None:
+            logger.error(f"Error during web request to {service_name} ({data.status_code}) on {url}")
+            data = None
         return data
 
     @classmethod
