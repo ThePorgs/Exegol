@@ -77,7 +77,6 @@ class ExegolImage(SelectableInterface):
         """Parse Docker object to set up self configuration on creation."""
         # If docker object exists, image is already installed
         self.__is_install = True
-        self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
             # Tag as outdated until the latest tag is found
@@ -117,14 +116,14 @@ class ExegolImage(SelectableInterface):
         self.__setRealSize(self.__image.attrs["Size"])
         # Set build date from labels
         self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
+        self.__setArch(self.__image.attrs["Architecture"])
+        self.__labelVersionParsing()
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
-        self.__is_remote = len(self.__image.attrs["RepoDigests"]) > 0
+        self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
             self.__setDigest(self.__parseDigest(self.__image))
-        self.__setArch(self.__image.attrs["Architecture"])
-        self.__labelVersionParsing()
         # Default status, must be refreshed later if some parameters will be changed externally
         self.syncStatus()
 
@@ -180,6 +179,10 @@ class ExegolImage(SelectableInterface):
                 self.__setImageVersion(version_label, source_tag=False)
                 if self.isVersionSpecific():
                     self.__profile_version = self.__image_version
+
+    def __checkLocalLabel(self):
+        """Check if the local label is set. Default to yes for old build"""
+        return self.__image.labels.get("org.exegol.version", "local").lower() == "local"
 
     def syncStatus(self):
         """When the image is loaded from a docker object, docker repository metadata are not present.
