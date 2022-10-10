@@ -401,8 +401,13 @@ class ExegolImage(SelectableInterface):
         elif self.__is_update:
             return f"[green]Up to date{image_version}[/green]"
         elif self.__is_install:
-            return f"[orange3]Update available" \
-                   f"{'' if 'N/A' in self.getLatestVersion() else f' (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})'}[/orange3]"
+            status = f"[orange3]Update available"
+            if self.getImageVersion():
+                if self.getLatestVersion():
+                    status += f" (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})"
+                else:
+                    status += f" (v.{self.getImageVersion()})"
+            return status
         else:
             return "[bright_black]Not installed[/bright_black]"
 
