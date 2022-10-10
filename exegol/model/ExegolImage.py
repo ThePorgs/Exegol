@@ -493,8 +493,6 @@ class ExegolImage(SelectableInterface):
         """Image's display name getter"""
         result = self.__alt_name if self.__alt_name else self.__name
         default_arch = ParametersManager().arch
-        if default_arch is None:
-            default_arch = EnvInfo.arch
         if self.getArch() != default_arch or logger.isEnabledFor(ExeLog.VERBOSE):
             result += f" [bright_black]({self.getArch()})[/bright_black]"
         return result

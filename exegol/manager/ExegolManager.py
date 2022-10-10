@@ -54,7 +54,7 @@ class ExegolManager:
             images = DockerUtils.listImages(include_version_tag=False)
             containers = DockerUtils.listContainers()
             # List and print images
-            logger.verbose("Listing local and remote Exegol images")
+            logger.verbose(f"Listing local and remote Exegol images (filtering for architecture [green]{ParametersManager().arch}[/green])")
             ExegolTUI.printTable(images)
             # List and print containers
             logger.verbose("Listing local Exegol containers")

@@ -10,6 +10,7 @@ from docker.models.volumes import Volume
 from requests import ReadTimeout
 
 from exegol.console.TUI import ExegolTUI
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
@@ -436,7 +437,9 @@ class DockerUtils:
             build_dockerfile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
-                       f"[green][b]{build_profile}[/b][/green] profile.")
+                       f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
+        if EnvInfo.arch != ParametersManager().arch:
+            logger.warning("Building an image for a different host architecture can cause unexpected problems and slowdowns!")
         try:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
@@ -448,7 +451,7 @@ class DockerUtils:
                                        buildargs={"TAG": f"{build_profile}",
                                                   "VERSION": "local",
                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
-                                       platform=EnvInfo.arch,
+                                       platform=ParametersManager().arch,
                                        rm=True,
                                        forcerm=True,
                                        pull=True,
