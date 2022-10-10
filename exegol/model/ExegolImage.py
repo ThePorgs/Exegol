@@ -267,6 +267,7 @@ class ExegolImage(SelectableInterface):
             - not install : other remote images without any match
         Return a list of ordered ExegolImage."""
         results = []
+        latest_installed: List[str] = []
         cls.__mergeMetaImages(remote_images)
         # Convert array to dict
         remote_img_dict = {}
@@ -304,13 +305,21 @@ class ExegolImage(SelectableInterface):
                     current_local_img.setAsDiscontinued()
                 # If there are no remote images, the user probably doesn't have internet and can't know the status of the images from the registry (default: Unknown)
             results.append(current_local_img)
+            latest_installed.append(current_local_img.getName())
 
         # Add remote image left
         for current_remote in remote_images:
+            selected = None
             for img in current_remote.getImagesLeft():
                 # the remaining uninstalled images are filtered with the currently selected architecture
                 if img.get('architecture', 'amd64') == ParametersManager().arch:
-                    results.append(ExegolImage(meta_img=current_remote, dockerhub_data=img))
+                    selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+                    break
+                # OR if no exact match is found, try to fallback
+                elif selected is None and current_remote.name not in latest_installed:
+                    selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+            if selected:
+                results.append(selected)
 
         # the merged images are finally reorganized for greater readability
         return cls.__reorderImages(results)
