@@ -448,6 +448,7 @@ class DockerUtils:
                                        buildargs={"TAG": f"{build_profile}",
                                                   "VERSION": "local",
                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
+                                       platform=EnvInfo.arch,
                                        rm=True,
                                        forcerm=True,
                                        pull=True,
