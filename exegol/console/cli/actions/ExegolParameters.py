@@ -69,7 +69,8 @@ class Install(Command, ImageSelector):
         self._usages = {
             "Install or build interactively an exegol image": "exegol install",
             "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
-            "Build [bright_blue]local[/bright_blue] image": "exegol install [bright_blue]local[/bright_blue]"
+            "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
+            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue]",
         }
 
         # Create container build arguments
