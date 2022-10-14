@@ -117,6 +117,9 @@ class UpdateManager:
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
         """User procedure to update local git repository"""
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to update a repository in offline mode ...")
+            return False
         if not gitUtils.isAvailable:
             logger.empty_line()
             return False

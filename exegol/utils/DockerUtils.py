@@ -346,6 +346,9 @@ class DockerUtils:
     @classmethod
     def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to download a docker image in offline mode ...")
+            return False
         # Switch to install mode if the selected image is not already installed
         install_mode = install_mode or not image.isInstall()
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
@@ -379,6 +382,9 @@ class DockerUtils:
     @classmethod
     def downloadVersionTag(cls, image: ExegolImage) -> Union[ExegolImage, str]:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to download a docker image in offline mode ...")
+            return ""
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
                                              tag=image.getLatestVersionName(),
@@ -431,6 +437,9 @@ class DockerUtils:
     @classmethod
     def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None):
         """Build a docker image from source"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
+            return False
         logger.info(f"Building exegol image : {tag}")
         if build_profile is None or build_dockerfile is None:
             build_profile = "full"

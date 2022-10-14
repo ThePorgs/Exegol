@@ -42,6 +42,8 @@ class WebUtils:
     @classmethod
     def getLatestWrapperRelease(cls) -> str:
         """Fetch from GitHub release the latest Exegol wrapper version"""
+        if ParametersManager().offline_mode:
+            raise CancelOperation
         url: str = f"https://api.github.com/repos/{ConstantConfig.GITHUB_REPO}/releases/latest"
         github_response = cls.runJsonRequest(url, "Github")
         if github_response is None:
@@ -55,6 +57,8 @@ class WebUtils:
     @classmethod
     def getMetaDigestId(cls, tag: str) -> Optional[str]:
         """Get Virtual digest id of a specific image tag from docker registry"""
+        if ParametersManager().offline_mode:
+            raise None
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.list.v2+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
         # Query Docker registry API on manifest endpoint using tag name
         url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
@@ -69,6 +73,8 @@ class WebUtils:
     @classmethod
     def getMetaIdAndVersion(cls, tag: str) -> Tuple[Optional[str], Optional[str]]:
         """Get Virtual digest id and image version of a specific image tag from docker registry"""
+        if ParametersManager().offline_mode:
+            return None, None
         # In order to access the metadata of the image, the v1 manifest must be use
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
         # Query Docker registry API on manifest endpoint using tag name
@@ -90,6 +96,8 @@ class WebUtils:
     @classmethod
     def runJsonRequest(cls, url: str, service_name: str, headers: Optional[Dict] = None, method: str = "GET", data: Any = None, retry_count: int = 2) -> Any:
         """Fetch a web page from url and parse the result as json."""
+        if ParametersManager().offline_mode:
+            return None
         data = cls.__runRequest(url, service_name, headers, method, data, retry_count)
         if data is not None and data.status_code == 200:
             data = json.loads(data.text)

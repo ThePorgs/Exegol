@@ -69,7 +69,7 @@ class Command:
                              required=False,
                              help="Allow insecure server connections for web requests, "
                                   "e.g. when fetching info from DockerHub "
-                                  "(default: [red not italic]False[/red not italic])")
+                                  "(default: [green]Secure[/green])")
         self.quiet = Option("-q", "--quiet",
                             dest="quiet",
                             action="store_true",
@@ -85,8 +85,12 @@ class Command:
                            action="store",
                            default=EnvInfo.arch,
                            help=f"Overwrite default image architecture (default, host's arch: [blue]{EnvInfo.arch}[/blue])")
+        self.offline_mode = Option("--offline",
+                                   dest="offline_mode",
+                                   action="store_true",
+                                   help=f"Run exegol in offline mode, no request will be made on internet (default: [red]Disable[/red])")
         # TODO review non-interactive mode
-        #self.interactive_mode = Option("--non-interactive",
+        # self.interactive_mode = Option("--non-interactive",
         #                               dest="interactive_mode",
         #                               action="store_false",
         #                               help="[red](WIP)[/red] Prevents Exegol from interactively requesting information. "
@@ -94,11 +98,12 @@ class Command:
 
         # Main global group of argparse
         self.groupArgs = [
-            GroupArg({"arg": self.verify, "required": False},
+            GroupArg({"arg": self.verbosity, "required": False},
+                     # {"arg": self.interactive_mode, "required": False},
                      {"arg": self.quiet, "required": False},
-                     #{"arg": self.interactive_mode, "required": False},
-                     {"arg": self.verbosity, "required": False},
                      {"arg": self.arch, "required": False},
+                     {"arg": self.verify, "required": False},
+                     {"arg": self.offline_mode, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)
         ]

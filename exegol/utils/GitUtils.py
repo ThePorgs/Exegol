@@ -2,6 +2,8 @@ from pathlib import Path
 from typing import Optional, List
 
 from git.exc import GitCommandError
+
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger, console
 
@@ -17,6 +19,7 @@ class GitUtils:
                  subject: str = "source code",
                  skip_submodule_update: bool = False):
         """Init git local repository object / SDK"""
+        # TODO implement offline mode for git operations
         if path is None:
             path = ConstantConfig.src_root_path_obj
         self.isAvailable = False
@@ -80,6 +83,9 @@ class GitUtils:
             self.__initSubmodules()
 
     def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to clone a repository in offline mode ...")
+            return False
         if self.isAvailable:
             logger.warning(f"The {self.getName()} repo is already cloned.")
             return False
