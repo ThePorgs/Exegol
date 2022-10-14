@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Tuple
 
 import requests
 from requests import Response
@@ -65,6 +65,27 @@ class WebUtils:
             if digest_id is None:
                 digest_id = response.headers.get("etag")
         return digest_id
+
+    @classmethod
+    def getMetaIdAndVersion(cls, tag: str) -> Tuple[Optional[str], Optional[str]]:
+        """Get Virtual digest id and image version of a specific image tag from docker registry"""
+        # In order to access the metadata of the image, the v1 manifest must be use
+        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
+        # Query Docker registry API on manifest endpoint using tag name
+        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+        response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
+        digest_id: Optional[str] = None
+        version: Optional[str] = None
+        if response is not None and response.status_code == 200:
+            digest_id = response.headers.get("docker-content-digest")
+            if digest_id is None:
+                digest_id = response.headers.get("etag")
+            data = json.loads(response.text)
+            # Parse metadata of the current image from v1 schema
+            metadata = json.loads(data.get("history", [])[0]['v1Compatibility'])
+            # Find version label and extract data
+            version = metadata.get("config", {}).get("Labels", {}).get("org.exegol.version", "")
+        return digest_id, version
 
     @classmethod
     def runJsonRequest(cls, url: str, service_name: str, headers: Optional[Dict] = None, method: str = "GET", data: Any = None, retry_count: int = 2) -> Any:

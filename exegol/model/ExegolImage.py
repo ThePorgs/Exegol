@@ -8,8 +8,8 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.WebUtils import WebUtils
 
 
 class ExegolImage(SelectableInterface):
@@ -188,7 +188,6 @@ class ExegolImage(SelectableInterface):
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
         if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__outdated:
-            # TODO find if up-to-date (direct docker load) must check with repo (or DockerUtils cache / DockerHubUtils)
             self.__custom_status = "[bright_black]Unknown[/bright_black]"
         else:
             self.__custom_status = ""
@@ -206,6 +205,21 @@ class ExegolImage(SelectableInterface):
                 self.__setImageVersion(version_parsed)
             self.__alt_name = f'{original_name} [bright_black](outdated' \
                               f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
+
+    def autoLoad(self) -> 'ExegolImage':
+        """If the current image is in an unknown state, it's possible to load remote data specifically."""
+        if "Unknown" in self.__custom_status and not self.isVersionSpecific() and "N/A" in self.__profile_version:
+            logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
+            # Find remote metadata for the specific current image
+            remote_digest, version = WebUtils.getMetaIdAndVersion(self.__name)
+            if remote_digest is not None:
+                # Compare current and remote latest digest for up-to-date status
+                self.__is_update = self.__digest == remote_digest
+                self.__custom_status = ""
+            if version is not None:
+                # Set latest remote version
+                self.__setLatestVersion(version)
+        return self
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return its name, otherwise return None"""
@@ -407,6 +421,7 @@ class ExegolImage(SelectableInterface):
                     status += f" (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})"
                 else:
                     status += f" (v.{self.getImageVersion()})"
+            status += "[/orange3]"
             return status
         else:
             return "[bright_black]Not installed[/bright_black]"

@@ -40,6 +40,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
+            self.image.autoLoad()
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.

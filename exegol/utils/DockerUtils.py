@@ -259,7 +259,7 @@ class DockerUtils:
                 try:
                     docker_local_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
                     # DockerSDK image get is an exact matching, no need to add more check
-                    return ExegolImage(docker_image=docker_local_image)
+                    return ExegolImage(docker_image=docker_local_image).autoLoad()
                 except APIError as err:
                     if err.status_code == 404:
                         raise ObjectNotFound
