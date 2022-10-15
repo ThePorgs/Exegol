@@ -120,6 +120,8 @@ class ExegolManager:
     def update(cls):
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         ExegolManager.print_version()
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
             UpdateManager.updateImageSource()

@@ -171,7 +171,7 @@ class UpdateManager:
         """Check if there is an exegol wrapper update available.
         Return true if an update is available."""
         # Skipping update check
-        if cls.__triggerUpdateCheck():
+        if cls.__triggerUpdateCheck() and not ParametersManager().offline_mode:
             logger.debug("Running update check")
             return cls.__checkUpdate()
         return False
@@ -350,7 +350,7 @@ class UpdateManager:
         with console.status(f"Loading module information", spinner_style="blue") as s:
             for git in gits:
                 s.update(status=f"Loading module [green]{git.getName()}[/green] information")
-                status = git.getTextStatus()
+                status = "[bright_black]Unknown[/bright_black]" if ParametersManager().offline_mode else git.getTextStatus()
                 branch = git.getCurrentBranch()
                 if branch is None:
                     if "not supported" in status:
