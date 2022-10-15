@@ -407,12 +407,12 @@ class DockerUtils:
         if tag is None:  # Skip removal if image is not installed locally.
             return False
         try:
-            if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName():
-                # Docker can't remove multiple images at the same tag, version specific tag must be remove first
-                logger.debug(f"Remove image {image.getFullVersionName()}")
-                cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
-            logger.debug(f"Remove image {image.getLocalId()} ({image.getFullName()})")
             with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
+                if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName() and not upgrade_mode:
+                    # Docker can't remove multiple images at the same tag, version specific tag must be remove first
+                    logger.debug(f"Removing image {image.getFullVersionName()}")
+                    cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
+                logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
                 cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
