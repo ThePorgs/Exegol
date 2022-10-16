@@ -54,7 +54,7 @@ class ExegolManager:
             images = DockerUtils.listImages(include_version_tag=False)
             containers = DockerUtils.listContainers()
             # List and print images
-            logger.verbose("Listing local and remote Exegol images")
+            logger.verbose(f"Listing local and remote Exegol images (filtering for architecture [green]{ParametersManager().arch}[/green])")
             ExegolTUI.printTable(images)
             # List and print containers
             logger.verbose("Listing local Exegol containers")
@@ -120,6 +120,8 @@ class ExegolManager:
     def update(cls):
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         ExegolManager.print_version()
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
             UpdateManager.updateImageSource()
@@ -174,6 +176,14 @@ class ExegolManager:
         """Show exegol version (and context configuration on debug mode)"""
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
                    level=logging.INFO, markup=True)
+        cls.print_sponsors()
+        if 'a' in ConstantConfig.version:
+            logger.empty_line()
+            logger.warning("You are currently using an [red]Alpha[/red] version of Exegol its use may be unstable and "
+                           "not work as expected. This version is a work in progress and bugs are to be expected.")
+        elif 'b' in ConstantConfig.version:
+            logger.empty_line()
+            logger.warning("You are currently using a [orange3]Beta[/orange3] version of Exegol its use may be unstable.")
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
@@ -192,7 +202,6 @@ class ExegolManager:
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
-        cls.print_sponsors()
 
     @classmethod
     def print_sponsors(cls):

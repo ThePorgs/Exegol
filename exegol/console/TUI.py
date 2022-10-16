@@ -16,6 +16,7 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
 
 
@@ -139,8 +140,11 @@ class ExegolTUI:
             logfile.close()
 
     @staticmethod
-    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]], title: Optional[str] = None):
-        """Printing Rich table for a list of object"""
+    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]],
+                   title: Optional[str] = None,
+                   safe_key: bool = False):
+        """Printing Rich table for a list of object.
+        Set safe_key to override the key selection"""
         logger.empty_line()
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE, title_justify="left")
@@ -149,9 +153,9 @@ class ExegolTUI:
             return
         else:
             if type(data[0]) is ExegolImage:
-                ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data))
+                ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data), safe_key=safe_key)
             elif type(data[0]) is ExegolContainer:
-                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data))
+                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data), safe_key=safe_key)
             elif type(data[0]) is str:
                 if title is not None:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
@@ -166,12 +170,14 @@ class ExegolTUI:
         logger.empty_line()
 
     @staticmethod
-    def __buildImageTable(table: Table, data: Sequence[ExegolImage]):
+    def __buildImageTable(table: Table, data: Sequence[ExegolImage], safe_key: bool = False):
         """Building Rich table from a list of ExegolImage"""
         table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
+        if safe_key:
+            table.add_column("Option")
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
@@ -185,15 +191,23 @@ class ExegolTUI:
             table.add_column("Size")
         table.add_column("Status")
         # Load data into the table
-        for image in data:
+        for i in range(len(data)):
+            image = data[i]
             if verbose_mode:
-                table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
-                              image.getRealSize(), image.getBuildDate(), image.getStatus())
+                if safe_key:
+                    table.add_row(str(i + 1), image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                                  image.getRealSize(), image.getBuildDate(), image.getStatus())
+                else:
+                    table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                                  image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
-                table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
+                if safe_key:
+                    table.add_row(str(i + 1), image.getDisplayName(), image.getSize(), image.getStatus())
+                else:
+                    table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):
+    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False):
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -251,10 +265,12 @@ class ExegolTUI:
                         data: Sequence[SelectableInterface],
                         object_type: Optional[Type] = None,
                         default: Optional[str] = None,
-                        allow_None: bool = False) -> Union[SelectableInterface, str]:
+                        allow_None: bool = False,
+                        conflict_mode: bool = False) -> Union[SelectableInterface, str]:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
-        Raise IndexError of the data list is empty."""
+        Raise IndexError of the data list is empty.
+        Set conflict_mode to override the key in order to select a specific object with duplicate name"""
         cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
@@ -270,26 +286,40 @@ class ExegolTUI:
         object_name = "container" if object_type is ExegolContainer else "image"
         action = "create" if object_type is ExegolContainer else "build"
         # Print data list
-        cls.printTable(data)
+        cls.printTable(data, safe_key=conflict_mode)
         # Get a list of every choice available
-        choices: Optional[List[str]] = [obj.getKey() for obj in data]
+        if conflict_mode:
+            choices: List[str] = [str(k) for k in range(1, len(data) + 1)]
+        else:
+            choices = [obj.getKey() for obj in data]
         # If no default have been supplied, using the first one
         if default is None:
-            default = cast(List[str], choices)[0]
-        # When allow_none is enable, disabling choices restriction
+            default = choices[0]
+        # When allow_none is enabled, disabling choices restriction
         if allow_None:
-            choices = None
+            choices_select: Optional[List[str]] = None
             logger.info(
                 f"You can use a name that does not already exist to {action} a new {object_name}"
                 f"{' from local sources' if object_type is ExegolImage else ''}")
+        else:
+            choices_select = choices
         while True:
+            match = []
             choice = Prompt.ask(
                 f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
-                default=default, choices=choices,
+                default=default, choices=choices_select,
                 show_choices=False)
-            for o in data:
-                if choice == o:
-                    return o
+            if conflict_mode:
+                # In conflict mode, choice are only index number offset by 1
+                return data[int(choice)-1]
+            for option in data:
+                if choice == option:
+                    match.append(option)
+            if len(match) == 1:
+                return match[0]
+            elif len(match) > 1:
+                logger.error(f"Conflict detected ! Multiple {object_name} have the same name, please select the intended one.")
+                return cls.selectFromTable(match, object_type, default=None, allow_None=False, conflict_mode=True)
             if allow_None:
                 if Confirm(
                         f"No {object_name} is available under this name, do you want to {action} it?",
@@ -377,6 +407,8 @@ class ExegolTUI:
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus(include_version=False)})"
+        if container.image.getArch() != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
+            container_info_header += f" [bright_black]({container.image.getArch()})[/bright_black]"
         recap.add_column(container_info_header)
         # Main features
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))

@@ -1,6 +1,7 @@
 from typing import List
 
 from exegol.console.cli.actions.Command import Option, GroupArg
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.UserConfig import UserConfig
 
 
