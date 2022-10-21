@@ -50,7 +50,7 @@ class Stop(Command, ContainerMultiSelector):
         ContainerMultiSelector.__init__(self, self.groupArgs)
 
         self._usages = {
-            "Stop interactively one or multiple container": "exegol stop",
+            "Stop interactively one or more containers": "exegol stop",
             "Stop [blue]demo[/blue]": "exegol stop [blue]demo[/blue]"
         }
 
@@ -144,7 +144,7 @@ class Uninstall(Command, ImageMultiSelector):
                                        title="[bold cyan]Uninstall[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
-            "Uninstall interactively one or many exegol image": "exegol uninstall",
+            "Uninstall interactively one or more exegol images": "exegol uninstall",
             "Uninstall the [bright_blue]dev[/bright_blue] image": "exegol uninstall [bright_blue]dev[/bright_blue]"
         }
 
@@ -170,7 +170,7 @@ class Remove(Command, ContainerMultiSelector):
                                        title="[bold cyan]Remove[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
-            "Remove interactively one or many containers": "exegol remove",
+            "Remove interactively one or more containers": "exegol remove",
             "Remove the [blue]demo[/blue] container": "exegol remove [blue]demo[/blue]"
         }
 

@@ -30,7 +30,7 @@ class ContainerMultiSelector:
                                         metavar="CONTAINER",
                                         nargs='*',
                                         action="store",
-                                        help="Tag used to target one or multiple Exegol container")
+                                        help="Tag used to target one or more Exegol containers")
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
@@ -86,7 +86,7 @@ class ImageMultiSelector:
                                     metavar="IMAGE",
                                     nargs='*',
                                     action="store",
-                                    help="Tag used to target one or multiple Exegol image")
+                                    help="Tag used to target one or more Exegol images")
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},

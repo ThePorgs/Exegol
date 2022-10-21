@@ -179,11 +179,11 @@ class ExegolManager:
         cls.print_sponsors()
         if 'a' in ConstantConfig.version:
             logger.empty_line()
-            logger.warning("You are currently using an [red]Alpha[/red] version of Exegol its use may be unstable and "
-                           "not work as expected. This version is a work in progress and bugs are to be expected.")
+            logger.warning("You are currently using an [red]Alpha[/red] version of Exegol, which may be unstable. "
+                           "This version is a work in progress and bugs are expected.")
         elif 'b' in ConstantConfig.version:
             logger.empty_line()
-            logger.warning("You are currently using a [orange3]Beta[/orange3] version of Exegol its use may be unstable.")
+            logger.warning("You are currently using a [orange3]Beta[/orange3] version of Exegol, which may be unstable.")
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
@@ -206,8 +206,9 @@ class ExegolManager:
     @classmethod
     def print_sponsors(cls):
         """Show exegol sponsors"""
-        logger.success("""Exegol thanks [blue]Capgemini[/blue] for supporting the project [bright_black](dev contributors)[/bright_black] :pray:""")
+        logger.success("""We thank [blue]Capgemini[/blue] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
+        # logger.success("""We also thank [green]HackTheBox[/green] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -328,7 +329,7 @@ class ExegolManager:
                                 override_container: Optional[str] = None,
                                 multiple: bool = False,
                                 must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
-        """Select one or multipleExegolContainer
+        """Select one or more ExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
         When multiple is set to True, return a list of ExegolContainer"""

@@ -981,7 +981,7 @@ class ContainerConfig:
           int = open port ont he host
           tuple = (host_ip, port)
           list of int = open multiple host port
-          list of dict = open one or multiple port on host, key ('HostIp' / 'HostPort') and value ip or port"""
+          list of dict = open one or more ports on host, key ('HostIp' / 'HostPort') and value ip or port"""
         result = ''
         for container_config, host_config in self.__ports.items():
             host_info = "Unknown"
