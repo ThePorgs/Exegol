@@ -101,9 +101,9 @@ class Command:
             GroupArg({"arg": self.verbosity, "required": False},
                      # {"arg": self.interactive_mode, "required": False},
                      {"arg": self.quiet, "required": False},
-                     {"arg": self.arch, "required": False},
                      {"arg": self.verify, "required": False},
                      {"arg": self.offline_mode, "required": False},
+                     {"arg": self.arch, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)
         ]
