@@ -232,7 +232,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
         self.tmp = Option("--tmp",
                           action="store_true",
                           dest="tmp",
-                          help="Created a dedicated and temporary container to execute the command "
+                          help="Creates a dedicated and temporary container to execute the command "
                                "(default: [red not italic]False[/red not italic])")
 
         # Create group parameter for container selection
