@@ -12,6 +12,7 @@
   [![Downloads](https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads)](https://pepy.tech/project/exegol)
   [![Python](https://img.shields.io/badge/Python-3.7+-informational)](https://pypi.org/project/Exegol/)
   <br>
+
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/dev?label=latest%20dev">
   <br>
@@ -21,6 +22,9 @@
   <br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
   <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social"></a>
+  <br><br>
+
+  [![Python](https://img.shields.io/discord/1031715284517662750?color=white&label=discord&logo=discord&logoColor=white)](https://discord.gg/BcgXnRpqxd)
   <br><br>
 </div>
 
