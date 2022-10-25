@@ -137,6 +137,7 @@ config:
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
+            f"User config file: [magenta]{self.__config_file_path}[/magenta]",
             f"Private workspace: [magenta]{self.private_volume_path}[/magenta]",
             f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
             f"My resources: [magenta]{self.shared_resources_path}[/magenta]",
