@@ -33,7 +33,11 @@ class EnvInfo:
     __docker_host_os: Optional[str] = None
     __docker_engine: Optional[str] = None
     # Architecture
-    arch = "amd64" if platform.machine() == "x86_64" else platform.machine()
+    arch = platform.machine()
+    if arch == "x86_64":
+        arch = "amd64"
+    elif arch == "aarch64":
+        arch = "arm64"
 
     @classmethod
     def initData(cls, docker_info):
