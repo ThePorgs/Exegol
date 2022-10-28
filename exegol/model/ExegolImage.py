@@ -116,7 +116,7 @@ class ExegolImage(SelectableInterface):
         self.__setRealSize(self.__image.attrs["Size"])
         # Set build date from labels
         self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
-        self.__setArch(self.__image.attrs["Architecture"])
+        self.__setArch(MetaImages.parseArch(self.__image.attrs))
         self.__labelVersionParsing()
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
