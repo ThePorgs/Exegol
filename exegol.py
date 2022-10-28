@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-try:
-    from exegol.manager.ExegolController import main
-except ModuleNotFoundError as e:
-    print("Mandatory dependencies are missing:", e)
-    print("Please install them with pip3 install -r requirements.txt")
-    exit(1)
+from exegol.manager.ExegolController import main
 
 
 if __name__ == '__main__':

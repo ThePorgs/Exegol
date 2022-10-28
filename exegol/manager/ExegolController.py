@@ -1,6 +1,20 @@
-from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.console.cli.actions.ExegolParameters import Command
-from exegol.utils.ExeLog import logger, ExeLog, console
+try:
+    from exegol.console.cli.ParametersManager import ParametersManager
+    from exegol.console.cli.actions.ExegolParameters import Command
+    from exegol.utils.ExeLog import logger, ExeLog, console
+except ModuleNotFoundError as e:
+    print("Mandatory dependencies are missing:", e)
+    print("Please install them with pip3 install -r requirements.txt")
+    exit(1)
+except ImportError as e:
+    print("An error occurred while loading the dependencies!")
+    print()
+    if "git executable" in e.msg:
+        print("Git is missing in your PATH, it must be installed locally on your computer.")
+        print()
+    print("Details:")
+    print(e)
+    exit(1)
 
 
 class ExegolController:
