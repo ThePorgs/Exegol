@@ -1,5 +1,5 @@
 docker~=6.0.0
-requests>=2.26.0
-rich~=11.2.0
-GitPython~=3.1.26
+requests>=2.28.0
+rich~=12.6.0
+GitPython~=3.1.29
 PyYAML>=6.0

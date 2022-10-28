@@ -50,7 +50,7 @@ setup(
     install_requires=[
         'docker~=6.0.0',
         'requests',
-        'rich~=11.2.0',
+        'rich>=11.2.0',
         'PyYAML',
         'GitPython'
     ],
