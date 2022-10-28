@@ -195,7 +195,10 @@ class UpdateManager:
         return (lastcheck + time_delta) < now
 
     @classmethod
-    def __checkUpdate(cls):
+    def __checkUpdate(cls) -> bool:
+        """Depending on the current version (dev or latest) the method used to find the latest version is not the same.
+        For the stable version, the latest version is fetch from GitHub release.
+        In dev mode, git is used to find if there is some update available."""
         isUpToDate = True
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
@@ -212,10 +215,13 @@ class UpdateManager:
                 logger.debug("Checking update using: stable mode")
                 try:
                     remote_version = WebUtils.getLatestWrapperRelease()
+                    # On some edge case, remote_version might be None if there is problem
+                    if remote_version is None:
+                        raise CancelOperation
                     isUpToDate = cls.__compareVersion(remote_version)
                 except CancelOperation:
                     # No internet, postpone update check
-                    pass
+                    return False
 
         if not isUpToDate:
             cls.__tagUpdateAvailable()
@@ -224,11 +230,13 @@ class UpdateManager:
 
     @classmethod
     def __updateLastCheckFile(cls):
+        """Update the .lastcheck.meta file with the current date to avoid multiple update checks."""
         with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'w') as metafile:
             metafile.write(date.today().strftime(cls.__TIME_FORMAT))
 
     @classmethod
     def __compareVersion(cls, version) -> bool:
+        """Compare a remote version with the current one to check if a new release is available."""
         isUpToDate = True
         try:
             for i in range(len(version.split('.'))):
