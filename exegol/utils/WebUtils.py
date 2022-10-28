@@ -9,7 +9,7 @@ from requests import Response
 from exegol import ConstantConfig
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.ExeLog import logger
+from exegol.utils.ExeLog import logger, console
 
 
 class WebUtils:
@@ -75,11 +75,12 @@ class WebUtils:
         """Get Virtual digest id and image version of a specific image tag from docker registry"""
         if ParametersManager().offline_mode:
             return None, None
-        # In order to access the metadata of the image, the v1 manifest must be use
-        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
-        # Query Docker registry API on manifest endpoint using tag name
-        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
-        response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
+        with console.status(f"Synchronization of the [green]{tag}[/green] image status...", spinner_style="blue"):
+            # In order to access the metadata of the image, the v1 manifest must be use
+            manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
+            # Query Docker registry API on manifest endpoint using tag name
+            url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+            response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
         digest_id: Optional[str] = None
         version: Optional[str] = None
         if response is not None and response.status_code == 200:

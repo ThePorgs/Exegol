@@ -40,7 +40,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
-            self.image.autoLoad()
+            # At this stage, the container image object has an unknown status because no synchronization with a registry has been done.
+            # This could be done afterwards (with container.image.autoLoad()) if necessary because it takes time.
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.

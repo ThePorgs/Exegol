@@ -385,6 +385,8 @@ class ExegolTUI:
 
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
+        # Load the image status if it is not already set.
+        container.image.autoLoad()
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
