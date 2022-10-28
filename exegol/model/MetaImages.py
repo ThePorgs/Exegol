@@ -1,4 +1,6 @@
-from typing import Optional, Set
+from typing import Optional, Set, Union
+
+from docker.models.images import Image
 
 from exegol.utils.ExeLog import logger
 from exegol.utils.WebUtils import WebUtils
@@ -56,11 +58,18 @@ class MetaImages:
         return version
 
     @staticmethod
-    def parseArch(docker_image: dict) -> str:
+    def parseArch(docker_image: Union[dict, Image]) -> str:
         """Parse and format arch in dockerhub style from registry dict struct.
         Return arch in format 'arch/variant'."""
-        arch = docker_image.get('architecture', 'amd64')
-        variant = docker_image.get('variant')
+        arch_key = "architecture"
+        variant_key = "variant"
+        # Support Docker image struct with specific dict key
+        if type(docker_image) is Image:
+            docker_image = docker_image.attrs
+            arch_key = "Architecture"
+            variant_key = "Variant"
+        arch = docker_image.get(arch_key, "amd64")
+        variant = docker_image.get(variant_key)
         if variant:
             arch += f"/{variant}"
         return arch
