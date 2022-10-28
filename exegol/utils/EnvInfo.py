@@ -36,7 +36,7 @@ class EnvInfo:
     arch = platform.machine()
     if arch == "x86_64":
         arch = "amd64"
-    elif arch == "aarch64":
+    elif arch == "aarch64" or "arm" in arch:
         arch = "arm64"
 
     @classmethod
