@@ -362,7 +362,7 @@ class DockerUtils:
                                           tag=name,
                                           stream=True,
                                           decode=True,
-                                          platform=image.getArch()))
+                                          platform="linux/" + image.getArch()))
                 logger.success(f"Image successfully updated")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
@@ -388,7 +388,7 @@ class DockerUtils:
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
                                              tag=image.getLatestVersionName(),
-                                             platform=image.getArch())
+                                             platform="linux/" + image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
@@ -460,7 +460,7 @@ class DockerUtils:
                                        buildargs={"TAG": f"{build_profile}",
                                                   "VERSION": "local",
                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
-                                       platform=ParametersManager().arch,
+                                       platform="linux/" + ParametersManager().arch,
                                        rm=True,
                                        forcerm=True,
                                        pull=True,
