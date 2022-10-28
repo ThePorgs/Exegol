@@ -14,7 +14,10 @@ class MetaImages:
         # Attributes
         self.name: str = dockerhub_data.get('name', '')
         self.multi_arch: bool = len(self.__dockerhub_images) > 1
-        self.list_arch: Set[str] = set([a.get('architecture', 'amd64') for a in self.__dockerhub_images])
+        self.list_arch: Set[str] = set(
+            [a.get('architecture', 'amd64') +
+             (f"/{a.get('variant', '')}" if a.get('variant') is not None else '')
+             for a in self.__dockerhub_images])
         self.meta_id: Optional[str] = dockerhub_data.get("digest")
         if not self.meta_id:
             if self.multi_arch:
