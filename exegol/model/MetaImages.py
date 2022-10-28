@@ -15,9 +15,7 @@ class MetaImages:
         self.name: str = dockerhub_data.get('name', '')
         self.multi_arch: bool = len(self.__dockerhub_images) > 1
         self.list_arch: Set[str] = set(
-            [a.get('architecture', 'amd64') +
-             (f"/{a.get('variant', '')}" if a.get('variant') is not None else '')
-             for a in self.__dockerhub_images])
+            [self.parseArch(a) for a in self.__dockerhub_images])
         self.meta_id: Optional[str] = dockerhub_data.get("digest")
         if not self.meta_id:
             if self.multi_arch:
@@ -57,17 +55,29 @@ class MetaImages:
         """
         return version
 
+    @staticmethod
+    def parseArch(docker_image: dict) -> str:
+        """Parse and format arch in dockerhub style from registry dict struct.
+        Return arch in format 'arch/variant'."""
+        arch = docker_image.get('architecture', 'amd64')
+        variant = docker_image.get('variant')
+        if variant:
+            arch += f"/{variant}"
+        return arch
+
     def getDockerhubImageForArch(self, arch: str) -> Optional[dict]:
+        """Find a docker image corresponding to a specific arch"""
         for img in self.__dockerhub_images:
-            if img.get('architecture', 'amd64') == arch:
+            if self.parseArch(img) == arch:
                 self.__image_match.add(arch)
                 return img
         return None
 
     def getImagesLeft(self):
+        """Return every image not previously selected."""
         result = []
         for img in self.__dockerhub_images:
-            if img.get('architecture', 'amd64') not in self.__image_match:
+            if self.parseArch(img) not in self.__image_match:
                 result.append(img)
         return result
 

@@ -67,7 +67,7 @@ class ExegolImage(SelectableInterface):
             self.__setImageId(image_id)
             if dockerhub_data:
                 self.__is_remote = True
-                self.__setArch(dockerhub_data.get("architecture"))
+                self.__setArch(MetaImages.parseArch(dockerhub_data))
                 self.__dl_size = self.__processSize(dockerhub_data.get("size"))
             if meta_img:
                 self.__setDigest(meta_img.meta_id)
@@ -326,7 +326,7 @@ class ExegolImage(SelectableInterface):
             selected = None
             for img in current_remote.getImagesLeft():
                 # the remaining uninstalled images are filtered with the currently selected architecture
-                if img.get('architecture', 'amd64') == ParametersManager().arch:
+                if MetaImages.parseArch(img) == ParametersManager().arch:
                     selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
                     break
                 # OR if no exact match is found, try to fallback
