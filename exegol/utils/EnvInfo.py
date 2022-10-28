@@ -3,6 +3,8 @@ import re
 import subprocess
 from typing import Optional
 
+from exegol.utils.ExeLog import logger
+
 
 class EnvInfo:
     """Class to identify the environment in which exegol runs to adapt
@@ -36,8 +38,19 @@ class EnvInfo:
     arch = platform.machine()
     if arch == "x86_64":
         arch = "amd64"
-    elif arch == "aarch64" or "arm" in arch:
+    elif arch == "aarch64":
         arch = "arm64"
+    elif "arm" in arch:
+        if "v5" in arch:
+            arch = "arm/v5"
+        elif "v7" in arch:
+            arch = "arm/v7"
+        elif "v8" in arch:
+            arch = "arm64"
+        else:
+            logger.debug(f"Unknown / unsupported ARM architecture: {arch}")
+            # Fallback to default ARM arch
+            arch = "arm64"
 
     @classmethod
     def initData(cls, docker_info):
