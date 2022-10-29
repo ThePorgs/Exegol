@@ -8,7 +8,7 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.ExeLog import logger, ExeLog, console
 from exegol.utils.WebUtils import WebUtils
 
 
@@ -152,8 +152,16 @@ class ExegolImage(SelectableInterface):
     def setMetaImage(self, meta: MetaImages):
         dockerhub_data = meta.getDockerhubImageForArch(self.getArch())
         self.__is_remote = True
+        if self.__version_specific:
+            # Solve conflict for same name / tag but multiple arch
+            self.__version_specific = not meta.is_latest
+            self.__name = meta.name
+            self.__outdated = self.__version_specific
         self.__dl_size = self.__processSize(dockerhub_data.get("size"))
         self.__setLatestVersion(meta.version)
+        if not self.__digest and meta.is_latest:
+            # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
+            self.__digest = meta.meta_id
         # Check if local image is sync with remote digest id (check up-to-date status)
         self.__is_update = self.__digest == meta.meta_id
         # Refresh status after metadata update
@@ -208,17 +216,24 @@ class ExegolImage(SelectableInterface):
 
     def autoLoad(self) -> 'ExegolImage':
         """If the current image is in an unknown state, it's possible to load remote data specifically."""
-        if "Unknown" in self.__custom_status and not self.isVersionSpecific() and "N/A" in self.__profile_version:
+        if "Unknown" in self.__custom_status and \
+                not self.isVersionSpecific() and \
+                "N/A" in self.__profile_version and \
+                not ParametersManager().offline_mode:
             logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
             # Find remote metadata for the specific current image
-            remote_digest, version = WebUtils.getMetaIdAndVersion(self.__name)
-            if remote_digest is not None:
+            with console.status(f"Synchronization of the [green]{self.__name}[/green] image status...", spinner_style="blue"):
+                remote_digest = WebUtils.getMetaDigestId(self.__name)
+                version = WebUtils.getRemoteVersion(self.__name)
+            if remote_digest is not None and self.__digest:
                 # Compare current and remote latest digest for up-to-date status
                 self.__is_update = self.__digest == remote_digest
-                self.__custom_status = ""
             if version is not None:
+                # Fallback to version matching
+                self.__is_update = self.__is_update or self.__image_version == version
                 # Set latest remote version
                 self.__setLatestVersion(version)
+            self.__custom_status = ""
         return self
 
     def updateCheck(self) -> Optional[str]:
@@ -307,6 +322,15 @@ class ExegolImage(SelectableInterface):
                     # if the selected remote image have a meta_id, it's a latest tag
                     if default.is_latest:
                         selected = default
+
+            if len(img.attrs.get('RepoTags', [])) == 0:
+                # If RepoTags is lost, fallback to RepoDigests (happen when there is multiple arch install on the same tag name)
+                for sub_image in img.attrs.get('RepoDigests'):
+                    current_id = sub_image.split('@')[-1]
+                    for remote in remote_images:
+                        if remote.meta_id == current_id:
+                            selected = remote
+                            break
             if selected is None:
                 # if no latest tag have been found, use version specific metadata
                 selected = default
