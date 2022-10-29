@@ -284,6 +284,8 @@ class DockerUtils:
         try:
             image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
             images = cls.__client.images.list(image_name, filters={"dangling": False})
+            # Try to find lost Exegol images
+            recovery_images = cls.__client.images.list(filters={"dangling": True})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -291,11 +293,21 @@ class DockerUtils:
             return  # type: ignore
         # Filter out image non-related to the right repository
         result = []
+        ids = set()
         for img in images:
             # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
             if len(img.attrs.get('RepoTags', [])) == 0 or \
                     ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
+                ids.add(img.id)
+        for img in recovery_images:
+            # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
+            if len(img.attrs.get('RepoTags', [1])) > 0 or len(img.attrs.get('RepoDigests', [1])) > 0 or img.id in ids:
+                # Skip image from other repo and image already found
+                continue
+            if img.labels.get('org.exegol.app', '') == "Exegol":
+                result.append(img)
+                ids.add(img.id)
         return result
 
     @classmethod
