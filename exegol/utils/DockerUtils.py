@@ -102,7 +102,7 @@ class DockerUtils:
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
         try:
-            container = cls.__client.containers.run(model.image.getFullName(),
+            container = cls.__client.containers.run(model.image.getDockerRef(),
                                                     command=model.config.getEntrypointCommand(),
                                                     detach=True,
                                                     name=model.hostname,

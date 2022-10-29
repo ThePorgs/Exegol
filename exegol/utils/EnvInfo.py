@@ -43,6 +43,8 @@ class EnvInfo:
     elif "arm" in arch:
         if "v5" in arch:
             arch = "arm/v5"
+        elif "v6" in arch:
+            arch = "arm/v6"
         elif "v7" in arch:
             arch = "arm/v7"
         elif "v8" in arch:

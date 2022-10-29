@@ -205,7 +205,9 @@ class ExegolImage(SelectableInterface):
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
         if self.isLocked():
-            original_name = container.attrs["Config"]["Image"].split(":")[1]
+            original_name = container.attrs["Config"]["Image"]
+            if ':' in original_name:
+                original_name = original_name.split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
                 version_parsed = MetaImages.tagNameParsing(self.__name)
@@ -590,3 +592,12 @@ class ExegolImage(SelectableInterface):
     def getFullVersionName(self) -> str:
         """Dockerhub image's full (installed) version name getter"""
         return f"{ConstantConfig.IMAGE_NAME}:{self.getInstalledVersionName()}"
+
+    def getDockerRef(self) -> str:
+        """Find and return the right id to target the current image for docker.
+        If tag is lost, fallback to local image id."""
+        if self.getFullName() in self.__image.attrs.get('RepoTags', []):
+            return self.getFullName()
+        elif self.getFullVersionName() in self.__image.attrs.get('RepoTags', []):
+            return self.getFullVersionName()
+        return self.getLocalId()
