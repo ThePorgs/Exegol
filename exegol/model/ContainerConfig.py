@@ -349,7 +349,7 @@ class ContainerConfig:
             logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().shared_resources_path, '/my-resources')
+            self.addVolume(UserConfig().shared_resources_path, '/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableSharedResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
@@ -536,14 +536,14 @@ class ContainerConfig:
                 # Volume is already prepared
                 return
         if self.__workspace_custom_path is not None:
-            self.addVolume(self.__workspace_custom_path, '/workspace', set_sticky_group=True)
+            self.addVolume(self.__workspace_custom_path, '/workspace', enable_sticky_group=True)
         elif self.__disable_workspace:
             # Skip default volume workspace if disabled
             return
         else:
             # Add shared-data-volumes private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
-            self.addVolume(volume_path, '/workspace', set_sticky_group=True)
+            self.addVolume(volume_path, '/workspace', enable_sticky_group=True)
 
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
@@ -680,7 +680,8 @@ class ContainerConfig:
                   container_path: str,
                   must_exist: bool = False,
                   read_only: bool = False,
-                  set_sticky_group: bool = False,
+                  enable_sticky_group: bool = False,
+                  force_sticky_group: bool = False,
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration.
         When the host path does not exist (neither file nor folder):
@@ -691,14 +692,14 @@ class ContainerConfig:
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
             # Choose to update fs directory perms if available and depending on user choice
-            execute_update_fs = set_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms)
+            execute_update_fs = enable_sticky_group and (force_sticky_group or (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
             try:
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
                         # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
-                        execute_update_fs = set_sticky_group
+                        execute_update_fs = enable_sticky_group
                         os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
@@ -712,7 +713,7 @@ class ContainerConfig:
                     # TODO test on WSL
                     # Apply perms update
                     FsUtils.setGidPermission(path)
-                elif set_sticky_group:
+                elif enable_sticky_group:
                     # If user choose not to update, print tips
                     logger.warning(f"The file sharing permissions between the container and the host will not be applied automatically by Exegol. ("
                                    f"{'Currently enabled by default according to the user config' if UserConfig().auto_update_workspace_fs else 'Use the --update-fs option to enable the feature'})")
