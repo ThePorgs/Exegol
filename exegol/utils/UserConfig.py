@@ -49,6 +49,7 @@ class UserConfig(metaclass=MetaSingleton):
 # Volume path can be changed at any time but existing containers will not be affected by the update
 volumes:
     # The shared resources volume is a storage space dedicated to the user to customize his environment and tools. This volume can be shared across all exegol containers.
+    # Attention! The permissions of this folder (and subfolders) will be updated to share read/write rights between the host (user) and the container (root). Do not modify this path to a folder on which the permissions (chmod) should not be modified.
     my_resources_path: {self.shared_resources_path}
     
     # Exegol resources are data and static tools downloaded in addition to docker images. These tools are complementary and are accessible directly from the host.
