@@ -697,14 +697,15 @@ class ContainerConfig:
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
             # Choose to update fs directory perms if available and depending on user choice
-            execute_update_fs = enable_sticky_group and (force_sticky_group or (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
+            # if force_sticky_group is set, user choice is bypassed, fs will be updated.
+            execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
             try:
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
                         # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
-                        execute_update_fs = enable_sticky_group
+                        execute_update_fs = force_sticky_group or enable_sticky_group
                         os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
