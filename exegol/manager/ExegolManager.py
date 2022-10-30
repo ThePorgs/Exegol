@@ -496,7 +496,7 @@ class ExegolManager:
         # When container exec a command as a daemon, the execution must be set on the container's entrypoint
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
-            cmd = ExegolContainer.formatShellCommand(ParametersManager().exec)
+            cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
             config.setContainerCommand(cmd)
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()

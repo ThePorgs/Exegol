@@ -161,15 +161,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: Sequence[str], quiet: bool = False):
-        """Generic method to format a shell command and support zsh aliases"""
+    def formatShellCommand(command: Sequence[str], quiet: bool = False, entrypoint_mode: bool = False):
+        """Generic method to format a shell command and support zsh aliases.
+        Set quiet to disable any logging here.
+        Set entrypoint_mode to start the command with the entrypoint.sh config loader."""
         # Using base64 to escape special characters
         str_cmd = ' '.join(command)
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
+        entrypoint_loader = "[ -f /exegol/entrypoint.sh ] && /exegol/entrypoint.sh load_config; " if entrypoint_mode else ""
         cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
         # Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'zsh -c "autoload -Uz compinit; compinit; source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
+        cmd = f'zsh -c "{entrypoint_loader}autoload -Uz compinit; compinit; source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
         logger.debug(f"Formatting zsh command: {cmd}")
         return cmd
 

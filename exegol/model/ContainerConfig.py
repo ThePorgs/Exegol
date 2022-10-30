@@ -24,7 +24,7 @@ class ContainerConfig:
     """Configuration class of an exegol container"""
 
     # Default hardcoded value
-    __default_entrypoint = "bash"
+    __default_entrypoint = "bash -c '/exegol/entrypoint.sh default || bash'"
     __default_shm_size = "64M"
 
     # Reference static config data
@@ -423,6 +423,7 @@ class ContainerConfig:
         if not self.__network_host:
             # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
             # TODO test with ipv6 disable with kernel modules
+            # TODO test with ipv6 disable on host with network shared
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
@@ -430,8 +431,12 @@ class ContainerConfig:
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
-            self.setContainerCommand(
-                f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")  # TODO add log rotation on image config
+            vpn_cmd = f"bash -c \"[ -f /exegol/entrypoint.sh ] && /exegol/entrypoint.sh ovpn '{ovpn_parameters}' || " \
+                      f"(openvpn {ovpn_parameters} | tee /var/log/vpn.log; " \
+                      f"[ -f /exegol/entrypoint.sh ] && /exegol/entrypoint.sh endless || bash)\""
+            # TODO drop v2 image backward support
+            # vpn_cmd = f"/exegol/entrypoint.sh ovpn '{ovpn_parameters}'"
+            self.setContainerCommand(vpn_cmd)
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
