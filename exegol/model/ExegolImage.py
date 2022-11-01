@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 
 from docker.models.containers import Container
 from docker.models.images import Image
@@ -36,6 +36,7 @@ class ExegolImage(SelectableInterface):
         self.__name: str = name
         self.__alt_name: str = ''
         self.__arch = ""
+        self.__entrypoint: Optional[Union[str, List[str]]] = None
         # Latest version available of the current image (or current version if version specific)
         self.__profile_version: str = version_parsed if version_parsed else "[bright_black]N/A[/bright_black]"
         # Version of the docker image installed
@@ -114,6 +115,7 @@ class ExegolImage(SelectableInterface):
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
+        self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set build date from labels
         self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
         self.__setArch(MetaImages.parseArch(self.__image))
@@ -134,6 +136,7 @@ class ExegolImage(SelectableInterface):
         self.__is_install = True
         # Set real size on disk
         self.__setRealSize(self.__image.attrs["Size"])
+        self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
         # Set build date from labels
@@ -505,9 +508,14 @@ class ExegolImage(SelectableInterface):
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
         return self.__disk_size if self.__is_install else f"{self.__dl_size} [bright_black](compressed)[/bright_black]"
 
+    def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
+        """Image's entrypoint configuration getter.
+        Exegol images before 3.x.x don't have any entrypoint set (because /exegol/entrypoint.sh don't exist yet. In this case, this getter will return None."""
+        return self.__entrypoint
+
     def getBuildDate(self):
         """Build date getter"""
-        if "N/A" not in self.__build_date:
+        if "N/A" not in self.__build_date.upper():
             return datetime.strptime(self.__build_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
         else:
             return self.__build_date

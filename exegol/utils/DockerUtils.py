@@ -85,15 +85,11 @@ class DockerUtils:
         return cls.__containers
 
     @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False,
-                        command: str = None) -> ExegolContainer:
+    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
         model.prepare()
-        if command is not None:
-            # Overwriting container starting command, shouldn't be used, prefer using config.setContainerCommand()
-            model.config.setContainerCommand(command)
         logger.debug(model)
         # Preload docker volume before container creation
         for volume in model.config.getVolumes():
@@ -101,9 +97,13 @@ class DockerUtils:
                 docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
+        entrypoint, command = model.config.getEntrypointCommand(model.image.getEntrypointConfig())
+        logger.debug(f"Entrypoint: {entrypoint}")
+        logger.debug(f"Cmd: {command}")
         try:
             container = cls.__client.containers.run(model.image.getDockerRef(),
-                                                    command=model.config.getEntrypointCommand(),
+                                                    entrypoint=entrypoint,
+                                                    command=command,
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,

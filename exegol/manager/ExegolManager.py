@@ -497,7 +497,8 @@ class ExegolManager:
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
             cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
-            config.setContainerCommand(cmd)
+            config.setLegacyContainerCommand(f'zsh -c "{cmd}"')
+            config.setContainerCommand("cmd", "zsh", "-c", cmd)
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"

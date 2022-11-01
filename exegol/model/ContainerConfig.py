@@ -24,7 +24,9 @@ class ContainerConfig:
     """Configuration class of an exegol container"""
 
     # Default hardcoded value
-    __default_entrypoint = "bash -c '/exegol/entrypoint.sh default || bash'"
+    __default_entrypoint_legacy = "bash"
+    __default_entrypoint = ["/exegol/entrypoint.sh"]
+    __default_cmd = ["default"]
     __default_shm_size = "64M"
 
     # Reference static config data
@@ -54,7 +56,9 @@ class ContainerConfig:
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
-        self.__container_command: str = self.__default_entrypoint
+        self.__container_command_legacy: Optional[str] = None
+        self.__container_command: List[str] = self.__default_cmd
+        self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
         if container is not None:
@@ -431,12 +435,9 @@ class ContainerConfig:
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
-            vpn_cmd = f"bash -c \"[ -f /exegol/entrypoint.sh ] && /exegol/entrypoint.sh ovpn '{ovpn_parameters}' || " \
-                      f"(openvpn {ovpn_parameters} | tee /var/log/vpn.log; " \
-                      f"[ -f /exegol/entrypoint.sh ] && /exegol/entrypoint.sh endless || bash)\""
-            # TODO drop v2 image backward support
-            # vpn_cmd = f"/exegol/entrypoint.sh ovpn '{ovpn_parameters}'"
-            self.setContainerCommand(vpn_cmd)
+            vpn_cmd_legacy = f"bash -c 'openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'"
+            self.setLegacyContainerCommand(vpn_cmd_legacy)
+            self.setContainerCommand("ovpn", ovpn_parameters)
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
@@ -564,14 +565,21 @@ class ContainerConfig:
             host_mode = False
         self.__network_host = host_mode
 
-    def setContainerCommand(self, cmd: str):
+    def setContainerCommand(self, entrypoint_function: str, *parameters: str):
         """Set the entrypoint command of the container. This command is executed at each startup.
         This parameter is applied to the container at creation."""
-        self.__container_command = cmd
+        self.__container_command = [entrypoint_function] + list(parameters)
+
+    def setLegacyContainerCommand(self, cmd: str):
+        """Set the entrypoint command of the container. This command is executed at each startup.
+        This parameter is applied to the container at creation.
+        This method is legacy, before the entrypoint exist (support images before 3.x.x)."""
+        self.__container_command_legacy = cmd
 
     def __restoreEntrypoint(self):
         """Restore container's entrypoint to its default configuration"""
-        self.__container_command = self.__default_entrypoint
+        self.__container_command_legacy = None
+        self.__container_command = self.__default_cmd
 
     def __addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
@@ -632,9 +640,16 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getEntrypointCommand(self) -> str:
-        """Get container entrypoint path"""
-        return self.__container_command
+    def getEntrypointCommand(self, image_entrypoint: Optional[str]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
+        """Get container entrypoint/command arguments.
+        This method support legacy configuration."""
+        if image_entrypoint is None:
+            # Legacy mode
+            if self.__container_command_legacy is None:
+                return [self.__default_entrypoint_legacy], []
+            return None, self.__container_command_legacy
+        else:
+            return self.__default_entrypoint, self.__container_command
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""
