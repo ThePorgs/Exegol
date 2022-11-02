@@ -83,6 +83,7 @@ class Command:
         self.arch = Option("--arch",
                            dest="arch",
                            action="store",
+                           choices={"amd64", "arm64"},
                            default=EnvInfo.arch,
                            help=f"Overwrite default image architecture (default, host's arch: [blue]{EnvInfo.arch}[/blue])")
         self.offline_mode = Option("--offline",
