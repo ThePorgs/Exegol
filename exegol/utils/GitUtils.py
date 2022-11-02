@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional, List
 
@@ -36,12 +37,20 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
+            # TODO test on Windows for compatibility
+            elif test_git_dir.lstat().st_uid != os.getuid():
+                raise PermissionError(test_git_dir.owner())
         except ReferenceError:
             if self.__git_name == "wrapper":
                 logger.warning("Exegol has [red]not[/red] been installed via git clone. Skipping wrapper auto-update operation.")
                 if ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
+            abort_loading = True
+        except PermissionError as e:
+            logger.error(f"The repository {self.__git_name} has been cloned as [red]{e.args[0]}[/red].")
+            logger.error("The current user does not have the necessary rights to perform the self-update operations.")
+            logger.error("Please reinstall exegol (with git clone) without sudo.")
             abort_loading = True
         # locally import git in case git is not installed of the system
         try:
