@@ -656,7 +656,7 @@ class ContainerConfig:
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basis
         if self.__shell_logging or ParametersManager().log:
-            return f"bash -c \"mkdir -p /workspace/logs/; script -q -a -f -c {ParametersManager().shell} /workspace/logs/$(date +'%d-%m-%Y_%H-%M-%S')_shell.log; exit\""
+            return f"bash -c 'mkdir -p /workspace/logs/; umask 007; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; echo \"Compressing logs, please wait...\"; gzip $filelog; exit'"
         return ParametersManager().shell
 
     def getHostWorkspacePath(self) -> str:
