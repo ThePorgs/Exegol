@@ -25,7 +25,7 @@ class ContainerConfig:
 
     # Default hardcoded value
     __default_entrypoint_legacy = "bash"
-    __default_entrypoint = ["/exegol/entrypoint.sh"]
+    __default_entrypoint = ["/.exegol/entrypoint.sh"]
     __default_cmd = ["default"]
     __default_shm_size = "64M"
 

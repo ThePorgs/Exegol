@@ -516,7 +516,7 @@ class ExegolImage(SelectableInterface):
 
     def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
         """Image's entrypoint configuration getter.
-        Exegol images before 3.x.x don't have any entrypoint set (because /exegol/entrypoint.sh don't exist yet. In this case, this getter will return None."""
+        Exegol images before 3.x.x don't have any entrypoint set (because /.exegol/entrypoint.sh don't exist yet. In this case, this getter will return None."""
         return self.__entrypoint
 
     def getBuildDate(self):

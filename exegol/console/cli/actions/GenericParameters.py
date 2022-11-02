@@ -145,7 +145,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               default=[],
                               dest="volumes",
-                              help="Share a new volume between host and exegol (format: --volume /host/path/:/exegol/mount/)")
+                              help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/)")
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],

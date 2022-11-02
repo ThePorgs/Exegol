@@ -197,7 +197,7 @@ Below is an example of a GUI app running in an Exegol container.
   - Host network sharing enabled (host's network interfaces are shared with the container)
   - Timezone sharing enabled
   - Exegol-resources sharing enabled (`/path/to/Exegol/exegol-resources` maps to `/opt/resources` in the container)
-  - Personal resources ("My resources") sharing enabled (`~/.exegol/my-resources` maps to `/my-resources` in the container)
+  - Personal resources ("My resources") sharing enabled (`~/.exegol/my-resources` maps to `/opt/my-resources` in the container)
   - Workspace sharing enabled (`~/.exegol/workspaces/CONTAINER_NAME` maps to `/workspace` in the container)
   
   > Users should keep in mind that when a container is created, it's configuration cannot be modified. If you want another configuration, create another one.
