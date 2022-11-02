@@ -8,6 +8,7 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog, console
 from exegol.utils.WebUtils import WebUtils
 
@@ -353,14 +354,19 @@ class ExegolImage(SelectableInterface):
         # Add remote image left
         for current_remote in remote_images:
             selected = None
+            default = None
             for img in current_remote.getImagesLeft():
                 # the remaining uninstalled images are filtered with the currently selected architecture
                 if MetaImages.parseArch(img) == ParametersManager().arch:
                     selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
                     break
-                # OR if no exact match is found, try to fallback
-                elif selected is None and current_remote.name not in latest_installed:
-                    selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+                # OR if no exact arch match is found, try to default to another available arch
+                elif current_remote.name not in latest_installed:
+                    # fallback to the first option or one corresponding to the host's arch (may happen if the arch parameter has been overwritten by user)
+                    if default is None or MetaImages.parseArch(img) == EnvInfo.arch:
+                        default = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+            if selected is None:
+                selected = default
             if selected:
                 results.append(selected)
 

@@ -36,11 +36,16 @@ class EnvInfo:
     __docker_engine: Optional[str] = None
     # Architecture
     arch = platform.machine().lower()
-    if arch == "x86_64":
+    if arch == "x86_64" or arch == "x86-64":
         arch = "amd64"
     elif arch == "aarch64" or "armv8" in arch:
         arch = "arm64"
     elif "arm" in arch:
+        if platform.architecture()[0] == '64bit':
+            arch = "arm64"
+        else:
+            logger.critical(f"Host architecture seems to be 32-bit ARM ({arch}), which is not supported yet. If possible, please install a 64-bit operating system (Exegol supports ARM64).")
+        """
         if "v5" in arch:
             arch = "arm/v5"
         elif "v6" in arch:
@@ -49,10 +54,11 @@ class EnvInfo:
             arch = "arm/v7"
         elif "v8" in arch:
             arch = "arm64"
-        else:
-            logger.debug(f"Unknown / unsupported ARM architecture: {arch}")
-            # Fallback to default ARM arch
-            arch = "arm64"
+        """
+    else:
+        logger.warning(f"Unknown / unsupported architecture: {arch}. Using 'AMD64' as default.")
+        # Fallback to default AMD64 arch
+        arch = "amd64"
 
     @classmethod
     def initData(cls, docker_info):
