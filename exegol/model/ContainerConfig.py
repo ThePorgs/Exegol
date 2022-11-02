@@ -40,6 +40,7 @@ class ContainerConfig:
         self.__enable_gui: bool = False
         self.__share_timezone: bool = False
         self.__shared_resources: bool = False
+        self.__shared_resources_path: str = "/opt/my-resources"
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
@@ -150,8 +151,9 @@ class ContainerConfig:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
-            elif "/my-resources" in share.get('Destination', ''):
+            elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
                 self.__shared_resources = True
+                self.__shared_resources_path = share.get('Destination')
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
                 assert src_path is not None
@@ -353,14 +355,14 @@ class ContainerConfig:
             logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().shared_resources_path, '/my-resources', enable_sticky_group=True, force_sticky_group=True)
+            self.addVolume(UserConfig().shared_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableSharedResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
         if self.__shared_resources:
             logger.verbose("Config: Disabling shared resources volume")
             self.__shared_resources = False
-            self.removeVolume(container_path='/my-resources')
+            self.removeVolume(container_path='/opt/my-resources')
 
     def enableExegolResources(self) -> bool:
         """Procedure to enable exegol resources volume feature"""
@@ -675,6 +677,10 @@ class ContainerConfig:
         """Return if the feature 'shared resources' is enabled in this container config"""
         return self.__shared_resources
 
+    def getSharedResourcesPath(self) -> str:
+        """Return if the feature 'exegol resources' is enabled in this container config"""
+        return self.__shared_resources_path
+
     def isExegolResourcesEnable(self) -> bool:
         """Return if the feature 'exegol resources' is enabled in this container config"""
         return self.__exegol_resources
@@ -966,7 +972,7 @@ class ContainerConfig:
         for mount in self.__mounts:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                                                       '/etc/timezone', '/my-resources']:
+                                                       '/etc/timezone', '/my-resources', '/opt/my-resources']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result

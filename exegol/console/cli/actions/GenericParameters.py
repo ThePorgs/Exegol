@@ -110,7 +110,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                        action="store_false",
                                        default=True,
                                        dest="shared_resources",
-                                       help=f"Disable the mount of the shared resources (/my-resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
+                                       help=f"Disable the mount of the shared resources (/opt/my-resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
