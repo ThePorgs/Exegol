@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import docker
 from docker import DockerClient
@@ -259,12 +259,24 @@ class DockerUtils:
                 try:
                     docker_local_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
                     # DockerSDK image get is an exact matching, no need to add more check
-                    return ExegolImage(docker_image=docker_local_image).autoLoad()
                 except APIError as err:
                     if err.status_code == 404:
+                        # try to find it in recovery mode
+                        logger.verbose("Unable to find your image. Trying to find in recovery mode.")
+                        recovery_images = cls.__findLocalRecoveryImages()
+                        match = []
+                        for img in recovery_images:
+                            if img.labels.get('org.exegol.tag', '') == tag:
+                                match.append(ExegolImage(docker_image=img))
+                        if len(match) == 1:
+                            return match[0]
+                        elif len(match) > 1:
+                            return cast(ExegolImage, ExegolTUI.selectFromTable(match))
                         raise ObjectNotFound
                     else:
                         logger.critical(f"Error on image loading: {err}")
+                        return  # type: ignore
+                return ExegolImage(docker_image=docker_local_image).autoLoad()
             else:
                 for img in cls.__images:
                     if img.getName() == tag:
@@ -273,7 +285,7 @@ class DockerUtils:
                             cls.__findImageMatch(img)
                         return img
         except ObjectNotFound:
-            logger.critical(f"The desired image has not been found ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting")
+            logger.critical(f"The desired image is not installed or do not exist ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting.")
         return  # type: ignore
 
     @classmethod
@@ -284,8 +296,6 @@ class DockerUtils:
         try:
             image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
             images = cls.__client.images.list(image_name, filters={"dangling": False})
-            # Try to find lost Exegol images
-            recovery_images = cls.__client.images.list(filters={"dangling": True})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -300,15 +310,38 @@ class DockerUtils:
                     ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
                 ids.add(img.id)
+
+        # Try to find lost Exegol images
+        recovery_images = cls.__findLocalRecoveryImages()
         for img in recovery_images:
             # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
-            if len(img.attrs.get('RepoTags', [1])) > 0 or len(img.attrs.get('RepoDigests', [1])) > 0 or img.id in ids:
+            if img.id in ids:
+                # Skip image from other repo and image already found
+                logger.debug(f"Duplicate found in recovery mode! {img}")
+                continue
+            else:
+                result.append(img)
+                ids.add(img.id)
+        return result
+
+    @classmethod
+    def __findLocalRecoveryImages(cls) -> List[Image]:
+        try:
+            # Try to find lost Exegol images
+            recovery_images = cls.__client.images.list(filters={"dangling": True})
+        except APIError as err:
+            logger.debug(f"Error occurred in recovery mode: {err}")
+            return []
+        result = []
+        for img in recovery_images:
+            # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
+            if len(img.attrs.get('RepoTags', [1])) > 0 or len(img.attrs.get('RepoDigests', [1])) > 0:
                 # Skip image from other repo and image already found
                 continue
             if img.labels.get('org.exegol.app', '') == "Exegol":
                 result.append(img)
-                ids.add(img.id)
         return result
+
 
     @classmethod
     def __listRemoteImages(cls) -> List[MetaImages]:
