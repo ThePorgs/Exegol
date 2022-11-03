@@ -43,7 +43,8 @@ class ExegolTUI:
                             TimeElapsedColumn(),
                             "•",
                             TimeRemainingColumn(),
-                            transient=True) as progress:
+                            transient=True,
+                            console=console) as progress:
             task_layers_download = progress.add_task("[bold red]Downloading layers...", total=0)
             task_layers_extract = progress.add_task("[bold gold1]Extracting layers...", total=0, start=False)
             for line in stream:  # Receiving stream from docker API
@@ -99,8 +100,17 @@ class ExegolTUI:
                         progress.update(task_id, description=f"[green]Checksum {layer_id} ...")
                 elif "Image is up to date" in status or "Status: Downloaded newer image for" in status:
                     logger.success(status)
+                    # When 'quick_exit' is set, breaking the download TUI progress to handle the next part of the same stream logs
                     if quick_exit:
                         break
+                elif status in ["Waiting", "Verifying Checksum"]:
+                    # Ignore these status messages
+                    continue
+                elif status == "Already exists":
+                    # Layers that already exists can be added as fully completed without creating a specific task
+                    layers.add(layer_id)
+                    layers_downloaded.add(layer_id)
+                    layers_extracted.add(layer_id)
                 else:
                     logger.debug(line)
 
