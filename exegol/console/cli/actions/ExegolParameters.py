@@ -31,8 +31,8 @@ class Start(Command, ContainerCreation, ContainerStart):
                             dest="shell",
                             action="store",
                             choices={"zsh", "bash", "tmux"},
-                            default="zsh",
-                            help="Select a shell environment to launch at startup (Default: [blue]zsh[/blue])")
+                            default=UserConfig().default_start_shell,
+                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.shell, "required": False},

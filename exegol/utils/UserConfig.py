@@ -26,6 +26,7 @@ class UserConfig(metaclass=MetaSingleton):
         self.auto_check_updates: bool = True
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
+        self.default_start_shell: str = "zsh"
 
         # process
         self.__load_file()
@@ -67,6 +68,9 @@ config:
     
     # Automatically modifies the permissions of folders and sub-folders in your workspace by default to enable file sharing between the container with your host user.
     auto_update_workspace_fs: {self.auto_update_workspace_fs}
+    
+    # Default shell command to start
+    default_start_shell: {self.default_start_shell}
 """
         # TODO handle default image selection
         # TODO handle default start container
@@ -96,7 +100,7 @@ config:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
-    def __load_config(self, data: dict, config_name: str, default: bool) -> bool:
+    def __load_config(self, data: dict, config_name: str, default: Union[bool, str]) -> Union[bool, str]:
         try:
             result = data.get(config_name)
             if result is None:
@@ -134,6 +138,7 @@ config:
         self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
         self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
         self.auto_update_workspace_fs = self.__load_config(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
+        self.default_start_shell = self.__load_config(config_data, 'default_start_shell', self.default_start_shell)
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
@@ -145,6 +150,7 @@ config:
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
             f"Auto-update fs: {boolFormatter(self.auto_update_workspace_fs)}",
+            f"Default start shell: {self.default_start_shell}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

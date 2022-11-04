@@ -296,10 +296,10 @@ class ExegolTUI:
         object_name = "container" if object_type is ExegolContainer else "image"
         action = "create" if object_type is ExegolContainer else "build"
         # Get a list of every choice available
-        choices = [obj.getKey() for obj in data]
+        choices: List[str] = [obj.getKey() for obj in data]
         if conflict_mode or (len(data) > 1 and len(set(choices)) == 1):
             conflict_mode = True
-            choices: List[str] = [str(k) for k in range(1, len(data) + 1)]
+            choices = [str(k) for k in range(1, len(data) + 1)]
         # Print data list
         cls.printTable(data, safe_key=conflict_mode)
         # If no default have been supplied, using the first one
