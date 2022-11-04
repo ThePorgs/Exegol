@@ -113,6 +113,7 @@ class ExegolImage(SelectableInterface):
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.parseAliasTagName(self.__image)
+            self.__alt_name = f"{self.__name} [bright_black](untag)[/bright_black]"
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -557,8 +558,7 @@ class ExegolImage(SelectableInterface):
     def getDisplayName(self) -> str:
         """Image's display name getter"""
         result = self.__alt_name if self.__alt_name else self.__name
-        default_arch = ParametersManager().arch
-        if self.getArch() != default_arch or logger.isEnabledFor(ExeLog.VERBOSE):
+        if self.getArch() != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
             result += f" [bright_black]({self.getArch()})[/bright_black]"
         return result
 
