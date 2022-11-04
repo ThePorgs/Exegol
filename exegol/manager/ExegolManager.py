@@ -139,7 +139,6 @@ class ExegolManager:
             logger.setLevel(ExeLog.VERBOSE)
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
         if len(images) == 0:
-            logger.error("No images were selected. Exiting.")
             return
         all_name = ", ".join([x.getName() for x in images])
         if not ParametersManager().force_mode and not Confirm(
@@ -256,7 +255,7 @@ class ExegolManager:
                 # (raised from TUI interactive selection)
                 if must_exist:
                     # If there is no image installed, return none
-                    logger.error("No images were found")
+                    logger.error("Nothing to do.")
                     return [] if multiple else None
                 else:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
@@ -391,9 +390,6 @@ class ExegolManager:
         elif object_type is ExegolImage:
             # List all images available
             object_list: List[ExegolImage] = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
-            # ToBeRemoved images are only shown in verbose mode
-            if not logger.isEnabledFor(ExeLog.VERBOSE):
-                object_list = [i for i in object_list if not i.isLocked()]
         else:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception

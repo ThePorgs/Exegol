@@ -211,16 +211,21 @@ class DockerUtils:
     # # # Image Section # # #
 
     @classmethod
-    def listImages(cls, include_version_tag: bool = False) -> List[ExegolImage]:
+    def listImages(cls, include_version_tag: bool = False, include_locked: bool = False) -> List[ExegolImage]:
         """List available docker images.
         Return a list of ExegolImage"""
         if cls.__images is None:
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)
+        result = cls.__images
+        if not (logger.isEnabledFor(ExeLog.VERBOSE) or include_locked):
+            # ToBeRemoved images are only shown in verbose mode
+            result = [i for i in result if not i.isLocked()]
         if not include_version_tag:
-            return [img for img in cls.__images if not img.isVersionSpecific() or img.isInstall()]
-        return cls.__images
+            # Version specific images not installed are excluded by default
+            result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
+        return result
 
     @classmethod
     def listInstalledImages(cls) -> List[ExegolImage]:
@@ -234,7 +239,7 @@ class DockerUtils:
     def getImage(cls, tag: str) -> ExegolImage:
         """Get an ExegolImage from tag name."""
         # Fetch every images available
-        images = cls.listImages()
+        images = cls.listImages(include_version_tag=True, include_locked=True)
         match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
