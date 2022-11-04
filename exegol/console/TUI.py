@@ -285,7 +285,7 @@ class ExegolTUI:
         # Check if there is at least one object in the list
         if len(data) == 0:
             if object_type is ExegolImage:
-                logger.warning("No images are installed")
+                logger.warning("No images are available for selection")
             elif object_type is ExegolContainer:
                 logger.warning("No containers have been created yet")
             else:
@@ -297,7 +297,7 @@ class ExegolTUI:
         action = "create" if object_type is ExegolContainer else "build"
         # Get a list of every choice available
         choices = [obj.getKey() for obj in data]
-        if conflict_mode or len(set(choices)) == 1:
+        if conflict_mode or (len(data) > 1 and len(set(choices)) == 1):
             conflict_mode = True
             choices: List[str] = [str(k) for k in range(1, len(data) + 1)]
         # Print data list

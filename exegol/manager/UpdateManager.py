@@ -34,7 +34,13 @@ class UpdateManager:
             tag = image_args
         if tag is None:
             # Filter for updatable images
-            available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+            if install_mode:
+                available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+            else:
+                available_images = [i for i in DockerUtils.listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
+                if len(available_images) == 0:
+                    logger.success("All images already installed are up to date!")
+                    return None
             try:
                 # Interactive selection
                 selected_image = ExegolTUI.selectFromTable(available_images,
@@ -54,7 +60,11 @@ class UpdateManager:
                 selected_image = DockerUtils.getImage(tag)
             except ObjectNotFound:
                 # If the image do not exist, ask to build it
-                return cls.__askToBuild(tag)
+                if install_mode:
+                    return cls.__askToBuild(tag)
+                else:
+                    logger.error(f"Image '{tag}' was not found. If you wanted to build a local image, you can use the 'install' action instead.")
+                    return None
 
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
