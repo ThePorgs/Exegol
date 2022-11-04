@@ -266,7 +266,7 @@ class DockerUtils:
                         recovery_images = cls.__findLocalRecoveryImages()
                         match = []
                         for img in recovery_images:
-                            if img.labels.get('org.exegol.tag', '') == tag:
+                            if ExegolImage.parseAliasTagName(img) == tag:
                                 match.append(ExegolImage(docker_image=img))
                         if len(match) == 1:
                             return match[0]

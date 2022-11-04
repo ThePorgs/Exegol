@@ -112,7 +112,7 @@ class ExegolImage(SelectableInterface):
                     self.__profile_version = self.__image_version
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
-            self.__name = self.__image.labels.get("org.exegol.tag", "<none>") + "-" + self.__image.labels.get("org.exegol.version", "v?")
+            self.__name = self.parseAliasTagName(self.__image)
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -191,6 +191,11 @@ class ExegolImage(SelectableInterface):
                 self.__setImageVersion(version_label, source_tag=False)
                 if self.isVersionSpecific():
                     self.__profile_version = self.__image_version
+
+    @classmethod
+    def parseAliasTagName(cls, image: Image) -> str:
+        """Create a tag name alias from labels when image's tag is lost"""
+        return image.labels.get("org.exegol.tag", "<none>") + "-" + image.labels.get("org.exegol.version", "v?")
 
     def __checkLocalLabel(self):
         """Check if the local label is set. Default to yes for old build"""
