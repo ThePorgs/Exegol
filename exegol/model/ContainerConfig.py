@@ -437,7 +437,7 @@ class ContainerConfig:
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
-            vpn_cmd_legacy = f"bash -c 'openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'"
+            vpn_cmd_legacy = f"bash -c 'mkdir -p /var/log/exegol; openvpn {ovpn_parameters} | tee /var/log/exegol/vpn.log; bash'"
             self.setLegacyContainerCommand(vpn_cmd_legacy)
             self.setContainerCommand("ovpn", ovpn_parameters)
 
