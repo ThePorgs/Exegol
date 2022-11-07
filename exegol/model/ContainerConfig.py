@@ -651,7 +651,7 @@ class ContainerConfig:
                 return [self.__default_entrypoint_legacy], []
             return None, self.__container_command_legacy
         else:
-            return self.__default_entrypoint, self.__container_command
+            return self.__container_entrypoint, self.__container_command
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""
