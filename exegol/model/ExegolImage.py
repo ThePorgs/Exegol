@@ -113,7 +113,7 @@ class ExegolImage(SelectableInterface):
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.parseAliasTagName(self.__image)
-            self.__alt_name = f"{self.__name} [bright_black](untag)[/bright_black]"
+            self.__alt_name = f"{self.__name} [orange3](untag)[/orange3]"
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
@@ -223,8 +223,8 @@ class ExegolImage(SelectableInterface):
                 version_parsed = MetaImages.tagNameParsing(self.__name)
                 self.__version_specific = bool(version_parsed)
                 self.__setImageVersion(version_parsed)
-            self.__alt_name = f'{original_name} [bright_black](outdated' \
-                              f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/bright_black]'
+            self.__alt_name = f'{original_name} [orange3](outdated' \
+                              f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/orange3]'
 
     def autoLoad(self) -> 'ExegolImage':
         """If the current image is in an unknown state, it's possible to load remote data specifically."""
@@ -559,7 +559,13 @@ class ExegolImage(SelectableInterface):
         """Image's display name getter"""
         result = self.__alt_name if self.__alt_name else self.__name
         if self.getArch() != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
-            result += f" [bright_black]({self.getArch()})[/bright_black]"
+            if "arm64" in self.getArch():
+                color = "slate_blue3"
+            elif "amd64" in self.getArch():
+                color = "medium_orchid3"
+            else:
+                color = "yellow3"
+            result += f" [{color}]({self.getArch()})[/{color}]"
         return result
 
     def getArch(self) -> str:

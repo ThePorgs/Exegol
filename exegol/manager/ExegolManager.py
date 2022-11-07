@@ -54,7 +54,13 @@ class ExegolManager:
             images = DockerUtils.listImages(include_version_tag=False)
             containers = DockerUtils.listContainers()
             # List and print images
-            logger.verbose(f"Listing local and remote Exegol images (filtering for architecture [green]{ParametersManager().arch}[/green])")
+            if "arm64" in ParametersManager().arch:
+                color = "slate_blue3"
+            elif "amd64" in ParametersManager().arch:
+                color = "medium_orchid3"
+            else:
+                color = "yellow3"
+            logger.verbose(f"Listing local and remote Exegol images (filtering for architecture [{color}]{ParametersManager().arch}[/{color}])")
             ExegolTUI.printTable(images)
             # List and print containers
             logger.verbose("Listing local Exegol containers")
