@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any, Union
 from docker.models.containers import Container
 from docker.models.images import Image
 
+from exegol.console import ConsoleFormat
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
@@ -559,12 +560,7 @@ class ExegolImage(SelectableInterface):
         """Image's display name getter"""
         result = self.__alt_name if self.__alt_name else self.__name
         if self.getArch() != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
-            if "arm64" in self.getArch():
-                color = "slate_blue3"
-            elif "amd64" in self.getArch():
-                color = "medium_orchid3"
-            else:
-                color = "yellow3"
+            color = ConsoleFormat.getArchColor(self.getArch())
             result += f" [{color}]({self.getArch()})[/{color}]"
         return result
 
