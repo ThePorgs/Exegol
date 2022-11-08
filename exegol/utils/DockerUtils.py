@@ -268,7 +268,7 @@ class DockerUtils:
                     if err.status_code == 404:
                         # try to find it in recovery mode
                         logger.verbose("Unable to find your image. Trying to find in recovery mode.")
-                        recovery_images = cls.__findLocalRecoveryImages()
+                        recovery_images = cls.__findLocalRecoveryImages(include_untag=True)
                         match = []
                         for img in recovery_images:
                             if ExegolImage.parseAliasTagName(img) == tag:
@@ -330,23 +330,28 @@ class DockerUtils:
         return result
 
     @classmethod
-    def __findLocalRecoveryImages(cls) -> List[Image]:
+    def __findLocalRecoveryImages(cls, include_untag: bool = False) -> List[Image]:
+        """This method try to recovery untagged docker images.
+        Set include_untag option to recover images with a valid RepoDigest (no not dangling) but without tag."""
         try:
             # Try to find lost Exegol images
             recovery_images = cls.__client.images.list(filters={"dangling": True})
+            if include_untag:
+                recovery_images += cls.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
         result = []
+        id_list = set()
         for img in recovery_images:
             # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
-            if len(img.attrs.get('RepoTags', [1])) > 0 or len(img.attrs.get('RepoDigests', [1])) > 0:
+            if len(img.attrs.get('RepoTags', [1])) > 0 or (not include_untag and len(img.attrs.get('RepoDigests', [1])) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
             if img.labels.get('org.exegol.app', '') == "Exegol":
                 result.append(img)
+                id_list.add(img.id)
         return result
-
 
     @classmethod
     def __listRemoteImages(cls) -> List[MetaImages]:
