@@ -1,8 +1,9 @@
 > **Want to quick start without reading anything else? [Click here](#-get-started)**
 
-# The Exegol project
-
 <div align="center">
+
+  <img alt="latest commit on master" width="600" src="https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/rounded_social_preview.png">
+  <br><br>
 
   [![DockerHub type](https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol)](https://hub.docker.com/r/nwodtuhs/exegol)
   [![DockerHub state](https://img.shields.io/docker/cloud/build/nwodtuhs/exegol)](https://hub.docker.com/r/nwodtuhs/exegol)
@@ -18,35 +19,19 @@
   <br>
   <img alt="current version" src="https://img.shields.io/badge/linux-supported-success">
   <img alt="current version" src="https://img.shields.io/badge/windows-supported-success">
-  <img alt="current version" src="https://img.shields.io/badge/mac-in%20progress-important">
+  <img alt="current version" src="https://img.shields.io/badge/mac-supported-success">
   <br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
-  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social"></a>
+  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social">
   <br><br>
-
-  [![Python](https://img.shields.io/discord/1031715284517662750?color=white&label=discord&logo=discord&logoColor=white)](https://discord.gg/BcgXnRpqxd)
-  <br><br>
+  <a href="https://discord.gg/BcgXnRpqxd" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/discord_join_us.png" width="150">
+  </a><br><br>
 </div>
 
 > Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements.
-> Script kiddies use Kali Linux, real pentesters use Exegol, megachads maintain it 👀
+> Script kiddies use Kali Linux, real pentesters use Exegol 👀
 
-## Wrapper & images
-Exegol is two things in one. Try it, and you'll stop using your old, unstable and risky environment, no more Kali Linux as host or single VM.
-- **a python wrapper** making everyone's life easier. It handles all docker and git operations so you don't have to, and it allows for l33t hacking following best-practices. No more messed up history, libraries, and workspaces. **Now's the time to have a clean environment** with one container per engagement without the effort. Exegol handles multiple images and multiple containers.
-    - Want to test a new tool without risking messing up your environment? Exegol is here, pop up a new container in 5 seconds and try the tool without risk or effort
-    - Like the idea of using docker containers without effort but don't want to sacrifice GUI tools like BloodHound and Burp? Exegol is here, new containers are created with X11 sharing by default allowing for GUI tools to work.
-    - Like the idea of using docker containers but want to use USB accessories, Wi-Fi, host's network interfaces, etc.? Exegol handles all that flawlessly
-    - Want to stop pentesting your clients with the same environment everytime, interconnecting everything and risking being a weak link? Exegol is here, pop multiple containers without breaking a sweat and lead by example!
-    - You like this idea but don't want to lose your work when quitting/removing a container? Exegol shares a workspace directory per container with your host, allowing you to work knowing your progress won't be lost.
-- a set of pre-built **docker images** and dockerfiles that include a neat choice of tools, awesome resources, custom configs and many more.
-    - Fed up with the instability and poor choice of tools of Kali Linux ? Exegol is here, trying to correct all this by being community-driven. Want some not-so-famous tool to be added? Open an issue and let's talk do it!
-    - Tired of always having to open `man` or print the help for every tool because the syntax varies? Exegol includes a command history allowing you to just replace the placeholders with your values, saving you precious time
-    - Want to improve productivity? Exegol includes all sorts of custom configs and tweaks with ease of use and productivity in mind (colored output for Impacket, custom shortcuts and aliases, custom tool configs, ...).
-    - Want to build your own docker images locally? It's absolutely possible and the wrapper will help in the quest.
-    - Tired of always having to search github for your favorite privesc enumeration script? Exegol includes a set of resources, shared with all exegol containers and your host, including LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus, PowerSploit and many more.
-
-![info](./.assets/exegol-info.png)
+![info](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-info.png)
 
 > Exegol was built with pentest engagements in mind, but it can also be used in CTFs, Bug Bounties, HackTheBox, OSCP, and so on.
 
@@ -62,6 +47,7 @@ Below are some bullet points to better understand how Exegol works
 - This repository ([Exegol](https://github.com/ShutdownRepo/Exegol)) contains the code for the Python wrapper. It's the entrypoint of the Exegol project.
 - The [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) repo is loaded as a submodule. It includes all necessary assets to build Docker images.
 - The [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo is loaded as a submodule. It includes all resources mentioned previously (LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus, PowerSploit and many more.).
+- The [Exegol-docs](https://github.com/ShutdownRepo/Exegol-docs) repo for the documentation, destined for users as well as developpers and contributors.
 - Getting started with the Exegol project comes down to using the wrapper, which can be installed through pip or with the sources directly (see. [get started](#fast_forward-get-started)).
 
 # 🚀 Get started
@@ -182,12 +168,12 @@ Below are some examples of usage. For more examples, run the following command: 
 > - **image**: think of it as an immutable template. They cannot be executed as-is and serve as input for containers. It's not possible to open a shell in an image.
 > - **container**: a container rests upon an image. A container is created for a certain image at a certain time. It's possible to open a shell in a container. Careful though, once a container is created, updating the image it was created upon won't have any impact on the container. In order to enjoy the new things, a new container must be created upon that updated image.
 
-![help](.assets/exegol-help.png)
+![help](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-help.png)
 
 By default, Exegol will create containers with display sharing allowing GUI-based programs to run, with network host sharing, and a few others things.
 Below is an example of a GUI app running in an Exegol container.
 
-![display_sharing](.assets/example-display-sharing.gif)
+![display_sharing](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/example-display-sharing.gif)
 
 <details>
   <summary><h2>Default container configuration</h2></summary>
@@ -202,7 +188,7 @@ Below is an example of a GUI app running in an Exegol container.
   
   > Users should keep in mind that when a container is created, it's configuration cannot be modified. If you want another configuration, create another one.
   
-  ![start_verbose](.assets/exegol-start.png)
+  ![start_verbose](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-start.png)
 </details>
 
 <details>
