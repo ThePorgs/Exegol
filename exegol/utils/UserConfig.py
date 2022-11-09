@@ -60,7 +60,7 @@ volumes:
     private_workspace_path: {self.private_volume_path}
 
 config:
-    # Automatically check for wrapper update some time to time (only for git based installation)
+    # Enables automatic check for wrapper updates
     auto_check_update: {self.auto_check_updates}
     
     # Automatically remove outdated image when they are no longer used
