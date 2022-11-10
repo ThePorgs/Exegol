@@ -70,7 +70,7 @@ class Install(Command, ImageSelector):
             "Install or build interactively an exegol image": "exegol install",
             "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
             "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
-            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue]",
+            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
         }
 
         # Create container build arguments
