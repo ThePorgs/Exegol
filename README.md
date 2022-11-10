@@ -28,103 +28,27 @@
   </a><br><br>
 </div>
 
-> Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements.
-> Script kiddies use Kali Linux, real pentesters use Exegol 👀
+> Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements. Exegol is the best solution to deploy powerful hacking environments securely, easily, professionally.
+> Exegol fits pentesters, CTF players, bug bounty hunters, researchers, beginners and advanced users, defenders, from stylish macOS users and corporate Windows pros to UNIX-like power users.
 
-![info](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-info.png)
+# Getting started
 
-> Exegol was built with pentest engagements in mind, but it can also be used in CTFs, Bug Bounties, HackTheBox, OSCP, and so on.
+Checkout the [Exegol documentations](https://exegol.readthedocs.io/).
 
-- 🔧 **Tools**: many tools that are either installed manually or with apt, pip, go etc. Some of those tools are in kali, some are not. Exegol doesn't come with only ultra-famous tools, you will find ones that the community loves to use, even if it's in dev/new/not famous. Some tools are pre-configured and/or customized (colored output, custom NtChallengeResponse in Responder, custom queries in BloodHound, ...)
-- 💡 **Resources**: many resources can be useful during engagements. Those resources are not referred to as "tools" since they need to be run on a pwned target, and not on the attacker machine (e.g. mimikatz, rubeus, ...).
-- 📜 **History**: a populated history file that allows exegol users to save time and brain space by not having to remember every tool option and argument or checking the "help" every time.
-- 🚀 **Aliases**: a file containing aliases that can be handful when using manually installed tools, or doing common operations.
-- 🔎 **Usage**: a powerful Python3 wrapper used to manage Exegol container and image very easily (handles every docker operations).
+> As of November 2022, the docs are still a work in progress and are not 100% complete yet.
 
 ## Project structure
 
 Below are some bullet points to better understand how Exegol works
-- This repository ([Exegol](https://github.com/ShutdownRepo/Exegol)) contains the code for the Python wrapper. It's the entrypoint of the Exegol project.
-- The [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) repo is loaded as a submodule. It includes all necessary assets to build Docker images.
+- This repository ([Exegol](https://github.com/ShutdownRepo/Exegol)) contains the code for the Python wrapper. It's the entrypoint of the Exegol project. The wrapper can be installed from sources, but [a PyPI package](https://pypi.org/project/Exegol/) is available.
+- The [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) repo is loaded as a submodule. It includes all necessary assets to build Docker images. Notabene: the image are already built and offered on [the official Dockerhub registry](https://hub.docker.com/repository/docker/nwodtuhs/exegol).
 - The [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo is loaded as a submodule. It includes all resources mentioned previously (LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus, PowerSploit and many more.).
-- The [Exegol-docs](https://github.com/ShutdownRepo/Exegol-docs) repo for the documentation, destined for users as well as developpers and contributors.
-- Getting started with the Exegol project comes down to using the wrapper, which can be installed through pip or with the sources directly (see. [get started](#fast_forward-get-started)).
+- The [Exegol-docs](https://github.com/ShutdownRepo/Exegol-docs) repo for the documentation, destined for users as well as developpers and contributors. The GitHub repo holds the sources that are compiled on https://exegol.readthedocs.io/.
 
 # 🚀 Get started
 
 > Keep in mind that the wrapper is one thing, but in order to use Exegol, at least one Exegol docker image must be installed.
 > Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
-
-## Pre-requisites
-You need :
-- git
-- python3
-- docker
-- and at least 20GB of free storage
-
-> To run exegol from the user environment without `sudo`, the user must have privileged rights equivalent to root.
-> To grant yourself these rights, you can use the following command: `sudo usermod -aG docker $(id -u -n)`
->
-> For more information: https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
-
-You also need python libraries listed in [requirements.txt](./requirements.txt) (installed automatically or manually depending on the installation method you choose).
-
-## Installation using pip
-
-Exegol's wrapper can be installed from pip repository. That's the entrypoint of the project, you'll be able to do all the rest from there.
-```
-python3 -m pip install exegol
-```
-
-> Remember that pip install binaries in `~/.local/bin`, which then must be in the `PATH` environment variable.
-
-## Installation from sources
-
-Exegol's wrapper can also be installed from sources. The wrapper then knows how to self-update.
-
-```
-git clone https://github.com/ShutdownRepo/Exegol
-cd Exegol
-python3 -m pip install --user --requirement requirements.txt
-```
-
-## Add exegol command
-
-<details>
-  <summary><h4>On Linux / macOS</h4></summary>
-
-The exegol wrapper can then be added to the `PATH` throw symlink for direct access.
-
-```bash
-sudo ln -s $(pwd)/exegol.py /usr/local/bin/exegol
-```
-
-</details>
-
-<details>
-  <summary><h4>On Windows (with Powershell)</h4></summary>
-
-The exegol wrapper can be added as a powershell command aliases and saved for persistence
-in `$HOME\PowershellAliasesExport.txt`
-then load from `$PROFILE` script at powershell startup.
-
-```powershell
-$AliasFile = "$HOME\PowershellAliasesExport.txt"
-Set-Alias -Name exegol -Value "$(pwd)\exegol.py"
-Get-Alias -Name "exegol" | Export-Alias -Path $AliasFile
-echo "Import-Alias '$AliasFile'" >> $PROFILE
-```
-
-> Warning! To automatically load aliases from the .ps1 file, the `Get-ExecutionPolicy` powershell must be set
-> to `RemoteSigned`
-
-If the configuration is not correct it can be configured as **administrator** with the following command:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
-```
-
-</details>
 
 ## User configuration
 
@@ -140,56 +64,13 @@ The configuration file indicates paths to three host directories shared with the
 - "private workspace": a dedicated workspace for each container, shared with the host. Defaults
   to `/home/<user>/.exegol/workspaces`.
 
-## Exegol images
-
-It is possible to install an exegol image using the wrapper with the following command: `exegol install <image_name>`
-
-| Image name | Description                                                                                        |
-|------------|----------------------------------------------------------------------------------------------------|
-| full       | Includes all the tools supported by Exegol (warning: this is the heaviest image)                   |
-| nightly    | (for developers and advanced users) contains the latest updates. This image can be unstable!       |
-| ad         | Includes tools for Active Directory / internal pentesting only.                                    |
-| web        | Includes tools for Web pentesting only.                                                            |
-| light      | Includes the lightest and most used tools for various purposes.                                    |
-| osint      | Includes tools for OSINT.                                                                          |
 
 # 🔎 Usage
-Below are some examples of usage. For more examples, run the following command: `exegol <action> -h` (action: install/start/stop/etc.).
-
-- Install an Exegol image : `exegol install`
-- Create/start/enter a container : `exegol start`
-- Show info on containers and images : `exegol info`
-- Stop a container : `exegol stop`
-- Remove a container : `exegol remove`
-- Uninstall an image : `exegol uninstall`
-- Get help and advanced usage : `exegol --help`
-
-> ⚠️ remember that Exegol uses Docker images and containers. Understanding the difference is essential to understand Exegol.
-> - **image**: think of it as an immutable template. They cannot be executed as-is and serve as input for containers. It's not possible to open a shell in an image.
-> - **container**: a container rests upon an image. A container is created for a certain image at a certain time. It's possible to open a shell in a container. Careful though, once a container is created, updating the image it was created upon won't have any impact on the container. In order to enjoy the new things, a new container must be created upon that updated image.
-
-![help](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-help.png)
 
 By default, Exegol will create containers with display sharing allowing GUI-based programs to run, with network host sharing, and a few others things.
 Below is an example of a GUI app running in an Exegol container.
 
 ![display_sharing](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/example-display-sharing.gif)
-
-<details>
-  <summary><h2>Default container configuration</h2></summary>
-  When creating a new container with `exegol start`, it gets the following configuration by default (which can be tweaked, see `exegol start -h`)
-
-  - GUI (X11 sharing) enabled
-  - Host network sharing enabled (host's network interfaces are shared with the container)
-  - Timezone sharing enabled
-  - Exegol-resources sharing enabled (`/path/to/Exegol/exegol-resources` maps to `/opt/resources` in the container)
-  - Personal resources ("My resources") sharing enabled (`~/.exegol/my-resources` maps to `/opt/my-resources` in the container)
-  - Workspace sharing enabled (`~/.exegol/workspaces/CONTAINER_NAME` maps to `/workspace` in the container)
-  
-  > Users should keep in mind that when a container is created, it's configuration cannot be modified. If you want another configuration, create another one.
-  
-  ![start_verbose](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/exegol-start.png)
-</details>
 
 <details>
   <summary><h2>Credentials</h2></summary>
@@ -209,3 +90,19 @@ Credits and thanks go to every infosec addicts that contribute and share but mos
 - [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
 - [dramelac_](https://twitter.com/dramelac_) for working on [Exegol](https://github.com/ShutdownRepo/Exegol) (the wrapper)
 - [LamaBzh](https://twitter.com/rode_tony) for working on [Exegol-images](https://github.com/ShutdownRepo/Exegol-images)**
+
+# Sponsors
+
+Dramelac and I work at Capgemini and we thank them for allocating some time for us to develop and maintain Exegol!
+
+We also thank HackTheBox for continuously supporting the community and for helping us financially to acquire the necessary hardware for supporting multiple architectures (AMD64, ARM64).  
+
+<div align="center">
+  <a href="https://www.capgemini.com/" title="Follow">
+    <img width="300" src="https://upload.wikimedia.org/wikipedia/fr/thumb/b/b5/Capgemini_Logo.svg/1280px-Capgemini_Logo.svg.png">
+  </a>
+  <a href="https://www.hackthebox.com/" title="Follow">
+    <img width="300" src="https://www.hackthebox.com/images/logo600.png">
+  </a>
+</div>
+
