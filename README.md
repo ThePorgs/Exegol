@@ -33,9 +33,7 @@
 
 # Getting started
 
-Checkout the [Exegol documentations](https://exegol.readthedocs.io/).
-
-> As of November 2022, the docs are still a work in progress and are not 100% complete yet.
+You can refer to the [Exegol documentations](https://exegol.readthedocs.io/).
 
 ## Project structure
 
@@ -45,64 +43,23 @@ Below are some bullet points to better understand how Exegol works
 - The [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo is loaded as a submodule. It includes all resources mentioned previously (LinPEAS, WinPEAS, LinEnum, PrivescCheck, SysinternalsSuite, mimikatz, Rubeus, PowerSploit and many more.).
 - The [Exegol-docs](https://github.com/ShutdownRepo/Exegol-docs) repo for the documentation, destined for users as well as developpers and contributors. The GitHub repo holds the sources that are compiled on https://exegol.readthedocs.io/.
 
-# 🚀 Get started
-
-> Keep in mind that the wrapper is one thing, but in order to use Exegol, at least one Exegol docker image must be installed.
-> Installing the wrapper and running it will do the next steps (which can be a bit lengthy)
-
-## User configuration
-
-Exegol installs and uses a yaml configuration file, located in the user's home directory: `~/.exegol` (
-or `/home/<user>/.exegol`).
-The configuration file indicates paths to three host directories shared with the containers:
-
-- "my resources": dedicated to the user to customize his environment and tools. Defaults
-  to `/home/<user>/.exegol/my-resources`.
-- "exegol resources": official exegol resources from
-  the [Exegol-resources](https://github.com/ShutdownRepo/Exegol-resources) repo. Defaults
-  to `/path/to/Exegol/exegol-resources`.
-- "private workspace": a dedicated workspace for each container, shared with the host. Defaults
-  to `/home/<user>/.exegol/workspaces`.
-
-
-# 🔎 Usage
-
-By default, Exegol will create containers with display sharing allowing GUI-based programs to run, with network host sharing, and a few others things.
-Below is an example of a GUI app running in an Exegol container.
-
-![display_sharing](https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/example-display-sharing.gif)
-
-<details>
-  <summary><h2>Credentials</h2></summary>
-  Some tools are pre-configured with the following credentials
-  
-  | Element | User | Password |
-  | ------- | ---- | -------- |
-  | neo4j database | neo4j | exegol4thewin |
-  | bettercap ui | bettercap | exegol4thewin |
-  | trilium | trilium | exegol4thewin |
-  | empire | empireadmin | exegol4thewin |
-  | wso-webshell (PHP) | | exegol4thewin |
-</details>
-
-# 👏 Credits
-Credits and thanks go to every infosec addicts that contribute and share but most specifically to 
-- [@th1b4ud](https://twitter.com/th1b4ud) for the base ["Kali Linux in 3 seconds with Docker"](https://thibaud-robin.fr/articles/docker-kali/).
-- [dramelac_](https://twitter.com/dramelac_) for working on [Exegol](https://github.com/ShutdownRepo/Exegol) (the wrapper)
-- [LamaBzh](https://twitter.com/rode_tony) for working on [Exegol-images](https://github.com/ShutdownRepo/Exegol-images)**
-
 # Sponsors
-
-Dramelac and I work at Capgemini and we thank them for allocating some time for us to develop and maintain Exegol!
-
-We also thank HackTheBox for continuously supporting the community and for helping us financially to acquire the necessary hardware for supporting multiple architectures (AMD64, ARM64).  
 
 <div align="center">
   <a href="https://www.capgemini.com/" title="Follow">
     <img width="300" src="https://upload.wikimedia.org/wikipedia/fr/thumb/b/b5/Capgemini_Logo.svg/1280px-Capgemini_Logo.svg.png">
   </a>
+</div>
+
+Dramelac and I work at *Capgemini* and we thank them for allocating some time for us to develop and maintain Exegol! Visit Capgemini website at https://www.capgemini.com/.
+
+___
+
+<div align="center">
   <a href="https://www.hackthebox.com/" title="Follow">
     <img width="300" src="https://www.hackthebox.com/images/logo600.png">
   </a>
 </div>
+
+We also thank *HackTheBox* for continuously supporting the community and for helping us financially to acquire the necessary hardware for supporting multiple architectures (AMD64, ARM64). Show some love at https://www.hackthebox.com/ !
 
