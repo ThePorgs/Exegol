@@ -151,6 +151,7 @@ class ContainerConfig:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
+            # TODO remove support for previous container
             elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
                 self.__shared_resources = True
                 self.__shared_resources_path = share.get('Destination')
@@ -167,7 +168,8 @@ class ContainerConfig:
                 else:
                     logger.debug("Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            elif "/vpn" in share.get('Destination', ''):
+            # TODO remove support for previous container
+            elif "/vpn" in share.get('Destination', '') or "/.exegol/vpn" in share.get('Destination', ''):
                 # VPN are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -458,8 +460,8 @@ class ContainerConfig:
         if vpn_auth is not None:
             if vpn_auth.is_file():
                 logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
-                self.addVolume(str(vpn_auth.absolute()), "/vpn/auth/creds.txt", read_only=True)
-                ovpn_parameters.append("--auth-user-pass /vpn/auth/creds.txt")
+                self.addVolume(str(vpn_auth.absolute()), "/.exegol/vpn/auth/creds.txt", read_only=True)
+                ovpn_parameters.append("--auth-user-pass /.exegol/vpn/auth/creds.txt")
             else:
                 # Supply a directory instead of a file for VPN authentication is not supported.
                 logger.critical(
@@ -473,13 +475,13 @@ class ContainerConfig:
         if vpn_path.is_file():
             self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
-            self.addVolume(str(vpn_path.absolute()), "/vpn/config/client.ovpn", read_only=True)
-            ovpn_parameters.append("--config /vpn/config/client.ovpn")
+            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config/client.ovpn", read_only=True)
+            ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
         else:
             # Configure VPN with directory
             logger.verbose("Folder detected for VPN configuration. "
                            "Only the first *.ovpn file will be automatically launched when the container starts.")
-            self.addVolume(str(vpn_path.absolute()), "/vpn/config", read_only=True)
+            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config", read_only=True)
             vpn_filename = None
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
@@ -487,7 +489,7 @@ class ContainerConfig:
                 self.__checkVPNConfigDNS(file)
                 # Get filename only to match the future container path
                 vpn_filename = file.name
-                ovpn_parameters.append(f"--config /vpn/config/{vpn_filename}")
+                ovpn_parameters.append(f"--config /.exegol/vpn/config/{vpn_filename}")
                 # If there is multiple match, only the first one is selected
                 break
             if vpn_filename is None:
@@ -524,9 +526,9 @@ class ContainerConfig:
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
             self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
-            self.removeVolume(container_path="/vpn/auth/creds.txt")
-            self.removeVolume(container_path="/vpn/config/client.ovpn")
-            self.removeVolume(container_path="/vpn/config")
+            self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
+            self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
+            self.removeVolume(container_path="/.exegol/vpn/config")
             self.__restoreEntrypoint()
             return True
         return False
