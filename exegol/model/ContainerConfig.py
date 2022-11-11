@@ -451,22 +451,6 @@ class ContainerConfig:
         the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
 
-        # VPN Auth creds file
-        input_vpn_auth = ParametersManager().vpn_auth
-        vpn_auth = None
-        if input_vpn_auth is not None:
-            vpn_auth = Path(input_vpn_auth).expanduser()
-
-        if vpn_auth is not None:
-            if vpn_auth.is_file():
-                logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
-                self.addVolume(str(vpn_auth.absolute()), "/.exegol/vpn/auth/creds.txt", read_only=True)
-                ovpn_parameters.append("--auth-user-pass /.exegol/vpn/auth/creds.txt")
-            else:
-                # Supply a directory instead of a file for VPN authentication is not supported.
-                logger.critical(
-                    f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
-
         # VPN config path
         vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
 
@@ -495,6 +479,22 @@ class ContainerConfig:
             if vpn_filename is None:
                 logger.error("No *.ovpn files were detected. The VPN autostart will not work.")
                 return None
+
+        # VPN Auth creds file
+        input_vpn_auth = ParametersManager().vpn_auth
+        vpn_auth = None
+        if input_vpn_auth is not None:
+            vpn_auth = Path(input_vpn_auth).expanduser()
+
+        if vpn_auth is not None:
+            if vpn_auth.is_file():
+                logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
+                self.addVolume(str(vpn_auth.absolute()), "/.exegol/vpn/auth/creds.txt", read_only=True)
+                ovpn_parameters.append("--auth-user-pass /.exegol/vpn/auth/creds.txt")
+            else:
+                # Supply a directory instead of a file for VPN authentication is not supported.
+                logger.critical(
+                    f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
 
         return ' '.join(ovpn_parameters)
 
