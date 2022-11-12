@@ -178,6 +178,10 @@ class ExegolManager:
         """Show exegol version (and context configuration on debug mode)"""
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
                    level=logging.INFO, markup=True)
+        logger.raw(
+            f"[bold magenta][*][/bold magenta] Exegol documentation: [underline magenta]{ConstantConfig.documentation}[/underline magenta]{os.linesep}",
+            level=logging.INFO, markup=True)
+
         cls.print_sponsors()
         if 'a' in ConstantConfig.version:
             logger.empty_line()
@@ -209,8 +213,8 @@ class ExegolManager:
     def print_sponsors(cls):
         """Show exegol sponsors"""
         logger.success("""We thank [blue]Capgemini[/blue] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
-        logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
-        # logger.success("""We also thank [green]HackTheBox[/green] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
+        # logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
+        logger.success("""We thank [green]HackTheBox[/green] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
 
     @classmethod
     def __loadOrInstallImage(cls,

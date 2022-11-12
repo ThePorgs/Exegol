@@ -7,6 +7,8 @@ class ConstantConfig:
     # Exegol Version
     version: str = "4.1.0b1"
 
+    # Exegol documentation link
+    documentation: str = "https://exegol.rtfd.io/"
     # OS Dir full root path of exegol project
     src_root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
     # Path of the Dockerfile
