@@ -3,10 +3,12 @@ import os
 import shutil
 import subprocess
 import time
+import json
 from pathlib import Path
 from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
+from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
@@ -89,7 +91,31 @@ class GuiUtils:
             if not cls.__startXQuartz():
                 logger.warning("Unable to start XQuartz service.")
                 return False
+
+        # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
+        if not cls.__isTmpInFilesharingDirectories():
+            logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
+                           "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
+            return False
         return True
+
+    @staticmethod
+    def __isTmpInFilesharingDirectories() -> bool:
+        """
+            Check if Docker Desktop for macOS is configured correctly, allowing
+            /tmp to be bind mounted into Docker containers, which is needed to
+             mount /tmp/.X11-unix for display sharing
+        """
+        try:
+            docker_desktop_config = open(ConstantConfig.docker_desktop_mac_config_path, 'r')
+            conf = json.load(docker_desktop_config)
+            docker_desktop_config.close()
+            logger.debug(f"Docker Desktop configuration filesharingDirectories: {conf['filesharingDirectories']}")
+            return '/tmp' in conf['filesharingDirectories']
+        except FileNotFoundError as e:
+            logger.debug(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
+            raise e
+        return False
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:
