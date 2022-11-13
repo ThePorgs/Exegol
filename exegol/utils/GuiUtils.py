@@ -93,29 +93,29 @@ class GuiUtils:
                 return False
 
         # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
-        if not cls.__isTmpInFilesharingDirectories():
+        if not cls.__checkDockerDesktopResourcesConfig():
             logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
                            "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
             return False
         return True
 
     @staticmethod
-    def __isTmpInFilesharingDirectories() -> bool:
+    def __checkDockerDesktopResourcesConfig() -> bool:
         """
             Check if Docker Desktop for macOS is configured correctly, allowing
             /tmp to be bind mounted into Docker containers, which is needed to
-             mount /tmp/.X11-unix for display sharing
+             mount /tmp/.X11-unix for display sharing.
+             Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
         try:
-            docker_desktop_config = open(ConstantConfig.docker_desktop_mac_config_path, 'r')
-            conf = json.load(docker_desktop_config)
-            docker_desktop_config.close()
-            logger.debug(f"Docker Desktop configuration filesharingDirectories: {conf['filesharingDirectories']}")
-            return '/tmp' in conf['filesharingDirectories']
-        except FileNotFoundError as e:
-            logger.debug(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
-            raise e
-        return False
+            with open(ConstantConfig.docker_desktop_mac_config_path, 'r') as docker_desktop_config:
+                conf = json.load(docker_desktop_config)
+        except FileNotFoundError:
+            logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
+            return False
+        logger.debug(f"Docker Desktop configuration filesharingDirectories: {conf['filesharingDirectories']}")
+        # TODO expand shared directory checks to volumes
+        return '/tmp' in conf['filesharingDirectories']
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:
@@ -127,7 +127,7 @@ class GuiUtils:
         conf_check = subprocess.run(["defaults", "read", "org.xquartz.X11.plist", "nolisten_tcp"],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-        logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout}'")
+        logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout.strip().decode('utf-8')}'")
         return conf_check.stdout.strip() == b'0'
 
     @classmethod
