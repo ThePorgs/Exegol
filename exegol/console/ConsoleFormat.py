@@ -29,7 +29,7 @@ def richLen(text: str) -> int:
 
 
 def getArchColor(arch: str) -> str:
-    if "arm64" == arch:
+    if "arm64" == arch or "arm64/v8" == arch:
         color = "slate_blue3"
     elif "amd64" == arch:
         color = "medium_orchid3"
