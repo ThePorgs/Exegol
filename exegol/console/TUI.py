@@ -404,6 +404,7 @@ class ExegolTUI:
         sysctls = container.config.getSysctls()
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
+        creation_date = container.config.getTextCreationDate()
 
         # Color code
         privilege_color = "bright_magenta"
@@ -423,6 +424,8 @@ class ExegolTUI:
             container_info_header += f" [bright_black]({container.image.getArch()})[/bright_black]"
         recap.add_column(container_info_header)
         # Main features
+        if creation_date:
+            recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getTextNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))

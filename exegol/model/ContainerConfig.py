@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
@@ -34,6 +35,8 @@ class ContainerConfig:
 
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
+    # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
+    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -62,6 +65,9 @@ class ContainerConfig:
         self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
+        # Metadata attributes
+        self.creation_date: Optional[str] = None
+
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -114,14 +120,23 @@ class ContainerConfig:
     def __parseLabels(self, labels: Dict[str, str]):
         """Parse envs object syntax"""
         for key, value in labels.items():
-            if not key.startswith("org.exegol.feature."):
+            if not key.startswith("org.exegol."):
                 continue
             logger.debug(f"Parsing label : {key}")
-            # Find corresponding feature and attributes
-            for attribute, label in self.__label_features.items():
-                if label == key:
-                    # reflective execution of the feature enable method (add label & set attributes)
-                    getattr(self, attribute)()
+            if key.startswith("org.exegol.metadata."):
+                # Find corresponding feature and attributes
+                for label, refs in self.__label_metadata.items():
+                    if label == key:
+                        # reflective set of the metadata attribute (set metadata value to the corresponding attribute)
+                        setattr(self, refs[0], value)
+                        break
+            elif key.startswith("org.exegol.feature."):
+                # Find corresponding feature and attributes
+                for attribute, label in self.__label_features.items():
+                    if label == key:
+                        # reflective execution of the feature enable method (add label & set attributes)
+                        getattr(self, attribute)()
+                        break
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -895,7 +910,17 @@ class ContainerConfig:
 
     def getLabels(self) -> Dict[str, str]:
         """Labels config getter"""
+        # Update metadata (from getter method) to the labels (on container creation)
+        for label_name, refs in self.__label_metadata.items():
+            self.addLabel(label_name, getattr(self, refs[1])())
         return self.__labels
+
+    def getCreationDate(self) -> str:
+        """Get container creation date.
+        If the creation has not been set before, init as right now."""
+        if self.creation_date is None:
+            self.creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        return self.creation_date
 
     def getVpnName(self):
         """Get VPN Config name"""
@@ -967,6 +992,13 @@ class ContainerConfig:
         if not result:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
+
+    def getTextCreationDate(self) -> str:
+        """Get the container creation date.
+        If the creation date has not been supplied on the container, return empty string."""
+        if self.creation_date is None:
+            return ""
+        return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
