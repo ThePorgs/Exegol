@@ -35,7 +35,8 @@ class EnvInfo:
     __docker_host_os: Optional[str] = None
     __docker_engine: Optional[str] = None
     # Architecture
-    arch = platform.machine().lower()
+    raw_arch = platform.machine().lower()
+    arch = raw_arch
     if arch == "x86_64" or arch == "x86-64":
         arch = "amd64"
     elif arch == "aarch64" or "armv8" in arch:
