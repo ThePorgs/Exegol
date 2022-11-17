@@ -449,7 +449,7 @@ class ContainerConfig:
         if self.__network_host:
             # Check if IPv6 have been disabled on the host with sysctl
             with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
-                if conf.read().strip() == "0":
+                if int(conf.read()) == 0:
                     skip_sysctl = True
         if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
