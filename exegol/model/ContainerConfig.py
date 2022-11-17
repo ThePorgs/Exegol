@@ -580,12 +580,12 @@ class ContainerConfig:
         if host_mode is None:
             host_mode = True
         if len(self.__ports) > 0 and host_mode:
-            logger.warning("Host mode cannot be set with NAT ports configured. Skipping.")
+            logger.warning("Host mode cannot be set with NAT ports configured. Disabling the shared network mode.")
             host_mode = False
         if EnvInfo.isDockerDesktop() and host_mode:
             logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
             logger.verbose("Official doc: https://docs.docker.com/network/host/")
-            logger.info("To share network ports between the host and exegol, use the --port parameter.")
+            logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
             host_mode = False
         self.__network_host = host_mode
 
