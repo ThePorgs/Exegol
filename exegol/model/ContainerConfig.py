@@ -446,7 +446,7 @@ class ContainerConfig:
         # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
         # TODO test with ipv6 disable with kernel modules
         skip_sysctl = False
-        if self.__network_host:
+        if self.__network_host and EnvInfo.is_linux_shell:
             # Check if IPv6 have been disabled on the host with sysctl
             with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
                 if int(conf.read()) == 0:
