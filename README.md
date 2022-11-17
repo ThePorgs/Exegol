@@ -7,7 +7,6 @@
   <br>
   <a href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational"></a>
   <a href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads"></a>
-  <a href="https://pypi.org/project/Exegol" title=""><img src=""></a>
   <img alt="Python3.7" src="https://img.shields.io/badge/Python-3.7+-informational">
   <br><br>
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
