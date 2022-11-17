@@ -192,12 +192,14 @@ class Exec(Command, ContainerCreation, ContainerStart):
                 "exegol exec [blue]demo[/blue] [magenta]bloodhound[/magenta]",
             "Execute the command [magenta]'nmap -h'[/magenta] with console output":
                 "exegol exec -v [blue]demo[/blue] [magenta]'nmap -h'[/magenta]",
-            "Execute a command in background within the [blue]demo[/blue] container":
-                "exegol exec -b [blue]demo[/blue] [magenta]bloodhound[/magenta]",
+            "Execute a command in [green]background[/green] within the [blue]demo[/blue] container":
+                "exegol exec [green]-b[/green] [blue]demo[/blue] [magenta]bloodhound[/magenta]",
             "Execute the command [magenta]bloodhound[/magenta] in a temporary container based on the [bright_blue]full[/bright_blue] image":
                 "exegol exec --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
-            "Execute a command in background with a temporary container":
-                "exegol exec -b --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute a command in [green]background[/green] with a temporary container":
+                "exegol exec [green]-b[/green] --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute the command [magenta]wireshark[/magenta] with [orange3]network admin[/orange3] privileged":
+                "exegol exec [green]-b[/green] --tmp --cap [orange3]NET_ADMIN[/orange3] [bright_blue]full[/bright_blue] [magenta]wireshark[/magenta]",
         }
 
         # Overwrite default selectors

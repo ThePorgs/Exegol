@@ -151,12 +151,20 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             default=[],
                             dest="ports",
                             help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+        self.capabilities = Option("--cap",
+                                   dest="capabilities",
+                                   metavar='',  # Do not display available choices
+                                   action="append",
+                                   default=[],
+                                   choices={"NET_RAW", "MKNOD", "SETFCAP", "SYS_CHROOT", "NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_ADMIN", "SYS_RAWIO"},
+                                   help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
+                                        "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
         self.privileged = Option("--privileged",
                                  dest="privileged",
                                  action="store_true",
                                  default=False,
-                                 help="[orange3](dangerous)[/orange3] give extended privileges at the container creation (e.g. needed to "
-                                      "mount things, to use wifi or bluetooth)")
+                                 help="[orange3](dangerous)[/orange3] Give [red]ALL[/red] admin privileges to the container when it is created "
+                                      "(if the need is specifically identified, consider adding capabilities instead).")
         self.devices = Option("-d", "--device",
                               dest="devices",
                               default=[],
@@ -179,6 +187,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
+                                  {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},

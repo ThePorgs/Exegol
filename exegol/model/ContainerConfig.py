@@ -442,11 +442,16 @@ class ContainerConfig:
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
-        self.__addCapability("NET_ADMIN")
-        if not self.__network_host:
-            # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
-            # TODO test with ipv6 disable with kernel modules
-            # TODO test with ipv6 disable on host with network shared
+        self.addCapability("NET_ADMIN")
+        # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
+        # TODO test with ipv6 disable with kernel modules
+        skip_sysctl = False
+        if self.__network_host:
+            # Check if IPv6 have been disabled on the host with sysctl
+            with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
+                if conf.read().strip() == "0":
+                    skip_sysctl = True
+        if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
@@ -600,7 +605,7 @@ class ContainerConfig:
         self.__container_command_legacy = None
         self.__container_command = self.__default_cmd
 
-    def __addCapability(self, cap_string: str):
+    def addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
         if cap_string in self.__capabilities:
             logger.warning("Capability already setup. Skipping.")
@@ -620,6 +625,11 @@ class ContainerConfig:
         """Add a linux sysctl to the container"""
         if sysctl_key in self.__sysctls.keys():
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
+            return
+        if self.__network_host:
+            logger.warning(f"The sysctl container configuration is [red]not[/red] supported by docker in [blue]host[/blue] network mode.")
+            logger.warning(f"Skipping the sysctl config: [magenta]{sysctl_key}[/magenta] = [orange3]{config}[/orange3].")
+            logger.warning(f"If this configuration is mandatory in your situation, try to change it in sudo mode on your host.")
             return
         self.__sysctls[sysctl_key] = config
 

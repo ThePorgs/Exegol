@@ -446,6 +446,9 @@ class ExegolManager:
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.setPrivileged()
+        elif ParametersManager().capabilities is not None:
+            for cap in ParametersManager().capabilities:
+                config.addCapability(cap)
         if ParametersManager().volumes is not None:
             for volume in ParametersManager().volumes:
                 config.addRawVolume(volume)
