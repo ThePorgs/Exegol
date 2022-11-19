@@ -16,41 +16,42 @@ If your problem concerns the environment, tools or other elements specific to th
 - Some problems are already well known and can be found in the documentation or on the Exegol Discord
 -->
 
-**Describe the bug**
+# Describe the bug
 A clear and concise description of what the bug is.
 
-**To Reproduce**
+# To Reproduce
 Steps to reproduce the behavior:
 1. Use a specific configuration (if applicable) '...'
 2. Run Exegol command `exegol ...`
 3. Interactive choice (if applicable) '....'
 4. Error message
 
-**Expected behavior**
+# Expected behavior
 A clear and concise description of what you expected to happen.
 
-**Screenshots**
+# Screenshots
 If applicable, add screenshots to help explain your problem.
 
-**Context information (please complete the following information):**
+# Context information 
+> please complete the following information
 
- - OS: [e.g. iOS]
+ - OS: [e.g. macOS/windows/linux]
 
 - Exegol version (in debug `-vvv` mode):
 ```
 exegol version -vvv
 ```
 
-**Additional context**
+# Additional context
 
-Run your exegol command in debug mod with the parameter `-vvv` and copy paste the full output:
+Run your exegol command in debug mod with the parameter `-vvv` and copy/paste the full output:
 ```
 <Execution logs>
 ```
 
 Add any other context about the problem here.
 
-**Exception**
+# Exception
 If applicable, copy paste your exception stack:
 ```
 <stacktrace content>
