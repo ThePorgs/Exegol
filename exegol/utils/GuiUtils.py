@@ -105,11 +105,11 @@ class GuiUtils:
              mount /tmp/.X11-unix for display sharing.
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
-        docker_config = EnvInfo.getDockerDesktopSettings()
+        docker_config = EnvInfo.getDockerDesktopResources()
         if docker_config:
-            logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config['filesharingDirectories']}")
+            logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
             # TODO expand shared directory checks to volumes
-            return '/tmp' in docker_config['filesharingDirectories']
+            return '/tmp' in docker_config
         return False
 
     @staticmethod

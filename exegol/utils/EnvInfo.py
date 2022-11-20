@@ -160,7 +160,7 @@ class EnvInfo:
             return "Unknown"
 
     @classmethod
-    def getDockerDesktopSettings(cls) -> Optional[Any]:
+    def __getDockerDesktopSettings(cls) -> Optional[Any]:
         """Applicable only for docker desktop on macos"""
         if cls.isDockerDesktop() and cls.is_mac_shell:
             if cls.__docker_desktop_resource_config is None:
@@ -171,4 +171,11 @@ class EnvInfo:
                     logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
                     return None
             return cls.__docker_desktop_resource_config
+        return None
+
+    @classmethod
+    def getDockerDesktopResources(cls) -> Optional[Any]:
+        config = cls.__getDockerDesktopSettings()
+        if config:
+            return config.get('filesharingDirectories')
         return None
