@@ -6,6 +6,7 @@ from git.exc import GitCommandError
 
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
@@ -37,8 +38,7 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
-            # TODO test on Windows for compatibility
-            elif test_git_dir.lstat().st_uid != os.getuid():
+            elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
             if self.__git_name == "wrapper":

@@ -42,7 +42,7 @@ class EnvInfo:
     # Architecture
     raw_arch = platform.machine().lower()
     arch = raw_arch
-    if arch == "x86_64" or arch == "x86-64":
+    if arch == "x86_64" or arch == "x86-64" or arch == "amd64":
         arch = "amd64"
     elif arch == "aarch64" or "armv8" in arch:
         arch = "arm64"
