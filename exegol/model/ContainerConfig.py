@@ -753,7 +753,6 @@ class ContainerConfig:
                     path_match = path_match.replace("/etc/", "/private/etc/")
                 # Find a match
                 for resource in EnvInfo.getDockerDesktopResources():
-                    logger.debug(f"{path_match} / {resource}")
                     if path_match.startswith(resource):
                         match = True
                         break
