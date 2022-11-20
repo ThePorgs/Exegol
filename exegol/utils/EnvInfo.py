@@ -2,7 +2,7 @@ import json
 import platform
 import re
 import subprocess
-from typing import Optional, Any
+from typing import Optional, Any, List
 
 from exegol import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -174,8 +174,8 @@ class EnvInfo:
         return None
 
     @classmethod
-    def getDockerDesktopResources(cls) -> Optional[Any]:
+    def getDockerDesktopResources(cls) -> List[str]:
         config = cls.__getDockerDesktopSettings()
         if config:
-            return config.get('filesharingDirectories')
-        return None
+            return config.get('filesharingDirectories', [])
+        return []

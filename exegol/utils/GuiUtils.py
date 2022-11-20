@@ -106,11 +106,8 @@ class GuiUtils:
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
         docker_config = EnvInfo.getDockerDesktopResources()
-        if docker_config:
-            logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
-            # TODO expand shared directory checks to volumes
-            return '/tmp' in docker_config
-        return False
+        logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
+        return '/tmp' in docker_config
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:
