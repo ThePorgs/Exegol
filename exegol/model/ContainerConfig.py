@@ -758,7 +758,7 @@ class ContainerConfig:
                         break
                 if not match:
                     logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
-                                    f"Please share your directory in "
+                                    f"A parent directory must be shared in "
                                     f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
@@ -910,7 +910,6 @@ class ContainerConfig:
                 # but exegol can be launched from remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
-        # TODO PATH common volume bin folder
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:

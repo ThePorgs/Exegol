@@ -67,7 +67,7 @@ setup(
     project_urls={
         'Bug Reports': 'https://github.com/ShutdownRepo/Exegol/issues',
         'Source': 'https://github.com/ShutdownRepo/Exegol',
-        'Documentation': 'https://github.com/ShutdownRepo/Exegol/blob/master/README.md',  # TODO Create proper documentation
+        'Documentation': 'https://exegol.readthedocs.io/',
         'Funding': 'https://patreon.com/nwodtuhs',
     },
     test_suite='tests'
