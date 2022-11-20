@@ -1,6 +1,7 @@
 import json
 import platform
 import re
+import shutil
 import subprocess
 from typing import Optional, Any, List
 
@@ -109,6 +110,8 @@ class EnvInfo:
             elif cls.current_platform == "WSL":
                 # From a WSL shell, we must create a process to retrieve the host's version
                 # Find version using MS-DOS command 'ver'
+                if not shutil.which("cmd.exe"):
+                    logger.critical("cmd.exe is not accessible from your WSL environment!")
                 proc = subprocess.Popen(["cmd.exe", "/c", "ver"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
                 proc.wait()
                 assert proc.stdout is not None
@@ -160,22 +163,29 @@ class EnvInfo:
             return "Unknown"
 
     @classmethod
-    def __getDockerDesktopSettings(cls) -> Optional[Any]:
+    def getDockerDesktopSettings(cls) -> Optional[Any]:
         """Applicable only for docker desktop on macos"""
-        if cls.isDockerDesktop() and cls.is_mac_shell:
+        if cls.isDockerDesktop():
             if cls.__docker_desktop_resource_config is None:
+                if cls.is_mac_shell:
+                    path = ConstantConfig.docker_desktop_mac_config_path
+                elif cls.is_windows_shell:
+                    path = ConstantConfig.docker_desktop_windows_config_path
+                else:
+                    return None
+                    # TODO support from WSL shell
                 try:
-                    with open(ConstantConfig.docker_desktop_mac_config_path, 'r') as docker_desktop_config:
+                    with open(path, 'r') as docker_desktop_config:
                         cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
                 except FileNotFoundError:
-                    logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
+                    logger.warning(f"Docker Desktop configuration file not found: '{path}'")
                     return None
             return cls.__docker_desktop_resource_config
         return None
 
     @classmethod
     def getDockerDesktopResources(cls) -> List[str]:
-        config = cls.__getDockerDesktopSettings()
+        config = cls.getDockerDesktopSettings()
         if config:
             return config.get('filesharingDirectories', [])
         return []

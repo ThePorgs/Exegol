@@ -18,6 +18,7 @@ class ConstantConfig:
     exegol_config_path: Path = Path().home() / ".exegol"
     # Docker Desktop for mac config file
     docker_desktop_mac_config_path = Path().home() / "Library/Group Containers/group.com.docker/settings.json"
+    docker_desktop_windows_config_path = Path().home() / "AppData/Roaming/Docker/settings.json"
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"

@@ -168,19 +168,19 @@ class GuiUtils:
             logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
             return False
         logger.debug("WSL is [green]available[/green] and docker is using WSL2")
+        # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
+        if EnvInfo.current_platform != "WSL":
+            logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
+            cls.__distro_name = cls.__find_wsl_distro()
+            logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
+            # If no WSL is found, propose to continue without GUI
+            if not cls.__distro_name and not Confirm(
+                    "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                raise KeyboardInterrupt
+        else:
+            logger.debug("Using current WSL context for X11 socket sharing")
         if cls.__wslg_installed():
             logger.debug("WSLg seems to be installed.")
-            # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
-            if EnvInfo.current_platform != "WSL":
-                logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
-                cls.__distro_name = cls.__find_wsl_distro()
-                logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
-                # If no WSL is found, propose to continue without GUI
-                if not cls.__distro_name and not Confirm(
-                        "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
-                    raise KeyboardInterrupt
-            else:
-                logger.debug("Using current WSL context for X11 socket sharing")
             return True
         elif cls.__wslg_eligible():
             logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
@@ -229,6 +229,15 @@ class GuiUtils:
         Tests the existence of WSL by searching in the default WSL first.
         However, if the default wsl is 'docker-desktop-data', the result will be false, so you have to test with docker-desktop.
         """
+        if EnvInfo.isWindowsHost():
+            wsl = shutil.which("wsl.exe")
+            if not wsl:
+                return False
+            ret = subprocess.Popen(["wsl.exe", "--status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ret.wait()
+            if ret.returncode == 0:
+                return True
+        logger.debug("WSL status command failed.. Trying a fallback check method.")
         return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 
     @classmethod
@@ -237,6 +246,13 @@ class GuiUtils:
         Check if WSLg is installed and deploy inside a WSL image by testing if the file wslg/versions.txt exist.
         :return: bool
         """
+        if EnvInfo.current_platform == "WSL":
+            if Path("/mnt/host/wslg/versions.txt").is_file():
+                return True
+        else:
+            if cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name):
+                return True
+        logger.debug("WSLg check failed.. Trying a fallback check method.")
         return cls.__wsl_test("/mnt/host/wslg/versions.txt") or cls.__wsl_test("/mnt/wslg/versions.txt", name=None)
 
     @staticmethod
