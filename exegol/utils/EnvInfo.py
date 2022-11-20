@@ -1,8 +1,10 @@
+import json
 import platform
 import re
 import subprocess
-from typing import Optional
+from typing import Optional, Any
 
+from exegol import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 
@@ -34,6 +36,8 @@ class EnvInfo:
     # Host OS
     __docker_host_os: Optional[str] = None
     __docker_engine: Optional[str] = None
+    # Docker desktop cache config
+    __docker_desktop_resource_config = None
     # Architecture
     raw_arch = platform.machine().lower()
     arch = raw_arch
@@ -154,3 +158,17 @@ class EnvInfo:
             return cls.HostOs.MAC
         else:
             return "Unknown"
+
+    @classmethod
+    def getDockerDesktopSettings(cls) -> Optional[Any]:
+        """Applicable only for docker desktop on macos"""
+        if cls.isDockerDesktop() and cls.is_mac_shell:
+            if cls.__docker_desktop_resource_config is None:
+                try:
+                    with open(ConstantConfig.docker_desktop_mac_config_path, 'r') as docker_desktop_config:
+                        cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
+                except FileNotFoundError:
+                    logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
+                    return None
+            return cls.__docker_desktop_resource_config
+        return None

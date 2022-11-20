@@ -8,7 +8,6 @@ from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
@@ -106,7 +105,7 @@ class GuiUtils:
              mount /tmp/.X11-unix for display sharing.
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
-        docker_config = DockerUtils.getDockerDesktopSettings()
+        docker_config = EnvInfo.getDockerDesktopSettings()
         if docker_config:
             logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config['filesharingDirectories']}")
             # TODO expand shared directory checks to volumes

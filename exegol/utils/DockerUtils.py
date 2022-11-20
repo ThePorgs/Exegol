@@ -1,7 +1,6 @@
-import json
 import os
 from datetime import datetime
-from typing import List, Optional, Union, cast, Any
+from typing import List, Optional, Union, cast
 
 import docker
 from docker import DockerClient
@@ -53,8 +52,6 @@ class DockerUtils:
                 "Exiting.")
     __images: Optional[List[ExegolImage]] = None
     __containers: Optional[List[ExegolContainer]] = None
-    # Docker desktop cache config
-    __docker_desktop_resource_config = None
 
     @classmethod
     def clearCache(cls):
@@ -532,20 +529,3 @@ class DockerUtils:
                 logger.debug(f"Error: {err}")
             else:
                 logger.critical(f"An error occurred while building this image : {err}")
-
-    # =========== Docker Desktop config
-
-    @classmethod
-    def getDockerDesktopSettings(cls) -> Optional[Any]:
-        """Applicable only for docker desktop on macos"""
-        # TODO check if there is an equivalent on windows docker desktop
-        if EnvInfo.isDockerDesktop() and EnvInfo.is_mac_shell:
-            if cls.__docker_desktop_resource_config is None:
-                try:
-                    with open(ConstantConfig.docker_desktop_mac_config_path, 'r') as docker_desktop_config:
-                        cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
-                except FileNotFoundError:
-                    logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
-                    return None
-            return cls.__docker_desktop_resource_config
-        return None
