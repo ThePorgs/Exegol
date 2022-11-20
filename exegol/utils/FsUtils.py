@@ -28,7 +28,8 @@ def resolvPath(path: Path) -> str:
     On WSL, Windows PATH can be resolved using 'wslpath'."""
     if path is None:
         return ''
-    if EnvInfo.current_platform == "WSL":
+    # From WSL, Windows Path must be resolved (try to detect a Windows path with '\')
+    if EnvInfo.current_platform == "WSL" and '\\' in str(path):
         try:
             # Resolv Windows path on WSL environment
             p = subprocess.Popen(["wslpath", "-a", str(path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
