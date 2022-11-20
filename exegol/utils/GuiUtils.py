@@ -3,13 +3,12 @@ import os
 import shutil
 import subprocess
 import time
-import json
 from pathlib import Path
 from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
-from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.exceptions.ExegolExceptions import CancelOperation
+from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
@@ -107,15 +106,12 @@ class GuiUtils:
              mount /tmp/.X11-unix for display sharing.
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
-        try:
-            with open(ConstantConfig.docker_desktop_mac_config_path, 'r') as docker_desktop_config:
-                conf = json.load(docker_desktop_config)
-        except FileNotFoundError:
-            logger.warning(f"Docker Desktop configuration file not found: '{ConstantConfig.docker_desktop_mac_config_path}'")
-            return False
-        logger.debug(f"Docker Desktop configuration filesharingDirectories: {conf['filesharingDirectories']}")
-        # TODO expand shared directory checks to volumes
-        return '/tmp' in conf['filesharingDirectories']
+        docker_config = DockerUtils.getDockerDesktopSettings()
+        if docker_config:
+            logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config['filesharingDirectories']}")
+            # TODO expand shared directory checks to volumes
+            return '/tmp' in docker_config['filesharingDirectories']
+        return False
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:

@@ -45,7 +45,8 @@ class EnvInfo:
         if platform.architecture()[0] == '64bit':
             arch = "arm64"
         else:
-            logger.error(f"Host architecture seems to be 32-bit ARM ({arch}), which is not supported yet. If possible, please install a 64-bit operating system (Exegol supports ARM64).")
+            logger.error(f"Host architecture seems to be 32-bit ARM ({arch}), which is not supported yet. "
+                         f"If possible, please install a 64-bit operating system (Exegol supports ARM64).")
         """
         if "v5" in arch:
             arch = "arm/v5"
