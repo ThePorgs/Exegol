@@ -503,9 +503,10 @@ class ExegolManager:
         # When container exec a command as a daemon, the execution must be set on the container's entrypoint
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
-            cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
-            config.setLegacyContainerCommand(f'zsh -c "{cmd}"')
-            config.setContainerCommand("cmd", "zsh", "-c", cmd)
+            exec_payload, str_cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
+            config.setLegacyContainerCommand(f"zsh -c '{exec_payload}'")
+            config.setContainerCommand("cmd", "zsh", "-c", exec_payload)
+            config.addEnv("CMD", str_cmd)
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
