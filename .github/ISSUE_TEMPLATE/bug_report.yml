@@ -1,0 +1,88 @@
+name: 🐞 Bug report [WRAPPER]
+description: Report a bug in Exegol WRAPPER to help us improve it
+title: "[BUG] <title>"
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Verification before publication:
+        
+        - You are creating a bug report in the Exegol **WRAPPER** repository (the exegol command)! 
+        > If your problem concerns the environment, tools or other elements specific to the Exegol **IMAGE**, please open your issue on the [Exegol-images](https://github.com/ShutdownRepo/Exegol-images) repository.
+        - Check that there is not already a issue for the **same** problem.
+        - Some problems are already well known and can be found in the **documentation** or on the Exegol **Discord**.
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: |
+        A clear and concise description of what the bug is.
+
+        Include both the current behavior (what you are seeing) as well as what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Use a specific configuration (if applicable) '...'
+        2. Run Exegol command `exegol ...`
+        3. Interactive choice (if applicable) '....'
+        4. Error message
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Exegol Wrapper Version
+      description: |
+        Paste output of `exegol version -vvv`.
+      placeholder: |
+        Paste your output here or a screenshot.
+      render: Text
+    validations:
+      required: True
+  - type: dropdown
+    attributes:
+      label: Host OS
+      description: Select your host OS
+      options:
+        - Linux
+        - MacOS
+        - Windows 10 and before
+        - Windows 11
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Execution logs in debug mode
+      description: |
+        Run your exegol command in debug mod with the parameter `-vvv` and copy/paste the full output:
+      placeholder: |
+        Paste your execution logs here
+      render: Text
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Exception
+      description: |
+        If applicable, copy paste your exception stack:
+      placeholder: |
+        Paste your stacktrace here
+      render: Text
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: |
+        Links? References? Screenshot? Anything that will give us more context about the issue you are encountering!
+
+        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: "Thanks for completing our form!"
