@@ -67,3 +67,4 @@ def main():
     except Exception:
         print_exception_banner()
         console.print_exception(show_locals=True)
+        exit(1)
