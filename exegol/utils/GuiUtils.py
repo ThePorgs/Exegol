@@ -347,19 +347,22 @@ class GuiUtils:
         else:
             while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
                 pass
-            logger.verbose("Set WSL Ubuntu as default to enable docker integration")
-            # Set new WSL distribution as default to start it and enable docker integration
-            ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
-            ret.wait()
-            # Wait for the docker integration (10 try, 1 sec apart)
-            with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
-                for _ in range(10):
-                    if cls.__check_wsl_docker_integration("Ubuntu"):
-                        break
-                    time.sleep(1)
+            # Check if docker have default docker integration
+            if EnvInfo.getDockerDesktopSettings().get("enableIntegrationWithDefaultWslDistro", False):
+                logger.verbose("Set WSL Ubuntu as default to automatically enable docker integration")
+                # Set new WSL distribution as default to start it and enable docker integration
+                ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
+                ret.wait()
+                # Wait for the docker integration (10 try, 1 sec apart)
+                with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
+                    for _ in range(10):
+                        if cls.__check_wsl_docker_integration("Ubuntu"):
+                            break
+                        time.sleep(1)
             while not cls.__check_wsl_docker_integration("Ubuntu"):
                 logger.error("The newly created WSL could not get the docker integration automatically. "
                              "It has to be activated [red]manually[/red]")
+                logger.info("Enable WSL Docker integration for the newly created WSL in: [magenta]Docker Desktop > Settings > Resources > WSL Integration[/magenta]")
                 if not Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
                                default=True):
                     return False

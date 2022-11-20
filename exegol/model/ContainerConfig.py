@@ -778,9 +778,8 @@ class ContainerConfig:
                 # The volume targets a file that already exists on the file system
                 pass
             # Update FS don't work on Windows and only for directory
-            if not EnvInfo.isWindowsHost() and path.is_dir():
+            if not EnvInfo.is_windows_shell and path.is_dir():
                 if execute_update_fs:
-                    # TODO test on WSL
                     # Apply perms update
                     FsUtils.setGidPermission(path)
                 elif enable_sticky_group:
