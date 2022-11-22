@@ -99,6 +99,8 @@ class WebUtils:
             data = json.loads(data.text)
         elif data is not None:
             logger.error(f"Error during web request to {service_name} ({data.status_code}) on {url}")
+            if data.status_code == 404 and service_name == "Dockerhub":
+                logger.info("The registry is not accessible, if it is a private repository make sure you are authenticated prior with docker login.")
             data = None
         return data
 
