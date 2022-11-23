@@ -65,6 +65,7 @@ class ContainerConfig:
         self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
+        self.__start_delegate_mode: bool = False
         # Metadata attributes
         self.creation_date: Optional[str] = None
 
@@ -79,6 +80,8 @@ class ContainerConfig:
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
+        # If entrypoint is set on the image, considering the presence of start.sh script for delegates features
+        self.__start_delegate_mode = container.attrs['Config']['Entrypoint'] is not None
         self.__enable_gui = False
         for env in self.__envs:
             if "DISPLAY" in env:
@@ -685,7 +688,18 @@ class ContainerConfig:
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basis
         if self.__shell_logging or ParametersManager().log:
-            return f"bash -c 'umask 007; mkdir -p /workspace/logs/; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; echo \"Compressing logs, please wait...\"; gzip $filelog; exit'"
+            if self.__start_delegate_mode:
+                # Use a start.sh script to handle the feature with the tools and feature corresponding to the image version
+                # Start shell_logging feature using the user's specified method with the configured default shell w/ or w/o compression at the end
+                return f"/.exegol/start.sh shell_logging {ParametersManager().log_method} {ParametersManager().shell} {UserConfig().shell_logging_compress ^ ParametersManager().log_compress}"
+            else:
+                # Legacy command support
+                if ParametersManager().log_method != "script":
+                    logger.warning("Your image version does not allow customization of the shell logging method. Using legacy script method.")
+                compression_cmd = ''
+                if UserConfig().shell_logging_compress ^ ParametersManager().log_compress:
+                    compression_cmd = 'echo "Compressing logs, please wait..."; gzip $filelog; '
+                return f"bash -c 'umask 007; mkdir -p /workspace/logs/; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; {compression_cmd}exit'"
         return ParametersManager().shell
 
     def getHostWorkspacePath(self) -> str:

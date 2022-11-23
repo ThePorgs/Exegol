@@ -11,7 +11,6 @@ class Start(Command, ContainerCreation, ContainerStart):
     def __init__(self):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
-        ContainerStart.__init__(self, self.groupArgs)
 
         self._usages = {
             "Start interactively a container": "exegol start",
@@ -30,9 +29,33 @@ class Start(Command, ContainerCreation, ContainerStart):
         self.shell = Option("-s", "--shell",
                             dest="shell",
                             action="store",
-                            choices={"zsh", "bash", "tmux"},
+                            choices=UserConfig.start_shell_options,
                             default=UserConfig().default_start_shell,
                             help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
+
+        self.log = Option("-l", "--log",
+                          dest="log",
+                          action="store_true",
+                          default=False,
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
+        self.log_method = Option("--log-method",
+                                 dest="log_method",
+                                 action="store",
+                                 choices=UserConfig.shell_logging_method_options,
+                                 default=UserConfig().shell_logging_method,
+                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
+        self.log_compress = Option("--log-compress",
+                                   dest="log_compress",
+                                   action="store_true",
+                                   default=False,
+                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
+
+        self.groupArgs.append(GroupArg({"arg": self.log, "required": False},
+                                       {"arg": self.log_method, "required": False},
+                                       {"arg": self.log_compress, "required": False},
+                                       title="[blue]Container creation Shell logging options[/blue]"))
+
+        ContainerStart.__init__(self, self.groupArgs)
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.shell, "required": False},

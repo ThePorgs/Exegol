@@ -1,7 +1,6 @@
 from typing import List
 
 from exegol.console.cli.actions.Command import Option, GroupArg
-from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -38,7 +37,8 @@ class ContainerMultiSelector:
 
 
 class ContainerStart:
-    """Generic parameter class for container selection"""
+    """Generic parameter class for container selection.
+    This generic class is used by start and exec actions"""
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create options on container start
@@ -49,15 +49,9 @@ class ContainerStart:
                            help="And an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
                                 "If the container already exists, the variable will be present only in the current shell")
-        self.log = Option("-l", "--log",
-                          dest="log",
-                          action="store_true",
-                          default=False,
-                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
 
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
-                                  {"arg": self.log, "required": False},
                                   title="[blue]Container start options[/blue]"))
 
 

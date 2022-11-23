@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Set, Optional
 
 import yaml
 import yaml.parser
@@ -13,6 +13,10 @@ from exegol.utils.MetaSingleton import MetaSingleton
 
 class UserConfig(metaclass=MetaSingleton):
     """This class allows loading user defined configurations"""
+
+    # Static choices
+    start_shell_options = {'zsh', 'bash', 'tmux'}
+    shell_logging_method_options = {'script', 'asciinema'}
 
     def __init__(self):
         # Config file options
@@ -27,6 +31,8 @@ class UserConfig(metaclass=MetaSingleton):
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
         self.default_start_shell: str = "zsh"
+        self.shell_logging_method: str = "asciinema"
+        self.shell_logging_compress: bool = True
 
         # process
         self.__load_file()
@@ -71,6 +77,15 @@ config:
     
     # Default shell command to start
     default_start_shell: {self.default_start_shell}
+    
+    # Change the configuration of the shell logging functionality
+    shell_logging: 
+        #Choice of the method used to record the sessions (script or asciinema)
+        logging_method: {self.shell_logging_method}
+        
+        # Enable automatic compression of log files (with gunzip)
+        enable_log_compression: {self.shell_logging_compress}
+
 """
         # TODO handle default image selection
         # TODO handle default start container
@@ -100,12 +115,17 @@ config:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
-    def __load_config(self, data: dict, config_name: str, default: Union[bool, str]) -> Union[bool, str]:
+    def __load_config(self, data: dict, config_name: str, default: Union[bool, str], choices: Optional[Set[str]] = None) -> Union[bool, str]:
         try:
             result = data.get(config_name)
             if result is None:
                 logger.debug(f"Config {config_name} has not been found in exegol config file. Config file will be upgrade.")
                 self.__config_upgrade = True
+                return default
+            elif choices is not None and result not in choices:
+                logger.warning(f"The user configuration is incorrect! "
+                               f"The user has configured the '{config_name}' parameter with the value '{result}' "
+                               f"which is not one of the allowed options ({', '.join(choices)}). Using default value: {default}.")
                 return default
             return result
         except TypeError:
@@ -138,7 +158,12 @@ config:
         self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
         self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
         self.auto_update_workspace_fs = self.__load_config(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
-        self.default_start_shell = self.__load_config(config_data, 'default_start_shell', self.default_start_shell)
+        self.default_start_shell = self.__load_config(config_data, 'default_start_shell', self.default_start_shell, choices=self.start_shell_options)
+
+        # Shell_logging section
+        shell_logging_data = config_data.get("shell_logging", {})
+        self.shell_logging_method = self.__load_config(shell_logging_data, 'logging_method', self.shell_logging_method, choices=self.shell_logging_method_options)
+        self.shell_logging_compress = self.__load_config(shell_logging_data, 'enable_log_compression', self.shell_logging_compress)
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
@@ -150,7 +175,9 @@ config:
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
             f"Auto-update fs: {boolFormatter(self.auto_update_workspace_fs)}",
-            f"Default start shell: {self.default_start_shell}",
+            f"Default start shell: [blue]{self.default_start_shell}[/blue]",
+            f"Shell logging method: [blue]{self.shell_logging_method}[/blue]",
+            f"Shell logging compression: {boolFormatter(self.shell_logging_compress)}",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs
