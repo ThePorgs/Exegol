@@ -83,7 +83,7 @@ config:
         #Choice of the method used to record the sessions (script or asciinema)
         logging_method: {self.shell_logging_method}
         
-        # Enable automatic compression of log files (with gunzip)
+        # Enable automatic compression of log files (with gzip)
         enable_log_compression: {self.shell_logging_compress}
 
 """
