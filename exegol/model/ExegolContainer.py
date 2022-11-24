@@ -144,7 +144,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
                 logger.info("Hint: use verbose mode to see command output (-v).")
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet)
-        stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd}, detach=as_daemon, stream=not as_daemon)
+        stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon)
         if as_daemon and not quiet:
             logger.success("Command successfully executed in background")
         else:
@@ -172,7 +172,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'autoload -Uz compinit; compinit; source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $CMD'
+        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval $CMD'
         if not entrypoint_mode:
             # For direct execution, the full command must be supplied not just the zsh argument
             cmd = f"zsh -c '{cmd}'"
