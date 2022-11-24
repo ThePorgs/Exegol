@@ -56,6 +56,16 @@ body:
       required: false
   - type: textarea
     attributes:
+      label: Configuration of the concerned container
+      description: |
+        Paste output of `exegol info -v <container_name>` (if applicable).
+      placeholder: |
+        Paste your output here or a screenshot.
+      render: Text
+    validations:
+      required: False
+  - type: textarea
+    attributes:
       label: Execution logs in debug mode
       description: |
         Run your exegol command in debug mod with the parameter `-vvv` and copy/paste the full output:
