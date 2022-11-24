@@ -1,12 +1,12 @@
 <div align="center">
   <img alt="latest commit on master" width="600" src="https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/rounded_social_preview.png">
   <br><br>
-  <a href="https://hub.docker.com/r/nwodtuhs/exegol" title=""><img src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol"></a>
-  <a href="docker build" title="https://hub.docker.com/r/nwodtuhs/exegol"><img src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol"></a>
+  <a href="https://hub.docker.com/r/nwodtuhs/exegol" title=""><img src="https://img.shields.io/docker/cloud/automated/nwodtuhs/exegol" alt="docker build mode"></a>
+  <a href="https://hub.docker.com/r/nwodtuhs/exegol" title=""><img src="https://img.shields.io/docker/cloud/build/nwodtuhs/exegol" alt="docker build status"></a>
   <img alt="max compressed image size" src="https://img.shields.io/docker/image-size/nwodtuhs/exegol/nightly?label=image%20(compressed)%20max%20size">
   <br>
-  <a href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational"></a>
-  <a href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads"></a>
+  <a href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational" alt="pip package version"></a>
+  <a href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads" alt="pip stats"></a>
   <img alt="Python3.7" src="https://img.shields.io/badge/Python-3.7+-informational">
   <br><br>
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ShutdownRepo/Exegol/master?label=latest%20release">
@@ -16,11 +16,11 @@
   <img alt="current version" src="https://img.shields.io/badge/windows-supported-success">
   <img alt="current version" src="https://img.shields.io/badge/mac-supported-success">
   <br><br>
-  <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social"></a>
-  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social">
+  <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social" alt="Twitter Shutdown"></a>
+  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social" alt="Twitter Dramelac"></a>
   <br><br>
-  <a href="https://discord.gg/BcgXnRpqxd" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/discord_join_us.png" width="150">
-  </a><br><br>
+  <a href="https://discord.gg/BcgXnRpqxd" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ShutdownRepo/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
+  <br><br>
 </div>
 
 > Exegol is a community-driven hacking environment, powerful and yet simple enough to be used by anyone in day to day engagements. Exegol is the best solution to deploy powerful hacking environments securely, easily, professionally.
