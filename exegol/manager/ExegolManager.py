@@ -179,6 +179,9 @@ class ExegolManager:
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
                    level=logging.INFO, markup=True)
         logger.raw(
+            f"[bold magenta][*][/bold magenta] Exegol Discord serv.: [underline magenta]{ConstantConfig.discord}[/underline magenta]{os.linesep}",
+            level=logging.INFO, markup=True)
+        logger.raw(
             f"[bold magenta][*][/bold magenta] Exegol documentation: [underline magenta]{ConstantConfig.documentation}[/underline magenta]{os.linesep}",
             level=logging.INFO, markup=True)
 
