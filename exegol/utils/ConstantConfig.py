@@ -5,7 +5,7 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.1.0b1"
+    version: str = "4.1.0"
 
     # Exegol documentation link
     documentation: str = "https://exegol.rtfd.io/"
@@ -26,11 +26,11 @@ class ConstantConfig:
     # Dockerhub Exegol images repository
     DOCKER_HUB: str = "hub.docker.com"  # Don't handle docker login operations
     DOCKER_REGISTRY: str = "registry-1.docker.io"  # Don't handle docker login operations
-    IMAGE_NAME: str = "nwodtuhs/exegol-dev"
+    IMAGE_NAME: str = "nwodtuhs/exegol"
     GITHUB_REPO: str = "ThePorgs/Exegol"
     # Docker volume names (no docker volume used at this moment)
     # Resources repository
-    EXEGOL_RESOURCES_REPO: str = "https://github.com/ShutdownRepo/Exegol-resources.git"
+    EXEGOL_RESOURCES_REPO: str = "https://github.com/ThePorgs/Exegol-resources.git"
 
     @classmethod
     def findBuildContextPath(cls) -> Path:

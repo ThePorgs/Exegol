@@ -29,10 +29,10 @@ class ExegolImage(SelectableInterface):
         if meta_img:
             version_parsed = meta_img.version
             name = meta_img.name
-            self.__version_specific = not meta_img.is_latest
+            self.__version_specific: bool = not meta_img.is_latest
         else:
             version_parsed = MetaImages.tagNameParsing(name)
-            self.__version_specific: bool = bool(version_parsed)
+            self.__version_specific = bool(version_parsed)
         # Init attributes
         self.__image: Image = docker_image
         self.__name: str = name
@@ -71,7 +71,7 @@ class ExegolImage(SelectableInterface):
             if dockerhub_data:
                 self.__is_remote = True
                 self.__setArch(MetaImages.parseArch(dockerhub_data))
-                self.__dl_size = self.__processSize(dockerhub_data.get("size"))
+                self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
             if meta_img:
                 self.__setDigest(meta_img.meta_id)
         logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
@@ -163,9 +163,10 @@ class ExegolImage(SelectableInterface):
             self.__version_specific = not meta.is_latest
             self.__name = meta.name
             self.__outdated = self.__version_specific
-        self.__dl_size = self.__processSize(dockerhub_data.get("size"))
+        if dockerhub_data is not None:
+            self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
         self.__setLatestVersion(meta.version)
-        if not self.__digest and meta.is_latest:
+        if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
             self.__digest = meta.meta_id
         # Check if local image is sync with remote digest id (check up-to-date status)
@@ -360,22 +361,22 @@ class ExegolImage(SelectableInterface):
 
         # Add remote image left
         for current_remote in remote_images:
-            selected = None
-            default = None
+            img_selected = None
+            img_default = None
             for img in current_remote.getImagesLeft():
                 # the remaining uninstalled images are filtered with the currently selected architecture
                 if MetaImages.parseArch(img) == ParametersManager().arch:
-                    selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+                    img_selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
                     break
                 # OR if no exact arch match is found, try to default to another available arch
                 elif current_remote.name not in latest_installed:
                     # fallback to the first option or one corresponding to the host's arch (may happen if the arch parameter has been overwritten by user)
-                    if default is None or MetaImages.parseArch(img) == EnvInfo.arch:
-                        default = ExegolImage(meta_img=current_remote, dockerhub_data=img)
-            if selected is None:
-                selected = default
-            if selected:
-                results.append(selected)
+                    if img_default is None or MetaImages.parseArch(img) == EnvInfo.arch:
+                        img_default = ExegolImage(meta_img=current_remote, dockerhub_data=img)
+            if img_selected is None:
+                img_selected = img_default
+            if img_selected:
+                results.append(img_selected)
 
         # the merged images are finally reorganized for greater readability
         return cls.__reorderImages(results)

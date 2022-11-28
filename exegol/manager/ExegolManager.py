@@ -400,7 +400,7 @@ class ExegolManager:
             object_list = DockerUtils.listContainers()
         elif object_type is ExegolImage:
             # List all images available
-            object_list: List[ExegolImage] = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
+            object_list = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
         else:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception

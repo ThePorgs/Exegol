@@ -172,7 +172,7 @@ class ContainerConfig:
             # TODO remove support for previous container
             elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
                 self.__shared_resources = True
-                self.__shared_resources_path = share.get('Destination')
+                self.__shared_resources_path = share.get('Destination', '')
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
                 assert src_path is not None
@@ -672,7 +672,7 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getEntrypointCommand(self, image_entrypoint: Optional[str]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
+    def getEntrypointCommand(self, image_entrypoint: Optional[Union[str, List[str]]]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
         """Get container entrypoint/command arguments.
         This method support legacy configuration."""
         if image_entrypoint is None:

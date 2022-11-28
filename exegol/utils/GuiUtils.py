@@ -348,7 +348,8 @@ class GuiUtils:
             while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
                 pass
             # Check if docker have default docker integration
-            if EnvInfo.getDockerDesktopSettings().get("enableIntegrationWithDefaultWslDistro", False):
+            docker_settings = EnvInfo.getDockerDesktopSettings()
+            if docker_settings is not None and docker_settings.get("enableIntegrationWithDefaultWslDistro", False):
                 logger.verbose("Set WSL Ubuntu as default to automatically enable docker integration")
                 # Set new WSL distribution as default to start it and enable docker integration
                 ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)

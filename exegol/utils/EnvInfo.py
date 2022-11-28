@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from typing import Optional, Any, List
 
-from exegol import ConstantConfig
+from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 

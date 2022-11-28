@@ -6,9 +6,9 @@ from typing import Any, Optional, Dict
 import requests
 from requests import Response
 
-from exegol import ConstantConfig
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
+from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 
