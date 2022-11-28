@@ -89,7 +89,25 @@ class GuiUtils:
             if not cls.__startXQuartz():
                 logger.warning("Unable to start XQuartz service.")
                 return False
+
+        # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
+        if not cls.__checkDockerDesktopResourcesConfig():
+            logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
+                           "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
+            return False
         return True
+
+    @staticmethod
+    def __checkDockerDesktopResourcesConfig() -> bool:
+        """
+            Check if Docker Desktop for macOS is configured correctly, allowing
+            /tmp to be bind mounted into Docker containers, which is needed to
+             mount /tmp/.X11-unix for display sharing.
+             Return True if the configuration is correct and /tmp is part of the whitelisted resources
+        """
+        docker_config = EnvInfo.getDockerDesktopResources()
+        logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
+        return '/tmp' in docker_config
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:
@@ -101,7 +119,7 @@ class GuiUtils:
         conf_check = subprocess.run(["defaults", "read", "org.xquartz.X11.plist", "nolisten_tcp"],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-        logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout}'")
+        logger.debug(f"XQuartz nolisten_tcp config: '{conf_check.stdout.strip().decode('utf-8')}'")
         return conf_check.stdout.strip() == b'0'
 
     @classmethod
@@ -150,19 +168,19 @@ class GuiUtils:
             logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
             return False
         logger.debug("WSL is [green]available[/green] and docker is using WSL2")
+        # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
+        if EnvInfo.current_platform != "WSL":
+            logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
+            cls.__distro_name = cls.__find_wsl_distro()
+            logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
+            # If no WSL is found, propose to continue without GUI
+            if not cls.__distro_name and not Confirm(
+                    "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                raise KeyboardInterrupt
+        else:
+            logger.debug("Using current WSL context for X11 socket sharing")
         if cls.__wslg_installed():
             logger.debug("WSLg seems to be installed.")
-            # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
-            if EnvInfo.current_platform != "WSL":
-                logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
-                cls.__distro_name = cls.__find_wsl_distro()
-                logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
-                # If no WSL is found, propose to continue without GUI
-                if not cls.__distro_name and not Confirm(
-                        "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
-                    raise KeyboardInterrupt
-            else:
-                logger.debug("Using current WSL context for X11 socket sharing")
             return True
         elif cls.__wslg_eligible():
             logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
@@ -211,6 +229,15 @@ class GuiUtils:
         Tests the existence of WSL by searching in the default WSL first.
         However, if the default wsl is 'docker-desktop-data', the result will be false, so you have to test with docker-desktop.
         """
+        if EnvInfo.isWindowsHost():
+            wsl = shutil.which("wsl.exe")
+            if not wsl:
+                return False
+            ret = subprocess.Popen(["wsl.exe", "--status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ret.wait()
+            if ret.returncode == 0:
+                return True
+        logger.debug("WSL status command failed.. Trying a fallback check method.")
         return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 
     @classmethod
@@ -219,6 +246,13 @@ class GuiUtils:
         Check if WSLg is installed and deploy inside a WSL image by testing if the file wslg/versions.txt exist.
         :return: bool
         """
+        if EnvInfo.current_platform == "WSL":
+            if Path("/mnt/host/wslg/versions.txt").is_file():
+                return True
+        else:
+            if cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name):
+                return True
+        logger.debug("WSLg check failed.. Trying a fallback check method.")
         return cls.__wsl_test("/mnt/host/wslg/versions.txt") or cls.__wsl_test("/mnt/wslg/versions.txt", name=None)
 
     @staticmethod
@@ -313,19 +347,23 @@ class GuiUtils:
         else:
             while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
                 pass
-            logger.verbose("Set WSL Ubuntu as default to enable docker integration")
-            # Set new WSL distribution as default to start it and enable docker integration
-            ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
-            ret.wait()
-            # Wait for the docker integration (10 try, 1 sec apart)
-            with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
-                for _ in range(10):
-                    if cls.__check_wsl_docker_integration("Ubuntu"):
-                        break
-                    time.sleep(1)
+            # Check if docker have default docker integration
+            docker_settings = EnvInfo.getDockerDesktopSettings()
+            if docker_settings is not None and docker_settings.get("enableIntegrationWithDefaultWslDistro", False):
+                logger.verbose("Set WSL Ubuntu as default to automatically enable docker integration")
+                # Set new WSL distribution as default to start it and enable docker integration
+                ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
+                ret.wait()
+                # Wait for the docker integration (10 try, 1 sec apart)
+                with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
+                    for _ in range(10):
+                        if cls.__check_wsl_docker_integration("Ubuntu"):
+                            break
+                        time.sleep(1)
             while not cls.__check_wsl_docker_integration("Ubuntu"):
                 logger.error("The newly created WSL could not get the docker integration automatically. "
                              "It has to be activated [red]manually[/red]")
+                logger.info("Enable WSL Docker integration for the newly created WSL in: [magenta]Docker Desktop > Settings > Resources > WSL Integration[/magenta]")
                 if not Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
                                default=True):
                     return False

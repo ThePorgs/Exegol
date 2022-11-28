@@ -11,7 +11,6 @@ class Start(Command, ContainerCreation, ContainerStart):
     def __init__(self):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
-        ContainerStart.__init__(self, self.groupArgs)
 
         self._usages = {
             "Start interactively a container": "exegol start",
@@ -30,9 +29,33 @@ class Start(Command, ContainerCreation, ContainerStart):
         self.shell = Option("-s", "--shell",
                             dest="shell",
                             action="store",
-                            choices={"zsh", "bash", "tmux"},
-                            default="zsh",
-                            help="Select a shell environment to launch at startup (Default: [blue]zsh[/blue])")
+                            choices=UserConfig.start_shell_options,
+                            default=UserConfig().default_start_shell,
+                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
+
+        self.log = Option("-l", "--log",
+                          dest="log",
+                          action="store_true",
+                          default=False,
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
+        self.log_method = Option("--log-method",
+                                 dest="log_method",
+                                 action="store",
+                                 choices=UserConfig.shell_logging_method_options,
+                                 default=UserConfig().shell_logging_method,
+                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
+        self.log_compress = Option("--log-compress",
+                                   dest="log_compress",
+                                   action="store_true",
+                                   default=False,
+                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
+
+        self.groupArgs.append(GroupArg({"arg": self.log, "required": False},
+                                       {"arg": self.log_method, "required": False},
+                                       {"arg": self.log_compress, "required": False},
+                                       title="[blue]Container creation Shell logging options[/blue]"))
+
+        ContainerStart.__init__(self, self.groupArgs)
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.shell, "required": False},
@@ -50,7 +73,7 @@ class Stop(Command, ContainerMultiSelector):
         ContainerMultiSelector.__init__(self, self.groupArgs)
 
         self._usages = {
-            "Stop interactively one or multiple container": "exegol stop",
+            "Stop interactively one or more containers": "exegol stop",
             "Stop [blue]demo[/blue]": "exegol stop [blue]demo[/blue]"
         }
 
@@ -69,7 +92,8 @@ class Install(Command, ImageSelector):
         self._usages = {
             "Install or build interactively an exegol image": "exegol install",
             "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
-            "Build [bright_blue]local[/bright_blue] image": "exegol install [bright_blue]local[/bright_blue]"
+            "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
+            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
         }
 
         # Create container build arguments
@@ -143,7 +167,7 @@ class Uninstall(Command, ImageMultiSelector):
                                        title="[bold cyan]Uninstall[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
-            "Uninstall interactively one or many exegol image": "exegol uninstall",
+            "Uninstall interactively one or more exegol images": "exegol uninstall",
             "Uninstall the [bright_blue]dev[/bright_blue] image": "exegol uninstall [bright_blue]dev[/bright_blue]"
         }
 
@@ -169,7 +193,7 @@ class Remove(Command, ContainerMultiSelector):
                                        title="[bold cyan]Remove[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
-            "Remove interactively one or many containers": "exegol remove",
+            "Remove interactively one or more containers": "exegol remove",
             "Remove the [blue]demo[/blue] container": "exegol remove [blue]demo[/blue]"
         }
 
@@ -191,12 +215,14 @@ class Exec(Command, ContainerCreation, ContainerStart):
                 "exegol exec [blue]demo[/blue] [magenta]bloodhound[/magenta]",
             "Execute the command [magenta]'nmap -h'[/magenta] with console output":
                 "exegol exec -v [blue]demo[/blue] [magenta]'nmap -h'[/magenta]",
-            "Execute a command in background within the [blue]demo[/blue] container":
-                "exegol exec -b [blue]demo[/blue] [magenta]bloodhound[/magenta]",
+            "Execute a command in [green]background[/green] within the [blue]demo[/blue] container":
+                "exegol exec [green]-b[/green] [blue]demo[/blue] [magenta]bloodhound[/magenta]",
             "Execute the command [magenta]bloodhound[/magenta] in a temporary container based on the [bright_blue]full[/bright_blue] image":
                 "exegol exec --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
-            "Execute a command in background with a temporary container":
-                "exegol exec -b --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute a command in [green]background[/green] with a temporary container":
+                "exegol exec [green]-b[/green] --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute the command [magenta]wireshark[/magenta] with [orange3]network admin[/orange3] privileged":
+                "exegol exec [green]-b[/green] --tmp --cap [orange3]NET_ADMIN[/orange3] [bright_blue]full[/bright_blue] [magenta]wireshark[/magenta]",
         }
 
         # Overwrite default selectors
@@ -231,7 +257,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
         self.tmp = Option("--tmp",
                           action="store_true",
                           dest="tmp",
-                          help="Created a dedicated and temporary container to execute the command "
+                          help="Creates a dedicated and temporary container to execute the command "
                                "(default: [red not italic]False[/red not italic])")
 
         # Create group parameter for container selection

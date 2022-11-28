@@ -1,10 +1,8 @@
-import json
 import os
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
 import docker
-import requests
 from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
@@ -17,14 +15,15 @@ from exegol.exceptions.ExegolExceptions import ObjectNotFound
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
+from exegol.model.MetaImages import MetaImages
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.UserConfig import UserConfig
+from exegol.utils.WebUtils import WebUtils
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
-from exegol.utils.WebUtils import WebUtils
 
 
 class DockerUtils:
@@ -86,15 +85,11 @@ class DockerUtils:
         return cls.__containers
 
     @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False,
-                        command: str = None) -> ExegolContainer:
+    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
         model.prepare()
-        if command is not None:
-            # Overwriting container starting command, shouldn't be used, prefer using config.setContainerCommand()
-            model.config.setContainerCommand(command)
         logger.debug(model)
         # Preload docker volume before container creation
         for volume in model.config.getVolumes():
@@ -102,9 +97,13 @@ class DockerUtils:
                 docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
+        entrypoint, command = model.config.getEntrypointCommand(model.image.getEntrypointConfig())
+        logger.debug(f"Entrypoint: {entrypoint}")
+        logger.debug(f"Cmd: {command}")
         try:
-            container = cls.__client.containers.run(model.image.getFullName(),
-                                                    command=model.config.getEntrypointCommand(),
+            container = cls.__client.containers.run(model.image.getDockerRef(),
+                                                    entrypoint=entrypoint,
+                                                    command=command,
                                                     detach=True,
                                                     name=model.hostname,
                                                     hostname=model.hostname,
@@ -212,17 +211,21 @@ class DockerUtils:
     # # # Image Section # # #
 
     @classmethod
-    def listImages(cls, include_version_tag: bool = False) -> List[ExegolImage]:
+    def listImages(cls, include_version_tag: bool = False, include_locked: bool = False) -> List[ExegolImage]:
         """List available docker images.
         Return a list of ExegolImage"""
         if cls.__images is None:
             remote_images = cls.__listRemoteImages()
             local_images = cls.__listLocalImages()
-            images = ExegolImage.mergeImages(remote_images, local_images)
-            cls.__images = ExegolImage.reorderImages(images)
+            cls.__images = ExegolImage.mergeImages(remote_images, local_images)
+        result = cls.__images
+        if not (logger.isEnabledFor(ExeLog.VERBOSE) or include_locked):
+            # ToBeRemoved images are only shown in verbose mode
+            result = [i for i in result if not i.isLocked()]
         if not include_version_tag:
-            return [img for img in cls.__images if not img.isVersionSpecific() or img.isInstall()]
-        return cls.__images
+            # Version specific images not installed are excluded by default
+            result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
+        return result
 
     @classmethod
     def listInstalledImages(cls) -> List[ExegolImage]:
@@ -236,7 +239,7 @@ class DockerUtils:
     def getImage(cls, tag: str) -> ExegolImage:
         """Get an ExegolImage from tag name."""
         # Fetch every images available
-        images = cls.listImages()
+        images = cls.listImages(include_version_tag=True, include_locked=True)
         match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
@@ -261,12 +264,24 @@ class DockerUtils:
                 try:
                     docker_local_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
                     # DockerSDK image get is an exact matching, no need to add more check
-                    return ExegolImage(docker_image=docker_local_image)
                 except APIError as err:
                     if err.status_code == 404:
+                        # try to find it in recovery mode
+                        logger.verbose("Unable to find your image. Trying to find in recovery mode.")
+                        recovery_images = cls.__findLocalRecoveryImages(include_untag=True)
+                        match = []
+                        for img in recovery_images:
+                            if ExegolImage.parseAliasTagName(img) == tag:
+                                match.append(ExegolImage(docker_image=img))
+                        if len(match) == 1:
+                            return match[0]
+                        elif len(match) > 1:
+                            return cast(ExegolImage, ExegolTUI.selectFromTable(match))
                         raise ObjectNotFound
                     else:
                         logger.critical(f"Error on image loading: {err}")
+                        return  # type: ignore
+                return ExegolImage(docker_image=docker_local_image).autoLoad()
             else:
                 for img in cls.__images:
                     if img.getName() == tag:
@@ -275,7 +290,7 @@ class DockerUtils:
                             cls.__findImageMatch(img)
                         return img
         except ObjectNotFound:
-            logger.critical(f"The desired image has not been found ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting")
+            logger.critical(f"The desired image is not installed or do not exist ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting.")
         return  # type: ignore
 
     @classmethod
@@ -293,15 +308,53 @@ class DockerUtils:
             return  # type: ignore
         # Filter out image non-related to the right repository
         result = []
+        ids = set()
         for img in images:
             # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
             if len(img.attrs.get('RepoTags', [])) == 0 or \
                     ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
+                ids.add(img.id)
+
+        # Try to find lost Exegol images
+        recovery_images = cls.__findLocalRecoveryImages()
+        for img in recovery_images:
+            # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
+            if img.id in ids:
+                # Skip image from other repo and image already found
+                logger.debug(f"Duplicate found in recovery mode! {img}")
+                continue
+            else:
+                result.append(img)
+                ids.add(img.id)
         return result
 
     @classmethod
-    def __listRemoteImages(cls) -> List[ExegolImage]:
+    def __findLocalRecoveryImages(cls, include_untag: bool = False) -> List[Image]:
+        """This method try to recovery untagged docker images.
+        Set include_untag option to recover images with a valid RepoDigest (no not dangling) but without tag."""
+        try:
+            # Try to find lost Exegol images
+            recovery_images = cls.__client.images.list(filters={"dangling": True})
+            if include_untag:
+                recovery_images += cls.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
+        except APIError as err:
+            logger.debug(f"Error occurred in recovery mode: {err}")
+            return []
+        result = []
+        id_list = set()
+        for img in recovery_images:
+            # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
+            if len(img.attrs.get('RepoTags', [1])) > 0 or (not include_untag and len(img.attrs.get('RepoDigests', [1])) > 0) or img.id in id_list:
+                # Skip image from other repo and image already found
+                continue
+            if img.labels.get('org.exegol.app', '') == "Exegol":
+                result.append(img)
+                id_list.add(img.id)
+        return result
+
+    @classmethod
+    def __listRemoteImages(cls) -> List[MetaImages]:
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
@@ -310,7 +363,7 @@ class DockerUtils:
         page_size = 20
         page_max = 2
         current_page = 0
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
         # Handle multi-page tags from registry
         with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:
@@ -325,11 +378,12 @@ class DockerUtils:
                 if docker_repo_response is None:
                     logger.warning("Skipping online queries.")
                     return []
-                for docker_image in docker_repo_response["results"]:
-                    exegol_image = ExegolImage(name=docker_image.get('name', 'NONAME'),
-                                               digest=docker_image["images"][0]["digest"],
-                                               size=docker_image.get("full_size"))
-                    remote_results.append(exegol_image)
+                error_message = docker_repo_response.get("message")
+                if error_message:
+                    logger.error(f"Dockerhub send an error message: {error_message}")
+                for docker_images in docker_repo_response.get("results", []):
+                    meta_image = MetaImages(docker_images)
+                    remote_results.append(meta_image)
                 url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results
@@ -347,18 +401,23 @@ class DockerUtils:
     @classmethod
     def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to download a docker image in offline mode ...")
+            return False
         # Switch to install mode if the selected image is not already installed
         install_mode = install_mode or not image.isInstall()
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
             logger.info(f"Starting download. Please wait, this might be (very) long.")
+            logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
                     cls.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
                                           tag=name,
                                           stream=True,
-                                          decode=True))
+                                          decode=True,
+                                          platform="linux/" + image.getArch()))
                 logger.success(f"Image successfully updated")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
@@ -378,9 +437,13 @@ class DockerUtils:
     @classmethod
     def downloadVersionTag(cls, image: ExegolImage) -> Union[ExegolImage, str]:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to download a docker image in offline mode ...")
+            return ""
         try:
             image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
-                                             tag=image.getLatestVersionName())
+                                             tag=image.getLatestVersionName(),
+                                             platform="linux/" + image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
@@ -399,12 +462,12 @@ class DockerUtils:
         if tag is None:  # Skip removal if image is not installed locally.
             return False
         try:
-            if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName():
-                # Docker can't remove multiple images at the same tag, version specific tag must be remove first
-                logger.debug(f"Remove image {image.getFullVersionName()}")
-                cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
-            logger.debug(f"Remove image {image.getLocalId()} ({image.getFullName()})")
             with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
+                if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName() and not upgrade_mode:
+                    # Docker can't remove multiple images at the same tag, version specific tag must be remove first
+                    logger.debug(f"Removing image {image.getFullVersionName()}")
+                    cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
+                logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
                 cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
@@ -429,13 +492,18 @@ class DockerUtils:
     @classmethod
     def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None):
         """Build a docker image from source"""
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
+            return False
         logger.info(f"Building exegol image : {tag}")
         if build_profile is None or build_dockerfile is None:
             build_profile = "full"
             build_dockerfile = "Dockerfile"
         logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
         logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
-                       f"[green][b]{build_profile}[/b][/green] profile.")
+                       f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
+        if EnvInfo.arch != ParametersManager().arch:
+            logger.warning("Building an image for a different host architecture can cause unexpected problems and slowdowns!")
         try:
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
@@ -447,6 +515,7 @@ class DockerUtils:
                                        buildargs={"TAG": f"{build_profile}",
                                                   "VERSION": "local",
                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
+                                       platform="linux/" + ParametersManager().arch,
                                        rm=True,
                                        forcerm=True,
                                        pull=True,

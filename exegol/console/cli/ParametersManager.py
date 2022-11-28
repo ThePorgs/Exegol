@@ -53,3 +53,4 @@ class ParametersManager(metaclass=MetaSingleton):
         except AttributeError:
             # The logger may not work if the call is made before its initialization
             logger.debug(f"Attribute not found in parameters: {item}")
+            return None

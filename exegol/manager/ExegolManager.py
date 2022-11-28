@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
+from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.TUI import ExegolTUI
@@ -54,7 +55,8 @@ class ExegolManager:
             images = DockerUtils.listImages(include_version_tag=False)
             containers = DockerUtils.listContainers()
             # List and print images
-            logger.verbose("Listing local and remote Exegol images")
+            color = ConsoleFormat.getArchColor(ParametersManager().arch)
+            logger.verbose(f"Listing local and remote Exegol images (filtering for architecture [{color}]{ParametersManager().arch}[/{color}])")
             ExegolTUI.printTable(images)
             # List and print containers
             logger.verbose("Listing local Exegol containers")
@@ -90,7 +92,8 @@ class ExegolManager:
                 container.exec(command=ParametersManager().exec, as_daemon=False, is_tmp=True)
                 container.stop(timeout=2)
             else:
-                logger.success(f"Command executed as entrypoint of the container {container.hostname}")
+                # Command is passed at container creation in __createTmpContainer()
+                logger.success(f"Command executed as entrypoint of the container [green]'{container.hostname}'[/green]")
         else:
             container = cls.__loadOrCreateContainer(override_container=ParametersManager().selector)
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
@@ -120,6 +123,8 @@ class ExegolManager:
     def update(cls):
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         ExegolManager.print_version()
+        if ParametersManager().offline_mode:
+            logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
             UpdateManager.updateImageSource()
@@ -137,7 +142,6 @@ class ExegolManager:
             logger.setLevel(ExeLog.VERBOSE)
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
         if len(images) == 0:
-            logger.error("No images were selected. Exiting.")
             return
         all_name = ", ".join([x.getName() for x in images])
         if not ParametersManager().force_mode and not Confirm(
@@ -174,10 +178,27 @@ class ExegolManager:
         """Show exegol version (and context configuration on debug mode)"""
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
                    level=logging.INFO, markup=True)
+        logger.raw(
+            f"[bold magenta][*][/bold magenta] Exegol Discord serv.: [underline magenta]{ConstantConfig.discord}[/underline magenta]{os.linesep}",
+            level=logging.INFO, markup=True)
+        logger.raw(
+            f"[bold magenta][*][/bold magenta] Exegol documentation: [underline magenta]{ConstantConfig.documentation}[/underline magenta]{os.linesep}",
+            level=logging.INFO, markup=True)
+
+        cls.print_sponsors()
+        if 'a' in ConstantConfig.version:
+            logger.empty_line()
+            logger.warning("You are currently using an [red]Alpha[/red] version of Exegol, which may be unstable. "
+                           "This version is a work in progress and bugs are expected.")
+        elif 'b' in ConstantConfig.version:
+            logger.empty_line()
+            logger.warning("You are currently using a [orange3]Beta[/orange3] version of Exegol, which may be unstable.")
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs()}")
         logger.debug(f"Arch: {EnvInfo.arch}")
+        if EnvInfo.arch != EnvInfo.raw_arch:
+            logger.debug(f"Raw arch: {EnvInfo.raw_arch}")
         if EnvInfo.isWindowsHost():
             logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
@@ -192,13 +213,12 @@ class ExegolManager:
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
-        cls.print_sponsors()
 
     @classmethod
     def print_sponsors(cls):
         """Show exegol sponsors"""
-        logger.success("""Exegol thanks [blue]Capgemini[/blue] for supporting the project [bright_black](dev contributors)[/bright_black] :pray:""")
-        logger.success("""Interested in joining Capgemini? https://www.capgemini.com/fr-fr/carrieres/offres-emploi/""")
+        logger.success("""We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
+        logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -246,7 +266,7 @@ class ExegolManager:
                 # (raised from TUI interactive selection)
                 if must_exist:
                     # If there is no image installed, return none
-                    logger.error("No images were found")
+                    logger.error("Nothing to do.")
                     return [] if multiple else None
                 else:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
@@ -319,7 +339,7 @@ class ExegolManager:
                                 override_container: Optional[str] = None,
                                 multiple: bool = False,
                                 must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
-        """Select one or multipleExegolContainer
+        """Select one or more ExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
         When multiple is set to True, return a list of ExegolContainer"""
@@ -380,10 +400,7 @@ class ExegolManager:
             object_list = DockerUtils.listContainers()
         elif object_type is ExegolImage:
             # List all images available
-            object_list: List[ExegolImage] = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
-            # ToBeRemoved images are only shown in verbose mode
-            if not logger.isEnabledFor(ExeLog.VERBOSE):
-                object_list = [i for i in object_list if not i.isLocked()]
+            object_list = DockerUtils.listInstalledImages() if must_exist else DockerUtils.listImages()
         else:
             logger.critical("Unknown object type during interactive selection. Exiting.")
             raise Exception
@@ -432,6 +449,9 @@ class ExegolManager:
             config.enableCwdShare()
         if ParametersManager().privileged:
             config.setPrivileged()
+        elif ParametersManager().capabilities is not None:
+            for cap in ParametersManager().capabilities:
+                config.addCapability(cap)
         if ParametersManager().volumes is not None:
             for volume in ParametersManager().volumes:
                 config.addRawVolume(volume)
@@ -486,8 +506,11 @@ class ExegolManager:
         # When container exec a command as a daemon, the execution must be set on the container's entrypoint
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
-            cmd = ExegolContainer.formatShellCommand(ParametersManager().exec)
-            config.setContainerCommand(cmd)
+            exec_payload, str_cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
+            config.setLegacyContainerCommand(f"zsh -c '{exec_payload}'")
+            config.setContainerCommand("cmd", "zsh", "-c", exec_payload)
+            config.addEnv("CMD", str_cmd)
+            config.addEnv("DISABLE_AUTO_UPDATE", "true")
         # Workspace must be disabled for temporary container because host directory is never deleted
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"

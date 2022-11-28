@@ -29,7 +29,7 @@ class ContainerMultiSelector:
                                         metavar="CONTAINER",
                                         nargs='*',
                                         action="store",
-                                        help="Tag used to target one or multiple Exegol container")
+                                        help="Tag used to target one or more Exegol containers")
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
@@ -37,7 +37,8 @@ class ContainerMultiSelector:
 
 
 class ContainerStart:
-    """Generic parameter class for container selection"""
+    """Generic parameter class for container selection.
+    This generic class is used by start and exec actions"""
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create options on container start
@@ -48,15 +49,9 @@ class ContainerStart:
                            help="And an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
                                 "If the container already exists, the variable will be present only in the current shell")
-        self.log = Option("-l", "--log",
-                          dest="log",
-                          action="store_true",
-                          default=False,
-                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disable[/red])")
 
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
-                                  {"arg": self.log, "required": False},
                                   title="[blue]Container start options[/blue]"))
 
 
@@ -85,7 +80,7 @@ class ImageMultiSelector:
                                     metavar="IMAGE",
                                     nargs='*',
                                     action="store",
-                                    help="Tag used to target one or multiple Exegol image")
+                                    help="Tag used to target one or more Exegol images")
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},
@@ -109,7 +104,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                        action="store_false",
                                        default=True,
                                        dest="shared_resources",
-                                       help=f"Disable the mount of the shared resources (/my-resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
+                                       help=f"Disable the mount of the shared resources (/opt/my-resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
@@ -134,28 +129,36 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      dest="workspace_path",
                                      action="store",
                                      help="The specified host folder will be linked to the /workspace folder in the container")
-        self.update_fs_perms = Option("--update-fs", "-fs",
+        self.update_fs_perms = Option("-fs", "--update-fs",
                                       action="store_true",
                                       default=False,
                                       dest="update_fs_perms",
                                       help=f"Modifies the permissions of folders and sub-folders shared in your workspace to access the files created within the container using your host user account. "
-                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[red]Disable[/red]'})")
+                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[red]Disabled[/red]'})")
         self.volumes = Option("-V", "--volume",
                               action="append",
                               default=[],
                               dest="volumes",
-                              help="Share a new volume between host and exegol (format: --volume /host/path/:/exegol/mount/)")
+                              help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/)")
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],
                             dest="ports",
                             help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+        self.capabilities = Option("--cap",
+                                   dest="capabilities",
+                                   metavar='',  # Do not display available choices
+                                   action="append",
+                                   default=[],
+                                   choices={"NET_RAW", "MKNOD", "SETFCAP", "SYS_CHROOT", "NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_ADMIN", "SYS_RAWIO"},
+                                   help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
+                                        "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
         self.privileged = Option("--privileged",
                                  dest="privileged",
                                  action="store_true",
                                  default=False,
-                                 help="[orange3](dangerous)[/orange3] give extended privileges at the container creation (e.g. needed to "
-                                      "mount things, to use wifi or bluetooth)")
+                                 help="[orange3](dangerous)[/orange3] Give [red]ALL[/red] admin privileges to the container when it is created "
+                                      "(if the need is specifically identified, consider adding capabilities instead).")
         self.devices = Option("-d", "--device",
                               dest="devices",
                               default=[],
@@ -178,6 +181,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
+                                  {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},

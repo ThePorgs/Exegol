@@ -34,7 +34,13 @@ class UpdateManager:
             tag = image_args
         if tag is None:
             # Filter for updatable images
-            available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+            if install_mode:
+                available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+            else:
+                available_images = [i for i in DockerUtils.listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
+                if len(available_images) == 0:
+                    logger.success("All images already installed are up to date!")
+                    return None
             try:
                 # Interactive selection
                 selected_image = ExegolTUI.selectFromTable(available_images,
@@ -54,7 +60,11 @@ class UpdateManager:
                 selected_image = DockerUtils.getImage(tag)
             except ObjectNotFound:
                 # If the image do not exist, ask to build it
-                return cls.__askToBuild(tag)
+                if install_mode:
+                    return cls.__askToBuild(tag)
+                else:
+                    logger.error(f"Image '{tag}' was not found. If you wanted to build a local image, you can use the 'install' action instead.")
+                    return None
 
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
@@ -117,6 +127,9 @@ class UpdateManager:
     @staticmethod
     def __updateGit(gitUtils: GitUtils) -> bool:
         """User procedure to update local git repository"""
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to update a repository in offline mode ...")
+            return False
         if not gitUtils.isAvailable:
             logger.empty_line()
             return False
@@ -168,7 +181,7 @@ class UpdateManager:
         """Check if there is an exegol wrapper update available.
         Return true if an update is available."""
         # Skipping update check
-        if cls.__triggerUpdateCheck():
+        if cls.__triggerUpdateCheck() and not ParametersManager().offline_mode:
             logger.debug("Running update check")
             return cls.__checkUpdate()
         return False
@@ -192,7 +205,10 @@ class UpdateManager:
         return (lastcheck + time_delta) < now
 
     @classmethod
-    def __checkUpdate(cls):
+    def __checkUpdate(cls) -> bool:
+        """Depending on the current version (dev or latest) the method used to find the latest version is not the same.
+        For the stable version, the latest version is fetch from GitHub release.
+        In dev mode, git is used to find if there is some update available."""
         isUpToDate = True
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
@@ -209,10 +225,13 @@ class UpdateManager:
                 logger.debug("Checking update using: stable mode")
                 try:
                     remote_version = WebUtils.getLatestWrapperRelease()
+                    # On some edge case, remote_version might be None if there is problem
+                    if remote_version is None:
+                        raise CancelOperation
                     isUpToDate = cls.__compareVersion(remote_version)
                 except CancelOperation:
                     # No internet, postpone update check
-                    pass
+                    return False
 
         if not isUpToDate:
             cls.__tagUpdateAvailable()
@@ -221,11 +240,13 @@ class UpdateManager:
 
     @classmethod
     def __updateLastCheckFile(cls):
+        """Update the .lastcheck.meta file with the current date to avoid multiple update checks."""
         with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'w') as metafile:
             metafile.write(date.today().strftime(cls.__TIME_FORMAT))
 
     @classmethod
     def __compareVersion(cls, version) -> bool:
+        """Compare a remote version with the current one to check if a new release is available."""
         isUpToDate = True
         try:
             for i in range(len(version.split('.'))):
@@ -347,7 +368,7 @@ class UpdateManager:
         with console.status(f"Loading module information", spinner_style="blue") as s:
             for git in gits:
                 s.update(status=f"Loading module [green]{git.getName()}[/green] information")
-                status = git.getTextStatus()
+                status = "[bright_black]Unknown[/bright_black]" if ParametersManager().offline_mode else git.getTextStatus()
                 branch = git.getCurrentBranch()
                 if branch is None:
                     if "not supported" in status:

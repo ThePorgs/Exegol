@@ -16,6 +16,7 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
 
 
@@ -42,7 +43,8 @@ class ExegolTUI:
                             TimeElapsedColumn(),
                             "•",
                             TimeRemainingColumn(),
-                            transient=True) as progress:
+                            transient=True,
+                            console=console) as progress:
             task_layers_download = progress.add_task("[bold red]Downloading layers...", total=0)
             task_layers_extract = progress.add_task("[bold gold1]Extracting layers...", total=0, start=False)
             for line in stream:  # Receiving stream from docker API
@@ -98,8 +100,17 @@ class ExegolTUI:
                         progress.update(task_id, description=f"[green]Checksum {layer_id} ...")
                 elif "Image is up to date" in status or "Status: Downloaded newer image for" in status:
                     logger.success(status)
+                    # When 'quick_exit' is set, breaking the download TUI progress to handle the next part of the same stream logs
                     if quick_exit:
                         break
+                elif status in ["Waiting", "Verifying Checksum"]:
+                    # Ignore these status messages
+                    continue
+                elif status == "Already exists":
+                    # Layers that already exists can be added as fully completed without creating a specific task
+                    layers.add(layer_id)
+                    layers_downloaded.add(layer_id)
+                    layers_extracted.add(layer_id)
                 else:
                     logger.debug(line)
 
@@ -139,8 +150,11 @@ class ExegolTUI:
             logfile.close()
 
     @staticmethod
-    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]], title: Optional[str] = None):
-        """Printing Rich table for a list of object"""
+    def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]],
+                   title: Optional[str] = None,
+                   safe_key: bool = False):
+        """Printing Rich table for a list of object.
+        Set safe_key to override the key selection"""
         logger.empty_line()
         table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
                       box=box.SQUARE, title_justify="left")
@@ -149,9 +163,9 @@ class ExegolTUI:
             return
         else:
             if type(data[0]) is ExegolImage:
-                ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data))
+                ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data), safe_key=safe_key)
             elif type(data[0]) is ExegolContainer:
-                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data))
+                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data), safe_key=safe_key)
             elif type(data[0]) is str:
                 if title is not None:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
@@ -166,12 +180,14 @@ class ExegolTUI:
         logger.empty_line()
 
     @staticmethod
-    def __buildImageTable(table: Table, data: Sequence[ExegolImage]):
+    def __buildImageTable(table: Table, data: Sequence[ExegolImage], safe_key: bool = False):
         """Building Rich table from a list of ExegolImage"""
         table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
+        if safe_key:
+            table.add_column("Option")
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Image tag")
@@ -185,15 +201,23 @@ class ExegolTUI:
             table.add_column("Size")
         table.add_column("Status")
         # Load data into the table
-        for image in data:
+        for i in range(len(data)):
+            image = data[i]
             if verbose_mode:
-                table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
-                              image.getRealSize(), image.getBuildDate(), image.getStatus())
+                if safe_key:
+                    table.add_row(str(i + 1), image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                                  image.getRealSize(), image.getBuildDate(), image.getStatus())
+                else:
+                    table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                                  image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
-                table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
+                if safe_key:
+                    table.add_row(str(i + 1), image.getDisplayName(), image.getSize(), image.getStatus())
+                else:
+                    table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]):
+    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False):
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -251,15 +275,17 @@ class ExegolTUI:
                         data: Sequence[SelectableInterface],
                         object_type: Optional[Type] = None,
                         default: Optional[str] = None,
-                        allow_None: bool = False) -> Union[SelectableInterface, str]:
+                        allow_None: bool = False,
+                        conflict_mode: bool = False) -> Union[SelectableInterface, str]:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
-        Raise IndexError of the data list is empty."""
+        Raise IndexError of the data list is empty.
+        Set conflict_mode to override the key in order to select a specific object with duplicate name"""
         cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
             if object_type is ExegolImage:
-                logger.warning("No images are installed")
+                logger.warning("No images are available for selection")
             elif object_type is ExegolContainer:
                 logger.warning("No containers have been created yet")
             else:
@@ -269,27 +295,41 @@ class ExegolTUI:
         object_type = type(data[0])
         object_name = "container" if object_type is ExegolContainer else "image"
         action = "create" if object_type is ExegolContainer else "build"
-        # Print data list
-        cls.printTable(data)
         # Get a list of every choice available
-        choices: Optional[List[str]] = [obj.getKey() for obj in data]
+        choices: List[str] = [obj.getKey() for obj in data]
+        if conflict_mode or (len(data) > 1 and len(set(choices)) == 1):
+            conflict_mode = True
+            choices = [str(k) for k in range(1, len(data) + 1)]
+        # Print data list
+        cls.printTable(data, safe_key=conflict_mode)
         # If no default have been supplied, using the first one
         if default is None:
-            default = cast(List[str], choices)[0]
-        # When allow_none is enable, disabling choices restriction
+            default = choices[0]
+        # When allow_none is enabled, disabling choices restriction
         if allow_None:
-            choices = None
+            choices_select: Optional[List[str]] = None
             logger.info(
                 f"You can use a name that does not already exist to {action} a new {object_name}"
                 f"{' from local sources' if object_type is ExegolImage else ''}")
+        else:
+            choices_select = choices
         while True:
+            match = []
             choice = Prompt.ask(
                 f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
-                default=default, choices=choices,
+                default=default, choices=choices_select,
                 show_choices=False)
-            for o in data:
-                if choice == o:
-                    return o
+            if conflict_mode:
+                # In conflict mode, choice are only index number offset by 1
+                return data[int(choice)-1]
+            for option in data:
+                if choice == option:
+                    match.append(option)
+            if len(match) == 1:
+                return match[0]
+            elif len(match) > 1:
+                logger.error(f"Conflict detected ! Multiple {object_name} have the same name, please select the intended one.")
+                return cls.selectFromTable(match, object_type, default=None, allow_None=False, conflict_mode=True)
             if allow_None:
                 if Confirm(
                         f"No {object_name} is available under this name, do you want to {action} it?",
@@ -355,6 +395,8 @@ class ExegolTUI:
 
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
+        # Load the image status if it is not already set.
+        container.image.autoLoad()
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -362,6 +404,7 @@ class ExegolTUI:
         sysctls = container.config.getSysctls()
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
+        creation_date = container.config.getTextCreationDate()
 
         # Color code
         privilege_color = "bright_magenta"
@@ -377,15 +420,19 @@ class ExegolTUI:
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus(include_version=False)})"
+        if container.image.getArch() != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
+            container_info_header += f" [bright_black]({container.image.getArch()})[/bright_black]"
         recap.add_column(container_info_header)
         # Main features
+        if creation_date:
+            recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getTextNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
         recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +
                       f"{'[bright_black](/opt/resources)[/bright_black]' if container.config.isExegolResourcesEnable() else ''}")
         recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()) +
-                      f"{'[bright_black](/my-resources)[/bright_black]' if container.config.isSharedResourcesEnable() else ''}")
+                      f"{'[bright_black]({})[/bright_black]'.format(container.config.getSharedResourcesPath()) if container.config.isSharedResourcesEnable() else ''}")
         recap.add_row("[bold blue]Shell logging[/bold blue]", boolFormatter(container.config.isShellLoggingEnable()) +
                       f"{'[bright_black](/workspace/logs)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
         if "N/A" not in container.config.getVpnName():

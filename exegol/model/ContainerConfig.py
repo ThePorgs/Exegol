@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
@@ -24,7 +25,9 @@ class ContainerConfig:
     """Configuration class of an exegol container"""
 
     # Default hardcoded value
-    __default_entrypoint = "bash"
+    __default_entrypoint_legacy = "bash"
+    __default_entrypoint = ["/.exegol/entrypoint.sh"]
+    __default_cmd = ["default"]
     __default_shm_size = "64M"
 
     # Reference static config data
@@ -32,12 +35,15 @@ class ContainerConfig:
 
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
+    # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
+    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
         self.__share_timezone: bool = False
         self.__shared_resources: bool = False
+        self.__shared_resources_path: str = "/opt/my-resources"
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
@@ -54,9 +60,15 @@ class ContainerConfig:
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
-        self.__container_command: str = self.__default_entrypoint
+        self.__container_command_legacy: Optional[str] = None
+        self.__container_command: List[str] = self.__default_cmd
+        self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
+        self.__start_delegate_mode: bool = False
+        # Metadata attributes
+        self.creation_date: Optional[str] = None
+
         if container is not None:
             self.__parseContainerConfig(container)
 
@@ -68,6 +80,8 @@ class ContainerConfig:
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
+        # If entrypoint is set on the image, considering the presence of start.sh script for delegates features
+        self.__start_delegate_mode = container.attrs['Config']['Entrypoint'] is not None
         self.__enable_gui = False
         for env in self.__envs:
             if "DISPLAY" in env:
@@ -109,14 +123,23 @@ class ContainerConfig:
     def __parseLabels(self, labels: Dict[str, str]):
         """Parse envs object syntax"""
         for key, value in labels.items():
-            if not key.startswith("org.exegol.feature."):
+            if not key.startswith("org.exegol."):
                 continue
             logger.debug(f"Parsing label : {key}")
-            # Find corresponding feature and attributes
-            for attribute, label in self.__label_features.items():
-                if label == key:
-                    # reflective execution of the feature enable method (add label & set attributes)
-                    getattr(self, attribute)()
+            if key.startswith("org.exegol.metadata."):
+                # Find corresponding feature and attributes
+                for label, refs in self.__label_metadata.items():
+                    if label == key:
+                        # reflective set of the metadata attribute (set metadata value to the corresponding attribute)
+                        setattr(self, refs[0], value)
+                        break
+            elif key.startswith("org.exegol.feature."):
+                # Find corresponding feature and attributes
+                for attribute, label in self.__label_features.items():
+                    if label == key:
+                        # reflective execution of the feature enable method (add label & set attributes)
+                        getattr(self, attribute)()
+                        break
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -146,8 +169,10 @@ class ContainerConfig:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
-            elif "/my-resources" in share.get('Destination', ''):
+            # TODO remove support for previous container
+            elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
                 self.__shared_resources = True
+                self.__shared_resources_path = share.get('Destination', '')
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
                 assert src_path is not None
@@ -161,7 +186,8 @@ class ContainerConfig:
                 else:
                     logger.debug("Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            elif "/vpn" in share.get('Destination', ''):
+            # TODO remove support for previous container
+            elif "/vpn" in share.get('Destination', '') or "/.exegol/vpn" in share.get('Destination', ''):
                 # VPN are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -349,14 +375,14 @@ class ContainerConfig:
             logger.verbose("Config: Enabling shared resources volume")
             self.__shared_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().shared_resources_path, '/my-resources')
+            self.addVolume(UserConfig().shared_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableSharedResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
         if self.__shared_resources:
             logger.verbose("Config: Disabling shared resources volume")
             self.__shared_resources = False
-            self.removeVolume(container_path='/my-resources')
+            self.removeVolume(container_path='/opt/my-resources')
 
     def enableExegolResources(self) -> bool:
         """Procedure to enable exegol resources volume feature"""
@@ -419,10 +445,16 @@ class ContainerConfig:
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
-        self.__addCapability("NET_ADMIN")
-        if not self.__network_host:
-            # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
-            # TODO test with ipv6 disable with kernel modules
+        self.addCapability("NET_ADMIN")
+        # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
+        # TODO test with ipv6 disable with kernel modules
+        skip_sysctl = False
+        if self.__network_host and EnvInfo.is_linux_shell:
+            # Check if IPv6 have been disabled on the host with sysctl
+            with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
+                if int(conf.read()) == 0:
+                    skip_sysctl = True
+        if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
@@ -430,8 +462,9 @@ class ContainerConfig:
         ovpn_parameters = self.__prepareVpnVolumes(config_path)
         # Execution of the VPN daemon at container startup
         if ovpn_parameters is not None:
-            self.setContainerCommand(
-                f"bash -c 'cd /vpn/config; openvpn {ovpn_parameters} | tee /var/log/vpn.log; bash'")  # TODO add log rotation on image config
+            vpn_cmd_legacy = f"bash -c 'mkdir -p /var/log/exegol; openvpn --log-append /var/log/exegol/vpn.log {ovpn_parameters}; bash'"
+            self.setLegacyContainerCommand(vpn_cmd_legacy)
+            self.setContainerCommand("ovpn", ovpn_parameters)
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
@@ -440,6 +473,35 @@ class ContainerConfig:
         OVPN config file directly supplied or a config directory,
         the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
+
+        # VPN config path
+        vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
+
+        logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+        self.__vpn_path = vpn_path
+        if vpn_path.is_file():
+            self.__checkVPNConfigDNS(vpn_path)
+            # Configure VPN with single file
+            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config/client.ovpn", read_only=True)
+            ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
+        else:
+            # Configure VPN with directory
+            logger.verbose("Folder detected for VPN configuration. "
+                           "Only the first *.ovpn file will be automatically launched when the container starts.")
+            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config", read_only=True)
+            vpn_filename = None
+            # Try to find the config file in order to configure the autostart command of the container
+            for file in vpn_path.glob('*.ovpn'):
+                logger.info(f"Using VPN config: {file}")
+                self.__checkVPNConfigDNS(file)
+                # Get filename only to match the future container path
+                vpn_filename = file.name
+                ovpn_parameters.append(f"--config /.exegol/vpn/config/{vpn_filename}")
+                # If there is multiple match, only the first one is selected
+                break
+            if vpn_filename is None:
+                logger.error("No *.ovpn files were detected. The VPN autostart will not work.")
+                return None
 
         # VPN Auth creds file
         input_vpn_auth = ParametersManager().vpn_auth
@@ -450,41 +512,12 @@ class ContainerConfig:
         if vpn_auth is not None:
             if vpn_auth.is_file():
                 logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
-                self.addVolume(str(vpn_auth.absolute()), "/vpn/auth/creds.txt", read_only=True)
-                ovpn_parameters.append("--auth-user-pass /vpn/auth/creds.txt")
+                self.addVolume(str(vpn_auth.absolute()), "/.exegol/vpn/auth/creds.txt", read_only=True)
+                ovpn_parameters.append("--auth-user-pass /.exegol/vpn/auth/creds.txt")
             else:
                 # Supply a directory instead of a file for VPN authentication is not supported.
                 logger.critical(
                     f"The path provided to the VPN connection credentials ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
-
-        # VPN config path
-        vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
-
-        logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
-        self.__vpn_path = vpn_path
-        if vpn_path.is_file():
-            self.__checkVPNConfigDNS(vpn_path)
-            # Configure VPN with single file
-            self.addVolume(str(vpn_path.absolute()), "/vpn/config/client.ovpn", read_only=True)
-            ovpn_parameters.append("--config /vpn/config/client.ovpn")
-        else:
-            # Configure VPN with directory
-            logger.verbose("Folder detected for VPN configuration. "
-                           "Only the first *.ovpn file will be automatically launched when the container starts.")
-            self.addVolume(str(vpn_path.absolute()), "/vpn/config", read_only=True)
-            vpn_filename = None
-            # Try to find the config file in order to configure the autostart command of the container
-            for file in vpn_path.glob('*.ovpn'):
-                logger.info(f"Using VPN config: {file}")
-                self.__checkVPNConfigDNS(file)
-                # Get filename only to match the future container path
-                vpn_filename = file.name
-                ovpn_parameters.append(f"--config /vpn/config/{vpn_filename}")
-                # If there is multiple match, only the first one is selected
-                break
-            if vpn_filename is None:
-                logger.error("No *.ovpn files were detected. The VPN autostart will not work.")
-                return None
 
         return ' '.join(ovpn_parameters)
 
@@ -516,9 +549,9 @@ class ContainerConfig:
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
             self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
-            self.removeVolume(container_path="/vpn/auth/creds.txt")
-            self.removeVolume(container_path="/vpn/config/client.ovpn")
-            self.removeVolume(container_path="/vpn/config")
+            self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
+            self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
+            self.removeVolume(container_path="/.exegol/vpn/config")
             self.__restoreEntrypoint()
             return True
         return False
@@ -536,39 +569,46 @@ class ContainerConfig:
                 # Volume is already prepared
                 return
         if self.__workspace_custom_path is not None:
-            self.addVolume(self.__workspace_custom_path, '/workspace', set_sticky_group=True)
+            self.addVolume(self.__workspace_custom_path, '/workspace', enable_sticky_group=True)
         elif self.__disable_workspace:
             # Skip default volume workspace if disabled
             return
         else:
             # Add shared-data-volumes private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
-            self.addVolume(volume_path, '/workspace', set_sticky_group=True)
+            self.addVolume(volume_path, '/workspace', enable_sticky_group=True)
 
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
         if host_mode is None:
             host_mode = True
         if len(self.__ports) > 0 and host_mode:
-            logger.warning("Host mode cannot be set with NAT ports configured. Skipping.")
+            logger.warning("Host mode cannot be set with NAT ports configured. Disabling the shared network mode.")
             host_mode = False
         if EnvInfo.isDockerDesktop() and host_mode:
             logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
             logger.verbose("Official doc: https://docs.docker.com/network/host/")
-            logger.info("To share network ports between the host and exegol, use the --port parameter.")
+            logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
             host_mode = False
         self.__network_host = host_mode
 
-    def setContainerCommand(self, cmd: str):
+    def setContainerCommand(self, entrypoint_function: str, *parameters: str):
         """Set the entrypoint command of the container. This command is executed at each startup.
         This parameter is applied to the container at creation."""
-        self.__container_command = cmd
+        self.__container_command = [entrypoint_function] + list(parameters)
+
+    def setLegacyContainerCommand(self, cmd: str):
+        """Set the entrypoint command of the container. This command is executed at each startup.
+        This parameter is applied to the container at creation.
+        This method is legacy, before the entrypoint exist (support images before 3.x.x)."""
+        self.__container_command_legacy = cmd
 
     def __restoreEntrypoint(self):
         """Restore container's entrypoint to its default configuration"""
-        self.__container_command = self.__default_entrypoint
+        self.__container_command_legacy = None
+        self.__container_command = self.__default_cmd
 
-    def __addCapability(self, cap_string: str):
+    def addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
         if cap_string in self.__capabilities:
             logger.warning("Capability already setup. Skipping.")
@@ -588,6 +628,11 @@ class ContainerConfig:
         """Add a linux sysctl to the container"""
         if sysctl_key in self.__sysctls.keys():
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
+            return
+        if self.__network_host:
+            logger.warning(f"The sysctl container configuration is [red]not[/red] supported by docker in [blue]host[/blue] network mode.")
+            logger.warning(f"Skipping the sysctl config: [magenta]{sysctl_key}[/magenta] = [orange3]{config}[/orange3].")
+            logger.warning(f"If this configuration is mandatory in your situation, try to change it in sudo mode on your host.")
             return
         self.__sysctls[sysctl_key] = config
 
@@ -627,16 +672,34 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getEntrypointCommand(self) -> str:
-        """Get container entrypoint path"""
-        return self.__container_command
+    def getEntrypointCommand(self, image_entrypoint: Optional[Union[str, List[str]]]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
+        """Get container entrypoint/command arguments.
+        This method support legacy configuration."""
+        if image_entrypoint is None:
+            # Legacy mode
+            if self.__container_command_legacy is None:
+                return [self.__default_entrypoint_legacy], []
+            return None, self.__container_command_legacy
+        else:
+            return self.__container_entrypoint, self.__container_command
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basis
         if self.__shell_logging or ParametersManager().log:
-            return f"bash -c \"mkdir -p /workspace/logs/; script -q -a -f -c {ParametersManager().shell} /workspace/logs/$(date +'%d-%m-%Y_%H-%M-%S')_shell.log; exit\""
+            if self.__start_delegate_mode:
+                # Use a start.sh script to handle the feature with the tools and feature corresponding to the image version
+                # Start shell_logging feature using the user's specified method with the configured default shell w/ or w/o compression at the end
+                return f"/.exegol/start.sh shell_logging {ParametersManager().log_method} {ParametersManager().shell} {UserConfig().shell_logging_compress ^ ParametersManager().log_compress}"
+            else:
+                # Legacy command support
+                if ParametersManager().log_method != "script":
+                    logger.warning("Your image version does not allow customization of the shell logging method. Using legacy script method.")
+                compression_cmd = ''
+                if UserConfig().shell_logging_compress ^ ParametersManager().log_compress:
+                    compression_cmd = 'echo "Compressing logs, please wait..."; gzip $filelog; '
+                return f"bash -c 'umask 007; mkdir -p /workspace/logs/; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; {compression_cmd}exit'"
         return ParametersManager().shell
 
     def getHostWorkspacePath(self) -> str:
@@ -654,6 +717,10 @@ class ContainerConfig:
     def isSharedResourcesEnable(self) -> bool:
         """Return if the feature 'shared resources' is enabled in this container config"""
         return self.__shared_resources
+
+    def getSharedResourcesPath(self) -> str:
+        """Return if the feature 'exegol resources' is enabled in this container config"""
+        return self.__shared_resources_path
 
     def isExegolResourcesEnable(self) -> bool:
         """Return if the feature 'exegol resources' is enabled in this container config"""
@@ -680,7 +747,8 @@ class ContainerConfig:
                   container_path: str,
                   must_exist: bool = False,
                   read_only: bool = False,
-                  set_sticky_group: bool = False,
+                  enable_sticky_group: bool = False,
+                  force_sticky_group: bool = False,
                   volume_type: str = 'bind'):
         """Add a volume to the container configuration.
         When the host path does not exist (neither file nor folder):
@@ -690,15 +758,32 @@ class ContainerConfig:
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
+            # TODO extend to docker desktop Windows
+            if EnvInfo.isMacHost():
+                match = False
+                # Add support for /etc
+                path_match = str(path)
+                if path_match.startswith("/etc/"):
+                    path_match = path_match.replace("/etc/", "/private/etc/")
+                # Find a match
+                for resource in EnvInfo.getDockerDesktopResources():
+                    if path_match.startswith(resource):
+                        match = True
+                        break
+                if not match:
+                    logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
+                                    f"A parent directory must be shared in "
+                                    f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
             # Choose to update fs directory perms if available and depending on user choice
-            execute_update_fs = set_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms)
+            # if force_sticky_group is set, user choice is bypassed, fs will be updated.
+            execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
             try:
                 if not (path.is_file() or path.is_dir()):
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
                         # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
-                        execute_update_fs = set_sticky_group
+                        execute_update_fs = force_sticky_group or enable_sticky_group
                         os.makedirs(host_path, exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
@@ -707,12 +792,11 @@ class ContainerConfig:
                 # The volume targets a file that already exists on the file system
                 pass
             # Update FS don't work on Windows and only for directory
-            if not EnvInfo.isWindowsHost() and path.is_dir():
+            if not EnvInfo.is_windows_shell and path.is_dir():
                 if execute_update_fs:
-                    # TODO test on WSL
                     # Apply perms update
                     FsUtils.setGidPermission(path)
-                elif set_sticky_group:
+                elif enable_sticky_group:
                     # If user choose not to update, print tips
                     logger.warning(f"The file sharing permissions between the container and the host will not be applied automatically by Exegol. ("
                                    f"{'Currently enabled by default according to the user config' if UserConfig().auto_update_workspace_fs else 'Use the --update-fs option to enable the feature'})")
@@ -839,7 +923,6 @@ class ContainerConfig:
                 # but exegol can be launched from remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
-        # TODO PATH common volume bin folder
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:
@@ -865,7 +948,17 @@ class ContainerConfig:
 
     def getLabels(self) -> Dict[str, str]:
         """Labels config getter"""
+        # Update metadata (from getter method) to the labels (on container creation)
+        for label_name, refs in self.__label_metadata.items():
+            self.addLabel(label_name, getattr(self, refs[1])())
         return self.__labels
+
+    def getCreationDate(self) -> str:
+        """Get container creation date.
+        If the creation has not been set before, init as right now."""
+        if self.creation_date is None:
+            self.creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        return self.creation_date
 
     def getVpnName(self):
         """Get VPN Config name"""
@@ -938,13 +1031,20 @@ class ContainerConfig:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
 
+    def getTextCreationDate(self) -> str:
+        """Get the container creation date.
+        If the creation date has not been supplied on the container, return empty string."""
+        if self.creation_date is None:
+            return ""
+        return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
+
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
         for mount in self.__mounts:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                                                       '/etc/timezone', '/my-resources']:
+                                                       '/etc/timezone', '/my-resources', '/opt/my-resources']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result
@@ -981,7 +1081,7 @@ class ContainerConfig:
           int = open port ont he host
           tuple = (host_ip, port)
           list of int = open multiple host port
-          list of dict = open one or multiple port on host, key ('HostIp' / 'HostPort') and value ip or port"""
+          list of dict = open one or more ports on host, key ('HostIp' / 'HostPort') and value ip or port"""
         result = ''
         for container_config, host_config in self.__ports.items():
             host_info = "Unknown"

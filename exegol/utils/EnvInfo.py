@@ -1,7 +1,12 @@
+import json
 import platform
 import re
+import shutil
 import subprocess
-from typing import Optional
+from typing import Optional, Any, List
+
+from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.ExeLog import logger
 
 
 class EnvInfo:
@@ -32,8 +37,35 @@ class EnvInfo:
     # Host OS
     __docker_host_os: Optional[str] = None
     __docker_engine: Optional[str] = None
+    # Docker desktop cache config
+    __docker_desktop_resource_config = None
     # Architecture
-    arch = "amd64" if platform.machine() == "x86_64" else platform.machine()
+    raw_arch = platform.machine().lower()
+    arch = raw_arch
+    if arch == "x86_64" or arch == "x86-64" or arch == "amd64":
+        arch = "amd64"
+    elif arch == "aarch64" or "armv8" in arch:
+        arch = "arm64"
+    elif "arm" in arch:
+        if platform.architecture()[0] == '64bit':
+            arch = "arm64"
+        else:
+            logger.error(f"Host architecture seems to be 32-bit ARM ({arch}), which is not supported yet. "
+                         f"If possible, please install a 64-bit operating system (Exegol supports ARM64).")
+        """
+        if "v5" in arch:
+            arch = "arm/v5"
+        elif "v6" in arch:
+            arch = "arm/v6"
+        elif "v7" in arch:
+            arch = "arm/v7"
+        elif "v8" in arch:
+            arch = "arm64"
+        """
+    else:
+        logger.warning(f"Unknown / unsupported architecture: {arch}. Using 'AMD64' as default.")
+        # Fallback to default AMD64 arch
+        arch = "amd64"
 
     @classmethod
     def initData(cls, docker_info):
@@ -78,6 +110,8 @@ class EnvInfo:
             elif cls.current_platform == "WSL":
                 # From a WSL shell, we must create a process to retrieve the host's version
                 # Find version using MS-DOS command 'ver'
+                if not shutil.which("cmd.exe"):
+                    logger.critical("cmd.exe is not accessible from your WSL environment!")
                 proc = subprocess.Popen(["cmd.exe", "/c", "ver"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
                 proc.wait()
                 assert proc.stdout is not None
@@ -127,3 +161,31 @@ class EnvInfo:
             return cls.HostOs.MAC
         else:
             return "Unknown"
+
+    @classmethod
+    def getDockerDesktopSettings(cls) -> Optional[Any]:
+        """Applicable only for docker desktop on macos"""
+        if cls.isDockerDesktop():
+            if cls.__docker_desktop_resource_config is None:
+                if cls.is_mac_shell:
+                    path = ConstantConfig.docker_desktop_mac_config_path
+                elif cls.is_windows_shell:
+                    path = ConstantConfig.docker_desktop_windows_config_path
+                else:
+                    return None
+                    # TODO support from WSL shell
+                try:
+                    with open(path, 'r') as docker_desktop_config:
+                        cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
+                except FileNotFoundError:
+                    logger.warning(f"Docker Desktop configuration file not found: '{path}'")
+                    return None
+            return cls.__docker_desktop_resource_config
+        return None
+
+    @classmethod
+    def getDockerDesktopResources(cls) -> List[str]:
+        config = cls.getDockerDesktopSettings()
+        if config:
+            return config.get('filesharingDirectories', [])
+        return []

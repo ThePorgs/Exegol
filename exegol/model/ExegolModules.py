@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from exegol.console.ExegolPrompt import Confirm
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -57,6 +58,9 @@ class ExegolModules(metaclass=MetaSingleton):
     def __init_resources_repo(self):
         """Initialization procedure of exegol resources module.
         Raise CancelOperation if the initialization failed."""
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to install 'Exegol resources' in offline mode. Skipping the operation.")
+            raise CancelOperation
         if Confirm("Do you want to download exegol resources? (~1G)", True):
             # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
             # if not, git clone resources

@@ -1,0 +1,17 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Exegol Community Discord
+    url: https://discord.gg/cXThyp7D6P
+    about: 'Use the #open-a-ticket channel to ask your question.'
+  - name: Read the Exegol documentation
+    url: https://exegol.readthedocs.io/
+    about: 'An answer to your question may already be available in the documentation!'
+  - name: Create an issue regarding the Exegol [IMAGE] project
+    url: https://github.com/ThePorgs/Exegol-images/issues
+    about: 'For the creation of issue related to the Exegol IMAGE project.'
+  - name: Create an issue regarding the Exegol [RESOURCES] project
+    url: https://github.com/ThePorgs/Exegol-resources/issues
+    about: 'For the creation of issue related to the Exegol RESOURCES project.'
+  - name: Create an issue regarding the Exegol [DOCS] project
+    url: https://github.com/ThePorgs/Exegol-docs/issues
+    about: 'For the creation of issue related to the Exegol DOCS project.'

@@ -1,8 +1,12 @@
+import os
 from pathlib import Path
 from typing import Optional, List
 
 from git.exc import GitCommandError
+
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
@@ -34,12 +38,19 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
+            elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
+                raise PermissionError(test_git_dir.owner())
         except ReferenceError:
             if self.__git_name == "wrapper":
                 logger.warning("Exegol has [red]not[/red] been installed via git clone. Skipping wrapper auto-update operation.")
                 if ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
+            abort_loading = True
+        except PermissionError as e:
+            logger.error(f"The repository {self.__git_name} has been cloned as [red]{e.args[0]}[/red].")
+            logger.error("The current user does not have the necessary rights to perform the self-update operations.")
+            logger.error("Please reinstall exegol (with git clone) without sudo.")
             abort_loading = True
         # locally import git in case git is not installed of the system
         try:
@@ -80,6 +91,9 @@ class GitUtils:
             self.__initSubmodules()
 
     def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to clone a repository in offline mode ...")
+            return False
         if self.isAvailable:
             logger.warning(f"The {self.getName()} repo is already cloned.")
             return False
@@ -126,6 +140,7 @@ class GitUtils:
     def listBranch(self) -> List[str]:
         """Return a list of str of all remote git branch available"""
         assert self.isAvailable
+        assert not ParametersManager().offline_mode
         result: List[str] = []
         if self.__gitRemote is None:
             return result
@@ -154,6 +169,7 @@ class GitUtils:
         """Check if the local git repository is up-to-date.
         This method compare the last commit local and the ancestor."""
         assert self.isAvailable
+        assert not ParametersManager().offline_mode
         if branch is None:
             branch = self.getCurrentBranch()
             if branch is None:
@@ -201,6 +217,7 @@ class GitUtils:
     def update(self) -> bool:
         """Update local git repository within current branch"""
         assert self.isAvailable
+        assert not ParametersManager().offline_mode
         if not self.safeCheck():
             return False
         # Check if the git branch status is not detached
@@ -219,8 +236,11 @@ class GitUtils:
 
     def __initSubmodules(self):
         """Init (and update git object not source code) git sub repositories (only depth=1)"""
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to update any submodule in offline mode ...")
+            return
         logger.verbose(f"Git {self.getName()} init submodules")
-        # These module are init / updated manually
+        # These modules are init / updated manually
         blacklist_heavy_modules = ["exegol-resources"]
         # Submodules dont have depth submodule limits
         depth_limit = not self.__is_submodule
@@ -230,28 +250,29 @@ class GitUtils:
             except ValueError:
                 logger.error(f"Unable to find any git submodule from '{self.getName()}' repository. Check the path in the file {self.__repo_path / '.git'}")
                 return
-            for subm in submodules:
+            for current_sub in submodules:
                 # Submodule update are skipped if blacklisted or if the depth limit is set
-                if subm.name in blacklist_heavy_modules or \
-                        (depth_limit and ('/' in subm.name or '\\' in subm.name)):
+                if current_sub.name in blacklist_heavy_modules or \
+                        (depth_limit and ('/' in current_sub.name or '\\' in current_sub.name)):
                     continue
-                s.update(status=f"Downloading git submodules [green]{subm.name}[/green]")
+                s.update(status=f"Downloading git submodules [green]{current_sub.name}[/green]")
                 from git.exc import GitCommandError
                 try:
-                    subm.update(recursive=True)
+                    current_sub.update(recursive=True)
                 except GitCommandError as e:
                     error = GitUtils.formatStderr(e.stderr)
-                    logger.debug(f"Unable tu update git submodule {subm.name}: {e}")
+                    logger.debug(f"Unable tu update git submodule {current_sub.name}: {e}")
                     if "unable to access" in error:
                         logger.error("You don't have internet to update git submodule. Skipping operation.")
                     else:
                         logger.error("Unable to update git submodule. Skipping operation.")
                         logger.error(error)
                 except ValueError:
-                    logger.error(f"Unable to update git submodule '{subm.name}'. Check the path in the file '{Path(subm.path) / '.git'}'")
+                    logger.error(f"Unable to update git submodule '{current_sub.name}'. Check the path in the file '{Path(current_sub.path) / '.git'}'")
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
+        assert not ParametersManager().offline_mode
         if not self.isAvailable:
             return False
         assert self.__gitRepo is not None

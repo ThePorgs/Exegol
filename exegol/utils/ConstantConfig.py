@@ -5,8 +5,11 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.0.5"
+    version: str = "4.1.0"
 
+    # Exegol documentation link
+    documentation: str = "https://exegol.rtfd.io/"
+    discord: str = "https://discord.gg/cXThyp7D6P"
     # OS Dir full root path of exegol project
     src_root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
     # Path of the Dockerfile
@@ -14,16 +17,20 @@ class ConstantConfig:
     build_context_path: str
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
+    # Docker Desktop for mac config file
+    docker_desktop_mac_config_path = Path().home() / "Library/Group Containers/group.com.docker/settings.json"
+    docker_desktop_windows_config_path = Path().home() / "AppData/Roaming/Docker/settings.json"
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"
     # Dockerhub Exegol images repository
-    DOCKER_REGISTRY: str = "hub.docker.com"  # Don't handle docker login operations
+    DOCKER_HUB: str = "hub.docker.com"  # Don't handle docker login operations
+    DOCKER_REGISTRY: str = "registry-1.docker.io"  # Don't handle docker login operations
     IMAGE_NAME: str = "nwodtuhs/exegol"
-    GITHUB_REPO: str = "ShutdownRepo/Exegol"
+    GITHUB_REPO: str = "ThePorgs/Exegol"
     # Docker volume names (no docker volume used at this moment)
     # Resources repository
-    EXEGOL_RESOURCES_REPO: str = "https://github.com/ShutdownRepo/Exegol-resources.git"
+    EXEGOL_RESOURCES_REPO: str = "https://github.com/ThePorgs/Exegol-resources.git"
 
     @classmethod
     def findBuildContextPath(cls) -> Path:

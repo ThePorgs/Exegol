@@ -1,7 +1,7 @@
 import base64
 import os
 import shutil
-from typing import Optional, Dict, Sequence
+from typing import Optional, Dict, Sequence, Tuple
 
 from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
@@ -40,6 +40,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              config=ContainerConfig(docker_container),
                              image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
+            # At this stage, the container image object has an unknown status because no synchronization with a registry has been done.
+            # This could be done afterwards (with container.image.autoLoad()) if necessary because it takes time.
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.
@@ -141,8 +143,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info("Executing command on Exegol")
             if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
                 logger.info("Hint: use verbose mode to see command output (-v).")
-        cmd = self.formatShellCommand(command, quiet)
-        stream = self.__container.exec_run(cmd, detach=as_daemon, stream=not as_daemon)
+        exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet)
+        stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon)
         if as_daemon and not quiet:
             logger.success("Command successfully executed in background")
         else:
@@ -159,17 +161,22 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: Sequence[str], quiet: bool = False):
-        """Generic method to format a shell command and support zsh aliases"""
+    def formatShellCommand(command: Sequence[str], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:
+        """Generic method to format a shell command and support zsh aliases.
+        Set quiet to disable any logging here.
+        Set entrypoint_mode to start the command with the entrypoint.sh config loader.
+        - The first return argument is the payload to execute with every pre-routine for zsh.
+        - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
         str_cmd = ' '.join(command)
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
-        cmd_b64 = base64.b64encode(str_cmd.encode('utf-8')).decode('utf-8')
-        # Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'zsh -c "source <(grep -v oh-my-zsh.sh ~/.zshrc); eval $(echo {cmd_b64} | base64 -d)"'
-        logger.debug(f"Formatting zsh command: {cmd}")
-        return cmd
+        # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
+        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval $CMD'
+        if not entrypoint_mode:
+            # For direct execution, the full command must be supplied not just the zsh argument
+            cmd = f"zsh -c '{cmd}'"
+        return cmd, str_cmd
 
     def remove(self):
         """Stop and remove the docker container"""

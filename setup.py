@@ -36,7 +36,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     python_requires='>=3.7, <4',
-    url='https://github.com/ShutdownRepo/Exegol',
+    url='https://github.com/ThePorgs/Exegol',
     keywords='pentest redteam ctf exegol',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -50,7 +50,7 @@ setup(
     install_requires=[
         'docker~=6.0.0',
         'requests',
-        'rich~=11.2.0',
+        'rich>=11.2.0',
         'PyYAML',
         'GitPython'
     ],
@@ -65,9 +65,9 @@ setup(
     },
 
     project_urls={
-        'Bug Reports': 'https://github.com/ShutdownRepo/Exegol/issues',
-        'Source': 'https://github.com/ShutdownRepo/Exegol',
-        'Documentation': 'https://github.com/ShutdownRepo/Exegol/blob/master/README.md',  # TODO Create proper documentation
+        'Bug Reports': 'https://github.com/ThePorgs/Exegol/issues',
+        'Source': 'https://github.com/ThePorgs/Exegol',
+        'Documentation': 'https://exegol.readthedocs.io/',
         'Funding': 'https://patreon.com/nwodtuhs',
     },
     test_suite='tests'

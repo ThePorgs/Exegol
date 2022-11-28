@@ -26,3 +26,13 @@ def richLen(text: str) -> int:
     # replace emoji by two random char (because emoji are wide)
     emoji_removed = re.sub(r":[a-z-_+()\d'’.&]+:", 'XX', color_removed, 0, re.MULTILINE)
     return len(emoji_removed)
+
+
+def getArchColor(arch: str) -> str:
+    if arch.startswith("arm"):
+        color = "slate_blue3"
+    elif "amd64" == arch:
+        color = "medium_orchid3"
+    else:
+        color = "yellow3"
+    return color

@@ -1,6 +1,22 @@
-from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.console.cli.actions.ExegolParameters import Command
-from exegol.utils.ExeLog import logger, ExeLog, console
+try:
+    from git.exc import GitCommandError
+
+    from exegol.console.cli.ParametersManager import ParametersManager
+    from exegol.console.cli.actions.ExegolParameters import Command
+    from exegol.utils.ExeLog import logger, ExeLog, console
+except ModuleNotFoundError as e:
+    print("Mandatory dependencies are missing:", e)
+    print("Please install them with pip3 install -r requirements.txt")
+    exit(1)
+except ImportError as e:
+    print("An error occurred while loading the dependencies!")
+    print()
+    if "git executable" in e.msg:
+        print("Git is missing in your PATH, it must be installed locally on your computer.")
+        print()
+    print("Details:")
+    print(e)
+    exit(1)
 
 
 class ExegolController:
@@ -26,6 +42,14 @@ class ExegolController:
             logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")
 
 
+def print_exception_banner():
+    logger.error("It seems that something unexpected happened ...")
+    logger.error("To draw our attention to the problem and allow us to fix it, you can share your error with us "
+                 "(by [orange3]copying and pasting[/orange3] it with this syntax: ``` <error> ```) "
+                 "by creating a GitHub issue at this address: https://github.com/ThePorgs/Exegol/issues")
+    logger.success("Thank you for your collaboration!")
+
+
 def main():
     """Exegol main console entrypoint"""
     try:
@@ -36,8 +60,11 @@ def main():
     except KeyboardInterrupt:
         logger.empty_line()
         logger.info("Exiting")
+    except GitCommandError as e:
+        print_exception_banner()
+        error = e.stderr.strip().split(": ")[-1].strip("'")
+        logger.critical(f"A critical error occurred while running this git command: {' '.join(e.command)} => {error}")
     except Exception:
-        logger.error("It seems that something unexpected happened ...")
-        logger.error("To draw our attention to the problem and allow us to fix it, you can share your error with us (by [orange3]copying and pasting[/orange3] it with this syntax: ``` <error> ```) by creating a GitHub issue at this address: https://github.com/ShutdownRepo/Exegol/issues")
-        logger.success("Thank you for your collaboration!")
+        print_exception_banner()
         console.print_exception(show_locals=True)
+        exit(1)
