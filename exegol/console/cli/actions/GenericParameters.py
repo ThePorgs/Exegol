@@ -100,11 +100,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=True,
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
-        self.shared_resources = Option("--disable-my-resources",
+        self.my_resources = Option("--disable-my-resources",
                                        action="store_false",
                                        default=True,
-                                       dest="shared_resources",
-                                       help=f"Disable the mount of the shared resources (/opt/my-resources) from the host ({UserConfig().shared_resources_path}) (default: [green]Enabled[/green])")
+                                       dest="my_resources",
+                                       help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
@@ -185,7 +185,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},
-                                  {"arg": self.shared_resources, "required": False},
+                                  {"arg": self.my_resources, "required": False},
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},

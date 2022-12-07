@@ -434,8 +434,8 @@ class ExegolManager:
         if ParametersManager().ports is not None:
             for port in ParametersManager().ports:
                 config.addRawPort(port)
-        if ParametersManager().shared_resources:
-            config.enableSharedResources()
+        if ParametersManager().my_resources:
+            config.enableMyResources()
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
         if ParametersManager().log:

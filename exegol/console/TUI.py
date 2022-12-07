@@ -431,8 +431,8 @@ class ExegolTUI:
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
         recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +
                       f"{'[bright_black](/opt/resources)[/bright_black]' if container.config.isExegolResourcesEnable() else ''}")
-        recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isSharedResourcesEnable()) +
-                      f"{'[bright_black]({})[/bright_black]'.format(container.config.getSharedResourcesPath()) if container.config.isSharedResourcesEnable() else ''}")
+        recap.add_row("[bold blue]My resources[/bold blue]", boolFormatter(container.config.isMyResourcesEnable()) +
+                      f"{'[bright_black]({})[/bright_black]'.format(container.config.getMyResourcesPath()) if container.config.isMyResourcesEnable() else ''}")
         recap.add_row("[bold blue]Shell logging[/bold blue]", boolFormatter(container.config.isShellLoggingEnable()) +
                       f"{'[bright_black](/workspace/logs)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
         if "N/A" not in container.config.getVpnName():
