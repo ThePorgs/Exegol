@@ -51,7 +51,7 @@ ___
 
 <div align="center">
   <a href="https://www.hackthebox.com/" title="Follow">
-    <img width="300" src="https://www.hackthebox.com/images/logo600.png">
+    <img width="300" src="https://exegol.readthedocs.io/en/latest/_images/hackthebox.png">
   </a>
 </div>
 
