@@ -24,6 +24,8 @@ class WebUtils:
             return response.get("access_token")
         logger.error("Unable to authenticate to docker as anonymous")
         logger.debug(response)
+        # If token cannot be retrieved, operation must be cancelled
+        raise CancelOperation
 
     @classmethod
     def __generateLoginToken(cls):
@@ -59,7 +61,11 @@ class WebUtils:
         """Get Virtual digest id of a specific image tag from docker registry"""
         if ParametersManager().offline_mode:
             return None
-        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.list.v2+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
+        try:
+            token = cls.__getRegistryToken()
+        except CancelOperation:
+            return None
+        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.list.v2+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
         url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="HEAD")
@@ -75,8 +81,12 @@ class WebUtils:
         """Get image version of a specific image tag from docker registry."""
         if ParametersManager().offline_mode:
             return None
+        try:
+            token = cls.__getRegistryToken()
+        except CancelOperation:
+            return None
         # In order to access the metadata of the image, the v1 manifest must be use
-        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {cls.__getRegistryToken()}"}
+        manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
         url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
@@ -125,6 +135,8 @@ class WebUtils:
                     if error_re:
                         error_msg = f" ({error_re.group(1)})"
                     logger.error(f"Connection Error: you probably have no internet.{error_msg}")
+                    # Switch to offline mode
+                    ParametersManager().offline_mode = True
                 except requests.exceptions.RequestException as err:
                     logger.error(f"Unknown connection error: {err}")
                 return None
