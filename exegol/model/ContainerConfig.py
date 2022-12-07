@@ -42,8 +42,8 @@ class ContainerConfig:
         """Container config default value"""
         self.__enable_gui: bool = False
         self.__share_timezone: bool = False
-        self.__shared_resources: bool = False
-        self.__shared_resources_path: str = "/opt/my-resources"
+        self.__my_resources: bool = False
+        self.__my_resources_path: str = "/opt/my-resources"
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
@@ -105,7 +105,7 @@ class ContainerConfig:
 
         # Volumes section
         self.__share_timezone = False
-        self.__shared_resources = False
+        self.__my_resources = False
         self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
 
         # Network section
@@ -171,8 +171,8 @@ class ContainerConfig:
                 self.__exegol_resources = True
             # TODO remove support for previous container
             elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
-                self.__shared_resources = True
-                self.__shared_resources_path = share.get('Destination', '')
+                self.__my_resources = True
+                self.__my_resources_path = share.get('Destination', '')
             elif "/workspace" in share.get('Destination', ''):
                 # Workspace are always bind mount
                 assert src_path is not None
@@ -238,15 +238,15 @@ class ContainerConfig:
         if not self.__share_timezone:
             command_options.append("--disable-shared-timezones")
 
-        # Shared resources config
-        if self.__shared_resources:
-            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]shared resources[/blue]?", False):
-                self.__disableSharedResources()
-        elif Confirm("Do you want to [green]activate[/green] the [blue]shared resources[/blue]?", False):
-            self.enableSharedResources()
+        # my-resources config
+        if self.__my_resources:
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]my-resources[/blue]?", False):
+                self.__disableMyResources()
+        elif Confirm("Do you want to [green]activate[/green] [blue]my-resources[/blue]?", False):
+            self.enableMyResources()
         # Command builder info
-        if not self.__shared_resources:
-            command_options.append("--disable-shared-resources")
+        if not self.__my_resources:
+            command_options.append("--disable-my-resources")
 
         # Exegol resources config
         if self.__exegol_resources:
@@ -368,20 +368,20 @@ class ContainerConfig:
             logger.warning("Setting container as privileged (this exposes the host to security risks)")
         self.__privileged = status
 
-    def enableSharedResources(self):
+    def enableMyResources(self):
         """Procedure to enable shared volume feature"""
         # TODO test my resources cross shell source (WSL / PSH) on Windows
-        if not self.__shared_resources:
-            logger.verbose("Config: Enabling shared resources volume")
-            self.__shared_resources = True
+        if not self.__my_resources:
+            logger.verbose("Config: Enabling my-resources volume")
+            self.__my_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().shared_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
+            self.addVolume(UserConfig().my_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
-    def __disableSharedResources(self):
+    def __disableMyResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
-        if self.__shared_resources:
-            logger.verbose("Config: Disabling shared resources volume")
-            self.__shared_resources = False
+        if self.__my_resources:
+            logger.verbose("Config: Disabling my-resources volume")
+            self.__my_resources = False
             self.removeVolume(container_path='/opt/my-resources')
 
     def enableExegolResources(self) -> bool:
@@ -714,13 +714,13 @@ class ContainerConfig:
         """Get private volume path (None if not set)"""
         return FsUtils.resolvStrPath(self.__workspace_dedicated_path)
 
-    def isSharedResourcesEnable(self) -> bool:
-        """Return if the feature 'shared resources' is enabled in this container config"""
-        return self.__shared_resources
+    def isMyResourcesEnable(self) -> bool:
+        """Return if the feature 'my-resources' is enabled in this container config"""
+        return self.__my_resources
 
-    def getSharedResourcesPath(self) -> str:
+    def getMyResourcesPath(self) -> str:
         """Return if the feature 'exegol resources' is enabled in this container config"""
-        return self.__shared_resources_path
+        return self.__my_resources_path
 
     def isExegolResourcesEnable(self) -> bool:
         """Return if the feature 'exegol resources' is enabled in this container config"""
@@ -1022,8 +1022,8 @@ class ContainerConfig:
             result += f"{getColor(self.__share_timezone)[0]}Share timezone: {boolFormatter(self.__share_timezone)}{getColor(self.__share_timezone)[1]}{os.linesep}"
         if verbose or not self.__exegol_resources:
             result += f"{getColor(self.__exegol_resources)[0]}Exegol resources: {boolFormatter(self.__exegol_resources)}{getColor(self.__exegol_resources)[1]}{os.linesep}"
-        if verbose or not self.__shared_resources:
-            result += f"{getColor(self.__shared_resources)[0]}My resources: {boolFormatter(self.__shared_resources)}{getColor(self.__shared_resources)[1]}{os.linesep}"
+        if verbose or not self.__my_resources:
+            result += f"{getColor(self.__my_resources)[0]}My resources: {boolFormatter(self.__my_resources)}{getColor(self.__my_resources)[1]}{os.linesep}"
         if verbose or self.__shell_logging:
             result += f"{getColor(self.__shell_logging)[0]}Shell logging: {boolFormatter(self.__shell_logging)}{getColor(self.__shell_logging)[1]}{os.linesep}"
         result = result.strip()
@@ -1119,7 +1119,7 @@ class ContainerConfig:
                f"Network host: {self.getNetworkMode()}{os.linesep}" \
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
-               f"Common resources: {self.__shared_resources}{os.linesep}" \
+               f"Common resources: {self.__my_resources}{os.linesep}" \
                f"Envs ({len(self.__envs)}): {self.__envs}{os.linesep}" \
                f"Labels ({len(self.__labels)}): {self.__labels}{os.linesep}" \
                f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
