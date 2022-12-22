@@ -538,7 +538,7 @@ class ExegolManager:
                     user_inputs.get(param) != creation_parameters.get(param).kwargs.get('default'):
                 # If the supplied parameter is positional, getting his printed name
                 name = creation_parameters.get(param).kwargs.get('metavar')
-                if name is None:
+                if not name:
                     # if not, using the args name
                     detected.append(' / '.join(creation_parameters.get(param).args))
                 else:
