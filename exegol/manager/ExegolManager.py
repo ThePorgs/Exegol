@@ -20,7 +20,7 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.ExeLog import logger, ExeLog, console
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -219,6 +219,49 @@ class ExegolManager:
         """Show exegol sponsors"""
         logger.success("""We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
+
+    @classmethod
+    def completion(cls):
+        """completion action entrypoint"""
+        if not ParametersManager().completions:
+            return
+
+        completion_script = ParametersManager().completions[0]
+        if completion_script == "api":
+            # API completion mode
+            if len(ParametersManager().completions) <= 1:
+                logger.critical("Missing api parameters")
+            target = ParametersManager().completions[1]
+            data = []
+            # Mute console during data collection
+            console.quiet = True
+            # Collect data and their key name
+            if target == "image":
+                data = [i.getName() for i in DockerUtils.listImages()]
+            elif target == "container":
+                data = [c.name for c in DockerUtils.listContainers()]
+            # Restore console output
+            console.quiet = False
+
+            if len(data) == 0:
+                return
+
+            start = ""
+            if len(ParametersManager().completions) >= 3:
+                start = ParametersManager().completions[2]
+
+            for obj in data:
+                # filter data if needed
+                if start and not obj.startswith(start):
+                    continue
+                logger.raw(obj, level=logging.INFO)
+                logger.empty_line()
+        elif completion_script == "bash":
+            pass
+        elif completion_script == "zsh":
+            pass
+        else:
+            logger.error(f"Unknown script {completion_script}")
 
     @classmethod
     def __loadOrInstallImage(cls,
