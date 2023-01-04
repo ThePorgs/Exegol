@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional, List
 
-from git.exc import GitCommandError
+from git.exc import GitCommandError, RepositoryDirtyError
 
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ConstantConfig import ConstantConfig
@@ -269,6 +269,9 @@ class GitUtils:
                         logger.error(error)
                 except ValueError:
                     logger.error(f"Unable to update git submodule '{current_sub.name}'. Check the path in the file '{Path(current_sub.path) / '.git'}'")
+                except RepositoryDirtyError as e:
+                    logger.debug(e)
+                    logger.error(f"Sub-repository {current_sub.name} have uncommitted local changes. Unable to automatically update this repository.")
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""

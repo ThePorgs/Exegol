@@ -268,11 +268,13 @@ class ExegolManager:
                     # If there is no image installed, return none
                     logger.error("Nothing to do.")
                     return [] if multiple else None
-                else:
+                elif image_tag is not None:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
                     # (only if must_exist is not set)
                     image_selection = UpdateManager.updateImage(image_tag)
                     image_tag = None
+                else:
+                    logger.critical("No image are installed or available, check your internet connection and install an image with the command [green]exegol install[/green].")
             # Checks if an image has been selected
             if image_selection is None:
                 # If not, retry the selection
