@@ -40,7 +40,7 @@ class UserConfig(metaclass=MetaSingleton):
     def __load_file(self):
         if not ConstantConfig.exegol_config_path.is_dir():
             logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
-            os.mkdir(ConstantConfig.exegol_config_path)
+            ConstantConfig.exegol_config_path.mkdir()
         if not self.__config_file_path.is_file():
             logger.verbose(f"Creating default exegol config: {self.__config_file_path}")
             self.__create_config_file()
