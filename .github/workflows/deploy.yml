@@ -25,6 +25,7 @@ jobs:
       - name: Install requirements
         run: python -m pip install build --user
       - name: Run unitest
+        if: startsWith(github.ref, 'refs/tags')
         run : python setup.py clean test
       - name: Build Exegol
         run: python -m build --sdist --outdir dist/ .
