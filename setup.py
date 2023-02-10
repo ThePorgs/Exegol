@@ -1,3 +1,4 @@
+import os
 import pathlib
 
 from setuptools import setup, find_packages
@@ -26,9 +27,15 @@ for path in pathlib.Path(f'{source_directory}/sources').rglob('*'):
 for k, v in data_files_dict.items():
     data_files.append((k, v))
 
+build_version = __version__
+build_number = os.environ.get('EXEGOL_VERSION')
+if build_number:
+    build_version += f"-{build_number}"
+
+print("Exegol version", build_version)
 setup(
     name='Exegol',
-    version=__version__,
+    version=build_version,
     license='GNU (GPLv3)',
     author="Shutdown & Dramelac",
     author_email='nwodtuhs@pm.me',
