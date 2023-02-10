@@ -35,7 +35,7 @@ jobs:
           echo "wrapper_version=${WRAPPER_VERSION}" >> $GITHUB_OUTPUT
       - name: Build Exegol
         env:
-          - EXEGOL_VERSION: ${{ steps.prepare_build.outputs.wrapper_version }}
+          EXEGOL_VERSION: ${{ steps.prepare_build.outputs.wrapper_version }}
         run: python -m build --sdist --outdir dist/ .
       - name: Publish distribution 📦 to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
