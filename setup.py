@@ -30,7 +30,7 @@ for k, v in data_files_dict.items():
 build_version = __version__
 build_number = os.environ.get('EXEGOL_VERSION')
 if build_number:
-    build_version += f"-{build_number}"
+    build_version += f".{build_number}"
 
 print("Exegol version", build_version)
 setup(
