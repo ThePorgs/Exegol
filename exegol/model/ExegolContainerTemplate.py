@@ -10,12 +10,16 @@ from exegol.model.ExegolImage import ExegolImage
 class ExegolContainerTemplate:
     """Exegol template class used to create a new container"""
 
-    def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage):
+    def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage, hostname: Optional[str] = None):
         if name is None:
             name = Prompt.ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
         assert name is not None
+        self.container_name: str = name if name.startswith("exegol-") else f'exegol-{name}'
         self.name: str = name.replace('exegol-', '')
-        self.hostname: str = name if name.startswith("exegol-") else f'exegol-{name}'
+        if hostname:
+            self.hostname = hostname
+        else:
+            self.hostname: str = self.container_name
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
 
@@ -26,3 +30,9 @@ class ExegolContainerTemplate:
     def prepare(self):
         """Prepare the model before creating the docker container"""
         self.config.prepareShare(self.name)
+
+    def getDisplayName(self) -> str:
+        """Getter of the container's name for TUI purpose"""
+        if self.container_name != self.hostname:
+            return f"{self.name} [bright_black]({self.hostname})[/bright_black]"
+        return self.name

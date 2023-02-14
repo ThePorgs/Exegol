@@ -475,7 +475,7 @@ class ExegolManager:
         image: Optional[ExegolImage] = cast(ExegolImage, cls.__loadOrInstallImage())
         config = cls.__prepareContainerConfig()
         assert image is not None  # load or install return an image
-        model = ExegolContainerTemplate(name, config, image)
+        model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
         # Recap
         ExegolTUI.printContainerRecap(model)
@@ -517,7 +517,7 @@ class ExegolManager:
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
-        model = ExegolContainerTemplate(name, config, image)
+        model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
         container = DockerUtils.createContainer(model, temporary=True)
         container.postCreateSetup()

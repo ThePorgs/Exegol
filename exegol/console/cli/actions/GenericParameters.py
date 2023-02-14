@@ -101,10 +101,10 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.my_resources = Option("--disable-my-resources",
-                                       action="store_false",
-                                       default=True,
-                                       dest="my_resources",
-                                       help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
+                                   action="store_false",
+                                   default=True,
+                                   dest="my_resources",
+                                   help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
@@ -145,6 +145,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             default=[],
                             dest="ports",
                             help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+        self.hostname = Option("--hostname",
+                               dest="hostname",
+                               default=None,
+                               action="store",
+                               help="Set a custom hostname to the exegol container (default: exegol-<name>)")
         self.capabilities = Option("--cap",
                                    dest="capabilities",
                                    metavar='',  # Do not display available choices
@@ -182,6 +187,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
+                                  {"arg": self.hostname, "required": False},
                                   {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},

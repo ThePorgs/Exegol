@@ -237,14 +237,14 @@ class ExegolTUI:
         # Load data into the table
         for container in data:
             if verbose_mode:
-                table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getDisplayName(),
+                table.add_row(container.getId(), container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
                               container.config.getTextPorts(),
                               container.config.getTextEnvs(debug_mode))
             else:
-                table.add_row(container.name, container.getTextStatus(), container.image.getDisplayName(),
+                table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
@@ -415,7 +415,7 @@ class ExegolTUI:
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
         recap.add_column(f"[bold blue]Name[/bold blue]{os.linesep}[bold blue]Image[/bold blue]", justify="right")
-        container_info_header = f"{container.name}{os.linesep}{container.image.getName()}"
+        container_info_header = f"{container.getDisplayName()}{os.linesep}{container.image.getName()}"
         if "N/A" not in container.image.getImageVersion():
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
