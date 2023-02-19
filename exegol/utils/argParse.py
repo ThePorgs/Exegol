@@ -20,7 +20,7 @@ class Parser:
 
     __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
                     "your machine."
-    __formatter_class: type = argparse.RawTextHelpFormatter
+    __formatter_class = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
         """Custom parser creation"""

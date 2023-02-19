@@ -244,6 +244,8 @@ class GitUtils:
         blacklist_heavy_modules = ["exegol-resources"]
         # Submodules dont have depth submodule limits
         depth_limit = not self.__is_submodule
+        if self.__gitRepo is None:
+            return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
             try:
                 submodules = self.__gitRepo.iter_submodules()

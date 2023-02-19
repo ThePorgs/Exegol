@@ -375,7 +375,7 @@ class ContainerConfig:
             logger.verbose("Config: Enabling my-resources volume")
             self.__my_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().my_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
+            self.addVolume(str(UserConfig().my_resources_path), '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableMyResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
@@ -413,14 +413,14 @@ class ContainerConfig:
         if not self.__shell_logging:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
-            self.addLabel(self.__label_features.get('enableShellLogging'), "Enabled")
+            self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
-            self.removeLabel(self.__label_features.get('enableShellLogging'))
+            self.removeLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'))
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
