@@ -205,16 +205,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
             try:
-                is_file_present = os.listdir(volume_path)
+                list_files = os.listdir(volume_path)
             except PermissionError:
                 if Confirm(f"Insufficient permission to view workspace files {volume_path}, "
                            f"do you still want to delete them?", default=False):
-                    # Set is_file_present as false to skip user prompt again
-                    is_file_present = False
+                    # Set list_files as empty to skip user prompt again
+                    list_files = []
                 else:
                     return
             try:
-                if is_file_present:
+                if len(list_files) > 0:
                     # Directory is not empty
                     if not Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
                                    default=False):

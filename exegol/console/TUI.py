@@ -342,7 +342,7 @@ class ExegolTUI:
     @classmethod
     def multipleSelectFromTable(cls,
                                 data: Sequence[SelectableInterface],
-                                object_type: Type = None,
+                                object_type: Optional[Type] = None,
                                 default: Optional[str] = None) -> Sequence[SelectableInterface]:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""

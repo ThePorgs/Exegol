@@ -5,6 +5,6 @@ class SelectableInterface:
         """Universal unique key getter"""
         raise NotImplementedError
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Generic '==' operator overriding matching object key"""
         return other == self.getKey()

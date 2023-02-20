@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from exegol.console.cli.actions.Command import Option, GroupArg
 from exegol.utils.UserConfig import UserConfig
@@ -9,11 +9,11 @@ class ContainerSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create container selector arguments
-        self.containertag = Option("containertag",
-                                   metavar="CONTAINER",
-                                   nargs='?',
-                                   action="store",
-                                   help="Tag used to target an Exegol container")
+        self.containertag: Optional[Option] = Option("containertag",
+                                                     metavar="CONTAINER",
+                                                     nargs='?',
+                                                     action="store",
+                                                     help="Tag used to target an Exegol container")
 
         # Create group parameter for container selection
         groupArgs.append(GroupArg({"arg": self.containertag, "required": False},
@@ -60,11 +60,11 @@ class ImageSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create image selector arguments
-        self.imagetag = Option("imagetag",
-                               metavar="IMAGE",
-                               nargs='?',
-                               action="store",
-                               help="Tag used to target an Exegol image")
+        self.imagetag: Optional[Option] = Option("imagetag",
+                                                 metavar="IMAGE",
+                                                 nargs='?',
+                                                 action="store",
+                                                 help="Tag used to target an Exegol image")
 
         # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
