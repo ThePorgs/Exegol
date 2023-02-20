@@ -5,7 +5,7 @@ on:
     branches:
       - "cicd"
     paths-ignore:
-      - ".github/**"
+      # - ".github/**"
       - "*.md"
 
 jobs:
