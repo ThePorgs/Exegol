@@ -1,0 +1,40 @@
+name: Wrapper deploy
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  test:
+    name: Python tests and checks
+    uses: ./.github/workflows/sub_testing.yml
+
+  build-n-publish:
+    name: Build and publish Python 🐍 distributions to PyPI 📦
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: true
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Install requirements
+        run: python -m pip install --user build
+      - name: Run package unitest
+        run : python setup.py clean test
+      - name: Build Exegol release
+        run: python -m build --sdist --outdir dist/ .
+      - name: Publish distribution 📦 to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+          skip_existing: true
+      - name: Publish distribution 📦 to PyPI (prod)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
