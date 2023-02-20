@@ -48,6 +48,7 @@ class ExegolManager:
             # If the user have supplied a container name, show container config
             container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
             if container is not None:
+                assert type(container) is ExegolContainer
                 ExegolTUI.printContainerRecap(container)
         else:
             # Without any parameter, show all images and containers info
@@ -74,6 +75,7 @@ class ExegolManager:
         if not cls.__interactive_mode:
             logger.info("Arguments supplied with the command, skipping interactive mode")
         container = cls.__loadOrCreateContainer()
+        assert container is not None and type(container) is ExegolContainer
         if not container.isNew():
             # Check and warn user if some parameters don't apply to the current session
             cls.__checkUselessParameters()
@@ -95,7 +97,7 @@ class ExegolManager:
                 # Command is passed at container creation in __createTmpContainer()
                 logger.success(f"Command executed as entrypoint of the container [green]'{container.hostname}'[/green]")
         else:
-            container = cls.__loadOrCreateContainer(override_container=ParametersManager().selector)
+            container = cast(ExegolContainer, cls.__loadOrCreateContainer(override_container=ParametersManager().selector))
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
 
     @classmethod
@@ -104,6 +106,7 @@ class ExegolManager:
         ExegolManager.print_version()
         logger.info("Stopping exegol")
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        assert container is not None and type(container) is list
         for c in container:
             c.stop(timeout=2)
 
@@ -141,6 +144,7 @@ class ExegolManager:
         if not logger.isEnabledFor(ExeLog.VERBOSE):
             logger.setLevel(ExeLog.VERBOSE)
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        assert type(images) is list
         if len(images) == 0:
             return
         all_name = ", ".join([x.getName() for x in images])
@@ -158,6 +162,7 @@ class ExegolManager:
         ExegolManager.print_version()
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        assert type(containers) is list
         if len(containers) == 0:
             logger.error("No containers were selected. Exiting.")
             return
@@ -536,13 +541,14 @@ class ExegolManager:
             if param in ('containertag',):
                 continue
             # For each parameter, check if it's not None and different from the default
-            if user_inputs.get(param) is not None and \
-                    user_inputs.get(param) != creation_parameters.get(param).kwargs.get('default'):
+            current_option = creation_parameters.get(param)
+            if user_inputs.get(param) is not None and current_option is not None and \
+                    user_inputs.get(param) != current_option.kwargs.get('default'):
                 # If the supplied parameter is positional, getting his printed name
-                name = creation_parameters.get(param).kwargs.get('metavar')
+                name = current_option.kwargs.get('metavar')
                 if not name:
                     # if not, using the args name
-                    detected.append(' / '.join(creation_parameters.get(param).args))
+                    detected.append(' / '.join(current_option.args))
                 else:
                     detected.append(name)
         if len(detected) > 0:
