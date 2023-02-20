@@ -1,4 +1,6 @@
 import os
+import platform
+import sys
 from pathlib import Path
 from typing import Optional, List
 
@@ -38,6 +40,9 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
+            elif sys.platform == "win32":
+                # Skip next platform specific code (temp fix for mypy static code analysis)
+                pass
             elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
