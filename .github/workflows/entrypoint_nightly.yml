@@ -3,9 +3,9 @@ name: Nightly build
 on:
   push:
     branches:
-      - "cicd"
+      - "dev"
     paths-ignore:
-      # - ".github/**"
+      - ".github/**"
       - "*.md"
 
 jobs:
