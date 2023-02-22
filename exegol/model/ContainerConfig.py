@@ -591,6 +591,7 @@ class ContainerConfig:
             _encrypt = True
             _size = 1
             if _encrypt:
+                # fixme: we need sudo for luksFormat, luksOpen and mount, at least
                 # Ask for the key
                 # todo: move the prompt ask higher (outside of utils) and make it a parameter?
                 _key = Prompt.ask(f"[bold blue][?][/bold blue] Enter a key to encrypt the volume",
