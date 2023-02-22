@@ -4,7 +4,7 @@ from rich.prompt import Prompt
 from exegol.utils.ExeLog import logger
 
 
-def createLuksVolume(container_path: str, container_size: int, encryption_key: str):
+def createVolume(container_path: str, container_size: int, encryption_key: str):
     logger.debug(f"Encrypted container path: {container_path}")
 
     # Create an empty container with a defined size (in GB)
@@ -26,7 +26,7 @@ def createLuksVolume(container_path: str, container_size: int, encryption_key: s
     if p.returncode != 0:
         logger.debug(f"luksFormat output: {p.stderr.decode()}")
 
-def decryptVolume(container_path: str, container_name: str, encryption_key:str):
+def unlockVolume(container_path: str, container_name: str, encryption_key:str):
     # Open the encrypted container as a mapped device
     logger.debug("Decrypting the container into a volume")
     p = subprocess.run(
@@ -79,7 +79,7 @@ def formatVolume(container_name: str):
         logger.debug(f"mkfs.ext4 output: {p.stderr.decode()}")
 
 
-def closeVolume(container_name: str):
+def lockVolume(container_name: str):
     # Close the container
     logger.debug("Closing the container")
     p = subprocess.run(

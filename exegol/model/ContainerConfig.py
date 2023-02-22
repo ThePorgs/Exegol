@@ -601,15 +601,15 @@ class ContainerConfig:
 
                 # create the luks volume
                 luks_container_path = f"{volume_path}.enc"
-                LuksUtils.createLuksVolume(container_path=luks_container_path, container_size=_size,
-                                           encryption_key=_key)
+                LuksUtils.createVolume(container_path=luks_container_path, container_size=_size,
+                                       encryption_key=_key)
 
                 # decrypt and mount the volume
                 # todo how can I get container name
                 _name = "testing"
                 _container_name = f"exegol-luksvol-{_name}"
-                LuksUtils.decryptVolume(container_path=luks_container_path, container_name=_container_name,
-                                        encryption_key=_key)
+                LuksUtils.unlockVolume(container_path=luks_container_path, container_name=_container_name,
+                                       encryption_key=_key)
                 LuksUtils.formatVolume(container_name=_container_name)
                 # todo mounting the volume is probably not necessary, as it could probably be included in the
                 #  volumes arg of the container creation func
