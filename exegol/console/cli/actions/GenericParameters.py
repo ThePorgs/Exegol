@@ -140,6 +140,10 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               dest="volumes",
                               help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/)")
+        self.encrypt = Option("--encrypt",
+                              action="store_true",
+                              default=False,
+                              help="Encrypts the workspace volume")
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],
@@ -186,6 +190,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
+                                  {"arg": self.encrypt, "required": False},
                                   {"arg": self.ports, "required": False},
                                   {"arg": self.hostname, "required": False},
                                   {"arg": self.capabilities, "required": False},

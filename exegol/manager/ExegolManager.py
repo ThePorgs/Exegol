@@ -462,6 +462,8 @@ class ExegolManager:
         if ParametersManager().volumes is not None:
             for volume in ParametersManager().volumes:
                 config.addRawVolume(volume)
+        if ParametersManager().encrypt:
+            config.enableEncryption()
         if ParametersManager().devices is not None:
             for device in ParametersManager().devices:
                 config.addUserDevice(device)

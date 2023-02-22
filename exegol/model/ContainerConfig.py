@@ -14,7 +14,7 @@ from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation
 from exegol.model.ExegolModules import ExegolModules
-from exegol.utils import FsUtils
+from exegol.utils import FsUtils, LuksUtils
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
@@ -47,6 +47,7 @@ class ContainerConfig:
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
+        self.__encrypt: bool = False
         self.__mounts: List[Mount] = []
         self.__devices: List[str] = []
         self.__capabilities: List[str] = []
@@ -427,6 +428,13 @@ class ContainerConfig:
         self.__workspace_custom_path = os.getcwd()
         logger.verbose(f"Config: Sharing current workspace directory {self.__workspace_custom_path}")
 
+    def enableEncryption(self):
+        """Procedure to enable volume encryption"""
+        if not self.__encrypt:
+            logger.verbose("Config: Enabling volume encryption")
+            self.__encrypt = True
+            self.addLabel(self.__label_features.get('enableEncryption', 'org.exegol.error'), "Enabled")
+
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""
         path = Path(host_directory).expanduser().absolute()
@@ -579,6 +587,35 @@ class ContainerConfig:
         else:
             # Add shared-data-volumes private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
+            # todo : find out how I can get the parameters here
+            _encrypt = True
+            _size = 1
+            if _encrypt:
+                # Ask for the key
+                # todo: move the prompt ask higher (outside of utils) and make it a parameter?
+                _key = Prompt.ask(f"[bold blue][?][/bold blue] Enter a key to encrypt the volume",
+                                  show_choices=False,
+                                  # password=True
+                                  )
+
+                # create the luks volume
+                luks_container_path = f"{volume_path}.enc"
+                LuksUtils.createLuksVolume(container_path=luks_container_path, container_size=_size,
+                                           encryption_key=_key)
+
+                # decrypt and mount the volume
+                # todo how can I get container name
+                _name = "testing"
+                _container_name = f"exegol-luksvol-{_name}"
+                LuksUtils.decryptVolume(container_path=luks_container_path, container_name=_container_name,
+                                        encryption_key=_key)
+                LuksUtils.formatVolume(container_name=_container_name)
+                # todo mounting the volume is probably not necessary, as it could probably be included in the
+                #  volumes arg of the container creation func
+                LuksUtils.mountVolume(container_name=_container_name, target_host_path=volume_path)
+                # todo set file permissions
+                # todo, when starting container, luksOpen and
+                # todo, when stopping container, umount the volume
             self.addVolume(volume_path, '/workspace', enable_sticky_group=True)
 
     def setNetworkMode(self, host_mode: Optional[bool]):
