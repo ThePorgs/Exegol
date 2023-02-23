@@ -28,7 +28,7 @@ class SoundUtils:
         return Path(f"{os.getenv('XDG_RUNTIME_DIR')}/pulse/native").exists()
 
     @classmethod
-    def getPulseAudioSocketPath(cls) -> Path:
+    def getPulseAudioSocketPath(cls) -> str:
         """
         Get the host path of the Pulse Audio socket
         :return:
