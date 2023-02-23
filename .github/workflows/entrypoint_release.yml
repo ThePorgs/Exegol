@@ -1,4 +1,4 @@
-name: Wrapper deploy
+name: Release
 
 on:
   push:

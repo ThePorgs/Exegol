@@ -1,4 +1,4 @@
-name: PR pre-release
+name: Pre-release PR
 
 on:
   pull_request:

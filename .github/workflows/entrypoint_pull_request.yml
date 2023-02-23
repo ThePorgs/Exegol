@@ -1,5 +1,7 @@
 name: Code check
 
+# for external contribution pull requests, and internal pushes to specific branches (!= dev)
+
 on:
   pull_request:
     branches-ignore:
