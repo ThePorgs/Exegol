@@ -1,12 +1,18 @@
-name: PR checks
+name: Code check
 
 on:
   pull_request:
-    branches:
-      - "*"
+    branches-ignore:
+      - "master"
     paths-ignore:
       - ".github/**"
-      - "*.md"
+      - "**.md"
+  push:
+    branches-ignore:
+      - "dev"
+    paths-ignore:
+      - ".github/**"
+      - "**.md"
 
 jobs:
   test:
