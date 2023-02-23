@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Union, Set, Optional
+from typing import Dict, List, Union, Set, Optional, cast
 
 import yaml
 import yaml.parser
@@ -25,7 +25,7 @@ class UserConfig(metaclass=MetaSingleton):
 
         # Defaults User config
         self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
-        self.my_resources_path: str = str(ConstantConfig.exegol_config_path / "my-resources")
+        self.my_resources_path: Path = ConstantConfig.exegol_config_path / "my-resources"
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
         self.auto_check_updates: bool = True
         self.auto_remove_images: bool = True
@@ -40,7 +40,7 @@ class UserConfig(metaclass=MetaSingleton):
     def __load_file(self):
         if not ConstantConfig.exegol_config_path.is_dir():
             logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
-            os.mkdir(ConstantConfig.exegol_config_path)
+            ConstantConfig.exegol_config_path.mkdir()
         if not self.__config_file_path.is_file():
             logger.verbose(f"Creating default exegol config: {self.__config_file_path}")
             self.__create_config_file()
@@ -103,7 +103,7 @@ config:
             # Default path for pip installation
             return ConstantConfig.exegol_config_path / folder_name
 
-    def __load_config_path(self, data: dict, config_name: str, default: Union[Path, str]) -> Union[Path, str]:
+    def __load_config_path(self, data: dict, config_name: str, default: Path) -> Path:
         try:
             result = data.get(config_name)
             if result is None:
@@ -132,6 +132,12 @@ config:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
+    def __load_config_bool(self, data: dict, config_name: str, default: bool, choices: Optional[Set[str]] = None) -> bool:
+        return cast(bool, self.__load_config(data, config_name, default, choices))
+
+    def __load_config_str(self, data: dict, config_name: str, default: str, choices: Optional[Set[str]] = None) -> str:
+        return cast(str, self.__load_config(data, config_name, default, choices))
+
     def __parse_config(self):
         with open(self.__config_file_path, 'r') as file:
             try:
@@ -146,7 +152,7 @@ config:
         # Catch existing but empty section
         if volumes_data is None:
             volumes_data = {}
-        self.my_resources_path = str(self.__load_config_path(volumes_data, 'my_resources_path', self.my_resources_path))
+        self.my_resources_path = self.__load_config_path(volumes_data, 'my_resources_path', self.my_resources_path)
         self.private_volume_path = self.__load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self.__load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
 
@@ -155,15 +161,15 @@ config:
         # Catch existing but empty section
         if config_data is None:
             config_data = {}
-        self.auto_check_updates = self.__load_config(config_data, 'auto_check_update', self.auto_check_updates)
-        self.auto_remove_images = self.__load_config(config_data, 'auto_remove_image', self.auto_remove_images)
-        self.auto_update_workspace_fs = self.__load_config(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
-        self.default_start_shell = self.__load_config(config_data, 'default_start_shell', self.default_start_shell, choices=self.start_shell_options)
+        self.auto_check_updates = self.__load_config_bool(config_data, 'auto_check_update', self.auto_check_updates)
+        self.auto_remove_images = self.__load_config_bool(config_data, 'auto_remove_image', self.auto_remove_images)
+        self.auto_update_workspace_fs = self.__load_config_bool(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
+        self.default_start_shell = self.__load_config_str(config_data, 'default_start_shell', self.default_start_shell, choices=self.start_shell_options)
 
         # Shell_logging section
         shell_logging_data = config_data.get("shell_logging", {})
-        self.shell_logging_method = self.__load_config(shell_logging_data, 'logging_method', self.shell_logging_method, choices=self.shell_logging_method_options)
-        self.shell_logging_compress = self.__load_config(shell_logging_data, 'enable_log_compression', self.shell_logging_compress)
+        self.shell_logging_method = self.__load_config_str(shell_logging_data, 'logging_method', self.shell_logging_method, choices=self.shell_logging_method_options)
+        self.shell_logging_compress = self.__load_config_bool(shell_logging_data, 'enable_log_compression', self.shell_logging_compress)
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""

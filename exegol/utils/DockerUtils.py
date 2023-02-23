@@ -105,7 +105,7 @@ class DockerUtils:
                                                     entrypoint=entrypoint,
                                                     command=command,
                                                     detach=True,
-                                                    name=model.hostname,
+                                                    name=model.container_name,
                                                     hostname=model.hostname,
                                                     extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),

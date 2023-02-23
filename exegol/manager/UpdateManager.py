@@ -264,7 +264,7 @@ class UpdateManager:
         """Create the 'update available' cache file."""
         if not ConstantConfig.exegol_config_path.is_dir():
             logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
-            os.mkdir(ConstantConfig.exegol_config_path)
+            ConstantConfig.exegol_config_path.mkdir()
         tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
         if not tag_file.is_file():
             with open(tag_file, 'w') as lockfile:

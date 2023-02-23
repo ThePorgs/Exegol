@@ -375,7 +375,7 @@ class ContainerConfig:
             logger.verbose("Config: Enabling my-resources volume")
             self.__my_resources = True
             # Adding volume config
-            self.addVolume(UserConfig().my_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
+            self.addVolume(str(UserConfig().my_resources_path), '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableMyResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
@@ -413,14 +413,14 @@ class ContainerConfig:
         if not self.__shell_logging:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
-            self.addLabel(self.__label_features.get('enableShellLogging'), "Enabled")
+            self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
-            self.removeLabel(self.__label_features.get('enableShellLogging'))
+            self.removeLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'))
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
@@ -430,8 +430,11 @@ class ContainerConfig:
     def setWorkspaceShare(self, host_directory):
         """Procedure to share a specific directory with the /workspace of the container"""
         path = Path(host_directory).expanduser().absolute()
-        if not path.is_dir():
-            logger.critical("The specified workspace is not a directory")
+        try:
+            if not path.is_dir() and path.exists():
+                logger.critical("The specified workspace is not a directory!")
+        except PermissionError as e:
+            logger.critical(f"Unable to use the supplied workspace directory: {e}")
         logger.verbose(f"Config: Sharing workspace directory {path}")
         self.__workspace_custom_path = str(path)
 
@@ -784,7 +787,7 @@ class ContainerConfig:
                     else:
                         # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
                         execute_update_fs = force_sticky_group or enable_sticky_group
-                        os.makedirs(host_path, exist_ok=True)
+                        path.mkdir(exist_ok=True)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
                 logger.critical(f"Insufficient permissions to create the folder: {host_path}")

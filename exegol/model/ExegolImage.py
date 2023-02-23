@@ -20,7 +20,7 @@ class ExegolImage(SelectableInterface):
     def __init__(self,
                  name: str = "NONAME",
                  dockerhub_data: Optional[Dict[str, Any]] = None,
-                 meta_img: MetaImages = None,
+                 meta_img: Optional[MetaImages] = None,
                  image_id: Optional[str] = None,
                  docker_image: Optional[Image] = None,
                  isUpToDate: bool = False):
@@ -87,7 +87,7 @@ class ExegolImage(SelectableInterface):
             # Tag as a version specific until the latest tag is found
             self.__version_specific = True
             name = self.__name  # Init with old name
-            self.__name = None
+            self.__name = ""
             for repo_tag in self.__image.attrs["RepoTags"]:
                 repo, name = repo_tag.split(':')
                 if not repo.startswith(ConstantConfig.IMAGE_NAME):
@@ -103,7 +103,7 @@ class ExegolImage(SelectableInterface):
                     self.__setImageVersion(version_parsed)
 
             # if no version has been found, restoring previous name
-            if self.__name is None:
+            if not self.__name:
                 self.__name = name
 
             if self.isVersionSpecific():
