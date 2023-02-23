@@ -17,9 +17,9 @@ class ExegolContainerTemplate:
         self.container_name: str = name if name.startswith("exegol-") else f'exegol-{name}'
         self.name: str = name.replace('exegol-', '')
         if hostname:
-            self.hostname = hostname
+            self.hostname: str = hostname
         else:
-            self.hostname: str = self.container_name
+            self.hostname = self.container_name
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
 
