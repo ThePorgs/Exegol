@@ -33,6 +33,7 @@ class ContainerConfig:
 
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+    __static_pulseaudio_envs = {"PULSE_SERVER": "unix:/run/user/0/pulse/native"}
 
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
@@ -42,6 +43,7 @@ class ContainerConfig:
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
+        self.__enable_sound: bool = False
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
         self.__my_resources_path: str = "/opt/my-resources"
@@ -228,6 +230,16 @@ class ContainerConfig:
         # Command builder info
         if not self.__enable_gui:
             command_options.append("--disable-X11")
+
+        # Sound sharing
+        if self.__enable_sound:
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]sound sharing[/blue]?", False):
+                self.__disableSound()
+        elif Confirm("Do you want to [green]enable[/green] [blue]sound sharing[/blue]?", False):
+            self.enableSound()
+            # Command builder info
+        if self.__enable_sound:
+            command_options.append("--sound")
 
         # Timezone config
         if self.__share_timezone:

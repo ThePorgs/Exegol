@@ -100,6 +100,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=True,
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
+        self.sound_sharing = Option("--sound",
+                          action="store_true",
+                          default=False,
+                          dest="sound_sharing",
+                          help="Enable sound sharing")
         self.my_resources = Option("--disable-my-resources",
                                    action="store_false",
                                    default=True,
@@ -191,6 +196,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
+                                  {"arg": self.sound_sharing, "required": False},
                                   {"arg": self.X11, "required": False},
                                   {"arg": self.my_resources, "required": False},
                                   {"arg": self.exegol_resources, "required": False},
