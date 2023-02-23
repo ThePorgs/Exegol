@@ -1,8 +1,10 @@
 import os
+import platform
+import sys
 from pathlib import Path
 from typing import Optional, List
 
-from git.exc import GitCommandError
+from git.exc import GitCommandError, RepositoryDirtyError
 
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ConstantConfig import ConstantConfig
@@ -38,6 +40,9 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
+            elif sys.platform == "win32":
+                # Skip next platform specific code (temp fix for mypy static code analysis)
+                pass
             elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
@@ -244,6 +249,8 @@ class GitUtils:
         blacklist_heavy_modules = ["exegol-resources"]
         # Submodules dont have depth submodule limits
         depth_limit = not self.__is_submodule
+        if self.__gitRepo is None:
+            return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
             try:
                 submodules = self.__gitRepo.iter_submodules()
@@ -269,6 +276,9 @@ class GitUtils:
                         logger.error(error)
                 except ValueError:
                     logger.error(f"Unable to update git submodule '{current_sub.name}'. Check the path in the file '{Path(current_sub.path) / '.git'}'")
+                except RepositoryDirtyError as e:
+                    logger.debug(e)
+                    logger.error(f"Sub-repository {current_sub.name} have uncommitted local changes. Unable to automatically update this repository.")
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
