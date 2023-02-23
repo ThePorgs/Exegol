@@ -18,6 +18,7 @@ from exegol.utils import FsUtils
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
+from exegol.utils.SoundUtils import SoundUtils
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -296,6 +297,35 @@ class ContainerConfig:
 
         return command_options
 
+    def enableSound(self):
+        """Procedure to enable sound feature"""
+        if not SoundUtils.isPulseAudioAvailable():
+            logger.error("Sound sharing feature is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
+            return
+        if not self.__enable_sound:
+            logger.verbose("Config: Enabling sound sharing")
+            try:
+                self.addVolume(SoundUtils.getPulseAudioSocketPath(), "/run/user/0/pulse/native", must_exist=False)
+                # fixme must_exist cannot be set to True since addVolume will fail, this needs to be fixed
+                self.addVolume(SoundUtils.getPulseAudioCookiePath(), "/root/.config/pulse/cookie", must_exist=True)
+            except CancelOperation as e:
+                logger.warning(f"Sound socket sharing could not be enabled: {e}")
+                return
+            for k, v in self.__static_pulseaudio_envs.items():
+                self.addEnv(k, v)
+            self.__enable_sound = True
+
+
+    def __disableSound(self):
+        """Procedure to enable GUI feature (Only for interactive config)"""
+        if self.__enable_sound:
+            self.__enable_sound = False
+            logger.verbose("Config: Sound sharing")
+            self.removeVolume(container_path="/run/user/0/pulse/native")
+            self.removeVolume(container_path="/root/.config/pulse/cookie")
+            for k in self.__static_gui_envs.keys():
+                self.removeEnv(k)
+
     def enableGUI(self):
         """Procedure to enable GUI feature"""
         if not GuiUtils.isGuiAvailable():
@@ -308,7 +338,6 @@ class ContainerConfig:
             except CancelOperation as e:
                 logger.warning(f"Graphical interface sharing could not be enabled: {e}")
                 return
-            # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)
