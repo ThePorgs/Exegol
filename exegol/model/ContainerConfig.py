@@ -329,10 +329,10 @@ class ContainerConfig:
 
 
     def __disableSound(self):
-        """Procedure to enable GUI feature (Only for interactive config)"""
+        """Procedure to disable sound feature (Only for interactive config)"""
         if self.__enable_sound:
             self.__enable_sound = False
-            logger.verbose("Config: Sound sharing")
+            logger.verbose("Config: Disabling sound sharing")
             self.removeVolume(container_path="/run/user/0/pulse/native")
             self.removeVolume(container_path="/root/.config/pulse/cookie")
             for k in self.__static_gui_envs.keys():
