@@ -1,4 +1,4 @@
-name: Code check
+name: External PR tests
 
 # for external contribution pull requests, and internal pushes to specific branches (!= dev)
 
