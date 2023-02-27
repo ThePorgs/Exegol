@@ -4,9 +4,8 @@ on:
   push:
     branches:
       - "dev"
-    paths-ignore:
-      - ".github/**"
-      - "**.md"
+    paths:
+      - "**.py"
 
 jobs:
   test:
