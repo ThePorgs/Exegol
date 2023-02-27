@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from exegol.console.cli.completer.ContainerCompleter import ContainerCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
 from exegol.utils.UserConfig import UserConfig
 
@@ -13,7 +14,8 @@ class ContainerSelector:
                                                      metavar="CONTAINER",
                                                      nargs='?',
                                                      action="store",
-                                                     help="Tag used to target an Exegol container")
+                                                     help="Tag used to target an Exegol container",
+                                                     completer=ContainerCompleter)
 
         # Create group parameter for container selection
         groupArgs.append(GroupArg({"arg": self.containertag, "required": False},
@@ -152,7 +154,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                help="Set a custom hostname to the exegol container (default: exegol-<name>)")
         self.capabilities = Option("--cap",
                                    dest="capabilities",
-                                   metavar='',  # Do not display available choices
+                                   metavar='CAP',  # Do not display available choices
                                    action="append",
                                    default=[],
                                    choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",

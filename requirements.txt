@@ -3,3 +3,4 @@ requests>=2.28.0
 rich~=12.6.0
 GitPython~=3.1.29
 PyYAML>=6.0
+argcomplete~=2.0.0

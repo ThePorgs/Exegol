@@ -1,4 +1,5 @@
 import argparse
+import argcomplete
 from logging import CRITICAL
 from typing import IO, Optional, List, Union, Dict, cast
 
@@ -86,12 +87,17 @@ class Parser:
                         assert type(option["arg"]) is Option
                         argument = cast(Option, option["arg"])
                         # Add argument with its config to the parser
-                        group_parser.add_argument(*argument.args, **argument.kwargs)
+                        if "completer" in argument.kwargs.keys():
+                            completer = argument.kwargs.pop("completer")
+                            group_parser.add_argument(*argument.args, **argument.kwargs).completer = completer
+                        else:
+                            group_parser.add_argument(*argument.args, **argument.kwargs)
                     except argparse.ArgumentError:
                         continue
 
     def run_parser(self) -> argparse.Namespace:
         """Execute argparse to retrieve user options from argv"""
+        argcomplete.autocomplete(self.__root_parser)
         return self.__root_parser.parse_args()
 
     def print_help(self):
