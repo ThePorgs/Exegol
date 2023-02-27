@@ -1,4 +1,6 @@
-name: Code check
+name: External PR tests
+
+# for external contribution pull requests, and internal pushes to specific branches (!= dev)
 
 on:
   pull_request:
@@ -14,6 +16,14 @@ on:
       - ".github/**"
       - "**.md"
 
+# creating a separate concurrency group for each PR
+# so that our "PR checks" are always running for the latest commit in the PR
+# and as PRs are updated we want to make sure "in progress" jobs are killed so we don't waste resources
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+
 jobs:
   test:
     name: Python tests and checks
@@ -28,7 +38,7 @@ jobs:
         with:
           submodules: true
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install requirements
