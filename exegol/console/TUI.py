@@ -7,6 +7,7 @@ from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapse
 from rich.prompt import Prompt
 from rich.table import Table
 
+from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter, getColor, richLen
 from exegol.console.ExegolProgress import ExegolProgress
 from exegol.console.ExegolPrompt import Confirm
@@ -421,7 +422,8 @@ class ExegolTUI:
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus(include_version=False)})"
         if container.image.getArch() != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
-            container_info_header += f" [bright_black]({container.image.getArch()})[/bright_black]"
+            color = ConsoleFormat.getArchColor(container.image.getArch())
+            container_info_header += f" [{color}]({container.image.getArch()})[/{color}]"
         recap.add_column(container_info_header)
         # Main features
         if creation_date:
