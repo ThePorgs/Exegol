@@ -1052,7 +1052,7 @@ class ContainerConfig:
             return ""
         return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
 
-    def getComment(self) -> Optionnal[str]:
+    def getComment(self) -> Optional[str]:
         """Get the container comment. 
         If no comment has been supplied, returns None."""
         return self.comment
