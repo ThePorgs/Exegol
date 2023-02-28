@@ -406,6 +406,7 @@ class ExegolTUI:
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
         creation_date = container.config.getTextCreationDate()
+        comment = container.config.getComment()
 
         # Color code
         privilege_color = "bright_magenta"
@@ -426,6 +427,8 @@ class ExegolTUI:
             container_info_header += f" [{color}]({container.image.getArch()})[/{color}]"
         recap.add_column(container_info_header)
         # Main features
+        if comment:
+            recap.add_row("[bold blue]Comment[/bold blue]", comment)
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))

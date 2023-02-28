@@ -470,6 +470,8 @@ class ExegolManager:
         if ParametersManager().envs is not None:
             for env in ParametersManager().envs:
                 config.addRawEnv(env)
+        if ParametersManager().comment:
+            config.addComment(ParametersManager().comment)
         return config
 
     @classmethod
