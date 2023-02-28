@@ -962,7 +962,9 @@ class ContainerConfig:
         """Labels config getter"""
         # Update metadata (from getter method) to the labels (on container creation)
         for label_name, refs in self.__label_metadata.items():
-            self.addLabel(label_name, getattr(self, refs[1])())
+            data = getattr(self, refs[1])()
+            if data is not None:
+                self.addLabel(label_name, data)
         return self.__labels
 
     def getCreationDate(self) -> str:
@@ -1050,11 +1052,9 @@ class ContainerConfig:
             return ""
         return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
 
-    def getComment(self) -> str:
-        """Get the container creation date.
-                If the creation date has not been supplied on the container, return empty string."""
-        if self.comment is None:
-            return ""
+    def getComment(self) -> Optionnal[str]:
+        """Get the container comment. 
+        If no comment has been supplied, returns None."""
         return self.comment
 
     def getTextMounts(self, verbose: bool = False) -> str:
