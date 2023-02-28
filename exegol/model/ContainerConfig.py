@@ -36,7 +36,8 @@ class ContainerConfig:
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
     # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
-    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"]}
+    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"],
+                        "org.exegol.metadata.comment": ["comment", "getComment"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -68,6 +69,7 @@ class ContainerConfig:
         self.__start_delegate_mode: bool = False
         # Metadata attributes
         self.creation_date: Optional[str] = None
+        self.comment: Optional[str] = None
 
         if container is not None:
             self.__parseContainerConfig(container)
@@ -414,6 +416,13 @@ class ContainerConfig:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
             self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
+
+    def addComment(self, comment):
+        """Procedure to add comment to a container"""
+        if not self.comment:
+            logger.verbose("Config: Adding comment to container info")
+            self.comment = comment
+            self.addLabel("org.exegol.metadata.comment", comment)
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
@@ -1040,6 +1049,13 @@ class ContainerConfig:
         if self.creation_date is None:
             return ""
         return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
+
+    def getComment(self) -> str:
+        """Get the container creation date.
+                If the creation date has not been supplied on the container, return empty string."""
+        if self.comment is None:
+            return ""
+        return self.comment
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""

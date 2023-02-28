@@ -182,6 +182,11 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
+        self.comment = Option("--comment",
+                              dest="comment",
+                              action="store",
+                              help="The specified comment will be added to the container info")
+
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
@@ -196,6 +201,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
+                                  {"arg": self.comment, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
