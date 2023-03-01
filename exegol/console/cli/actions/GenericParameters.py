@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from argcomplete.completers import EnvironCompleter
+from argcomplete.completers import EnvironCompleter, SuppressCompleter, DirectoriesCompleter, FilesCompleter
 
 from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
@@ -136,7 +136,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.workspace_path = Option("-w", "--workspace",
                                      dest="workspace_path",
                                      action="store",
-                                     help="The specified host folder will be linked to the /workspace folder in the container")
+                                     help="The specified host folder will be linked to the /workspace folder in the container",
+                                     completer=DirectoriesCompleter)
         self.update_fs_perms = Option("-fs", "--update-fs",
                                       action="store_true",
                                       default=False,
@@ -152,12 +153,14 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             action="append",
                             default=[],
                             dest="ports",
-                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.",
+                            completer=SuppressCompleter)
         self.hostname = Option("--hostname",
                                dest="hostname",
                                default=None,
                                action="store",
-                               help="Set a custom hostname to the exegol container (default: exegol-<name>)")
+                               help="Set a custom hostname to the exegol container (default: exegol-<name>)",
+                               completer=SuppressCompleter)
         self.capabilities = Option("--cap",
                                    dest="capabilities",
                                    metavar='CAP',  # Do not display available choices
@@ -183,7 +186,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="vpn",
                           default=None,
                           action="store",
-                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)")
+                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
+                          completer=FilesCompleter(("ovpn")))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,

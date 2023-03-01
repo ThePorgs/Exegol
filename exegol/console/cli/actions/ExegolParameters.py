@@ -1,3 +1,4 @@
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter
 from exegol.console.cli.actions.Command import Command
 from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
@@ -241,14 +242,16 @@ class Exec(Command, ContainerCreation, ContainerStart):
                                metavar="CONTAINER or IMAGE",
                                nargs='?',
                                action="store",
-                               help="Tag used to target an Exegol container (by default) or an image (if --tmp is set).")
+                               help="Tag used to target an Exegol container (by default) or an image (if --tmp is set).",
+                               completer=HybridContainerImageCompleter)
 
         # Custom parameters
         self.exec = Option("exec",
                            metavar="COMMAND",
                            nargs="+",
                            action="store",
-                           help="Execute a single command in the exegol container.")
+                           help="Execute a single command in the exegol container.",
+                           completer=SuppressCompleter)
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
