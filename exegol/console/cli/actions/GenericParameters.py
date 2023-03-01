@@ -1,6 +1,8 @@
 from typing import List, Optional
 
-from exegol.console.cli.completer.ContainerCompleter import ContainerCompleter
+from argcomplete.completers import EnvironCompleter
+
+from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
 from exegol.utils.UserConfig import UserConfig
 
@@ -31,7 +33,8 @@ class ContainerMultiSelector:
                                         metavar="CONTAINER",
                                         nargs='*',
                                         action="store",
-                                        help="Tag used to target one or more Exegol containers")
+                                        help="Tag used to target one or more Exegol containers",
+                                        completer=ContainerCompleter)
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
@@ -50,7 +53,8 @@ class ContainerStart:
                            dest="envs",
                            help="And an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
-                                "If the container already exists, the variable will be present only in the current shell")
+                                "If the container already exists, the variable will be present only in the current shell",
+                           completer=EnvironCompleter)
 
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
@@ -66,7 +70,8 @@ class ImageSelector:
                                                  metavar="IMAGE",
                                                  nargs='?',
                                                  action="store",
-                                                 help="Tag used to target an Exegol image")
+                                                 help="Tag used to target an Exegol image",
+                                                 completer=ImageCompleter)
 
         # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
@@ -82,7 +87,8 @@ class ImageMultiSelector:
                                     metavar="IMAGE",
                                     nargs='*',
                                     action="store",
-                                    help="Tag used to target one or more Exegol images")
+                                    help="Tag used to target one or more Exegol images",
+                                    completer=ImageCompleter)
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},

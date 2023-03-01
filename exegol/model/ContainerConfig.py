@@ -902,17 +902,26 @@ class ContainerConfig:
 
     def addRawEnv(self, env: str):
         """Parse and add an environment variable from raw user input"""
-        env_args = env.split('=')
-        if len(env_args) < 2:
-            logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
-        key = env_args[0]
-        value = '='.join(env_args[1:])
-        logger.debug(f"Adding env {key}={value}")
+        key, value = self.__parseUserEnv(env)
         self.addEnv(key, value)
 
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         return self.__envs
+
+    @classmethod
+    def __parseUserEnv(cls, env: str) -> Tuple[str, str]:
+        env_args = env.split('=')
+        key = env_args[0]
+        if len(env_args) < 2:
+            value = os.getenv(env, '')
+            if not value:
+                logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
+            else:
+                logger.success(f"Using system value for env {env}.")
+        else:
+            value = '='.join(env_args[1:])
+        return key, value
 
     def getShellEnvs(self) -> List[str]:
         """Overriding envs when opening a shell"""
@@ -930,10 +939,9 @@ class ContainerConfig:
         user_envs = ParametersManager().envs
         if user_envs is not None:
             for env in user_envs:
-                if len(env.split('=')) < 2:
-                    logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
+                key, value = self.__parseUserEnv(env)
                 logger.debug(f"Add env to current shell: {env}")
-                result.append(env)
+                result.append(f"{key}={value}")
         return result
 
     def addLabel(self, key: str, value: str):
