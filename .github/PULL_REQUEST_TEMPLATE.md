@@ -1,6 +1,6 @@
 # Description
 
-> A description of your PR, what it brings or corrects.
+> A description of your PR, what it brings or corrects. Don't forget to configure your PR to the dev branch (cf. https://exegol.readthedocs.io/en/latest/community/contributors.html)
 
 # Related issues
 
