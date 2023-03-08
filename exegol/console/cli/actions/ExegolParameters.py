@@ -1,4 +1,4 @@
-from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter
 from exegol.console.cli.actions.Command import Command
 from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
@@ -251,7 +251,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
                            nargs="+",
                            action="store",
                            help="Execute a single command in the exegol container.",
-                           completer=SuppressCompleter)
+                           completer=VoidCompleter)
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",

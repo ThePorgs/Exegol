@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from argcomplete.completers import EnvironCompleter, SuppressCompleter, DirectoriesCompleter, FilesCompleter
 
-from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter
+from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
 from exegol.utils.UserConfig import UserConfig
 
@@ -154,13 +154,13 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             default=[],
                             dest="ports",
                             help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.",
-                            completer=SuppressCompleter)
+                            completer=VoidCompleter)
         self.hostname = Option("--hostname",
                                dest="hostname",
                                default=None,
                                action="store",
                                help="Set a custom hostname to the exegol container (default: exegol-<name>)",
-                               completer=SuppressCompleter)
+                               completer=VoidCompleter)
         self.capabilities = Option("--cap",
                                    dest="capabilities",
                                    metavar='CAP',  # Do not display available choices
