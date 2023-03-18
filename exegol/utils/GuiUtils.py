@@ -62,6 +62,12 @@ class GuiUtils:
         if EnvInfo.isMacHost():
             # xquartz Mac mode
             return "host.docker.internal:0"
+
+        # Add ENV check is case of user don't have it, which will mess up GUI if fallback does not work
+        # @see https://github.com/ThePorgs/Exegol/issues/148
+        if os.getenv("DISPLAY") is None:
+            logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start")
+
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
 
