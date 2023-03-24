@@ -96,7 +96,7 @@ class UpdateManager:
         """Build confirmation process and image building"""
         # Need confirmation from the user before starting building.
         if ParametersManager().build_profile is not None or \
-                Confirm("Do you want to build locally a custom image?", default=False):
+                Confirm("Do you want to build locally a custom image?", default=False, batch=ParametersManager().batch):
             return cls.buildAndLoad(tag)
         return None
 
@@ -117,7 +117,7 @@ class UpdateManager:
     def updateResources(cls) -> bool:
         """Update Exegol-resources from git (submodule)"""
         try:
-            if not ExegolModules().isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True):
+            if not ExegolModules().isExegolResourcesReady() and not Confirm('Do you want to update exegol resources.', default=True, batch=ParametersManager().batch):
                 return False
             return cls.__updateGit(ExegolModules().getResourcesGit())
         except CancelOperation:
@@ -305,7 +305,7 @@ class UpdateManager:
         # Ask to update git
         try:
             if ExegolModules().getSourceGit().isAvailable and not ExegolModules().getSourceGit().isUpToDate() and \
-                    Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True):
+                    Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True, batch=ParametersManager().batch):
                 cls.updateImageSource()
         except AssertionError:
             # Catch None git object assertions

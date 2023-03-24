@@ -75,6 +75,11 @@ class Command:
                             action="store_true",
                             default=False,
                             help="Show no information at all")
+        self.batch = Option("-b", "--batch",
+                            dest="batch",
+                            action="store_true",
+                            default=False,
+                            help="Enable batch mode (default choice to all prompt)")
         self.verbosity = Option("-v", "--verbose",
                                 dest="verbosity",
                                 action="count",
@@ -102,6 +107,7 @@ class Command:
             GroupArg({"arg": self.verbosity, "required": False},
                      # {"arg": self.interactive_mode, "required": False},
                      {"arg": self.quiet, "required": False},
+                     {"arg": self.batch, "required": False},
                      {"arg": self.verify, "required": False},
                      {"arg": self.offline_mode, "required": False},
                      {"arg": self.arch, "required": False},

@@ -175,7 +175,7 @@ class GuiUtils:
             logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
             # If no WSL is found, propose to continue without GUI
             if not cls.__distro_name and not Confirm(
-                    "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                    "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True, batch=ParametersManager().batch):
                 raise KeyboardInterrupt
         else:
             logger.debug("Using current WSL context for X11 socket sharing")
@@ -313,7 +313,7 @@ class GuiUtils:
                             f"The '{name}' WSL distribution could be used to [green]enable the GUI[/green] on exegol but the docker integration is [orange3]not enabled[/orange3].")
                         if not Confirm(
                                 f"Do you want to [red]manually[/red] enable docker integration for WSL '{name}'?",
-                                default=True):
+                                default=True, batch=ParametersManager().batch):
                             break
                         eligible = True
                     if eligible:
@@ -324,7 +324,7 @@ class GuiUtils:
             else:
                 logger.warning(
                     "No WSL distribution was found on your machine. At least one distribution must be available to allow Exegol to use WSLg.")
-                if Confirm("Do you want Exegol to install one automatically (Ubuntu)?", default=True):
+                if Confirm("Do you want Exegol to install one automatically (Ubuntu)?", default=True, batch=ParametersManager().batch):
                     if cls.__create_default_wsl():
                         distro_name = "Ubuntu"
         else:
@@ -345,7 +345,7 @@ class GuiUtils:
                 f"Error while install WSL Ubuntu: {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
             return False
         else:
-            while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
+            while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True, batch=ParametersManager().batch):
                 pass
             # Check if docker have default docker integration
             docker_settings = EnvInfo.getDockerDesktopSettings()
@@ -365,7 +365,7 @@ class GuiUtils:
                              "It has to be activated [red]manually[/red]")
                 logger.info("Enable WSL Docker integration for the newly created WSL in: [magenta]Docker Desktop > Settings > Resources > WSL Integration[/magenta]")
                 if not Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
-                               default=True):
+                               default=True, batch=ParametersManager().batch):
                     return False
             logger.success("WSL 'Ubuntu' successfully created with docker integration")
             return True

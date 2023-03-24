@@ -333,7 +333,8 @@ class ExegolTUI:
             if allow_None:
                 if Confirm(
                         f"No {object_name} is available under this name, do you want to {action} it?",
-                        default=True):
+                        default=True,
+                        batch=ParametersManager().batch):
                     return choice
                 logger.info(f"[red]Please select one of the available {object_name}s[/red]")
             else:
@@ -363,7 +364,7 @@ class ExegolTUI:
             pool.remove(selected)
             if len(pool) == 0:
                 return result
-            elif not Confirm(f"Do you want to select another {object_subject}?", default=False):
+            elif not Confirm(f"Do you want to select another {object_subject}?", default=False, batch=ParametersManager().batch):
                 return result
 
     @classmethod
