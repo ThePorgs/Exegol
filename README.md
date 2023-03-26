@@ -17,6 +17,8 @@
   <br><br>
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social" alt="Twitter Shutdown"></a>
   <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social" alt="Twitter Dramelac"></a>
+  <br>
+  <img alt="Black Hat Europe 2022" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Europe%202022-blueviolet">
   <br><br>
   <a href="https://discord.gg/cXThyp7D6P" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
   <br><br>

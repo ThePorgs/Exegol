@@ -7,6 +7,7 @@ from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapse
 from rich.prompt import Prompt
 from rich.table import Table
 
+from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter, getColor, richLen
 from exegol.console.ExegolProgress import ExegolProgress
 from exegol.console.ExegolPrompt import Confirm
@@ -237,14 +238,14 @@ class ExegolTUI:
         # Load data into the table
         for container in data:
             if verbose_mode:
-                table.add_row(container.getId(), container.name, container.getTextStatus(), container.image.getDisplayName(),
+                table.add_row(container.getId(), container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
                               container.config.getTextPorts(),
                               container.config.getTextEnvs(debug_mode))
             else:
-                table.add_row(container.name, container.getTextStatus(), container.image.getDisplayName(),
+                table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
@@ -343,7 +344,7 @@ class ExegolTUI:
     @classmethod
     def multipleSelectFromTable(cls,
                                 data: Sequence[SelectableInterface],
-                                object_type: Type = None,
+                                object_type: Optional[Type] = None,
                                 default: Optional[str] = None) -> Sequence[SelectableInterface]:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""
@@ -406,6 +407,7 @@ class ExegolTUI:
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
         creation_date = container.config.getTextCreationDate()
+        comment = container.config.getComment()
 
         # Color code
         privilege_color = "bright_magenta"
@@ -416,15 +418,18 @@ class ExegolTUI:
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
         recap.add_column(f"[bold blue]Name[/bold blue]{os.linesep}[bold blue]Image[/bold blue]", justify="right")
-        container_info_header = f"{container.name}{os.linesep}{container.image.getName()}"
+        container_info_header = f"{container.getDisplayName()}{os.linesep}{container.image.getName()}"
         if "N/A" not in container.image.getImageVersion():
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus(include_version=False)})"
         if container.image.getArch() != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
-            container_info_header += f" [bright_black]({container.image.getArch()})[/bright_black]"
+            color = ConsoleFormat.getArchColor(container.image.getArch())
+            container_info_header += f" [{color}]({container.image.getArch()})[/{color}]"
         recap.add_column(container_info_header)
         # Main features
+        if comment:
+            recap.add_row("[bold blue]Comment[/bold blue]", comment)
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
         recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))

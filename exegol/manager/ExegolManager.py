@@ -48,6 +48,7 @@ class ExegolManager:
             # If the user have supplied a container name, show container config
             container = cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
             if container is not None:
+                assert type(container) is ExegolContainer
                 ExegolTUI.printContainerRecap(container)
         else:
             # Without any parameter, show all images and containers info
@@ -74,6 +75,7 @@ class ExegolManager:
         if not cls.__interactive_mode:
             logger.info("Arguments supplied with the command, skipping interactive mode")
         container = cls.__loadOrCreateContainer()
+        assert container is not None and type(container) is ExegolContainer
         if not container.isNew():
             # Check and warn user if some parameters don't apply to the current session
             cls.__checkUselessParameters()
@@ -95,7 +97,7 @@ class ExegolManager:
                 # Command is passed at container creation in __createTmpContainer()
                 logger.success(f"Command executed as entrypoint of the container [green]'{container.hostname}'[/green]")
         else:
-            container = cls.__loadOrCreateContainer(override_container=ParametersManager().selector)
+            container = cast(ExegolContainer, cls.__loadOrCreateContainer(override_container=ParametersManager().selector))
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
 
     @classmethod
@@ -104,6 +106,7 @@ class ExegolManager:
         ExegolManager.print_version()
         logger.info("Stopping exegol")
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        assert container is not None and type(container) is list
         for c in container:
             c.stop(timeout=2)
 
@@ -141,6 +144,7 @@ class ExegolManager:
         if not logger.isEnabledFor(ExeLog.VERBOSE):
             logger.setLevel(ExeLog.VERBOSE)
         images = cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        assert type(images) is list
         if len(images) == 0:
             return
         all_name = ", ".join([x.getName() for x in images])
@@ -159,6 +163,7 @@ class ExegolManager:
         ExegolManager.print_version()
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        assert type(containers) is list
         if len(containers) == 0:
             logger.error("No containers were selected. Exiting.")
             return
@@ -270,11 +275,13 @@ class ExegolManager:
                     # If there is no image installed, return none
                     logger.error("Nothing to do.")
                     return [] if multiple else None
-                else:
+                elif image_tag is not None:
                     # If the user's selected image have not been found, offer the choice to build a local image at this name
                     # (only if must_exist is not set)
                     image_selection = UpdateManager.updateImage(image_tag)
                     image_tag = None
+                else:
+                    logger.critical("No image are installed or available, check your internet connection and install an image with the command [green]exegol install[/green].")
             # Checks if an image has been selected
             if image_selection is None:
                 # If not, retry the selection
@@ -465,6 +472,8 @@ class ExegolManager:
         if ParametersManager().envs is not None:
             for env in ParametersManager().envs:
                 config.addRawEnv(env)
+        if ParametersManager().comment:
+            config.addComment(ParametersManager().comment)
         return config
 
     @classmethod
@@ -475,7 +484,7 @@ class ExegolManager:
         image: Optional[ExegolImage] = cast(ExegolImage, cls.__loadOrInstallImage())
         config = cls.__prepareContainerConfig()
         assert image is not None  # load or install return an image
-        model = ExegolContainerTemplate(name, config, image)
+        model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
         # Recap
         ExegolTUI.printContainerRecap(model)
@@ -517,7 +526,7 @@ class ExegolManager:
         config.disableDefaultWorkspace()
         name = f"tmp-{binascii.b2a_hex(os.urandom(4)).decode('ascii')}"
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
-        model = ExegolContainerTemplate(name, config, image)
+        model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
         container = DockerUtils.createContainer(model, temporary=True)
         container.postCreateSetup()
@@ -536,13 +545,14 @@ class ExegolManager:
             if param in ('containertag',):
                 continue
             # For each parameter, check if it's not None and different from the default
-            if user_inputs.get(param) is not None and \
-                    user_inputs.get(param) != creation_parameters.get(param).kwargs.get('default'):
+            current_option = creation_parameters.get(param)
+            if user_inputs.get(param) is not None and current_option is not None and \
+                    user_inputs.get(param) != current_option.kwargs.get('default'):
                 # If the supplied parameter is positional, getting his printed name
-                name = creation_parameters.get(param).kwargs.get('metavar')
-                if name is None:
+                name = current_option.kwargs.get('metavar')
+                if not name:
                     # if not, using the args name
-                    detected.append(' / '.join(creation_parameters.get(param).args))
+                    detected.append(' / '.join(current_option.args))
                 else:
                     detected.append(name)
         if len(detected) > 0:

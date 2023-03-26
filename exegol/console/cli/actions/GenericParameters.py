@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from exegol.console.cli.actions.Command import Option, GroupArg
 from exegol.utils.UserConfig import UserConfig
@@ -9,11 +9,11 @@ class ContainerSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create container selector arguments
-        self.containertag = Option("containertag",
-                                   metavar="CONTAINER",
-                                   nargs='?',
-                                   action="store",
-                                   help="Tag used to target an Exegol container")
+        self.containertag: Optional[Option] = Option("containertag",
+                                                     metavar="CONTAINER",
+                                                     nargs='?',
+                                                     action="store",
+                                                     help="Tag used to target an Exegol container")
 
         # Create group parameter for container selection
         groupArgs.append(GroupArg({"arg": self.containertag, "required": False},
@@ -60,11 +60,11 @@ class ImageSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create image selector arguments
-        self.imagetag = Option("imagetag",
-                               metavar="IMAGE",
-                               nargs='?',
-                               action="store",
-                               help="Tag used to target an Exegol image")
+        self.imagetag: Optional[Option] = Option("imagetag",
+                                                 metavar="IMAGE",
+                                                 nargs='?',
+                                                 action="store",
+                                                 help="Tag used to target an Exegol image")
 
         # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
@@ -101,10 +101,10 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.my_resources = Option("--disable-my-resources",
-                                       action="store_false",
-                                       default=True,
-                                       dest="my_resources",
-                                       help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
+                                   action="store_false",
+                                   default=True,
+                                   dest="my_resources",
+                                   help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
@@ -145,12 +145,18 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             default=[],
                             dest="ports",
                             help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+        self.hostname = Option("--hostname",
+                               dest="hostname",
+                               default=None,
+                               action="store",
+                               help="Set a custom hostname to the exegol container (default: exegol-<name>)")
         self.capabilities = Option("--cap",
                                    dest="capabilities",
                                    metavar='',  # Do not display available choices
                                    action="append",
                                    default=[],
-                                   choices={"NET_RAW", "MKNOD", "SETFCAP", "SYS_CHROOT", "NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_ADMIN", "SYS_RAWIO"},
+                                   choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",
+                                            "SYS_ADMIN", "LINUX_IMMUTABLE", "MAC_ADMIN", "SYSLOG"},
                                    help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
                                         "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
         self.privileged = Option("--privileged",
@@ -176,11 +182,17 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
+        self.comment = Option("--comment",
+                              dest="comment",
+                              action="store",
+                              help="The specified comment will be added to the container info")
+
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
+                                  {"arg": self.hostname, "required": False},
                                   {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
@@ -189,6 +201,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
+                                  {"arg": self.comment, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
