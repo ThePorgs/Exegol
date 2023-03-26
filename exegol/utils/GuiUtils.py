@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
