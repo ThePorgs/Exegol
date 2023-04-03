@@ -258,11 +258,13 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
-            logger.debug(f"Adding xhost ACL to local:{self.hostname}")
+
             if EnvInfo.isMacHost():
+                logger.debug(f"Adding xhost ACL to localhost")
                 # add xquartz inet ACL
                 with console.status(f"Starting XQuartz...", spinner_style="blue"):
                     os.system(f"xhost + localhost > /dev/null")
             else:
+                logger.debug(f"Adding xhost ACL to local:{self.hostname}")
                 # add linux local ACL
                 os.system(f"xhost +local:{self.hostname} > /dev/null")

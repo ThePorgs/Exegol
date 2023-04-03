@@ -773,21 +773,22 @@ class ContainerConfig:
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
             # TODO extend to docker desktop Windows
-            if EnvInfo.isMacHost() and EnvInfo.isDockerDesktop():
-                match = False
+            if EnvInfo.isMacHost():
                 # Add support for /etc
                 path_match = str(path)
                 if path_match.startswith("/etc/"):
                     path_match = path_match.replace("/etc/", "/private/etc/")
-                # Find a match
-                for resource in EnvInfo.getDockerDesktopResources():
-                    if path_match.startswith(resource):
-                        match = True
-                        break
-                if not match:
-                    logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
-                                    f"A parent directory must be shared in "
-                                    f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
+                if EnvInfo.isDockerDesktop():
+                    match = False
+                    # Find a match
+                    for resource in EnvInfo.getDockerDesktopResources():
+                        if path_match.startswith(resource):
+                            match = True
+                            break
+                    if not match:
+                        logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
+                                        f"A parent directory must be shared in "
+                                        f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
