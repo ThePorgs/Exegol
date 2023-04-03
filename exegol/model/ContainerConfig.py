@@ -777,6 +777,8 @@ class ContainerConfig:
                 # Add support for /etc
                 path_match = str(path)
                 if path_match.startswith("/etc/"):
+                    if EnvInfo.isOrbstack():
+                        raise CancelOperation(f"Orbstack dont support sharing /etc files through volume")
                     path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
