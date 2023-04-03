@@ -17,6 +17,7 @@ class GuiUtils:
     from the information of the system."""
 
     __distro_name = ""
+    default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
     def isGuiAvailable(cls) -> bool:
@@ -33,7 +34,7 @@ class GuiUtils:
         return True
 
     @classmethod
-    def getX11SocketPath(cls) -> str:
+    def getX11SocketPath(cls) -> Optional[str]:
         """
         Get the host path of the X11 socket
         :return:
@@ -50,8 +51,11 @@ class GuiUtils:
                 logger.debug(f"No WSL distro have been previously found: '{cls.__distro_name}'")
                 raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
                                       "without having performed the availability tests before.")
+        elif EnvInfo.isMacHost():
+            # Docker desktop don't support UNIX socket through volume, we are using XQuartz over the network until then
+            return None
         # Other distributions (Linux / Mac) have the default socket path
-        return "/tmp/.X11-unix"
+        return cls.default_x11_path
 
     @classmethod
     def getDisplayEnv(cls) -> str:
@@ -133,7 +137,7 @@ class GuiUtils:
         """
         Check if xquartz service is up by testing sockets
         """
-        socket_path = Path(cls.getX11SocketPath())
+        socket_path = Path(cls.default_x11_path)
         socket_x11_found = False
         if socket_path.is_dir():
             for file in socket_path.glob("*"):

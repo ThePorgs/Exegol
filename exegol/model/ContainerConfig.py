@@ -306,7 +306,9 @@ class ContainerConfig:
         if not self.__enable_gui:
             logger.verbose("Config: Enabling display sharing")
             try:
-                self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix", must_exist=True)
+                host_path = GuiUtils.getX11SocketPath()
+                if host_path is not None:
+                    self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
             except CancelOperation as e:
                 logger.warning(f"Graphical interface sharing could not be enabled: {e}")
                 return
