@@ -773,7 +773,7 @@ class ContainerConfig:
         if volume_type == 'bind' and not host_path.startswith("\\\\"):
             path = Path(host_path)
             # TODO extend to docker desktop Windows
-            if EnvInfo.isMacHost():
+            if EnvInfo.isMacHost() and EnvInfo.isDockerDesktop():
                 match = False
                 # Add support for /etc
                 path_match = str(path)
