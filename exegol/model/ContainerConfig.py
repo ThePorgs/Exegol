@@ -778,7 +778,7 @@ class ContainerConfig:
                 path_match = str(path)
                 if path_match.startswith("/etc/"):
                     if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"Orbstack dont support sharing /etc files through volume")
+                        raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
                     path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
@@ -839,7 +839,12 @@ class ContainerConfig:
                 readonly = False
             logger.debug(
                 f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
-            self.addVolume(host_path, container_path, readonly)
+            try:
+                self.addVolume(host_path, container_path, readonly)
+            except CancelOperation as e:
+                logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
+                if not Confirm("Do you want to continue without this volume ?", False):
+                    exit(0)
         else:
             logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
 
