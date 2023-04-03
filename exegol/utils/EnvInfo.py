@@ -149,6 +149,11 @@ class EnvInfo:
         return cls.__is_docker_desktop
 
     @classmethod
+    def isOrbstack(cls) -> bool:
+        """Return true if docker desktop is used on the host"""
+        return cls.__docker_engine == cls.DockerEngine.ORBSTACK
+
+    @classmethod
     def getDockerEngine(cls) -> str:
         """Return Docker engine type.
         Can be 'kernel', 'mac', 'wsl2' or 'hyper-v'"""

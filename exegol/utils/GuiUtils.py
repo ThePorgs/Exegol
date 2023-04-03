@@ -100,11 +100,12 @@ class GuiUtils:
                 logger.warning("Unable to start XQuartz service.")
                 return False
 
+        # The /tmp config is not necessary until you can use the unix socket with docker-desktop volume
         # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
-        if not cls.__checkDockerDesktopResourcesConfig():
-            logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
-                           "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
-            return False
+        #if EnvInfo.isDockerDesktop() and not cls.__checkDockerDesktopResourcesConfig():
+        #    logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
+        #                   "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
+        #    return False
         return True
 
     @staticmethod
