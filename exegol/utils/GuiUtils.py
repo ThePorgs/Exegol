@@ -17,6 +17,7 @@ class GuiUtils:
     from the information of the system."""
 
     __distro_name = ""
+    default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
     def isGuiAvailable(cls) -> bool:
@@ -33,7 +34,7 @@ class GuiUtils:
         return True
 
     @classmethod
-    def getX11SocketPath(cls) -> str:
+    def getX11SocketPath(cls) -> Optional[str]:
         """
         Get the host path of the X11 socket
         :return:
@@ -50,8 +51,11 @@ class GuiUtils:
                 logger.debug(f"No WSL distro have been previously found: '{cls.__distro_name}'")
                 raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
                                       "without having performed the availability tests before.")
+        elif EnvInfo.isMacHost():
+            # Docker desktop don't support UNIX socket through volume, we are using XQuartz over the network until then
+            return None
         # Other distributions (Linux / Mac) have the default socket path
-        return "/tmp/.X11-unix"
+        return cls.default_x11_path
 
     @classmethod
     def getDisplayEnv(cls) -> str:
@@ -62,6 +66,12 @@ class GuiUtils:
         if EnvInfo.isMacHost():
             # xquartz Mac mode
             return "host.docker.internal:0"
+
+        # Add ENV check is case of user don't have it, which will mess up GUI if fallback does not work
+        # @see https://github.com/ThePorgs/Exegol/issues/148
+        if os.getenv("DISPLAY") is None:
+            logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start")
+
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
 
@@ -90,11 +100,12 @@ class GuiUtils:
                 logger.warning("Unable to start XQuartz service.")
                 return False
 
+        # The /tmp config is not necessary until you can use the unix socket with docker-desktop volume
         # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
-        if not cls.__checkDockerDesktopResourcesConfig():
-            logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
-                           "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
-            return False
+        #if EnvInfo.isDockerDesktop() and not cls.__checkDockerDesktopResourcesConfig():
+        #    logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
+        #                   "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
+        #    return False
         return True
 
     @staticmethod
@@ -127,7 +138,7 @@ class GuiUtils:
         """
         Check if xquartz service is up by testing sockets
         """
-        socket_path = Path(cls.getX11SocketPath())
+        socket_path = Path(cls.default_x11_path)
         socket_x11_found = False
         if socket_path.is_dir():
             for file in socket_path.glob("*"):

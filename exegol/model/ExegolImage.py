@@ -166,11 +166,11 @@ class ExegolImage(SelectableInterface):
         if dockerhub_data is not None:
             self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
         self.__setLatestVersion(meta.version)
+        # Check if local image is sync with remote digest id (check up-to-date status)
+        self.__is_update = self.__digest == meta.meta_id
         if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
             self.__digest = meta.meta_id
-        # Check if local image is sync with remote digest id (check up-to-date status)
-        self.__is_update = self.__digest == meta.meta_id
         # Refresh status after metadata update
         self.syncStatus()
 

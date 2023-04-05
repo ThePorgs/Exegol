@@ -457,7 +457,6 @@ class DockerUtils:
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
-        logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
@@ -469,6 +468,7 @@ class DockerUtils:
                     cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
                 logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
                 cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
+            logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
         except APIError as err:

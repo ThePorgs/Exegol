@@ -1,6 +1,7 @@
-name: External PR tests
+name: Ext. PR tests & int. branches pushes
 
-# for external contribution pull requests, and internal pushes to specific branches (!= dev)
+# for external contribution pull requests,
+#  and internal pushes to specific branches (!= dev)
 
 on:
   pull_request:
@@ -15,6 +16,8 @@ on:
     paths-ignore:
       - ".github/**"
       - "**.md"
+
+# todo add whitelist paths like entrypoint_nightly.yml
 
 # creating a separate concurrency group for each PR
 # so that our "PR checks" are always running for the latest commit in the PR

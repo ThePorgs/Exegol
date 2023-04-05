@@ -36,7 +36,8 @@ class ContainerConfig:
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
     # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
-    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"]}
+    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"],
+                        "org.exegol.metadata.comment": ["comment", "getComment"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -68,6 +69,7 @@ class ContainerConfig:
         self.__start_delegate_mode: bool = False
         # Metadata attributes
         self.creation_date: Optional[str] = None
+        self.comment: Optional[str] = None
 
         if container is not None:
             self.__parseContainerConfig(container)
@@ -304,7 +306,9 @@ class ContainerConfig:
         if not self.__enable_gui:
             logger.verbose("Config: Enabling display sharing")
             try:
-                self.addVolume(GuiUtils.getX11SocketPath(), "/tmp/.X11-unix", must_exist=True)
+                host_path = GuiUtils.getX11SocketPath()
+                if host_path is not None:
+                    self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
             except CancelOperation as e:
                 logger.warning(f"Graphical interface sharing could not be enabled: {e}")
                 return
@@ -414,6 +418,13 @@ class ContainerConfig:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
             self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
+
+    def addComment(self, comment):
+        """Procedure to add comment to a container"""
+        if not self.comment:
+            logger.verbose("Config: Adding comment to container info")
+            self.comment = comment
+            self.addLabel("org.exegol.metadata.comment", comment)
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
@@ -763,20 +774,23 @@ class ContainerConfig:
             path = Path(host_path)
             # TODO extend to docker desktop Windows
             if EnvInfo.isMacHost():
-                match = False
                 # Add support for /etc
                 path_match = str(path)
                 if path_match.startswith("/etc/"):
+                    if EnvInfo.isOrbstack():
+                        raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
                     path_match = path_match.replace("/etc/", "/private/etc/")
-                # Find a match
-                for resource in EnvInfo.getDockerDesktopResources():
-                    if path_match.startswith(resource):
-                        match = True
-                        break
-                if not match:
-                    logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
-                                    f"A parent directory must be shared in "
-                                    f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
+                if EnvInfo.isDockerDesktop():
+                    match = False
+                    # Find a match
+                    for resource in EnvInfo.getDockerDesktopResources():
+                        if path_match.startswith(resource):
+                            match = True
+                            break
+                    if not match:
+                        logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
+                                        f"A parent directory must be shared in "
+                                        f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
@@ -825,7 +839,12 @@ class ContainerConfig:
                 readonly = False
             logger.debug(
                 f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
-            self.addVolume(host_path, container_path, readonly)
+            try:
+                self.addVolume(host_path, container_path, readonly)
+            except CancelOperation as e:
+                logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
+                if not Confirm("Do you want to continue without this volume ?", False):
+                    exit(0)
         else:
             logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
 
@@ -961,7 +980,9 @@ class ContainerConfig:
         """Labels config getter"""
         # Update metadata (from getter method) to the labels (on container creation)
         for label_name, refs in self.__label_metadata.items():
-            self.addLabel(label_name, getattr(self, refs[1])())
+            data = getattr(self, refs[1])()
+            if data is not None:
+                self.addLabel(label_name, data)
         return self.__labels
 
     def getCreationDate(self) -> str:
@@ -1048,6 +1069,11 @@ class ContainerConfig:
         if self.creation_date is None:
             return ""
         return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
+
+    def getComment(self) -> Optional[str]:
+        """Get the container comment. 
+        If no comment has been supplied, returns None."""
+        return self.comment
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
