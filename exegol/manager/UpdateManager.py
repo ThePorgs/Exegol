@@ -11,7 +11,7 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.ExegolModules import ExegolModules
-from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils

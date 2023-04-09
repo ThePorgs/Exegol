@@ -8,8 +8,8 @@ from exegol.console import ConsoleFormat
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog, console
 from exegol.utils.WebUtils import WebUtils
 

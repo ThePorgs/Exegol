@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path, PurePosixPath, PurePath
 from typing import Optional
 
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 

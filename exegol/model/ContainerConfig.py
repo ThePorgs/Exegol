@@ -15,10 +15,10 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation
 from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
-from exegol.utils.UserConfig import UserConfig
+from exegol.config.UserConfig import UserConfig
 
 
 class ContainerConfig:

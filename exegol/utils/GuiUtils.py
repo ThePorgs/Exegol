@@ -8,7 +8,7 @@ from typing import Optional
 
 from exegol.console.ExegolPrompt import Confirm
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 

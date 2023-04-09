@@ -3,7 +3,7 @@ from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
 from exegol.console.ConsoleFormat import richLen
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 

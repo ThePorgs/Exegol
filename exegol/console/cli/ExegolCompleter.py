@@ -1,8 +1,6 @@
 from argparse import Namespace
 from typing import Tuple
 
-from argcomplete import warn
-
 from exegol.utils.DockerUtils import DockerUtils
 
 

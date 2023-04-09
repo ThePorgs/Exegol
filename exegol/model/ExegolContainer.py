@@ -1,4 +1,3 @@
-import base64
 import os
 import shutil
 from typing import Optional, Dict, Sequence, Tuple
@@ -12,7 +11,7 @@ from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 

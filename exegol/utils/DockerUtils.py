@@ -16,10 +16,10 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.MetaImages import MetaImages
-from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
-from exegol.utils.UserConfig import UserConfig
+from exegol.config.UserConfig import UserConfig
 from exegol.utils.WebUtils import WebUtils
 
 

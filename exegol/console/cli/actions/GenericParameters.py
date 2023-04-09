@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from argcomplete.completers import EnvironCompleter, SuppressCompleter, DirectoriesCompleter, FilesCompleter
+from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, FilesCompleter
 
 from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
-from exegol.utils.UserConfig import UserConfig
+from exegol.config.UserConfig import UserConfig
 
 
 class ContainerSelector:

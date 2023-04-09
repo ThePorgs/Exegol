@@ -1,5 +1,4 @@
 import os
-import platform
 import sys
 from pathlib import Path
 from typing import Optional, List
@@ -7,8 +6,8 @@ from typing import Optional, List
 from git.exc import GitCommandError, RepositoryDirtyError
 
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
