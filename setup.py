@@ -50,9 +50,10 @@ setup(
     install_requires=[
         'docker~=6.0.0',
         'requests',
-        'rich>=11.2.0',
+        'rich~=13.3.0',
         'PyYAML',
-        'GitPython'
+        'GitPython',
+        'argcomplete~=2.1.1'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
