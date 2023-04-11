@@ -18,6 +18,7 @@ from exegol.utils import FsUtils
 from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
+from exegol.utils.SoundUtils import SoundUtils
 from exegol.utils.UserConfig import UserConfig
 
 
@@ -32,6 +33,7 @@ class ContainerConfig:
 
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+    __static_pulseaudio_envs = {"PULSE_SERVER": "unix:/run/user/0/pulse/native"}
 
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
@@ -42,6 +44,7 @@ class ContainerConfig:
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
         self.__enable_gui: bool = False
+        self.__enable_sound: bool = False
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
         self.__my_resources_path: str = "/opt/my-resources"
@@ -230,6 +233,16 @@ class ContainerConfig:
         if not self.__enable_gui:
             command_options.append("--disable-X11")
 
+        # Sound sharing
+        if self.__enable_sound:
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]sound sharing[/blue]?", False):
+                self.__disableSound()
+        elif Confirm("Do you want to [green]enable[/green] [blue]sound sharing[/blue]?", False):
+            self.enableSound()
+            # Command builder info
+        if self.__enable_sound:
+            command_options.append("--sound")
+
         # Timezone config
         if self.__share_timezone:
             if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
@@ -298,6 +311,35 @@ class ContainerConfig:
 
         return command_options
 
+    def enableSound(self):
+        """Procedure to enable sound feature"""
+        if not SoundUtils.isPulseAudioAvailable():
+            logger.error("Sound sharing feature is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
+            return
+        if not self.__enable_sound:
+            logger.verbose("Config: Enabling sound sharing")
+            try:
+                self.addVolume(SoundUtils.getPulseAudioSocketPath(), "/run/user/0/pulse/native", must_exist=False)
+                # fixme must_exist cannot be set to True since addVolume will fail, this needs to be fixed
+                self.addVolume(SoundUtils.getPulseAudioCookiePath(), "/root/.config/pulse/cookie", must_exist=True)
+            except CancelOperation as e:
+                logger.warning(f"Sound socket sharing could not be enabled: {e}")
+                return
+            for k, v in self.__static_pulseaudio_envs.items():
+                self.addEnv(k, v)
+            self.__enable_sound = True
+
+
+    def __disableSound(self):
+        """Procedure to disable sound feature (Only for interactive config)"""
+        if self.__enable_sound:
+            self.__enable_sound = False
+            logger.verbose("Config: Disabling sound sharing")
+            self.removeVolume(container_path="/run/user/0/pulse/native")
+            self.removeVolume(container_path="/root/.config/pulse/cookie")
+            for k in self.__static_gui_envs.keys():
+                self.removeEnv(k)
+
     def enableGUI(self):
         """Procedure to enable GUI feature"""
         if not GuiUtils.isGuiAvailable():
@@ -312,7 +354,6 @@ class ContainerConfig:
             except CancelOperation as e:
                 logger.warning(f"Graphical interface sharing could not be enabled: {e}")
                 return
-            # TODO support pulseaudio
             self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)

@@ -435,6 +435,8 @@ class ExegolManager:
         # Container configuration from user CLI options
         if ParametersManager().X11:
             config.enableGUI()
+        if ParametersManager().sound_sharing:
+            config.enableSound()
         if ParametersManager().share_timezone:
             config.enableSharedTimezone()
         config.setNetworkMode(ParametersManager().host_network)
