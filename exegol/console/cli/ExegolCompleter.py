@@ -1,6 +1,8 @@
 from argparse import Namespace
 from typing import Tuple
 
+from exegol.config.DataCache import DataCache
+from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.DockerUtils import DockerUtils
 
 
@@ -19,9 +21,10 @@ def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, 
     # Skip image completer when container hasn't been selected first (because parameters are all optional)
     if parsed_args is not None and str(parsed_args.action) == "start" and parsed_args.containertag is None:
         return ()
-    # data = [i.getName() for i in DockerUtils.listImages()]
-    # TODO create a fast-load image listing (need image caching)
-    data = ["full", "nightly", "ad", "web", "light", "osint"]
+    data = [i.get("name") for i in DataCache().get_images_data().data]
+    if len(data) == 0:
+        # Fallback with default data if the cache is not initialized yet
+        data = ["full", "nightly", "ad", "web", "light", "osint"]
     for obj in data:
         # filter data if needed
         if prefix and not obj.startswith(prefix):
@@ -30,14 +33,31 @@ def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, 
 
 
 def HybridContainerImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, ...]:
-    # warn(parsed_args)
+    """Hybrid completer for auto-complet. The selector on exec action is hybrid between image and container depending on the mode (tmp or not).
+    This completer will supply the adequate data."""
+    # "exec" parameter is filled first before the selector argument
+    # If "selector" is null but the selector parameter is set in the first exec slot, no longer need to supply completer options
     if parsed_args.selector is None and parsed_args.exec is not None and len(parsed_args.exec) > 0:
         return ()
+    # In "tmp" mode, the user must choose an image, otherwise it's a container
     if parsed_args.tmp:
         return ImageCompleter(prefix, parsed_args, **kwargs)
     else:
         return ContainerCompleter(prefix, parsed_args, **kwargs)
 
 
+def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, ...]:
+    """Completer function for build profile parameter. The completer must be trigger only when an image name have already been chosen."""
+    # The build profile completer must be trigger only when an image name have been set by user
+    if parsed_args is not None and parsed_args.imagetag is None:
+        return ()
+    data = list(UpdateManager.listBuildProfiles().keys())
+    for obj in data:
+        if prefix and not obj.startswith(prefix):
+            data.remove(obj)
+    return tuple(data)
+
+
 def VoidCompleter(**kwargs) -> Tuple:
+    """No option to auto-complet"""
     return ()

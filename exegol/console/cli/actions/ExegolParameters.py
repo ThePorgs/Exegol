@@ -1,4 +1,4 @@
-from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
 from exegol.console.cli.actions.Command import Command
 from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
@@ -103,7 +103,8 @@ class Install(Command, ImageSelector):
                                     choices=UpdateManager.listBuildProfiles().keys(),
                                     nargs="?",
                                     action="store",
-                                    help="Select the build profile used to create a local image.")
+                                    help="Select the build profile used to create a local image.",
+                                    completer=BuildProfileCompleter)
         self.build_log = Option("--build-log",
                                 dest="build_log",
                                 metavar="LOGFILE_PATH",

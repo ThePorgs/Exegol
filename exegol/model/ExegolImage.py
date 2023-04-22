@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any, Union
 from docker.models.containers import Container
 from docker.models.images import Image
 
+from exegol.config.DataCache import DataCache
 from exegol.console import ConsoleFormat
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.MetaImages import MetaImages
@@ -41,6 +42,7 @@ class ExegolImage(SelectableInterface):
         self.__entrypoint: Optional[Union[str, List[str]]] = None
         # Latest version available of the current image (or current version if version specific)
         self.__profile_version: str = version_parsed if version_parsed else "[bright_black]N/A[/bright_black]"
+        self.__profile_digest: str = "[bright_black]N/A[/bright_black]"
         # Version of the docker image installed
         self.__image_version: str = self.__profile_version
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
@@ -163,11 +165,15 @@ class ExegolImage(SelectableInterface):
             self.__version_specific = not meta.is_latest
             self.__name = meta.name
             self.__outdated = self.__version_specific
+        elif not meta.version:
+            # nightly image don't have a version in their tag. The latest version must be fetch from label on the registry directly
+            meta.version = WebUtils.getRemoteVersion(self.__name)
         if dockerhub_data is not None:
             self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
         self.__setLatestVersion(meta.version)
+        self.__setLatestRemoteId(meta.meta_id)
         # Check if local image is sync with remote digest id (check up-to-date status)
-        self.__is_update = self.__digest == meta.meta_id
+        self.__is_update = self.__digest == self.__profile_digest
         if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
             self.__digest = meta.meta_id
@@ -228,7 +234,7 @@ class ExegolImage(SelectableInterface):
             self.__alt_name = f'{original_name} [orange3](outdated' \
                               f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/orange3]'
 
-    def autoLoad(self) -> 'ExegolImage':
+    def autoLoad(self, from_cache: bool = True) -> 'ExegolImage':
         """If the current image is in an unknown state, it's possible to load remote data specifically."""
         if "Unknown" in self.__custom_status and \
                 not self.isVersionSpecific() and \
@@ -237,16 +243,28 @@ class ExegolImage(SelectableInterface):
             logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
             # Find remote metadata for the specific current image
             with console.status(f"Synchronization of the [green]{self.__name}[/green] image status...", spinner_style="blue"):
-                remote_digest = WebUtils.getMetaDigestId(self.__name)
-                version = WebUtils.getRemoteVersion(self.__name)
-            if remote_digest is not None and self.__digest:
-                # Compare current and remote latest digest for up-to-date status
-                self.__is_update = self.__digest == remote_digest
+                remote_digest = None
+                version = None
+                if from_cache:
+                    for img in DataCache().get_images_data().data:
+                        if img.name == self.__name:
+                            version = img.last_version
+                            remote_digest = img.digest
+                            break
+                if not from_cache or version is None:
+                    remote_digest = WebUtils.getMetaDigestId(self.__name)
+                    version = WebUtils.getRemoteVersion(self.__name)
+            if remote_digest is not None:
+                self.__setLatestRemoteId(remote_digest)
+                if self.__digest:
+                    # Compare current and remote latest digest for up-to-date status
+                    self.__is_update = self.__digest == self.__profile_digest
             if version is not None:
-                # Fallback to version matching
-                self.__is_update = self.__is_update or self.__image_version == version
                 # Set latest remote version
                 self.__setLatestVersion(version)
+                if remote_digest is None:
+                    # Fallback to version matching
+                    self.__is_update = self.__is_update or self.__image_version == version
             self.__custom_status = ""
         return self
 
@@ -437,6 +455,9 @@ class ExegolImage(SelectableInterface):
         return f"{self.__name} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
                (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
+    def __repr__(self):
+        return str(self)
+
     def setCustomStatus(self, status: str):
         """Manual image's status overwrite"""
         self.__custom_status = status
@@ -490,6 +511,14 @@ class ExegolImage(SelectableInterface):
     def getRemoteId(self) -> str:
         """Remote digest getter"""
         return self.__digest
+
+    def __setLatestRemoteId(self, digest: str):
+        """Remote latest digest getter"""
+        self.__profile_digest = digest
+
+    def getLatestRemoteId(self) -> str:
+        """Remote latest digest getter"""
+        return self.__profile_digest
 
     def __setImageId(self, image_id: Optional[str]):
         """Local image id setter"""

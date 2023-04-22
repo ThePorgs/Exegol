@@ -1,17 +1,17 @@
-import os
 import re
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from typing import Optional, Dict, cast, Tuple, Sequence
 
 from rich.prompt import Prompt
 
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.DataCache import DataCache
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.ExegolModules import ExegolModules
-from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, console, ExeLog
 from exegol.utils.GitUtils import GitUtils
@@ -20,9 +20,6 @@ from exegol.utils.WebUtils import WebUtils
 
 class UpdateManager:
     """Procedure class for updating the exegol tool and docker images"""
-    __UPDATE_TAG_FILE = ".update.meta"
-    __LAST_CHECK_FILE = ".lastcheck.meta"
-    __TIME_FORMAT = "%d/%m/%Y"
 
     @classmethod
     def updateImage(cls, tag: Optional[str] = None, install_mode: bool = False) -> Optional[ExegolImage]:
@@ -190,19 +187,14 @@ class UpdateManager:
     def __triggerUpdateCheck(cls):
         """Check if an update check must be triggered.
         Return true to check for new update"""
-        if (ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE).is_file():
-            with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'r') as metafile:
-                lastcheck = datetime.strptime(metafile.read().strip(), cls.__TIME_FORMAT)
-        else:
-            return True
-        logger.debug(f"Last update check: {lastcheck.strftime(cls.__TIME_FORMAT)}")
+        last_check = DataCache().get_wrapper_data().metadata.get_last_check()
+        logger.debug(f"Last wrapper update check: {last_check}")
         now = datetime.now()
-        if lastcheck > now:
+        if last_check > now:
             logger.debug("Incoherent last check date detected. Updating metafile.")
             return True
         # Check for a new update after at least 15 days
-        time_delta = timedelta(days=15)
-        return (lastcheck + time_delta) < now
+        return (last_check + timedelta(days=15)) < now
 
     @classmethod
     def __checkUpdate(cls) -> bool:
@@ -210,6 +202,8 @@ class UpdateManager:
         For the stable version, the latest version is fetch from GitHub release.
         In dev mode, git is used to find if there is some update available."""
         isUpToDate = True
+        remote_version = ""
+        current_version = ConstantConfig.version
         with console.status("Checking for wrapper update. Please wait.", spinner_style="blue"):
             if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
                 # Dev version have a letter in the version code and must check updates via git
@@ -217,6 +211,8 @@ class UpdateManager:
                 module = ExegolModules().getWrapperGit(fast_load=True)
                 if module.isAvailable:
                     isUpToDate = module.isUpToDate()
+                    remote_version = str(module.get_latest_commit())[:8]
+                    current_version = str(module.get_current_commit())[:8]
                 else:
                     # If Exegol have not been installed from git clone. Auto-check update in this case is only available from mates release
                     logger.verbose("Auto-update checking is not available in the current context")
@@ -234,15 +230,15 @@ class UpdateManager:
                     return False
 
         if not isUpToDate:
-            cls.__tagUpdateAvailable()
-        cls.__updateLastCheckFile()
+            cls.__tagUpdateAvailable(remote_version, current_version)
+        cls.__updateLastCheckTimestamp()
         return not isUpToDate
 
     @classmethod
-    def __updateLastCheckFile(cls):
-        """Update the .lastcheck.meta file with the current date to avoid multiple update checks."""
-        with open(ConstantConfig.exegol_config_path / cls.__LAST_CHECK_FILE, 'w') as metafile:
-            metafile.write(date.today().strftime(cls.__TIME_FORMAT))
+    def __updateLastCheckTimestamp(cls):
+        """Update the last_check metadata timestamp with the current date to avoid multiple update checks."""
+        DataCache().get_wrapper_data().metadata.update_last_check()
+        DataCache().save_updates()
 
     @classmethod
     def __compareVersion(cls, version) -> bool:
@@ -260,39 +256,43 @@ class UpdateManager:
         return isUpToDate
 
     @classmethod
-    def __tagUpdateAvailable(cls):
-        """Create the 'update available' cache file."""
-        if not ConstantConfig.exegol_config_path.is_dir():
-            logger.verbose(f"Creating exegol home folder: {ConstantConfig.exegol_config_path}")
-            ConstantConfig.exegol_config_path.mkdir()
-        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
-        if not tag_file.is_file():
-            with open(tag_file, 'w') as lockfile:
-                lockfile.write(ConstantConfig.version)
+    def __get_current_version(cls):
+        """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
+        current_version = ConstantConfig.version
+        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+            module = ExegolModules().getWrapperGit(fast_load=True)
+            if module.isAvailable:
+                current_version = str(module.get_current_commit())[:8]
+        return current_version
+
+    @classmethod
+    def __tagUpdateAvailable(cls, latest_version, current_version=None):
+        """Update the 'update available' cache data."""
+        DataCache().get_wrapper_data().last_version = latest_version
+        DataCache().get_wrapper_data().current_version = cls.__get_current_version() if current_version is None else current_version
 
     @classmethod
     def isUpdateTag(cls) -> bool:
         """Check if the cache file is present to announce an available update of the exegol wrapper."""
-        if (ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE).is_file():
-            # Fetch the previously locked version
-            with open(ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE, 'r') as lockfile:
-                locked_version = lockfile.read()
-            # If the current version is the same, no external update had occurred
-            if locked_version == ConstantConfig.version:
-                return True
-            else:
-                # If the version changed, exegol have been updated externally (via pip for example)
-                cls.__untagUpdateAvailable()
-                return False
+        current_version = cls.__get_current_version()
+        wrapper_data = DataCache().get_wrapper_data()
+        # Check if a latest version exist and if the current version is the same, no external update had occurred
+        if wrapper_data.last_version != current_version and wrapper_data.current_version == current_version:
+            return True
         else:
+            # If the version changed, exegol have been updated externally (via pip for example)
+            if wrapper_data.current_version != current_version:
+                cls.__untagUpdateAvailable(current_version)
             return False
 
     @classmethod
-    def __untagUpdateAvailable(cls):
-        """Remove the 'update available' cache file."""
-        tag_file = ConstantConfig.exegol_config_path / cls.__UPDATE_TAG_FILE
-        if tag_file.is_file():
-            os.remove(tag_file)
+    def __untagUpdateAvailable(cls, current_version: Optional[str] = None):
+        """Reset the latest version to the current version"""
+        if current_version is None:
+            current_version = cls.__get_current_version()
+        DataCache().get_wrapper_data().last_version = current_version
+        DataCache().get_wrapper_data().current_version = current_version
+        DataCache().save_updates()
 
     @classmethod
     def __buildSource(cls, build_name: Optional[str] = None) -> str:

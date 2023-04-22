@@ -5,9 +5,9 @@ from typing import Optional, List
 
 from git.exc import GitCommandError, RepositoryDirtyError
 
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ExeLog import logger, console
 
 
@@ -182,17 +182,9 @@ class GitUtils:
         assert self.__gitRepo is not None
         assert self.__gitRemote is not None
         # Get last local commit
-        current_commit = self.__gitRepo.heads[branch].commit
+        current_commit = self.get_current_commit()
         # Get last remote commit
-        try:
-            fetch_result = self.__gitRemote.fetch()
-        except GitCommandError:
-            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
-            return True
-        try:
-            self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
-        except IndexError:
-            logger.warning("The selected branch is local and cannot be updated.")
+        if not self.__fetch_update(branch):
             return True
 
         logger.debug(f"Fetch flags : {self.__fetchBranchInfo.flags}")
@@ -214,9 +206,40 @@ class GitUtils:
         if self.__fetchBranchInfo.flags & FetchInfo.NEW_TAG != 0:
             logger.debug("NEW TAG flag detected")
 
-        remote_commit = self.__fetchBranchInfo.commit
+        remote_commit = self.get_latest_commit()
         # Check if remote_commit is an ancestor of the last local commit (check if there is local commit ahead)
         return self.__gitRepo.is_ancestor(remote_commit, current_commit)
+
+    def __fetch_update(self, branch: Optional[str] = None) -> bool:
+        """Fetch latest update from remote"""
+        try:
+            fetch_result = self.__gitRemote.fetch()
+        except GitCommandError:
+            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
+            return False
+        if branch is None:
+            branch = self.getCurrentBranch()
+        try:
+            self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
+        except IndexError:
+            logger.warning("The selected branch is local and cannot be updated.")
+            return False
+        return True
+
+    def get_current_commit(self):
+        """Fetch current commit id on the current branch."""
+        assert self.isAvailable
+        branch = self.getCurrentBranch()
+        # Get last local commit
+        return self.__gitRepo.heads[branch].commit
+
+    def get_latest_commit(self):
+        """Fetch latest remote commit id on the current branch."""
+        assert self.isAvailable
+        assert not ParametersManager().offline_mode
+        if self.__fetchBranchInfo is None:
+            self.__fetch_update()
+        return self.__fetchBranchInfo.commit
 
     def update(self) -> bool:
         """Update local git repository within current branch"""

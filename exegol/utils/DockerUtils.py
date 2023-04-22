@@ -9,6 +9,7 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 from requests import ReadTimeout
 
+from exegol.config.DataCache import DataCache
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
@@ -219,6 +220,9 @@ class DockerUtils:
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)
         result = cls.__images
+        assert result is not None
+        # Caching latest images
+        DataCache().update_image_cache([img for img in result if not img.isVersionSpecific()])
         if not (logger.isEnabledFor(ExeLog.VERBOSE) or include_locked):
             # ToBeRemoved images are only shown in verbose mode
             result = [i for i in result if not i.isLocked()]
