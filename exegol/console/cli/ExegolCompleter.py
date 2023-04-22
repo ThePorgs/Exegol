@@ -18,10 +18,16 @@ def ContainerCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[s
 
 def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, ...]:
     """Function to dynamically load an image list for CLI autocompletion purpose"""
-    # Skip image completer when container hasn't been selected first (because parameters are all optional)
+    # Skip image completer when container hasn't been selected first (because parameters are all optional, parameters order is not working)
     if parsed_args is not None and str(parsed_args.action) == "start" and parsed_args.containertag is None:
         return ()
-    data = [i.get("name") for i in DataCache().get_images_data().data]
+    try:
+        if parsed_args is not None and str(parsed_args.action) == "install":
+            data = [img_cache.name for img_cache in DataCache().get_images_data().data if img_cache.source == "remote"]
+        else:
+            data = [img_cache.name for img_cache in DataCache().get_images_data().data]
+    except Exception as e:
+        data = []
     if len(data) == 0:
         # Fallback with default data if the cache is not initialized yet
         data = ["full", "nightly", "ad", "web", "light", "osint"]

@@ -85,11 +85,9 @@ class WrapperCacheModel:
 class CacheDB:
     """Main object of the exegol cache"""
 
-    def __init__(self, images: Optional[List[ImageCacheModel]] = None):
-        if images is None:
-            images = []
+    def __init__(self):
         self.wrapper: WrapperCacheModel = WrapperCacheModel()
-        self.images: ImagesCacheModel = ImagesCacheModel(images)
+        self.images: ImagesCacheModel = ImagesCacheModel([])
 
     def load(self, wrapper: Dict, images: Dict):
         """Load the CacheDB data from a raw Dict object"""
