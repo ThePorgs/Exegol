@@ -5,7 +5,7 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.1.2b1"
+    version: str = "4.1.2b2"
 
     # Exegol documentation link
     documentation: str = "https://exegol.rtfd.io/"
