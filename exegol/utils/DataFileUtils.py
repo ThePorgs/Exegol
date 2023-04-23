@@ -6,7 +6,7 @@ from typing import Union, Dict, cast, Optional, Set, Any
 import yaml
 import yaml.parser
 
-from exegol import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 
@@ -28,10 +28,10 @@ class DataFileUtils:
         """
         if type(file_path) is str:
             file_path = ConstantConfig.exegol_config_path / file_path
-        if file_type not in ["yml", "json"]:
-            raise NotImplemented(f"The file type '{file_type}' is not implemented")
+        if file_type not in ["yml", "yaml", "json"]:
+            raise NotImplementedError(f"The file type '{file_type}' is not implemented")
         # Config file options
-        self._file_path: Path = file_path
+        self._file_path: Path = cast(Path, file_path)
         self.__file_type: str = file_type
         self.__config_upgrade: bool = False
 

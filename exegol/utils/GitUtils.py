@@ -187,6 +187,8 @@ class GitUtils:
         if not self.__fetch_update(branch):
             return True
 
+        assert self.__fetchBranchInfo is not None
+
         logger.debug(f"Fetch flags : {self.__fetchBranchInfo.flags}")
         logger.debug(f"Fetch note : {self.__fetchBranchInfo.note}")
         logger.debug(f"Fetch old commit : {self.__fetchBranchInfo.old_commit}")
@@ -212,6 +214,8 @@ class GitUtils:
 
     def __fetch_update(self, branch: Optional[str] = None) -> bool:
         """Fetch latest update from remote"""
+        if self.__gitRemote is None:
+            return False
         try:
             fetch_result = self.__gitRemote.fetch()
         except GitCommandError:
@@ -229,7 +233,10 @@ class GitUtils:
     def get_current_commit(self):
         """Fetch current commit id on the current branch."""
         assert self.isAvailable
+        assert self.__gitRepo is not None
         branch = self.getCurrentBranch()
+        if branch is None:
+            branch = "master"
         # Get last local commit
         return self.__gitRepo.heads[branch].commit
 
@@ -239,6 +246,7 @@ class GitUtils:
         assert not ParametersManager().offline_mode
         if self.__fetchBranchInfo is None:
             self.__fetch_update()
+        assert self.__fetchBranchInfo is not None
         return self.__fetchBranchInfo.commit
 
     def update(self) -> bool:

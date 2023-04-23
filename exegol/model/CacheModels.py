@@ -1,7 +1,7 @@
 import datetime
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Sequence, cast
 
-from exegol import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 
 
 class MetadataCacheModel:
@@ -39,7 +39,7 @@ class ImageCacheModel:
 class ImagesCacheModel:
     """This model can store multiple image and the date of the last update"""
 
-    def __init__(self, data: List[Union[ImageCacheModel, Dict]], metadata: Optional[Dict] = None):
+    def __init__(self, data: Sequence[Union[ImageCacheModel, Dict]], metadata: Optional[Dict] = None):
         # An old default date will be used until data are provided
         default_date: Optional[str] = "01/01/1990" if len(data) == 0 else None
         # Create or load (meta)data
@@ -48,11 +48,11 @@ class ImagesCacheModel:
         if len(data) > 0:
             if type(data[0]) is dict:
                 for img in data:
-                    self.data.append(ImageCacheModel(**img))
+                    self.data.append(ImageCacheModel(**cast(Dict, img)))
             elif type(data[0]) is ImageCacheModel:
-                self.data = data
+                self.data = cast(List[ImageCacheModel], data)
             else:
-                self.data = data
+                raise NotImplementedError
 
     def __str__(self) -> str:
         return f"{len(self.data)} images ({self.metadata.last_check})"

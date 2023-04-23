@@ -167,11 +167,14 @@ class ExegolImage(SelectableInterface):
             self.__outdated = self.__version_specific
         elif not meta.version:
             # nightly image don't have a version in their tag. The latest version must be fetch from label on the registry directly
-            meta.version = WebUtils.getRemoteVersion(self.__name)
+            fetch_version = WebUtils.getRemoteVersion(self.__name)
+            if fetch_version:
+                meta.version = fetch_version
         if dockerhub_data is not None:
             self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
         self.__setLatestVersion(meta.version)
-        self.__setLatestRemoteId(meta.meta_id)
+        if meta.meta_id:
+            self.__setLatestRemoteId(meta.meta_id)
         # Check if local image is sync with remote digest id (check up-to-date status)
         self.__is_update = self.__digest == self.__profile_digest
         if not self.__digest and meta.is_latest and meta.meta_id:
