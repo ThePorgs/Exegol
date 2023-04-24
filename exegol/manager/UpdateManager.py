@@ -177,24 +177,12 @@ class UpdateManager:
     def checkForWrapperUpdate(cls) -> bool:
         """Check if there is an exegol wrapper update available.
         Return true if an update is available."""
+        logger.debug(f"Last wrapper update check: {DataCache().get_wrapper_data().metadata.get_last_check()}")
         # Skipping update check
-        if cls.__triggerUpdateCheck() and not ParametersManager().offline_mode:
+        if DataCache().get_wrapper_data().metadata.is_outdated() and not ParametersManager().offline_mode:
             logger.debug("Running update check")
             return cls.__checkUpdate()
         return False
-
-    @classmethod
-    def __triggerUpdateCheck(cls):
-        """Check if an update check must be triggered.
-        Return true to check for new update"""
-        last_check = DataCache().get_wrapper_data().metadata.get_last_check()
-        logger.debug(f"Last wrapper update check: {last_check}")
-        now = datetime.now()
-        if last_check > now:
-            logger.debug("Incoherent last check date detected. Updating metafile.")
-            return True
-        # Check for a new update after at least 15 days
-        return (last_check + timedelta(days=15)) < now
 
     @classmethod
     def __checkUpdate(cls) -> bool:

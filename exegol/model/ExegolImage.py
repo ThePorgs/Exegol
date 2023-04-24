@@ -249,11 +249,14 @@ class ExegolImage(SelectableInterface):
                 remote_digest = None
                 version = None
                 if from_cache:
-                    for img in DataCache().get_images_data().data:
-                        if img.name == self.__name:
-                            version = img.last_version
-                            remote_digest = img.digest
-                            break
+                    cache_images = DataCache().get_images_data()
+                    # Cache can be directly use for 3 days after this delay a direct call must be made to check for update. Use info action to update the cache.
+                    if not cache_images.metadata.is_outdated(days=3):
+                        for img in cache_images.data:
+                            if img.name == self.__name:
+                                version = img.last_version
+                                remote_digest = img.digest
+                                break
                 if not from_cache or version is None:
                     remote_digest = WebUtils.getMetaDigestId(self.__name)
                     version = WebUtils.getRemoteVersion(self.__name)

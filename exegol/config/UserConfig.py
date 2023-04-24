@@ -4,7 +4,6 @@ from typing import List
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.utils.DataFileUtils import DataFileUtils
-from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
 
@@ -82,8 +81,6 @@ config:
             return ConstantConfig.exegol_config_path / folder_name
 
     def _process_data(self):
-        # TODO bug: logger verbosity not set at this time
-        logger.debug(self._raw_data)
         # Volume section
         volumes_data = self._raw_data.get("volumes", {})
         # Catch existing but empty section

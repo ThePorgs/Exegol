@@ -2,6 +2,7 @@ import datetime
 from typing import List, Optional, Dict, Union, Sequence, cast
 
 from exegol.config.ConstantConfig import ConstantConfig
+from exegol.utils.ExeLog import logger
 
 
 class MetadataCacheModel:
@@ -11,13 +12,23 @@ class MetadataCacheModel:
         self.__TIME_FORMAT = time_format
         if last_check is None:
             last_check = datetime.date.today().strftime(self.__TIME_FORMAT)
-        self.last_check = last_check
+        self.last_check: str = last_check
 
     def update_last_check(self):
         self.last_check = datetime.date.today().strftime(self.__TIME_FORMAT)
 
-    def get_last_check(self):
+    def get_last_check(self) -> datetime.datetime:
         return datetime.datetime.strptime(self.last_check, self.__TIME_FORMAT)
+
+    def is_outdated(self, days: int = 15, hours: int = 0):
+        """Check if the cache must be considered as expired."""
+        now = datetime.datetime.now()
+        last_check = self.get_last_check()
+        if last_check > now:
+            logger.debug("Incoherent last check date detected. Metadata must be updated.")
+            return True
+        # Check if the last update is older than the max delay configures (by default, return True after at least 15 days)
+        return (last_check + datetime.timedelta(days=days, hours=hours)) < now
 
 
 class ImageCacheModel:
