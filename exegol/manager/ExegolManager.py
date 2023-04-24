@@ -3,6 +3,9 @@ import logging
 import os
 from typing import Union, List, Tuple, Optional, cast, Sequence
 
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
+from exegol.config.UserConfig import UserConfig
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import Confirm
@@ -17,11 +20,8 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.ExegolModules import ExegolModules
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.DockerUtils import DockerUtils
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog, console
-from exegol.config.UserConfig import UserConfig
 
 
 class ExegolManager:
@@ -109,6 +109,17 @@ class ExegolManager:
         assert container is not None and type(container) is list
         for c in container:
             c.stop(timeout=2)
+
+    @classmethod
+    def restart(cls):
+        """Stop and start an exegol container"""
+        ExegolManager.print_version()
+        container = cls.__loadOrCreateContainer(must_exist=True)
+        if container:
+            container.stop(timeout=5)
+            container.start()
+            logger.success(f"Container [green]{container.name}[/green] successfully restarted!")
+            container.spawnShell()
 
     @classmethod
     def install(cls):
@@ -222,7 +233,8 @@ class ExegolManager:
     @classmethod
     def print_sponsors(cls):
         """Show exegol sponsors"""
-        logger.success("""We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
+        logger.success(
+            """We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
 
     @classmethod

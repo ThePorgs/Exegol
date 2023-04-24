@@ -2,9 +2,9 @@ from typing import List, Optional
 
 from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, FilesCompleter
 
+from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
-from exegol.config.UserConfig import UserConfig
 
 
 class ContainerSelector:
@@ -43,7 +43,7 @@ class ContainerMultiSelector:
 
 class ContainerStart:
     """Generic parameter class for container selection.
-    This generic class is used by start and exec actions"""
+    This generic class is used by start, restart and exec actions"""
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create options on container start
@@ -59,6 +59,49 @@ class ContainerStart:
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
                                   title="[blue]Container start options[/blue]"))
+
+
+class ContainerSpawnShell(ContainerStart):
+    """Generic parameter class to spawn a shell on an exegol container.
+    This generic class is used by start and restart"""
+
+    def __init__(self, groupArgs: List[GroupArg]):
+        # Spawn container shell arguments
+        self.shell = Option("-s", "--shell",
+                            dest="shell",
+                            action="store",
+                            choices=UserConfig.start_shell_options,
+                            default=UserConfig().default_start_shell,
+                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
+
+        self.log = Option("-l", "--log",
+                          dest="log",
+                          action="store_true",
+                          default=False,
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
+        self.log_method = Option("--log-method",
+                                 dest="log_method",
+                                 action="store",
+                                 choices=UserConfig.shell_logging_method_options,
+                                 default=UserConfig().shell_logging_method,
+                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
+        self.log_compress = Option("--log-compress",
+                                   dest="log_compress",
+                                   action="store_true",
+                                   default=False,
+                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
+
+        # Group dedicated to shell logging feature
+        groupArgs.append(GroupArg({"arg": self.log, "required": False},
+                                  {"arg": self.log_method, "required": False},
+                                  {"arg": self.log_compress, "required": False},
+                                  title="[blue]Container creation Shell logging options[/blue]"))
+
+        ContainerStart.__init__(self, groupArgs)
+
+        # Create group parameter for container selection
+        groupArgs.append(GroupArg({"arg": self.shell, "required": False},
+                                  title="[bold cyan]Start[/bold cyan] [blue]specific options[/blue]"))
 
 
 class ImageSelector:
