@@ -40,7 +40,8 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
         super().__init__(".datacache", "json")
 
     def _process_data(self):
-        self.__cache_data.load(**self._raw_data)
+        if len(self._raw_data) >= 2:
+            self.__cache_data.load(**self._raw_data)
 
     def _build_file_content(self) -> str:
         return json.dumps(self.__cache_data, cls=self.ObjectJSONEncoder)

@@ -1,5 +1,5 @@
 import json
-from json import JSONEncoder
+from json import JSONEncoder, JSONDecodeError
 from pathlib import Path
 from typing import Union, Dict, cast, Optional, Set, Any
 
@@ -82,8 +82,9 @@ class DataFileUtils:
                 elif self.__file_type == "json":
                     data = json.load(file)
             except yaml.parser.ParserError:
-                # TODO add json errors
                 logger.error("Error while parsing exegol config file ! Check for syntax error.")
+            except JSONDecodeError:
+                logger.error(f"Error while parsing exegol data file {self._file_path} ! Check for syntax error.")
         self._raw_data = data
         self._process_data()
 
