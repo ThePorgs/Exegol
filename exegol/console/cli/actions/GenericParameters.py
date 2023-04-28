@@ -180,7 +180,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      dest="workspace_path",
                                      action="store",
                                      help="The specified host folder will be linked to the /workspace folder in the container",
-                                     completer=DirectoriesCompleter)
+                                     completer=DirectoriesCompleter())
         self.update_fs_perms = Option("-fs", "--update-fs",
                                       action="store_true",
                                       default=False,
@@ -230,7 +230,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=None,
                           action="store",
                           help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
-                          completer=FilesCompleter(("ovpn")))
+                          completer=FilesCompleter(["ovpn"], directories=True))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,
@@ -240,7 +240,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.comment = Option("--comment",
                               dest="comment",
                               action="store",
-                              help="The specified comment will be added to the container info")
+                              help="The specified comment will be added to the container info",
+                              completer=VoidCompleter)
 
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
