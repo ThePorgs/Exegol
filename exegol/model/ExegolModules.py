@@ -76,7 +76,7 @@ class ExegolModules(metaclass=MetaSingleton):
                     raise CancelOperation
             else:
                 self.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
-                if not self.getResourcesGit().clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
+                if not self.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
                     # Error during install, raise error to avoid update process
                     raise CancelOperation
         else:
