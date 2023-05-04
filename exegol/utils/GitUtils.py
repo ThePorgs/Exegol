@@ -8,7 +8,7 @@ from rich.progress import TextColumn, BarColumn
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
-from exegol.console.MetaGitProgress import MetaGitProgress, git_progress_update
+from exegol.console.MetaGitProgress import MetaGitProgress, clone_update_progress, SubmoduleUpdateProgress
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ExeLog import logger, console
 
@@ -124,7 +124,7 @@ class GitUtils:
                                  "[progress.percentage]{task.percentage:>3.1f}%",
                                  "[bold]{task.completed}/{task.total}[/bold]") as progress:
                 progress.add_task(f"[bold red]Cloning {self.getName()} git repository", start=True)
-                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options, progress=git_progress_update)
+                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options, progress=clone_update_progress)
                 progress.remove_task(progress.tasks[0].id)
             logger.success(f"The {self.getName()} git repository have been successfully clone!")
         except GitCommandError as e:
@@ -303,6 +303,7 @@ class GitUtils:
                 s.update(status=f"Downloading git submodules [green]{current_sub.name}[/green]")
                 from git.exc import GitCommandError
                 try:
+                    # TODO add TUI with progress
                     current_sub.update(recursive=True)
                 except GitCommandError as e:
                     error = GitUtils.formatStderr(e.stderr)
@@ -333,9 +334,14 @@ class GitUtils:
         try:
             from git.exc import GitCommandError
             try:
-                # TODO add TUI progress
-                with console.status(f"Downloading submodule [green]{name}[/green]", spinner_style="blue"):
-                    submodule.update(to_latest_revision=True)
+                with MetaGitProgress(TextColumn("{task.description}", justify="left"),
+                                     BarColumn(bar_width=None),
+                                     "•",
+                                     "[progress.percentage]{task.percentage:>3.1f}%",
+                                     "[bold]{task.completed}/{task.total}[/bold]") as progress:
+                    progress.add_task(f"[bold red]Downloading submodule [green]{name}[/green]", start=True)
+                    submodule.update(to_latest_revision=True, progress=SubmoduleUpdateProgress())
+                    progress.remove_task(progress.tasks[0].id)
             except GitCommandError as e:
                 logger.debug(f"Unable tu update git submodule {name}: {e}")
                 if "unable to access" in e.stderr:

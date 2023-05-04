@@ -1,6 +1,6 @@
 from typing import Union, Optional
 
-from git import RemoteProgress
+from git import RemoteProgress, UpdateProgress
 from rich.console import Console
 from rich.progress import Progress, ProgressColumn, GetTimeCallable
 
@@ -9,7 +9,33 @@ from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
 
-def git_progress_update(op_code: int, cur_count: Union[str, float], max_count: Union[str, float, None] = None, message: str = '') -> None:
+class SubmoduleUpdateProgress(UpdateProgress):
+
+    def update(self, op_code: int, cur_count: Union[str, float], max_count: Union[str, float, None] = None, message: str = "") -> None:
+        # Full debug log
+        logger.debug(f"[{op_code}] {cur_count}/{max_count} : '{message}'")
+        if message:
+            logger.verbose(f"{message}")
+        if max_count is None:
+            max_count = 0
+        max_count = int(max_count)
+        cur_count = int(cur_count)
+        main_task = MetaGitProgress().tasks[0]
+        step = 0
+
+        # CLONING
+        if MetaGitProgress.handle_task(op_code, self.CLONE, "Cloning", max_count, cur_count):
+            step = 1
+
+        # UPDWKTREE
+        if MetaGitProgress.handle_task(op_code, self.UPDWKTREE, "Updating local git registry", max_count, cur_count):
+            step = 2
+
+        main_task.total = 2
+        main_task.completed = step
+
+
+def clone_update_progress(op_code: int, cur_count: Union[str, float], max_count: Union[str, float, None] = None, message: str = '') -> None:
     # Full debug log
     # logger.debug(f"[{op_code}] {cur_count}/{max_count} : '{message}'")
     if max_count is None:
@@ -54,8 +80,8 @@ class MetaGitProgress(Progress, metaclass=MetaSingleton):
                          redirect_stdout=redirect_stdout, redirect_stderr=redirect_stderr, get_time=get_time, disable=disable, expand=expand)
 
     @staticmethod
-    def handle_task(op_code, ref_op_code, description, total, completed, message) -> bool:
-        description = "[bold gold1]"+description
+    def handle_task(op_code, ref_op_code, description: str, total: int, completed: int, message: str = '') -> bool:
+        description = "[bold gold1]" + description
         # filter op code
         if op_code & ref_op_code != 0:
             # new task to create
