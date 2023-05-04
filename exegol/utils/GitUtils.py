@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Optional, List
 
 from git.exc import GitCommandError, RepositoryDirtyError
+from rich.progress import TextColumn, BarColumn
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
+from exegol.console.MetaGitProgress import MetaGitProgress, git_progress_update
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.utils.ExeLog import logger, console
 
@@ -114,11 +116,17 @@ class GitUtils:
         custom_options = []
         if optimize_disk_space:
             custom_options.append('--depth=1')
-        # TODO add progress bar via TUI
         from git import GitCommandError
         try:
-            with console.status(f"Downloading {self.getName()} git repository", spinner_style="blue"):
-                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+            with MetaGitProgress(TextColumn("{task.description}", justify="left"),
+                                 BarColumn(bar_width=None),
+                                 "•",
+                                 "[progress.percentage]{task.percentage:>3.1f}%",
+                                 "[bold]{task.completed}/{task.total}[/bold]") as progress:
+                progress.add_task(f"[bold red]Cloning {self.getName()} git repository", start=True)
+                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options, progress=git_progress_update)
+                progress.remove_task(progress.tasks[0].id)
+            logger.success(f"The {self.getName()} git repository have been successfully clone!")
         except GitCommandError as e:
             # GitPython user \n only
             error = GitUtils.formatStderr(e.stderr)
