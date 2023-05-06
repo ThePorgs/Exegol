@@ -1,8 +1,9 @@
-from typing import Union, Optional
+from typing import Union, Optional, Dict
 
-from git import RemoteProgress, UpdateProgress
+from git import RemoteProgress
+from git.objects.submodule.base import UpdateProgress
 from rich.console import Console
-from rich.progress import Progress, ProgressColumn, GetTimeCallable
+from rich.progress import Progress, ProgressColumn, GetTimeCallable, Task
 
 from exegol.utils.ExeLog import console as exelog_console
 from exegol.utils.ExeLog import logger
@@ -74,13 +75,13 @@ class MetaGitProgress(Progress, metaclass=MetaSingleton):
                  transient: bool = False, redirect_stdout: bool = True, redirect_stderr: bool = True, get_time: Optional[GetTimeCallable] = None, disable: bool = False, expand: bool = False) -> None:
         if console is None:
             console = exelog_console
-        self.task_dict = {}
+        self.task_dict: Dict[int, Task] = {}
 
         super().__init__(*columns, console=console, auto_refresh=auto_refresh, refresh_per_second=refresh_per_second, speed_estimate_period=speed_estimate_period, transient=transient,
                          redirect_stdout=redirect_stdout, redirect_stderr=redirect_stderr, get_time=get_time, disable=disable, expand=expand)
 
     @staticmethod
-    def handle_task(op_code, ref_op_code, description: str, total: int, completed: int, message: str = '') -> bool:
+    def handle_task(op_code: int, ref_op_code: int, description: str, total: int, completed: int, message: str = '') -> bool:
         description = "[bold gold1]" + description
         # filter op code
         if op_code & ref_op_code != 0:
@@ -90,10 +91,11 @@ class MetaGitProgress(Progress, metaclass=MetaSingleton):
                 MetaGitProgress().task_dict[ref_op_code] = MetaGitProgress().tasks[-1]
             else:
                 counting_task = MetaGitProgress().task_dict.get(ref_op_code)
-                counting_task.completed = completed
-                if message:
-                    description += f" • [green4]{message}"
-                counting_task.description = description
+                if counting_task is not None:
+                    counting_task.completed = completed
+                    if message:
+                        description += f" • [green4]{message}"
+                    counting_task.description = description
             if op_code & RemoteProgress.END != 0:
                 MetaGitProgress().remove_task(MetaGitProgress().task_dict[ref_op_code].id)
             return True

@@ -114,7 +114,7 @@ class ExegolManager:
     def restart(cls):
         """Stop and start an exegol container"""
         ExegolManager.print_version()
-        container = cls.__loadOrCreateContainer(must_exist=True)
+        container = cast(ExegolContainer, cls.__loadOrCreateContainer(must_exist=True))
         if container:
             container.stop(timeout=5)
             container.start()
