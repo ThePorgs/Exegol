@@ -11,7 +11,7 @@ def ContainerCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[s
     data = [c.name for c in DockerUtils.listContainers()]
     for obj in data:
         # filter data if needed
-        if prefix and not obj.startswith(prefix):
+        if prefix and not obj.lower().startswith(prefix.lower()):
             data.remove(obj)
     return tuple(data)
 
@@ -33,7 +33,7 @@ def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, 
         data = ["full", "nightly", "ad", "web", "light", "osint"]
     for obj in data:
         # filter data if needed
-        if prefix and not obj.startswith(prefix):
+        if prefix and not obj.lower().startswith(prefix.lower()):
             data.remove(obj)
     return tuple(data)
 
@@ -59,7 +59,7 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
         return ()
     data = list(UpdateManager.listBuildProfiles().keys())
     for obj in data:
-        if prefix and not obj.startswith(prefix):
+        if prefix and not obj.lower().startswith(prefix.lower()):
             data.remove(obj)
     return tuple(data)
 
