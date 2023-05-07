@@ -400,6 +400,7 @@ class DockerUtils:
             docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_image.getLatestRemoteId()}")
         except ImageNotFound:
             raise ObjectNotFound
+        remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
     @classmethod
