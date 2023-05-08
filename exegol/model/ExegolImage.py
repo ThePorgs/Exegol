@@ -493,8 +493,7 @@ class ExegolImage(SelectableInterface):
         Parameter include_version allow choosing if the image version must be printed or not.
         When image version is already print in the user context, no need to duplicate the information.
         The status update available always print his version because the latest version is not print elsewhere."""
-        image_version = '' if (
-                                  not include_version) or 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
+        image_version = '' if (not include_version) or 'N/A' in self.getImageVersion() else f' (v.{self.getImageVersion()})'
         if self.__custom_status != "":
             return self.__custom_status
         elif not self.__is_remote:
