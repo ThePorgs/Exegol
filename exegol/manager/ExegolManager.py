@@ -192,7 +192,8 @@ class ExegolManager:
     @classmethod
     def print_version(cls):
         """Show exegol version (and context configuration on debug mode)"""
-        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version [blue]v{ConstantConfig.version}[/blue]{os.linesep}",
+
+        logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version {UpdateManager.display_current_version()}{os.linesep}",
                    level=logging.INFO, markup=True)
         logger.raw(
             f"[bold magenta][*][/bold magenta] Exegol Discord serv.: [underline magenta]{ConstantConfig.discord}[/underline magenta]{os.linesep}",

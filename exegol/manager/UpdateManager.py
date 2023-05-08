@@ -256,6 +256,16 @@ class UpdateManager:
                 current_version = str(module.get_current_commit())[:8]
         return current_version
 
+    @staticmethod
+    def display_current_version():
+        """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
+        commit_version = ""
+        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+            module = ExegolModules().getWrapperGit(fast_load=True)
+            if module.isAvailable:
+                commit_version = f" [bright_black]\[{str(module.get_current_commit())[:8]}][/bright_black]"
+        return f"[blue]v{ConstantConfig.version}[blue]{commit_version}"
+
     @classmethod
     def __tagUpdateAvailable(cls, latest_version, current_version=None):
         """Update the 'update available' cache data."""
