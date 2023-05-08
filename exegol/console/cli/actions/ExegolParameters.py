@@ -283,27 +283,3 @@ class Version(Command):
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.print_version
-
-
-class Completion(Command):
-    """Completion action for exegol auto-completion parameters"""
-
-    def __init__(self):
-        Command.__init__(self)
-
-        self.completions = Option("completions",
-                                  metavar="SHELL",
-                                  nargs='*',
-                                  action="store",
-                                  help="Generate a completion script for a specific shell")
-
-        # Create group parameter for completion selection
-        self.groupArgs.append(GroupArg({"arg": self.completions, "required": False},
-                                       title="[bold cyan]Completion[/bold cyan] [blue]specific options[/blue]"))
-
-        self._usages = {
-            "Create completion script for [blue]bash[/blue]": "exegol completion [blue]bash[/blue]"
-        }
-
-    def __call__(self, *args, **kwargs):
-        return ExegolManager.completion
