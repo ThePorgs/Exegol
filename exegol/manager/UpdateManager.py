@@ -103,6 +103,9 @@ class UpdateManager:
         result = cls.__updateGit(ExegolModules().getWrapperGit())
         if result:
             cls.__untagUpdateAvailable()
+            logger.empty_line()
+            logger.warning("After this wrapper update, remember to update Exegol [bold]requirements[bold]! ([magenta]python3 -m pip install --upgrade -r requirements.txt[/magenta])")
+            logger.empty_line()
         return result
 
     @classmethod

@@ -6,7 +6,7 @@ try:
     from exegol.utils.ExeLog import logger, ExeLog, console
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
-    print("Please install them with pip3 install -r requirements.txt")
+    print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
     exit(1)
 except ImportError as e:
     print("An error occurred while loading the dependencies!")
