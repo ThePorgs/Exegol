@@ -272,9 +272,9 @@ class ContainerConfig:
 
         # Shell logging config
         if self.__shell_logging:
-            if Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
                 self.__disableShellLogging()
-        elif Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
+        elif Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
             self.enableShellLogging()
         # Command builder info
         if self.__shell_logging:
