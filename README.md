@@ -1,9 +1,9 @@
 <div align="center">
-  <img alt="exegol logo" width="600" src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/rounded_social_preview.png">
+  <img alt="latest commit on master" width="600" src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/rounded_social_preview.png">
   <br><br>
-  <a href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational" alt="pip package version"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational" alt="pip package version"></a>
   <img alt="Python3.7" src="https://img.shields.io/badge/Python-3.7+-informational">
-  <a href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads" alt="pip stats"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads" alt="pip stats"></a>
   <br><br>
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ThePorgs/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ThePorgs/Exegol/dev?label=latest%20dev">
@@ -15,17 +15,17 @@
   <img alt="amd64" src="https://img.shields.io/badge/amd64%20(x86__64)-supported-success">
   <img alt="arm64" src="https://img.shields.io/badge/arm64%20(aarch64)-supported-success">
   <br><br>
-  <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social" alt="Twitter Shutdown"></a>
-  <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social" alt="Twitter Dramelac"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social" alt="Twitter Shutdown"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social" alt="Twitter Dramelac"></a>
   <br>
-  <a href="https://www.blackhat.com/eu-22/arsenal/schedule/index.html#exegol-29180" title="Schedule">
+  <a target="_blank" rel="noopener noreferrer" href="https://www.blackhat.com/eu-22/arsenal/schedule/index.html#exegol-29180" title="Schedule">
    <img alt="Black Hat Europe 2022" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Europe%202022-blueviolet">
   </a>
-  <a href="https://www.blackhat.com/asia-23/arsenal/schedule/#exegol-professional-hacking-setup-30815" title="Schedule">
+  <a target="_blank" rel="noopener noreferrer" href="https://www.blackhat.com/asia-23/arsenal/schedule/#exegol-professional-hacking-setup-30815" title="Schedule">
    <img alt="Black Hat Asia 2023" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Asia%202023-blueviolet">
   </a>
   <br><br>
-  <a href="https://discord.gg/cXThyp7D6P" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/cXThyp7D6P" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
   <br><br>
 </div>
 
