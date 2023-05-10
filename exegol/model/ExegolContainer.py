@@ -207,7 +207,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 list_files = os.listdir(volume_path)
             except PermissionError:
                 if Confirm(f"Insufficient permission to view workspace files {volume_path}, "
-                           f"do you still want to delete them?", default=False):
+                           f"do you still want to delete them?", default=False, batch=ParametersManager().batch):
                     # Set list_files as empty to skip user prompt again
                     list_files = []
                 else:
@@ -216,7 +216,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if len(list_files) > 0:
                     # Directory is not empty
                     if not Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
-                                   default=False):
+                                   default=False,
+                                   batch=ParametersManager().batch):
                         # User can choose not to delete the workspace on the host
                         return
                 # Try to remove files from the host with user permission (work only without sub-directory)

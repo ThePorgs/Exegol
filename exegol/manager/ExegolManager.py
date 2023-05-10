@@ -161,7 +161,8 @@ class ExegolManager:
         all_name = ", ".join([x.getName() for x in images])
         if not ParametersManager().force_mode and not Confirm(
                 f"Are you sure you want to [red]permanently remove[/red] the following images? [orange3][ {all_name} ][/orange3]",
-                default=False):
+                default=False,
+                batch=ParametersManager().batch):
             logger.error("Aborting operation.")
             return
         for img in images:
@@ -180,7 +181,8 @@ class ExegolManager:
         all_name = ", ".join([x.name for x in containers])
         if not ParametersManager().force_mode and not Confirm(
                 f"Are you sure you want to [red]permanently remove[/red] the following containers? [orange3][ {all_name} ][/orange3]",
-                default=False):
+                default=False,
+                batch=ParametersManager().batch):
             logger.error("Aborting operation.")
             return
         for c in containers:
@@ -226,7 +228,7 @@ class ExegolManager:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():
             logger.empty_line()
-            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True):
+            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True, batch=ParametersManager().batch):
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
@@ -502,13 +504,13 @@ class ExegolManager:
         ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
             if not model.image.isUpToDate() and \
-                    Confirm("Do you want to [green]update[/green] the selected image?", False):
+                    Confirm("Do you want to [green]update[/green] the selected image?", False, batch=ParametersManager().batch):
                 image = UpdateManager.updateImage(model.image.getName())
                 if image is not None:
                     model.image = image
                     ExegolTUI.printContainerRecap(model)
             command_options = []
-            while not Confirm("Is the container configuration [green]correct[/green]?", default=True):
+            while not Confirm("Is the container configuration [green]correct[/green]?", default=True, batch=ParametersManager().batch):
                 command_options = model.config.interactiveConfig(model.name)
                 ExegolTUI.printContainerRecap(model)
             logger.info(f"Command line of the configuration: "

@@ -205,12 +205,14 @@ class ContainerConfig:
         # Workspace config
         if Confirm(
                 "Do you want to [green]share[/green] your [blue]current host working directory[/blue] in the new container's worskpace?",
-                default=False):
+                default=False,
+                batch=ParametersManager().batch):
             self.enableCwdShare()
             command_options.append("-cwd")
         elif Confirm(
                 f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path / container_name}[/magenta])?",
-                default=False):
+                default=False,
+                batch=ParametersManager().batch):
             while True:
                 workspace_path = Prompt.ask("Enter the path of your workspace")
                 if Path(workspace_path).expanduser().is_dir():
@@ -222,9 +224,9 @@ class ContainerConfig:
 
         # GUI Config
         if self.__enable_gui:
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]GUI[/blue]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]GUI[/blue]?", False, batch=ParametersManager().batch):
                 self.__disableGUI()
-        elif Confirm("Do you want to [green]enable[/green] [blue]GUI[/blue]?", False):
+        elif Confirm("Do you want to [green]enable[/green] [blue]GUI[/blue]?", False, batch=ParametersManager().batch):
             self.enableGUI()
         # Command builder info
         if not self.__enable_gui:
@@ -232,9 +234,9 @@ class ContainerConfig:
 
         # Timezone config
         if self.__share_timezone:
-            if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
+            if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False, batch=ParametersManager().batch):
                 self.__disableSharedTimezone()
-        elif Confirm("Do you want to [green]share[/green] your [blue]host's timezone[/blue]?", False):
+        elif Confirm("Do you want to [green]share[/green] your [blue]host's timezone[/blue]?", False, batch=ParametersManager().batch):
             self.enableSharedTimezone()
         # Command builder info
         if not self.__share_timezone:
@@ -242,9 +244,9 @@ class ContainerConfig:
 
         # my-resources config
         if self.__my_resources:
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]my-resources[/blue]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]my-resources[/blue]?", False, batch=ParametersManager().batch):
                 self.__disableMyResources()
-        elif Confirm("Do you want to [green]activate[/green] [blue]my-resources[/blue]?", False):
+        elif Confirm("Do you want to [green]activate[/green] [blue]my-resources[/blue]?", False, batch=ParametersManager().batch):
             self.enableMyResources()
         # Command builder info
         if not self.__my_resources:
@@ -252,9 +254,9 @@ class ContainerConfig:
 
         # Exegol resources config
         if self.__exegol_resources:
-            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]exegol resources[/blue]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]exegol resources[/blue]?", False, batch=ParametersManager().batch):
                 self.disableExegolResources()
-        elif Confirm("Do you want to [green]activate[/green] the [blue]exegol resources[/blue]?", False):
+        elif Confirm("Do you want to [green]activate[/green] the [blue]exegol resources[/blue]?", False, batch=ParametersManager().batch):
             self.enableExegolResources()
         # Command builder info
         if not self.__exegol_resources:
@@ -262,9 +264,9 @@ class ContainerConfig:
 
         # Network config
         if self.__network_host:
-            if Confirm("Do you want to use a [blue]dedicated private network[/blue]?", False):
+            if Confirm("Do you want to use a [blue]dedicated private network[/blue]?", False, batch=ParametersManager().batch):
                 self.setNetworkMode(False)
-        elif Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False):
+        elif Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False, batch=ParametersManager().batch):
             self.setNetworkMode(True)
         # Command builder info
         if not self.__network_host:
@@ -272,9 +274,9 @@ class ContainerConfig:
 
         # Shell logging config
         if self.__shell_logging:
-            if Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
+            if Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False, batch=ParametersManager().batch):
                 self.__disableShellLogging()
-        elif Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
+        elif Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False, batch=ParametersManager().batch):
             self.enableShellLogging()
         # Command builder info
         if self.__shell_logging:
@@ -282,7 +284,7 @@ class ContainerConfig:
 
         # VPN config
         if self.__vpn_path is None and Confirm(
-                "Do you want to [green]enable[/green] a [blue]VPN[/blue] for this container", False):
+                "Do you want to [green]enable[/green] a [blue]VPN[/blue] for this container", False, batch=ParametersManager().batch):
             while True:
                 vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
                 if Path(vpn_path).expanduser().is_file():
@@ -291,7 +293,7 @@ class ContainerConfig:
                 else:
                     logger.error("No config files were found.")
         elif self.__vpn_path and Confirm(
-                "Do you want to [orange3]remove[/orange3] your [blue]VPN configuration[/blue] in this container", False):
+                "Do you want to [orange3]remove[/orange3] your [blue]VPN configuration[/blue] in this container", False, batch=ParametersManager().batch):
             self.__disableVPN()
         if self.__vpn_path:
             command_options.append(f"--vpn {self.__vpn_path}")
@@ -455,7 +457,8 @@ class ContainerConfig:
         if self.__network_host:
             logger.warning("Using the host network mode with a VPN profile is not recommended.")
             if not Confirm(f"Are you sure you want to configure a VPN container based on the host's network?",
-                           default=False):
+                           default=False,
+                           batch=ParametersManager().batch):
                 logger.info("Changing network mode to custom")
                 self.setNetworkMode(False)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
