@@ -1,7 +1,10 @@
-from typing import List
+from typing import List, Optional
 
+from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, FilesCompleter
+
+from exegol.config.UserConfig import UserConfig
+from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
-from exegol.utils.UserConfig import UserConfig
 
 
 class ContainerSelector:
@@ -9,11 +12,12 @@ class ContainerSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create container selector arguments
-        self.containertag = Option("containertag",
-                                   metavar="CONTAINER",
-                                   nargs='?',
-                                   action="store",
-                                   help="Tag used to target an Exegol container")
+        self.containertag: Optional[Option] = Option("containertag",
+                                                     metavar="CONTAINER",
+                                                     nargs='?',
+                                                     action="store",
+                                                     help="Tag used to target an Exegol container",
+                                                     completer=ContainerCompleter)
 
         # Create group parameter for container selection
         groupArgs.append(GroupArg({"arg": self.containertag, "required": False},
@@ -29,7 +33,8 @@ class ContainerMultiSelector:
                                         metavar="CONTAINER",
                                         nargs='*',
                                         action="store",
-                                        help="Tag used to target one or more Exegol containers")
+                                        help="Tag used to target one or more Exegol containers",
+                                        completer=ContainerCompleter)
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
@@ -38,7 +43,7 @@ class ContainerMultiSelector:
 
 class ContainerStart:
     """Generic parameter class for container selection.
-    This generic class is used by start and exec actions"""
+    This generic class is used by start, restart and exec actions"""
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create options on container start
@@ -48,11 +53,55 @@ class ContainerStart:
                            dest="envs",
                            help="And an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
-                                "If the container already exists, the variable will be present only in the current shell")
+                                "If the container already exists, the variable will be present only in the current shell",
+                           completer=EnvironCompleter)
 
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
                                   title="[blue]Container start options[/blue]"))
+
+
+class ContainerSpawnShell(ContainerStart):
+    """Generic parameter class to spawn a shell on an exegol container.
+    This generic class is used by start and restart"""
+
+    def __init__(self, groupArgs: List[GroupArg]):
+        # Spawn container shell arguments
+        self.shell = Option("-s", "--shell",
+                            dest="shell",
+                            action="store",
+                            choices=UserConfig.start_shell_options,
+                            default=UserConfig().default_start_shell,
+                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
+
+        self.log = Option("-l", "--log",
+                          dest="log",
+                          action="store_true",
+                          default=False,
+                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
+        self.log_method = Option("--log-method",
+                                 dest="log_method",
+                                 action="store",
+                                 choices=UserConfig.shell_logging_method_options,
+                                 default=UserConfig().shell_logging_method,
+                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
+        self.log_compress = Option("--log-compress",
+                                   dest="log_compress",
+                                   action="store_true",
+                                   default=False,
+                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
+
+        # Group dedicated to shell logging feature
+        groupArgs.append(GroupArg({"arg": self.log, "required": False},
+                                  {"arg": self.log_method, "required": False},
+                                  {"arg": self.log_compress, "required": False},
+                                  title="[blue]Container creation Shell logging options[/blue]"))
+
+        ContainerStart.__init__(self, groupArgs)
+
+        # Create group parameter for container selection
+        groupArgs.append(GroupArg({"arg": self.shell, "required": False},
+                                  title="[bold cyan]Start[/bold cyan] [blue]specific options[/blue]"))
 
 
 class ImageSelector:
@@ -60,11 +109,12 @@ class ImageSelector:
 
     def __init__(self, groupArgs: List[GroupArg]):
         # Create image selector arguments
-        self.imagetag = Option("imagetag",
-                               metavar="IMAGE",
-                               nargs='?',
-                               action="store",
-                               help="Tag used to target an Exegol image")
+        self.imagetag: Optional[Option] = Option("imagetag",
+                                                 metavar="IMAGE",
+                                                 nargs='?',
+                                                 action="store",
+                                                 help="Tag used to target an Exegol image",
+                                                 completer=ImageCompleter)
 
         # Create group parameter for image selection
         groupArgs.append(GroupArg({"arg": self.imagetag, "required": False},
@@ -80,7 +130,8 @@ class ImageMultiSelector:
                                     metavar="IMAGE",
                                     nargs='*',
                                     action="store",
-                                    help="Tag used to target one or more Exegol images")
+                                    help="Tag used to target one or more Exegol images",
+                                    completer=ImageCompleter)
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},
@@ -101,10 +152,10 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="X11",
                           help="Disable display sharing to run GUI-based applications (default: [green]Enabled[/green])")
         self.my_resources = Option("--disable-my-resources",
-                                       action="store_false",
-                                       default=True,
-                                       dest="my_resources",
-                                       help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
+                                   action="store_false",
+                                   default=True,
+                                   dest="my_resources",
+                                   help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
         self.exegol_resources = Option("--disable-exegol-resources",
                                        action="store_false",
                                        default=True,
@@ -128,7 +179,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.workspace_path = Option("-w", "--workspace",
                                      dest="workspace_path",
                                      action="store",
-                                     help="The specified host folder will be linked to the /workspace folder in the container")
+                                     help="The specified host folder will be linked to the /workspace folder in the container",
+                                     completer=DirectoriesCompleter())
         self.update_fs_perms = Option("-fs", "--update-fs",
                                       action="store_true",
                                       default=False,
@@ -144,13 +196,21 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             action="append",
                             default=[],
                             dest="ports",
-                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.")
+                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.",
+                            completer=VoidCompleter)
+        self.hostname = Option("--hostname",
+                               dest="hostname",
+                               default=None,
+                               action="store",
+                               help="Set a custom hostname to the exegol container (default: exegol-<name>)",
+                               completer=VoidCompleter)
         self.capabilities = Option("--cap",
                                    dest="capabilities",
-                                   metavar='',  # Do not display available choices
+                                   metavar='CAP',  # Do not display available choices
                                    action="append",
                                    default=[],
-                                   choices={"NET_RAW", "MKNOD", "SETFCAP", "SYS_CHROOT", "NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_ADMIN", "SYS_RAWIO"},
+                                   choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",
+                                            "SYS_ADMIN", "LINUX_IMMUTABLE", "MAC_ADMIN", "SYSLOG"},
                                    help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
                                         "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
         self.privileged = Option("--privileged",
@@ -169,18 +229,26 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="vpn",
                           default=None,
                           action="store",
-                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)")
+                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
+                          completer=FilesCompleter(["ovpn"], directories=True))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
+        self.comment = Option("--comment",
+                              dest="comment",
+                              action="store",
+                              help="The specified comment will be added to the container info",
+                              completer=VoidCompleter)
+
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
+                                  {"arg": self.hostname, "required": False},
                                   {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
@@ -189,6 +257,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.host_network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
+                                  {"arg": self.comment, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},

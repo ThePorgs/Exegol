@@ -3,7 +3,7 @@ from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
 from exegol.console.ConsoleFormat import richLen
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 
@@ -135,9 +135,11 @@ class Command:
         missingOption = []
         for groupArg in self.groupArgs:
             for option in groupArg.options:
-                if option["required"]:
-                    if self.__dict__[option["arg"].dest] is None:
-                        missingOption.append(option["arg"].dest)
+                if option.get("required", False):
+                    data = option.get("arg")
+                    assert data is not None and type(data) is Option
+                    if data.dest is not None and self.__dict__.get(data.dest) is None:
+                        missingOption.append(data.dest)
         return missingOption
 
     def formatEpilog(self) -> str:

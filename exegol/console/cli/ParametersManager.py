@@ -54,3 +54,11 @@ class ParametersManager(metaclass=MetaSingleton):
             # The logger may not work if the call is made before its initialization
             logger.debug(f"Attribute not found in parameters: {item}")
             return None
+
+    def __setattr__(self, key, value) -> None:
+        """Allow to dynamically change some parameter during runtime"""
+        # Only some specific parameters are whitelisted for runtime update
+        if key in ["offline_mode"]:
+            setattr(self.parameters, key, value)
+        else:
+            super().__setattr__(key, value)

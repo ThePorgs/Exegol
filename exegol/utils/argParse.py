@@ -1,4 +1,5 @@
 import argparse
+import argcomplete
 from logging import CRITICAL
 from typing import IO, Optional, List, Union, Dict, cast
 
@@ -20,7 +21,7 @@ class Parser:
 
     __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
                     "your machine."
-    __formatter_class: type = argparse.RawTextHelpFormatter
+    __formatter_class = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
         """Custom parser creation"""
@@ -81,17 +82,22 @@ class Parser:
                 # once the group is created in the parser, the arguments can be added to it
                 option: Dict[str, Union[Option, bool]]
                 for option in argument_group.options:
+                    # Retrieve Option object from the Dict
+                    assert type(option["arg"]) is Option
+                    argument = cast(Option, option["arg"])
+                    # Pop is required here to removed unknown parameter from the action object before argparse
+                    completer = argument.kwargs.pop("completer", None)
                     try:
-                        # Retrieve Option object from the Dict
-                        assert type(option["arg"]) is Option
-                        argument = cast(Option, option["arg"])
-                        # Add argument with its config to the parser
-                        group_parser.add_argument(*argument.args, **argument.kwargs)
+                        arg = group_parser.add_argument(*argument.args, **argument.kwargs)
                     except argparse.ArgumentError:
                         continue
+                    # Add argument with its config to the parser
+                    if completer is not None:
+                        arg.completer = completer  # type: ignore
 
     def run_parser(self) -> argparse.Namespace:
         """Execute argparse to retrieve user options from argv"""
+        argcomplete.autocomplete(self.__root_parser)
         return self.__root_parser.parse_args()
 
     def print_help(self):

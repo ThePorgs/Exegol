@@ -44,15 +44,17 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     install_requires=[
         'docker~=6.0.0',
         'requests',
-        'rich>=11.2.0',
+        'rich~=13.3.0',
         'PyYAML',
-        'GitPython'
+        'GitPython',
+        'argcomplete~=2.1.1'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,

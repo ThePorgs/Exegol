@@ -9,6 +9,7 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 from requests import ReadTimeout
 
+from exegol.config.DataCache import DataCache
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
@@ -16,10 +17,10 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.MetaImages import MetaImages
-from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
-from exegol.utils.UserConfig import UserConfig
+from exegol.config.UserConfig import UserConfig
 from exegol.utils.WebUtils import WebUtils
 
 
@@ -105,7 +106,7 @@ class DockerUtils:
                                                     entrypoint=entrypoint,
                                                     command=command,
                                                     detach=True,
-                                                    name=model.hostname,
+                                                    name=model.container_name,
                                                     hostname=model.hostname,
                                                     extra_hosts={model.hostname: '127.0.0.1'},
                                                     devices=model.config.getDevices(),
@@ -219,6 +220,9 @@ class DockerUtils:
             local_images = cls.__listLocalImages()
             cls.__images = ExegolImage.mergeImages(remote_images, local_images)
         result = cls.__images
+        assert result is not None
+        # Caching latest images
+        DataCache().update_image_cache([img for img in result if not img.isVersionSpecific()])
         if not (logger.isEnabledFor(ExeLog.VERBOSE) or include_locked):
             # ToBeRemoved images are only shown in verbose mode
             result = [i for i in result if not i.isLocked()]
@@ -393,9 +397,10 @@ class DockerUtils:
         """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
         try:
-            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_image.getRemoteId()}")
+            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_image.getLatestRemoteId()}")
         except ImageNotFound:
             raise ObjectNotFound
+        remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
     @classmethod
@@ -457,7 +462,6 @@ class DockerUtils:
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
-        logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
@@ -469,6 +473,7 @@ class DockerUtils:
                     cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
                 logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
                 cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
+            logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
             logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
             return True
         except APIError as err:

@@ -1,3 +1,4 @@
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
 from exegol.console.cli.actions.Command import Command
 from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
@@ -5,12 +6,13 @@ from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.ExeLog import logger
 
 
-class Start(Command, ContainerCreation, ContainerStart):
+class Start(Command, ContainerCreation, ContainerSpawnShell):
     """Automatically create, start / resume and enter an Exegol container"""
 
     def __init__(self):
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
+        ContainerSpawnShell.__init__(self, self.groupArgs)
 
         self._usages = {
             "Start interactively a container": "exegol start",
@@ -21,45 +23,9 @@ class Start(Command, ContainerCreation, ContainerStart):
             "Create a container [blue]htb[/blue] with a VPN": "exegol start [blue]htb[/blue] [bright_blue]full[/bright_blue] --vpn [magenta]~/vpn/[/magenta][bright_magenta]lab_Dramelac.ovpn[/bright_magenta]",
             "Create a container [blue]app[/blue] with custom volume": "exegol start [blue]app[/blue] [bright_blue]full[/bright_blue] -V [bright_magenta]'/var/app/:/app/'[/bright_magenta]",
             "Get a [blue]tmux[/blue] shell": "exegol start --shell [blue]tmux[/blue]",
-            "Use a Proxmark": "exegol start -d /dev/ttyACM0",
-            "Use an HackRF One": "exegol start -d /dev/bus/usb/",
+            "Share a specific [blue]hardware device[/blue] (like Proxmark)": "exegol start -d /dev/ttyACM0",
+            "Share every [blue]USB device[/blue] connected to the host": "exegol start -d /dev/bus/usb/",
         }
-
-        # Create container start / exec arguments
-        self.shell = Option("-s", "--shell",
-                            dest="shell",
-                            action="store",
-                            choices=UserConfig.start_shell_options,
-                            default=UserConfig().default_start_shell,
-                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
-
-        self.log = Option("-l", "--log",
-                          dest="log",
-                          action="store_true",
-                          default=False,
-                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [red]Disabled[/red])")
-        self.log_method = Option("--log-method",
-                                 dest="log_method",
-                                 action="store",
-                                 choices=UserConfig.shell_logging_method_options,
-                                 default=UserConfig().shell_logging_method,
-                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
-        self.log_compress = Option("--log-compress",
-                                   dest="log_compress",
-                                   action="store_true",
-                                   default=False,
-                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
-
-        self.groupArgs.append(GroupArg({"arg": self.log, "required": False},
-                                       {"arg": self.log_method, "required": False},
-                                       {"arg": self.log_compress, "required": False},
-                                       title="[blue]Container creation Shell logging options[/blue]"))
-
-        ContainerStart.__init__(self, self.groupArgs)
-
-        # Create group parameter for container selection
-        self.groupArgs.append(GroupArg({"arg": self.shell, "required": False},
-                                       title="[bold cyan]Start[/bold cyan] [blue]specific options[/blue]"))
 
     def __call__(self, *args, **kwargs):
         return ExegolManager.start
@@ -82,6 +48,24 @@ class Stop(Command, ContainerMultiSelector):
         return ExegolManager.stop
 
 
+class Restart(Command, ContainerSelector, ContainerSpawnShell):
+    """Restart an Exegol container"""
+
+    def __init__(self):
+        Command.__init__(self)
+        ContainerSelector.__init__(self, self.groupArgs)
+        ContainerSpawnShell.__init__(self, self.groupArgs)
+
+        self._usages = {
+            "Restart interactively one containers": "exegol restart",
+            "Restart [blue]demo[/blue]": "exegol restart [blue]demo[/blue]"
+        }
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running restart module")
+        return ExegolManager.restart
+
+
 class Install(Command, ImageSelector):
     """Install or build Exegol image"""
 
@@ -89,20 +73,14 @@ class Install(Command, ImageSelector):
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
-        self._usages = {
-            "Install or build interactively an exegol image": "exegol install",
-            "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
-            "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
-            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
-        }
-
         # Create container build arguments
         self.build_profile = Option("build_profile",
                                     metavar="BUILD_PROFILE",
                                     choices=UpdateManager.listBuildProfiles().keys(),
                                     nargs="?",
                                     action="store",
-                                    help="Select the build profile used to create a local image.")
+                                    help="Select the build profile used to create a local image.",
+                                    completer=BuildProfileCompleter)
         self.build_log = Option("--build-log",
                                 dest="build_log",
                                 metavar="LOGFILE_PATH",
@@ -113,6 +91,13 @@ class Install(Command, ImageSelector):
         self.groupArgs.append(GroupArg({"arg": self.build_profile, "required": False},
                                        {"arg": self.build_log, "required": False},
                                        title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
+
+        self._usages = {
+            "Install or build interactively an exegol image": "exegol install",
+            "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
+            "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
+            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
+        }
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
@@ -210,21 +195,6 @@ class Exec(Command, ContainerCreation, ContainerStart):
         ContainerCreation.__init__(self, self.groupArgs)
         ContainerStart.__init__(self, self.groupArgs)
 
-        self._usages = {
-            "Execute the command [magenta]bloodhound[/magenta] in the container [blue]demo[/blue]":
-                "exegol exec [blue]demo[/blue] [magenta]bloodhound[/magenta]",
-            "Execute the command [magenta]'nmap -h'[/magenta] with console output":
-                "exegol exec -v [blue]demo[/blue] [magenta]'nmap -h'[/magenta]",
-            "Execute a command in [green]background[/green] within the [blue]demo[/blue] container":
-                "exegol exec [green]-b[/green] [blue]demo[/blue] [magenta]bloodhound[/magenta]",
-            "Execute the command [magenta]bloodhound[/magenta] in a temporary container based on the [bright_blue]full[/bright_blue] image":
-                "exegol exec --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
-            "Execute a command in [green]background[/green] with a temporary container":
-                "exegol exec [green]-b[/green] --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
-            "Execute the command [magenta]wireshark[/magenta] with [orange3]network admin[/orange3] privileged":
-                "exegol exec [green]-b[/green] --tmp --cap [orange3]NET_ADMIN[/orange3] [bright_blue]full[/bright_blue] [magenta]wireshark[/magenta]",
-        }
-
         # Overwrite default selectors
         for group in self.groupArgs.copy():
             # Find group containing default selector to remove them
@@ -241,14 +211,16 @@ class Exec(Command, ContainerCreation, ContainerStart):
                                metavar="CONTAINER or IMAGE",
                                nargs='?',
                                action="store",
-                               help="Tag used to target an Exegol container (by default) or an image (if --tmp is set).")
+                               help="Tag used to target an Exegol container (by default) or an image (if --tmp is set).",
+                               completer=HybridContainerImageCompleter)
 
         # Custom parameters
         self.exec = Option("exec",
                            metavar="COMMAND",
                            nargs="+",
                            action="store",
-                           help="Execute a single command in the exegol container.")
+                           help="Execute a single command in the exegol container.",
+                           completer=VoidCompleter)
         self.daemon = Option("-b", "--background",
                              action="store_true",
                              dest="daemon",
@@ -266,6 +238,21 @@ class Exec(Command, ContainerCreation, ContainerStart):
                                        {"arg": self.daemon, "required": False},
                                        {"arg": self.tmp, "required": False},
                                        title="[bold cyan]Exec[/bold cyan] [blue]specific options[/blue]"))
+
+        self._usages = {
+            "Execute the command [magenta]bloodhound[/magenta] in the container [blue]demo[/blue]":
+                "exegol exec [blue]demo[/blue] [magenta]bloodhound[/magenta]",
+            "Execute the command [magenta]'nmap -h'[/magenta] with console output":
+                "exegol exec -v [blue]demo[/blue] [magenta]'nmap -h'[/magenta]",
+            "Execute a command in [green]background[/green] within the [blue]demo[/blue] container":
+                "exegol exec [green]-b[/green] [blue]demo[/blue] [magenta]bloodhound[/magenta]",
+            "Execute the command [magenta]bloodhound[/magenta] in a temporary container based on the [bright_blue]full[/bright_blue] image":
+                "exegol exec --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute a command in [green]background[/green] with a temporary container":
+                "exegol exec [green]-b[/green] --tmp [bright_blue]full[/bright_blue] [magenta]bloodhound[/magenta]",
+            "Execute the command [magenta]wireshark[/magenta] with [orange3]network admin[/orange3] privileged":
+                "exegol exec [green]-b[/green] --tmp --cap [orange3]NET_ADMIN[/orange3] [bright_blue]full[/bright_blue] [magenta]wireshark[/magenta]",
+        }
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running exec module")

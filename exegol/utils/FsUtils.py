@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path, PurePosixPath, PurePath
 from typing import Optional
 
-from exegol.utils.EnvInfo import EnvInfo
+from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
 
 
@@ -60,7 +60,7 @@ def setGidPermission(root_folder: Path):
     perm_alert = False
     # Set permission to root directory
     try:
-        root_folder.chmod(root_folder.stat().st_mode | stat.S_ISGID)
+        root_folder.chmod(root_folder.stat().st_mode | stat.S_IRWXG | stat.S_ISGID)
     except PermissionError:
         # Trigger the error only if the permission is not already set
         if not root_folder.stat().st_mode & stat.S_ISGID:
@@ -75,7 +75,7 @@ def setGidPermission(root_folder: Path):
             continue
         # Set the permission (g+s) to every child directory
         try:
-            sub_item.chmod(sub_item.stat().st_mode | stat.S_ISGID)
+            sub_item.chmod(sub_item.stat().st_mode | stat.S_IRWXG | stat.S_ISGID)
         except PermissionError:
             logger.warning(f"The permission of this directory ({sub_item}) cannot be automatically changed.")
             perm_alert = True

@@ -8,7 +8,7 @@ from requests import Response
 
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 

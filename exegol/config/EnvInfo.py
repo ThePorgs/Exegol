@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from typing import Optional, Any, List
 
-from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 
@@ -21,10 +21,11 @@ class EnvInfo:
 
     class DockerEngine:
         """Dictionary class for static Docker engine name"""
-        WLS2 = "wsl2"
-        HYPERV = "hyper-v"
-        MAC = "mac"
-        LINUX = "kernel"
+        WLS2 = "WSL2"
+        HYPERV = "Hyper-V"
+        MAC = "Docker desktop"
+        ORBSTACK = "Orbstack"
+        LINUX = "Kernel"
 
     """Contain information about the environment (host, OS, platform, etc)"""
     # Shell env
@@ -76,6 +77,7 @@ class EnvInfo:
         # Deduct a Windows Host from data
         cls.__is_docker_desktop = docker_os == "docker desktop"
         is_host_windows = cls.__is_docker_desktop and "microsoft" in docker_kernel
+        is_orbstack = "(containerized)" in docker_os and "orbstack" in docker_kernel
         if is_host_windows:
             # Check docker engine with Windows host
             if "wsl2" in docker_kernel:
@@ -86,6 +88,10 @@ class EnvInfo:
         elif cls.__is_docker_desktop:
             # If docker desktop is detected but not a Windows engine/kernel, it's (probably) a mac
             cls.__docker_engine = cls.DockerEngine.MAC
+            cls.__docker_host_os = cls.HostOs.MAC
+        elif is_orbstack:
+            # Orbstack is only available on Mac
+            cls.__docker_engine = cls.DockerEngine.ORBSTACK
             cls.__docker_host_os = cls.HostOs.MAC
         else:
             # Every other case it's a linux distro and docker is powered from the kernel
@@ -141,6 +147,11 @@ class EnvInfo:
     def isDockerDesktop(cls) -> bool:
         """Return true if docker desktop is used on the host"""
         return cls.__is_docker_desktop
+
+    @classmethod
+    def isOrbstack(cls) -> bool:
+        """Return true if docker desktop is used on the host"""
+        return cls.__docker_engine == cls.DockerEngine.ORBSTACK
 
     @classmethod
     def getDockerEngine(cls) -> str:

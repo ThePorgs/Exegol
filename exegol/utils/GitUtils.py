@@ -1,12 +1,15 @@
 import os
+import sys
 from pathlib import Path
 from typing import Optional, List
 
-from git.exc import GitCommandError
+from git.exc import GitCommandError, RepositoryDirtyError
+from rich.progress import TextColumn, BarColumn
 
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
+from exegol.console.MetaGitProgress import MetaGitProgress, clone_update_progress, SubmoduleUpdateProgress
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.utils.ConstantConfig import ConstantConfig
-from exegol.utils.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
@@ -38,6 +41,9 @@ class GitUtils:
                 self.__is_submodule = True
             elif not test_git_dir.is_dir():
                 raise ReferenceError
+            elif sys.platform == "win32":
+                # Skip next platform specific code (temp fix for mypy static code analysis)
+                pass
             elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
@@ -110,11 +116,17 @@ class GitUtils:
         custom_options = []
         if optimize_disk_space:
             custom_options.append('--depth=1')
-        # TODO add progress bar via TUI
         from git import GitCommandError
         try:
-            with console.status(f"Downloading {self.getName()} git repository", spinner_style="blue"):
-                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options)
+            with MetaGitProgress(TextColumn("{task.description}", justify="left"),
+                                 BarColumn(bar_width=None),
+                                 "•",
+                                 "[progress.percentage]{task.percentage:>3.1f}%",
+                                 "[bold]{task.completed}/{task.total}[/bold]") as progress:
+                progress.add_task(f"[bold red]Cloning {self.getName()} git repository", start=True)
+                self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options, progress=clone_update_progress)
+                progress.remove_task(progress.tasks[0].id)
+            logger.success(f"The {self.getName()} git repository have been successfully clone!")
         except GitCommandError as e:
             # GitPython user \n only
             error = GitUtils.formatStderr(e.stderr)
@@ -178,18 +190,12 @@ class GitUtils:
         assert self.__gitRepo is not None
         assert self.__gitRemote is not None
         # Get last local commit
-        current_commit = self.__gitRepo.heads[branch].commit
+        current_commit = self.get_current_commit()
         # Get last remote commit
-        try:
-            fetch_result = self.__gitRemote.fetch()
-        except GitCommandError:
-            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
+        if not self.__fetch_update(branch):
             return True
-        try:
-            self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
-        except IndexError:
-            logger.warning("The selected branch is local and cannot be updated.")
-            return True
+
+        assert self.__fetchBranchInfo is not None
 
         logger.debug(f"Fetch flags : {self.__fetchBranchInfo.flags}")
         logger.debug(f"Fetch note : {self.__fetchBranchInfo.note}")
@@ -210,9 +216,46 @@ class GitUtils:
         if self.__fetchBranchInfo.flags & FetchInfo.NEW_TAG != 0:
             logger.debug("NEW TAG flag detected")
 
-        remote_commit = self.__fetchBranchInfo.commit
+        remote_commit = self.get_latest_commit()
         # Check if remote_commit is an ancestor of the last local commit (check if there is local commit ahead)
         return self.__gitRepo.is_ancestor(remote_commit, current_commit)
+
+    def __fetch_update(self, branch: Optional[str] = None) -> bool:
+        """Fetch latest update from remote"""
+        if self.__gitRemote is None:
+            return False
+        try:
+            fetch_result = self.__gitRemote.fetch()
+        except GitCommandError:
+            logger.warning("Unable to fetch information from remote git repository, do you have internet ?")
+            return False
+        if branch is None:
+            branch = self.getCurrentBranch()
+        try:
+            self.__fetchBranchInfo = fetch_result[f'{self.__gitRemote}/{branch}']
+        except IndexError:
+            logger.warning("The selected branch is local and cannot be updated.")
+            return False
+        return True
+
+    def get_current_commit(self):
+        """Fetch current commit id on the current branch."""
+        assert self.isAvailable
+        assert self.__gitRepo is not None
+        branch = self.getCurrentBranch()
+        if branch is None:
+            branch = "master"
+        # Get last local commit
+        return self.__gitRepo.heads[branch].commit
+
+    def get_latest_commit(self):
+        """Fetch latest remote commit id on the current branch."""
+        assert self.isAvailable
+        assert not ParametersManager().offline_mode
+        if self.__fetchBranchInfo is None:
+            self.__fetch_update()
+        assert self.__fetchBranchInfo is not None
+        return self.__fetchBranchInfo.commit
 
     def update(self) -> bool:
         """Update local git repository within current branch"""
@@ -244,6 +287,8 @@ class GitUtils:
         blacklist_heavy_modules = ["exegol-resources"]
         # Submodules dont have depth submodule limits
         depth_limit = not self.__is_submodule
+        if self.__gitRepo is None:
+            return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
             try:
                 submodules = self.__gitRepo.iter_submodules()
@@ -258,6 +303,7 @@ class GitUtils:
                 s.update(status=f"Downloading git submodules [green]{current_sub.name}[/green]")
                 from git.exc import GitCommandError
                 try:
+                    # TODO add TUI with progress
                     current_sub.update(recursive=True)
                 except GitCommandError as e:
                     error = GitUtils.formatStderr(e.stderr)
@@ -269,6 +315,9 @@ class GitUtils:
                         logger.error(error)
                 except ValueError:
                     logger.error(f"Unable to update git submodule '{current_sub.name}'. Check the path in the file '{Path(current_sub.path) / '.git'}'")
+                except RepositoryDirtyError as e:
+                    logger.debug(e)
+                    logger.error(f"Sub-repository {current_sub.name} have uncommitted local changes. Unable to automatically update this repository.")
 
     def submoduleSourceUpdate(self, name: str) -> bool:
         """Update source code from the 'name' git submodule"""
@@ -285,9 +334,14 @@ class GitUtils:
         try:
             from git.exc import GitCommandError
             try:
-                # TODO add TUI progress
-                with console.status(f"Downloading submodule [green]{name}[/green]", spinner_style="blue"):
-                    submodule.update(to_latest_revision=True)
+                with MetaGitProgress(TextColumn("{task.description}", justify="left"),
+                                     BarColumn(bar_width=None),
+                                     "•",
+                                     "[progress.percentage]{task.percentage:>3.1f}%",
+                                     "[bold]{task.completed}/{task.total}[/bold]") as progress:
+                    progress.add_task(f"[bold red]Downloading submodule [green]{name}[/green]", start=True)
+                    submodule.update(to_latest_revision=True, progress=SubmoduleUpdateProgress())
+                    progress.remove_task(progress.tasks[0].id)
             except GitCommandError as e:
                 logger.debug(f"Unable tu update git submodule {name}: {e}")
                 if "unable to access" in e.stderr:

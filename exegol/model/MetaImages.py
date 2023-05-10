@@ -95,3 +95,6 @@ class MetaImages:
 
     def __str__(self):
         return f"{self.name} ({self.version}) [{self.meta_id}] {self.list_arch}"
+
+    def __repr__(self):
+        return self.__str__()

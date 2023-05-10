@@ -4,11 +4,11 @@ from typing import Optional, Union
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 from exegol.utils.GitUtils import GitUtils
 from exegol.utils.MetaSingleton import MetaSingleton
-from exegol.utils.UserConfig import UserConfig
+from exegol.config.UserConfig import UserConfig
 
 
 class ExegolModules(metaclass=MetaSingleton):
@@ -76,6 +76,7 @@ class ExegolModules(metaclass=MetaSingleton):
                     raise CancelOperation
             else:
                 self.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
+                assert self.__git_resources is not None
                 if not self.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
                     # Error during install, raise error to avoid update process
                     raise CancelOperation
