@@ -18,8 +18,12 @@
   <a href="https://twitter.com/intent/follow?screen_name=_nwodtuhs" title="Follow"><img src="https://img.shields.io/twitter/follow/_nwodtuhs?label=Shutdown&style=social" alt="Twitter Shutdown"></a>
   <a href="https://twitter.com/intent/follow?screen_name=Dramelac_" title="Follow"><img src="https://img.shields.io/twitter/follow/Dramelac_?label=Dramelac&style=social" alt="Twitter Dramelac"></a>
   <br>
-  <img alt="Black Hat Europe 2022" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Europe%202022-blueviolet">
-  <img alt="Black Hat Asia 2023" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Asia%202023-blueviolet">
+  <a href="https://www.blackhat.com/eu-22/arsenal/schedule/index.html#exegol-29180" title="Schedule">
+   <img alt="Black Hat Europe 2022" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Europe%202022-blueviolet">
+  </a>
+  <a href="https://www.blackhat.com/asia-23/arsenal/schedule/#exegol-professional-hacking-setup-30815" title="Schedule">
+   <img alt="Black Hat Asia 2023" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Asia%202023-blueviolet">
+  </a>
   <br><br>
   <a href="https://discord.gg/cXThyp7D6P" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
   <br><br>
