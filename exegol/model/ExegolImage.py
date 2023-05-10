@@ -76,6 +76,7 @@ class ExegolImage(SelectableInterface):
                 self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
             if meta_img:
                 self.__setDigest(meta_img.meta_id)
+                self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
         logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
     def __initFromDockerImage(self):
@@ -197,7 +198,7 @@ class ExegolImage(SelectableInterface):
         self.__is_update = self.__digest == self.__profile_digest
         if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
-            self.__digest = meta.meta_id
+            self.__setDigest(meta.meta_id)
         # Refresh status after metadata update
         self.syncStatus()
 
