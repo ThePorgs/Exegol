@@ -396,8 +396,12 @@ class DockerUtils:
     def __findImageMatch(cls, remote_image: ExegolImage):
         """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
+        remote_id = remote_image.getLatestRemoteId()
+        if not remote_id:
+            logger.debug("Latest remote id is not available... Falling back to the current remote id.")
+            remote_id = remote_image.getRemoteId()
         try:
-            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_image.getLatestRemoteId()}")
+            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
         except ImageNotFound:
             raise ObjectNotFound
         remote_image.resetDockerImage()

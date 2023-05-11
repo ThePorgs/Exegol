@@ -47,7 +47,7 @@ class DataFileUtils:
         """
         if not self._file_path.parent.is_dir():
             logger.verbose(f"Creating config folder: {self._file_path.parent}")
-            self._file_path.parent.mkdir()
+            self._file_path.parent.mkdir(parents=True, exist_ok=True)
         if not self._file_path.is_file():
             logger.verbose(f"Creating default file: {self._file_path}")
             self._create_config_file()
