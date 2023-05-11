@@ -74,7 +74,7 @@ class ExegolImage(SelectableInterface):
                 self.__is_remote = True
                 self.__setArch(MetaImages.parseArch(dockerhub_data))
                 self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
-            if meta_img:
+            if meta_img and meta_img.meta_id is not None:
                 self.__setDigest(meta_img.meta_id)
                 self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
         logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
