@@ -175,7 +175,7 @@ class GuiUtils:
             logger.error("WSL is [orange3]not available[/orange3] on your system. GUI is not supported.")
             return False
         # Only WSL2 support WSLg
-        if EnvInfo.getDockerEngine() != "wsl2":
+        if EnvInfo.getDockerEngine() != EnvInfo.DockerEngine.WLS2:
             logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
             return False
         logger.debug("WSL is [green]available[/green] and docker is using WSL2")

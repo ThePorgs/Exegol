@@ -219,7 +219,7 @@ class ExegolManager:
         if EnvInfo.isWindowsHost():
             logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
-            logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
+            logger.debug(f"Docker engine: {str(EnvInfo.getDockerEngine()).upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
         if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates:

@@ -3,6 +3,7 @@ import platform
 import re
 import shutil
 import subprocess
+from enum import Enum
 from typing import Optional, Any, List
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -13,13 +14,13 @@ class EnvInfo:
     """Class to identify the environment in which exegol runs to adapt
     the configurations, processes and messages for the user"""
 
-    class HostOs:
+    class HostOs(Enum):
         """Dictionary class for static OS Name"""
         WINDOWS = "Windows"
         LINUX = "Linux"
         MAC = "Mac"
 
-    class DockerEngine:
+    class DockerEngine(Enum):
         """Dictionary class for static Docker engine name"""
         WLS2 = "WSL2"
         HYPERV = "Hyper-V"
@@ -36,8 +37,8 @@ class EnvInfo:
     __is_docker_desktop: bool = False
     __windows_release: Optional[str] = None
     # Host OS
-    __docker_host_os: Optional[str] = None
-    __docker_engine: Optional[str] = None
+    __docker_host_os: Optional[HostOs] = None
+    __docker_engine: Optional[DockerEngine] = None
     # Docker desktop cache config
     __docker_desktop_resource_config = None
     # Architecture
@@ -99,7 +100,7 @@ class EnvInfo:
             cls.__docker_host_os = cls.HostOs.LINUX
 
     @classmethod
-    def getHostOs(cls) -> str:
+    def getHostOs(cls) -> HostOs:
         """Return Host OS
         Can be 'Windows', 'Mac' or 'Linux'"""
         # initData must be called from DockerUtils on client initialisation
@@ -154,9 +155,9 @@ class EnvInfo:
         return cls.__docker_engine == cls.DockerEngine.ORBSTACK
 
     @classmethod
-    def getDockerEngine(cls) -> str:
+    def getDockerEngine(cls) -> DockerEngine:
         """Return Docker engine type.
-        Can be 'kernel', 'mac', 'wsl2' or 'hyper-v'"""
+        Can be any of EnvInfo.DockerEngine"""
         # initData must be called from DockerUtils on client initialisation
         assert cls.__docker_engine is not None
         return cls.__docker_engine
