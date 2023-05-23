@@ -226,7 +226,7 @@ class ExegolManager:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():
             logger.empty_line()
-            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True):
+            if Confirm(f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()}), do you want to update ?", default=True):
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
