@@ -264,7 +264,7 @@ class UpdateManager:
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
                 commit_version = f" [bright_black]\[{str(module.get_current_commit())[:8]}][/bright_black]"
-        return f"[blue]v{ConstantConfig.version}[blue]{commit_version}"
+        return f"[blue]v{ConstantConfig.version}[/blue]{commit_version}"
 
     @classmethod
     def __tagUpdateAvailable(cls, latest_version, current_version=None):
@@ -285,6 +285,10 @@ class UpdateManager:
             if wrapper_data.current_version != current_version:
                 cls.__untagUpdateAvailable(current_version)
             return False
+
+    @classmethod
+    def display_latest_version(cls) -> str:
+        return f"[blue]v{DataCache().get_wrapper_data().last_version}[/blue]"
 
     @classmethod
     def __untagUpdateAvailable(cls, current_version: Optional[str] = None):

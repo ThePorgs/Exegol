@@ -219,14 +219,14 @@ class ExegolManager:
         if EnvInfo.isWindowsHost():
             logger.debug(f"Windows release: {EnvInfo.getWindowsRelease()}")
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
-            logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().upper()}")
+            logger.debug(f"Docker engine: {str(EnvInfo.getDockerEngine()).upper()}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType()}")
         if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateTag():
             logger.empty_line()
-            if Confirm("An [green]Exegol[/green] update is [orange3]available[/orange3], do you want to update ?", default=True):
+            if Confirm(f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()}), do you want to update ?", default=True):
                 UpdateManager.updateWrapper()
         else:
             logger.empty_line(log_level=logging.DEBUG)
