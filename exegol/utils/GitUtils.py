@@ -126,7 +126,7 @@ class GitUtils:
                 progress.add_task(f"[bold red]Cloning {self.getName()} git repository", start=True)
                 self.__gitRepo = Repo.clone_from(repo_url, str(self.__repo_path), multi_options=custom_options, progress=clone_update_progress)
                 progress.remove_task(progress.tasks[0].id)
-            logger.success(f"The {self.getName()} git repository have been successfully clone!")
+            logger.success(f"The Git repository {self.getName()} was successfully cloned!")
         except GitCommandError as e:
             # GitPython user \n only
             error = GitUtils.formatStderr(e.stderr)
