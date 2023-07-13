@@ -10,6 +10,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 # Additional non-code data used by Exegol to build local docker image from source
+## exegol-docker-build Dockerfiles
 source_directory = "exegol-docker-build"
 data_files_dict = {source_directory: [f"{source_directory}/Dockerfile"] + [str(profile) for profile in pathlib.Path(source_directory).rglob('*.dockerfile')]}
 data_files = []
@@ -22,6 +23,9 @@ for path in pathlib.Path(f'{source_directory}/sources').rglob('*'):
     if data_files_dict.get(key) is None:
         data_files_dict[key] = []
     data_files_dict[key].append(str(path))
+## exegol-entrypoint script
+data_files_dict["exegol-entrypoint"] = ["exegol/utils/entrypoint/entrypoint.sh"]
+
 # Dict to tuple
 for k, v in data_files_dict.items():
     data_files.append((k, v))

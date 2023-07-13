@@ -15,6 +15,8 @@ class ConstantConfig:
     # Path of the Dockerfile
     build_context_path_obj: Path
     build_context_path: str
+    # Path of the Entrypoint
+    entrypoint_context_path_obj: Path
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
     # Docker Desktop for mac config file
@@ -33,12 +35,11 @@ class ConstantConfig:
     EXEGOL_RESOURCES_REPO: str = "https://github.com/ThePorgs/Exegol-resources.git"
 
     @classmethod
-    def findBuildContextPath(cls) -> Path:
-        """Find the right path to the build context from Exegol docker images.
+    def findResourceContextPath(cls, resource_folder: str, source_path: str) -> Path:
+        """Find the right path to the resources context from Exegol package.
         Support source clone installation and pip package (venv / user / global context)"""
-        dockerbuild_folder_name = "exegol-docker-build"
-        local_src = cls.src_root_path_obj / dockerbuild_folder_name
-        if local_src.is_dir():
+        local_src = cls.src_root_path_obj / source_path
+        if local_src.is_dir() or local_src.is_file():
             # If exegol is clone from github, build context is accessible from root src
             return local_src
         else:
@@ -51,13 +52,15 @@ class ConstantConfig:
                     possible_locations.append(Path(loc).parent.parent.parent)
                 # Find a good match
                 for test in possible_locations:
-                    context_path = test / dockerbuild_folder_name
+                    context_path = test / resource_folder
                     if context_path.is_dir():
                         return context_path
             # Detect a venv context
-            return Path(site.PREFIXES[0]) / dockerbuild_folder_name
+            return Path(site.PREFIXES[0]) / resource_folder
 
 
 # Dynamically built attribute must be set after class initialization
-ConstantConfig.build_context_path_obj = ConstantConfig.findBuildContextPath()
+ConstantConfig.build_context_path_obj = ConstantConfig.findResourceContextPath("exegol-docker-build", "exegol-docker-build")
 ConstantConfig.build_context_path = str(ConstantConfig.build_context_path_obj)
+
+ConstantConfig.entrypoint_context_path_obj = ConstantConfig.findResourceContextPath("exegol-entrypoint", "exegol/utils/entrypoint/entrypoint.sh")

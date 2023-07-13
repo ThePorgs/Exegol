@@ -12,6 +12,7 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.config.EnvInfo import EnvInfo
+from exegol.utils.entrypoint.EntrypointUtils import getEntrypointTarData
 from exegol.utils.ExeLog import logger, console
 
 
@@ -248,6 +249,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         :return:
         """
         self.__applyXhostACL()
+        # Update entrypoint script in the container
+        self.__container.put_archive("/.exegol", getEntrypointTarData())
+        if self.__container.status.lower() == "created":
+            self.__container.start()
 
     def __applyXhostACL(self):
         """
