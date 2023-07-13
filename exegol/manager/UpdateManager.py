@@ -202,7 +202,8 @@ class UpdateManager:
                 module = ExegolModules().getWrapperGit(fast_load=True)
                 if module.isAvailable:
                     isUpToDate = module.isUpToDate()
-                    remote_version = str(module.get_latest_commit())[:8]
+                    last_commit = module.get_latest_commit()
+                    remote_version = "?" if last_commit is None else str(last_commit)[:8]
                     current_version = str(module.get_current_commit())[:8]
                 else:
                     # If Exegol have not been installed from git clone. Auto-check update in this case is only available from mates release

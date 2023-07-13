@@ -217,6 +217,7 @@ class GitUtils:
             logger.debug("NEW TAG flag detected")
 
         remote_commit = self.get_latest_commit()
+        assert remote_commit is not None
         # Check if remote_commit is an ancestor of the last local commit (check if there is local commit ahead)
         return self.__gitRepo.is_ancestor(remote_commit, current_commit)
 
@@ -253,7 +254,9 @@ class GitUtils:
         assert self.isAvailable
         assert not ParametersManager().offline_mode
         if self.__fetchBranchInfo is None:
-            self.__fetch_update()
+            if not self.__fetch_update():
+                logger.debug("The latest commit cannot be retrieved.")
+                return None
         assert self.__fetchBranchInfo is not None
         return self.__fetchBranchInfo.commit
 
