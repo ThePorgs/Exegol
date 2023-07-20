@@ -588,9 +588,18 @@ class ContainerConfig:
             # Skip default volume workspace if disabled
             return
         else:
-            # Add shared-data-volumes private workspace bind volume
+            # Add dedicated private workspace bind volume
             volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
             self.addVolume(volume_path, '/workspace', enable_sticky_group=True)
+
+    def rollback_preparation(self, share_name: str):
+        """Undo preparation in case of container creation failure"""
+        if self.__workspace_custom_path is None and not self.__disable_workspace:
+            # Remove dedicated workspace volume
+            logger.info("Rollback: removing dedicated workspace directory")
+            directory_path = UserConfig().private_volume_path.joinpath(share_name)
+            if directory_path.is_dir():
+                directory_path.rmdir()
 
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
@@ -852,7 +861,7 @@ class ContainerConfig:
         """Remove a volume from the container configuration (Only before container creation)"""
         if host_path is None and container_path is None:
             # This is a dev problem
-            raise ReferenceError('At least one parameter must be set')
+            raise ValueError('At least one parameter must be set')
         for i in range(len(self.__mounts)):
             # For each Mount object compare the host_path if supplied or the container_path si supplied
             if host_path is not None and self.__mounts[i].get("Source") == host_path:

@@ -31,6 +31,10 @@ class ExegolContainerTemplate:
         """Prepare the model before creating the docker container"""
         self.config.prepareShare(self.name)
 
+    def rollback(self):
+        """Rollback change in case of container creation fail."""
+        self.config.rollback_preparation(self.name)
+
     def getDisplayName(self) -> str:
         """Getter of the container's name for TUI purpose"""
         if self.container_name != self.hostname:

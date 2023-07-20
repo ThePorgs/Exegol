@@ -125,8 +125,11 @@ class DockerUtils:
                                                     auto_remove=temporary,
                                                     working_dir=model.config.getWorkingDir())
         except APIError as err:
-            logger.error(err.explanation.decode('utf-8') if type(err.explanation) is bytes else err.explanation)
+            message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
+            message = message.replace('[', '\\[')
+            logger.error(message)
             logger.debug(err)
+            model.rollback()
             logger.critical("Error while creating exegol container. Exiting.")
             # Not reachable, critical logging will exit
             return  # type: ignore
