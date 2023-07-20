@@ -289,7 +289,10 @@ class UpdateManager:
 
     @classmethod
     def display_latest_version(cls) -> str:
-        return f"[blue]v{DataCache().get_wrapper_data().last_version}[/blue]"
+        last_version = DataCache().get_wrapper_data().last_version
+        if len(last_version) == 8 and '.' not in last_version:
+            return f"[bright_black]\[{last_version}][/bright_black]"
+        return f"[blue]v{last_version}[/blue]"
 
     @classmethod
     def __untagUpdateAvailable(cls, current_version: Optional[str] = None):
