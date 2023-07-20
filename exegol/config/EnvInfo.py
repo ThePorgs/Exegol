@@ -78,7 +78,7 @@ class EnvInfo:
         # Deduct a Windows Host from data
         cls.__is_docker_desktop = docker_os == "docker desktop"
         is_host_windows = cls.__is_docker_desktop and "microsoft" in docker_kernel
-        is_orbstack = "(containerized)" in docker_os and "orbstack" in docker_kernel
+        is_orbstack = (docker_os == "orbstack" or "(containerized)" in docker_os) and "orbstack" in docker_kernel
         if is_host_windows:
             # Check docker engine with Windows host
             if "wsl2" in docker_kernel:

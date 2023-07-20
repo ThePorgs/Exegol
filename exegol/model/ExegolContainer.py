@@ -257,6 +257,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
+            if shutil.which("xhost") is None:
+                logger.error("The [green]xhost[/green] command is not available on your [bold]host[/bold]. "
+                             "Exegol was unable to allow your container to access your graphical environment (or you don't have one).")
+                return
 
             if EnvInfo.isMacHost():
                 logger.debug(f"Adding xhost ACL to localhost")

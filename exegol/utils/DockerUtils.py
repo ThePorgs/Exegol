@@ -349,7 +349,9 @@ class DockerUtils:
         id_list = set()
         for img in recovery_images:
             # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
-            if len(img.attrs.get('RepoTags', [1])) > 0 or (not include_untag and len(img.attrs.get('RepoDigests', [1])) > 0) or img.id in id_list:
+            repo_tags = img.attrs.get('RepoTags')
+            repo_digest = img.attrs.get('RepoDigests')
+            if repo_tags is not None and len(repo_tags) > 0 or (not include_untag and repo_digest is not None and len(repo_digest) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
             if img.labels.get('org.exegol.app', '') == "Exegol":
