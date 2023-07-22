@@ -1,4 +1,5 @@
 #!/bin/bash
+# SIGTERM received (the container is stopping, every process must be gracefully stopped before the timeout).
 trap shutdown SIGTERM
 
 # Function specific
@@ -8,7 +9,10 @@ function load_setups() {
   if [[ ! -f /.exegol/.setup.lock ]]; then
     # Execute initial setup if lock file doesn't exist
     echo >/.exegol/.setup.lock
-    /.exegol/load_supported_setups.sh &>>/var/log/exegol/load_setups.log && gzip /var/log/exegol/load_setups.log
+    echo "Installing [green]my-resources[/green] custom setup ..."
+    # Run my-resources script. Logs starting with '[exegol]' will be print to the console and report back to the user through the wrapper.
+    /.exegol/load_supported_setups.sh |& tee /var/log/exegol/load_setups.log | grep -i '^\[exegol]' | sed "s/^\[exegol\]\s*//gi"
+    [ -f /var/log/exegol/load_setups.log ] && echo "Compressing [green]my-resources[/green] logs" && gzip /var/log/exegol/load_setups.log
   fi
 }
 
@@ -16,13 +20,14 @@ function endless() {
   # Start action / endless
   # Entrypoint for the container, in order to have a process hanging, to keep the container alive
   # Alternative to running bash/zsh/whatever as entrypoint, which is longer to start and to stop and to very clean
+  echo "READY"
   read -u 2
 }
 
 function shutdown() {
-  # SIGTERM received (the container is stopping).
   # Shutting down the container.
   # Sending SIGTERM to all interactive process for proper closing
+  pgrep guacd && /opt/tools/bin/desktop-stop  # Stop webui desktop if started
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
@@ -33,8 +38,8 @@ function shutdown() {
   kill $(pgrep -x -f -- bash) 2>/dev/null
   # shellcheck disable=SC2046
   kill $(pgrep -x -f -- -bash) 2>/dev/null
-  # Wait for every active process to exit (e.g: shell logging compression, VPN closing)
-  wait_list="$(pgrep -f "(.log|start.sh)" | grep -vE '^1$')"
+  # Wait for every active process to exit (e.g: shell logging compression, VPN closing, WebUI)
+  wait_list="$(pgrep -f "(.log|start.sh|tomcat)" | grep -vE '^1$')"
   for i in $wait_list; do
     # Waiting for: $i PID process to exit
     tail --pid="$i" -f /dev/null
@@ -62,7 +67,9 @@ function ovpn() {
   [[ "$DISPLAY" == *"host.docker.internal"* ]] && resolv_docker_host
   # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
   # shellcheck disable=SC2086
+  echo "Starting [green]VPN[/green]"
   openvpn --log-append /var/log/exegol/vpn.log $2 &
+  sleep 2  # Waiting 2 seconds for the VPN to start before continuing
   endless
 }
 
@@ -85,6 +92,7 @@ function compatibility() {
   endless
 }
 
+echo "Starting exegol"
 # Default action is "default"
 func_name="${1:-default}"
 

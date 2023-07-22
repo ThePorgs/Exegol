@@ -1,19 +1,21 @@
 import os
 import shutil
+from datetime import datetime
 from typing import Optional, Dict, Sequence, Tuple
 
 from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
 
+from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.config.EnvInfo import EnvInfo
-from exegol.utils.entrypoint.EntrypointUtils import getEntrypointTarData
+from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger, console
+from exegol.utils.entrypoint.EntrypointUtils import getEntrypointTarData
 
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
@@ -103,8 +105,20 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
             self.preStartSetup()
-            with console.status(f"Waiting to start {self.name}", spinner_style="blue"):
-                self.__container.start()
+            self.__start_container()
+
+    def __start_container(self):
+        with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
+            start_date = datetime.utcnow()
+            self.__container.start()
+            try:
+                for line in ContainerLogStream(self.__container, start_date=start_date, timeout=2):
+                    logger.verbose(line)
+                    if line == "READY":
+                        break
+                    progress.update(status=f"[blue]\[Startup][/blue] {line}")
+            except KeyboardInterrupt:
+                logger.warning("User skip startup status updates. Spawning a shell now.")
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""
@@ -252,7 +266,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # Update entrypoint script in the container
         self.__container.put_archive("/.exegol", getEntrypointTarData())
         if self.__container.status.lower() == "created":
-            self.__container.start()
+            self.__start_container()
 
     def __applyXhostACL(self):
         """

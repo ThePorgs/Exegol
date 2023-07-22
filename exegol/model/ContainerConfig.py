@@ -697,7 +697,8 @@ class ContainerConfig:
 
     def getEntrypointCommand(self, image_entrypoint: Optional[Union[str, List[str]]]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
         """Get container entrypoint/command arguments.
-        This method support legacy configuration."""
+        This method support legacy configuration.
+        The default container_entrypoint is '/.exegol/entrypoint.sh' and the default container_command is ['default']."""
         if image_entrypoint is None:
             # Legacy mode
             if self.__container_command_legacy is None:
