@@ -82,10 +82,10 @@ function cmd() {
 function compatibility() {
   # Older versions of exegol wrapper launch the container with the 'bash' command
   # This command is now interpreted by the custom entrypoint
-  echo "Your version of Exegol wrapper is not up-to-date!" | tee ~/banner.txt
+  echo "Your version of Exegol wrapper is not up-to-date!" | tee -a ~/banner.txt
   # If the command is bash, redirect to endless. Otherwise execute the command as job to keep the shutdown procedure available
   if [ "$*" != "bash" ]; then
-    echo "Executing command in backwards compatibility mode" | tee ~/banner.txt
+    echo "Executing command in backwards compatibility mode" | tee -a ~/banner.txt
     echo "$1 -c '${*:3}'"
     $1 -c "${*:3}" &
   fi
@@ -101,8 +101,15 @@ func_name="${1:-default}"
 # shellcheck disable=SC2068
 [ "$func_name" == "bash" ] || [ "$func_name" == "zsh" ] && compatibility $@
 
+### How "echo" works here with exegol ###
+# Every message printed here will be displayed to the console logs of the container
+# The container logs will be displayed by the wrapper to the user at startup through a progress animation (and a verbose line if -v is set)
+# The logs written to ~/banner.txt will be printed to the user through the .zshrc file on each new session (until the file is removed).
+# Using 'tee -a' after a command will save the output to a file AND to the console logs.
+##########################################
+
 # Dynamic execution
 $func_name "$@" || (
-  echo "An error occurred executing the '$func_name' action. Your image version is probably out of date for this feature. Please update your image." | tee ~/banner.txt
+  echo "An error occurred executing the '$func_name' action. Your image version is probably out of date for this feature. Please update your image." | tee -a ~/banner.txt
   exit 1
 )
