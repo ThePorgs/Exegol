@@ -18,6 +18,7 @@ class ContainerLogStream:
         self.__container = container
         # Fetch more logs from this datetime
         self.__start_date: datetime = datetime.utcnow() if start_date is None else start_date
+        self.__since_date = self.__start_date
         self.__until_date: Optional[datetime] = None
         # The data stream is returned from the docker SDK. It can contain multiple line at the same.
         self.__data_stream = None
@@ -25,7 +26,11 @@ class ContainerLogStream:
 
         # Enable timeout if > 0. Passed timeout_date, the iterator will stop.
         self.__enable_timeout = timeout > 0
-        self.__timeout_date: datetime = self.__start_date + timedelta(seconds=timeout)
+        self.__timeout_date: datetime = self.__since_date + timedelta(seconds=timeout)
+
+        # Hint message flag
+        self.__tips_sent = False
+        self.__tips_timedelta = self.__start_date + timedelta(seconds=15)
 
     def __iter__(self):
         return self
@@ -38,7 +43,7 @@ class ContainerLogStream:
             # The data stream is fetch from the docker SDK once empty.
             if self.__data_stream is None:
                 # The 'follow' mode cannot be used because there is no timeout mechanism and will stuck the process forever
-                self.__data_stream = self.__container.logs(stream=True, follow=False, since=self.__start_date, until=self.__until_date)
+                self.__data_stream = self.__container.logs(stream=True, follow=False, since=self.__since_date, until=self.__until_date)
             # Parsed the data stream to extract characters and merge them into a line.
             for streamed_char in self.__data_stream:
                 # When detecting an end of line, the buffer is returned as a single line.
@@ -53,8 +58,14 @@ class ContainerLogStream:
             if self.__enable_timeout and self.__until_date >= self.__timeout_date:
                 logger.debug("Container log stream timed-out")
                 raise StopIteration
+            elif not self.__tips_sent and self.__until_date >= self.__tips_timedelta:
+                self.__tips_sent = True
+                logger.info("Your start-up sequence takes time, your my-resource setup configuration may be significant.")
+                logger.info("[orange3]\[Tips][/orange3] If you want to skip startup update, "
+                            "you can use [green]CTRL+C[/green] and spawn a shell immediately. "
+                            "[blue](Startup sequence will continue in background)[/blue]")
             # Prepare the next iteration to fetch next logs
             self.__data_stream = None
-            self.__start_date = self.__until_date
+            self.__since_date = self.__until_date
             time.sleep(0.5)  # Wait for more logs
             self.__until_date = datetime.utcnow()
