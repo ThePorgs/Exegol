@@ -396,8 +396,27 @@ class ExegolTUI:
 
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
+        """
+        Build and print a rich table with every configuration of the container
+        :param container: Exegol container to print the table of
+        :return:
+        """
         # Load the image status if it is not already set.
         container.image.autoLoad()
+
+        recap = cls.__buildContainerRecapTable(container)
+
+        logger.empty_line()
+        console.print(recap)
+        logger.empty_line()
+
+    @staticmethod
+    def __buildContainerRecapTable(container: ExegolContainerTemplate):
+        """
+        Build a rich table to recap in detail the configuration of a specified ExegolContainerTemplate or ExegolContainer
+        :param container: The container to fetch config from
+        :return: A rich table fully built
+        """
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -407,12 +426,13 @@ class ExegolTUI:
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
         creation_date = container.config.getTextCreationDate()
         comment = container.config.getComment()
+        passwd = container.config.getPasswd()
 
         # Color code
         privilege_color = "bright_magenta"
         path_color = "magenta"
 
-        logger.empty_line()
+        # Build table
         recap = Table(border_style="grey35", box=box.SQUARE, title_justify="left", show_header=True)
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
@@ -427,6 +447,8 @@ class ExegolTUI:
             container_info_header += f" [{color}]({container.image.getArch()})[/{color}]"
         recap.add_column(container_info_header)
         # Main features
+        if passwd:
+            recap.add_row(f"[bold blue]Credentials[/bold blue]", f"[deep_sky_blue3]{container.config.getUsername()}[/deep_sky_blue3] : [deep_sky_blue3]{passwd}[/deep_sky_blue3]")
         if comment:
             recap.add_row("[bold blue]Comment[/bold blue]", comment)
         if creation_date:
@@ -466,8 +488,7 @@ class ExegolTUI:
             recap.add_row("[bold blue]Systctls[/bold blue]", os.linesep.join(
                 [f"[{privilege_color}]{key}[/{privilege_color}] = {getColor(value)[0]}{value}{getColor(value)[1]}" for
                  key, value in sysctls.items()]))
-        console.print(recap)
-        logger.empty_line()
+        return recap
 
     @classmethod
     def __isInteractionAllowed(cls):

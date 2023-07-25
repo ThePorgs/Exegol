@@ -274,6 +274,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__container.put_archive("/.exegol", getEntrypointTarData())
         if self.__container.status.lower() == "created":
             self.__start_container()
+        self.__updatePasswd()
 
     def __applyXhostACL(self):
         """
@@ -297,3 +298,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(f"Adding xhost ACL to local:{self.hostname}")
                 # add linux local ACL
                 os.system(f"xhost +local:{self.hostname} > /dev/null")
+
+    def __updatePasswd(self):
+        """
+        If configured, update the password of the user inside the container.
+        :return:
+        """
+        if self.config.getPasswd() is not None:
+            logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
+            self.exec(["echo", f"'{self.config.getUsername()}:{self.config.getPasswd()}'", "|", "chpasswd"], quiet=True)

@@ -1,6 +1,8 @@
 import logging
 import os
+import random
 import re
+import string
 from datetime import datetime
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
@@ -35,9 +37,10 @@ class ContainerConfig:
 
     # Label features (wrapper method to enable the feature / label name)
     __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
-    # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
-    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"],
-                        "org.exegol.metadata.comment": ["comment", "getComment"]}
+    # Label metadata (label name / [setter method to set the value, getter method to update labels])
+    __label_metadata = {"org.exegol.metadata.creation_date": ["setCreationDate", "getCreationDate"],
+                        "org.exegol.metadata.comment": ["setComment", "getComment"],
+                        "org.exegol.metadata.passwd": ["setPasswd", "getPasswd"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -68,14 +71,18 @@ class ContainerConfig:
         self.__shell_logging: bool = False
         self.__start_delegate_mode: bool = False
         # Metadata attributes
-        self.creation_date: Optional[str] = None
-        self.comment: Optional[str] = None
+        self.__creation_date: Optional[str] = None
+        self.__comment: Optional[str] = None
+        self.__username: str = "root"
+        self.__passwd: Optional[str] = self.generateRandomPassword()
 
         if container is not None:
             self.__parseContainerConfig(container)
 
     def __parseContainerConfig(self, container: Container):
         """Parse Docker object to setup self configuration"""
+        # Reset default attributes
+        self.__passwd = None
         # Container Config section
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
@@ -130,10 +137,10 @@ class ContainerConfig:
             logger.debug(f"Parsing label : {key}")
             if key.startswith("org.exegol.metadata."):
                 # Find corresponding feature and attributes
-                for label, refs in self.__label_metadata.items():
+                for label, refs in self.__label_metadata.items():  # Setter
                     if label == key:
-                        # reflective set of the metadata attribute (set metadata value to the corresponding attribute)
-                        setattr(self, refs[0], value)
+                        # reflective execution of setter method (set metadata value to the corresponding attribute)
+                        getattr(self, refs[0])(value)
                         break
             elif key.startswith("org.exegol.feature."):
                 # Find corresponding feature and attributes
@@ -421,9 +428,9 @@ class ContainerConfig:
 
     def addComment(self, comment):
         """Procedure to add comment to a container"""
-        if not self.comment:
+        if not self.__comment:
             logger.verbose("Config: Adding comment to container info")
-            self.comment = comment
+            self.__comment = comment
             self.addLabel("org.exegol.metadata.comment", comment)
 
     def __disableShellLogging(self):
@@ -989,18 +996,61 @@ class ContainerConfig:
     def getLabels(self) -> Dict[str, str]:
         """Labels config getter"""
         # Update metadata (from getter method) to the labels (on container creation)
-        for label_name, refs in self.__label_metadata.items():
+        for label_name, refs in self.__label_metadata.items():  # Getter
             data = getattr(self, refs[1])()
             if data is not None:
                 self.addLabel(label_name, data)
         return self.__labels
 
+    # Metadata labels getter / setter section
+
+    def setCreationDate(self, creation_date: str):
+        """Set the container creation date parsed from the labels of an existing container."""
+        self.__creation_date = creation_date
+
     def getCreationDate(self) -> str:
         """Get container creation date.
         If the creation has not been set before, init as right now."""
-        if self.creation_date is None:
-            self.creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
-        return self.creation_date
+        if self.__creation_date is None:
+            self.__creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        return self.__creation_date
+
+    def setComment(self, comment: str):
+        """Set the container comment parsed from the labels of an existing container."""
+        self.__comment = comment
+
+    def getComment(self) -> Optional[str]:
+        """Get the container comment.
+        If no comment has been supplied, returns None."""
+        return self.__comment
+
+    def setPasswd(self, passwd: str):
+        """
+        Set the container root password parsed from the labels of an existing container.
+        This secret data can be stored inside labels because it is accessible only from the docker socket
+        which give direct access to the container anyway without password.
+        """
+        self.__passwd = passwd
+
+    def getPasswd(self) -> Optional[str]:
+        """
+        Get the container password.
+        """
+        return self.__passwd
+
+    def getUsername(self) -> str:
+        """
+        Get the container username.
+        """
+        return self.__username
+
+    @staticmethod
+    def generateRandomPassword(length: int = 30) -> str:
+        """
+        Generate a new random password.
+        """
+        charset = string.ascii_letters + string.digits + string.punctuation.replace("'", "")
+        return''.join(random.choice(charset) for i in range(length))
 
     def getVpnName(self):
         """Get VPN Config name"""
@@ -1076,14 +1126,9 @@ class ContainerConfig:
     def getTextCreationDate(self) -> str:
         """Get the container creation date.
         If the creation date has not been supplied on the container, return empty string."""
-        if self.creation_date is None:
+        if self.__creation_date is None:
             return ""
-        return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
-
-    def getComment(self) -> Optional[str]:
-        """Get the container comment. 
-        If no comment has been supplied, returns None."""
-        return self.comment
+        return datetime.strptime(self.__creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
