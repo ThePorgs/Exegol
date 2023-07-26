@@ -3,6 +3,7 @@ from typing import Optional
 
 from rich.prompt import Prompt
 
+from exegol.config.EnvInfo import EnvInfo
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolImage import ExegolImage
 
@@ -14,6 +15,9 @@ class ExegolContainerTemplate:
         if name is None:
             name = Prompt.ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
         assert name is not None
+        if EnvInfo.isWindowsHost() or EnvInfo.isMacHost():
+            # Force container as lowercase because the filesystem of windows / mac are case-insensitive => https://github.com/ThePorgs/Exegol/issues/167
+            name = name.lower()
         self.container_name: str = name if name.startswith("exegol-") else f'exegol-{name}'
         self.name: str = name.replace('exegol-', '')
         if hostname:

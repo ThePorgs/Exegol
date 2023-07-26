@@ -154,6 +154,13 @@ class DockerUtils:
             return  # type: ignore
         # Check if there is at least 1 result. If no container was found, raise ObjectNotFound.
         if container is None or len(container) == 0:
+            # Handle case-insensitive OS
+            if EnvInfo.isWindowsHost() or EnvInfo.isMacHost():
+                # First try to fetch the container as-is (for retroactive support with old container with uppercase characters)
+                # If the user's input didn't match any container, try to force the name in lowercase if not already tried
+                lowered_tag = tag.lower()
+                if lowered_tag != tag:
+                    return cls.getContainer(lowered_tag)
             raise ObjectNotFound
         # Filter results with exact name matching
         for c in container:
