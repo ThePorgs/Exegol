@@ -8,7 +8,7 @@ from exegol.utils.MetaSingleton import MetaSingleton
 class DataCache(DataFileUtils, metaclass=MetaSingleton):
     """This class allows loading cached information defined configurations
 
-    Exemple of data:
+    Example of data:
     {
         wrapper: {
             update: {

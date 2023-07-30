@@ -62,16 +62,18 @@ class DataFileUtils:
         This fonction build the default file content. Called when the file doesn't exist yet or have been upgrade and need to be updated.
         :return:
         """
-        raise NotImplementedError(
-            f"The '_build_default_file' method hasn't been implemented in the '{self.__class__}' class.")
+        raise NotImplementedError(f"The '_build_default_file' method hasn't been implemented in the '{self.__class__}' class.")
 
     def _create_config_file(self):
         """
         Create or overwrite the file content to the default / current value depending on the '_build_default_file' that must be redefined in child class.
         :return:
         """
-        with open(self._file_path, 'w') as file:
-            file.write(self._build_file_content())
+        try:
+            with open(self._file_path, 'w') as file:
+                file.write(self._build_file_content())
+        except PermissionError as e:
+            logger.critical(f"Unable to open the file '{self._file_path}' ({e}). Please fix your file permissions or run exegol with the correct rights.")
 
     def _parse_config(self):
         data: Dict = {}
