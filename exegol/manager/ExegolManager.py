@@ -540,8 +540,11 @@ class ExegolManager:
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
         model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
+        # Mount entrypoint as a volume (because in tmp mode the container is created with run instead of create method)
+        model.config.addVolume(str(ConstantConfig.entrypoint_context_path_obj), "/.exegol/entrypoint.sh", must_exist=True, read_only=True)
+
         container = DockerUtils.createContainer(model, temporary=True)
-        container.postCreateSetup()
+        container.postCreateSetup(is_temporary=True)
         return container
 
     @classmethod

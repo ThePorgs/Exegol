@@ -264,17 +264,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         self.__applyXhostACL()
 
-    def postCreateSetup(self):
+    def postCreateSetup(self, is_temporary: bool = False):
         """
         Operation to be performed after creating a container
         :return:
         """
         self.__applyXhostACL()
-        # Update entrypoint script in the container
-        self.__container.put_archive("/.exegol", getEntrypointTarData())
-        if self.__container.status.lower() == "created":
-            self.__start_container()
-        self.__updatePasswd()
+        # if not a temporary container, apply custom config
+        if not is_temporary:
+            # Update entrypoint script in the container
+            self.__container.put_archive("/.exegol", getEntrypointTarData())
+            if self.__container.status.lower() == "created":
+                self.__start_container()
+            self.__updatePasswd()
 
     def __applyXhostACL(self):
         """
