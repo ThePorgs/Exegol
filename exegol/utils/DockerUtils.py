@@ -98,7 +98,7 @@ class DockerUtils:
                 docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
-        entrypoint, command = model.config.getEntrypointCommand(model.image.getEntrypointConfig())
+        entrypoint, command = model.config.getEntrypointCommand()
         logger.debug(f"Entrypoint: {entrypoint}")
         logger.debug(f"Cmd: {command}")
         # The 'create' function must be called to create a container without starting it

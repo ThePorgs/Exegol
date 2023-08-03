@@ -23,7 +23,7 @@ def getEntrypointTarData():
     stream = io.BytesIO()
     with tarfile.open(fileobj=stream, mode='w|') as entry_tar:
         # Import file to tar object
-        info = tarfile.TarInfo(name="entrypoint.sh")
+        info = tarfile.TarInfo(name="/.exegol/entrypoint.sh")
         info.size = len(raw)
         info.mode = 0o500
         entry_tar.addfile(info, fileobj=data)

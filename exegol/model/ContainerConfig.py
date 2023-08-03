@@ -29,7 +29,6 @@ class ContainerConfig:
     # Default hardcoded value
     __default_entrypoint_legacy = "bash"
     __default_entrypoint = ["/bin/bash", "/.exegol/entrypoint.sh"]
-    __default_cmd = [""]
     __default_shm_size = "64M"
 
     # Reference static config data
@@ -64,12 +63,14 @@ class ContainerConfig:
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
-        self.__container_command_legacy: Optional[str] = None
-        self.__container_command: List[str] = self.__default_cmd
         self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
         self.__start_delegate_mode: bool = False
+        # Entrypoint features
+        self.__vpn_parameters: Optional[str] = None
+        self.__run_cmd: bool = False
+        self.__endless_container: bool = True
         # Metadata attributes
         self.__creation_date: Optional[str] = None
         self.__comment: Optional[str] = None
@@ -480,12 +481,7 @@ class ContainerConfig:
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
-        ovpn_parameters = self.__prepareVpnVolumes(config_path)
-        # Execution of the VPN daemon at container startup
-        if ovpn_parameters is not None:
-            vpn_cmd_legacy = f"bash -c 'mkdir -p /var/log/exegol; openvpn --log-append /var/log/exegol/vpn.log {ovpn_parameters}; bash'"
-            self.setLegacyContainerCommand(vpn_cmd_legacy)
-            self.setContainerCommand("ovpn", ovpn_parameters)
+        self.__vpn_parameters = self.__prepareVpnVolumes(config_path)
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
@@ -566,6 +562,7 @@ class ContainerConfig:
         if self.__vpn_path:
             logger.verbose('Removing VPN configuration')
             self.__vpn_path = None
+            self.__vpn_parameters = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
             self.removeDevice("/dev/net/tun")
@@ -573,7 +570,6 @@ class ContainerConfig:
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
             self.removeVolume(container_path="/.exegol/vpn/config")
-            self.__restoreEntrypoint()
             return True
         return False
 
@@ -622,21 +618,11 @@ class ContainerConfig:
             host_mode = False
         self.__network_host = host_mode
 
-    def setContainerCommand(self, entrypoint_function: str, *parameters: str):
-        """Set the entrypoint command of the container. This command is executed at each startup.
-        This parameter is applied to the container at creation."""
-        self.__container_command = [entrypoint_function] + list(parameters)
-
-    def setLegacyContainerCommand(self, cmd: str):
-        """Set the entrypoint command of the container. This command is executed at each startup.
-        This parameter is applied to the container at creation.
-        This method is legacy, before the entrypoint exist (support images before 3.x.x)."""
-        self.__container_command_legacy = cmd
-
-    def __restoreEntrypoint(self):
-        """Restore container's entrypoint to its default configuration"""
-        self.__container_command_legacy = None
-        self.__container_command = self.__default_cmd
+    def entrypointRunCmd(self, endless_mode=False):
+        """Enable the run_cmd feature of the entrypoint. This feature execute the command stored in the $CMD container environment variables.
+        The endless_mode parameter can specify if the container must stay alive after command execution or not"""
+        self.__run_cmd = True
+        self.__endless_container = endless_mode
 
     def addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
@@ -702,17 +688,21 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getEntrypointCommand(self, image_entrypoint: Optional[Union[str, List[str]]]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
+    def getEntrypointCommand(self) -> Tuple[Optional[List[str]], Union[List[str], str]]:
         """Get container entrypoint/command arguments.
-        This method support legacy configuration.
-        The default container_entrypoint is '/.exegol/entrypoint.sh' and the default container_command is ['default']."""
-        if image_entrypoint is None:
-            # Legacy mode
-            if self.__container_command_legacy is None:
-                return [self.__default_entrypoint_legacy], []
-            return None, self.__container_command_legacy
+        The default container_entrypoint is '/bin/bash /.exegol/entrypoint.sh' and the default container_command is ['load_setups', 'endless']."""
+        entrypoint_actions = []
+        if self.__my_resources:
+            entrypoint_actions.append("load_setups")
+        if self.__vpn_path is not None:
+            entrypoint_actions.append(f"ovpn {self.__vpn_parameters}")
+        if self.__run_cmd:
+            entrypoint_actions.append("run_cmd")
+        if self.__endless_container:
+            entrypoint_actions.append("endless")
         else:
-            return self.__container_entrypoint, self.__container_command
+            entrypoint_actions.append("end")
+        return self.__container_entrypoint, entrypoint_actions
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""

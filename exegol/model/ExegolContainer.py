@@ -118,10 +118,17 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             try:
                 # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
                 for line in ContainerLogStream(self.__container, start_date=start_date, timeout=2):
-                    logger.verbose(line)
                     # Once the last log "READY" is received, the startup sequence is over and the execution can continue
                     if line == "READY":
                         break
+                    elif line.startswith('[W]'):
+                        line = line.replace('[W]', '')
+                        logger.warning(line)
+                    elif line.startswith('[E]'):
+                        line = line.replace('[E]', '')
+                        logger.error(line)
+                    else:
+                        logger.verbose(line)
                     progress.update(status=f"[blue]\[Startup][/blue] {line}")
             except KeyboardInterrupt:
                 # User can cancel startup logging with ctrl+C
@@ -191,11 +198,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         - The first return argument is the payload to execute with every pre-routine for zsh.
         - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
-        str_cmd = ' '.join(command)
+        str_cmd = ' '.join(command).replace('"', '\\"')
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval $CMD'
+        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval "$CMD"'
         if not entrypoint_mode:
             # For direct execution, the full command must be supplied not just the zsh argument
             cmd = f"zsh -c '{cmd}'"
@@ -273,7 +280,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
-            self.__container.put_archive("/.exegol", getEntrypointTarData())
+            self.__container.put_archive("/", getEntrypointTarData())
             if self.__container.status.lower() == "created":
                 self.__start_container()
             self.__updatePasswd()

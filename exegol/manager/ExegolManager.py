@@ -530,8 +530,7 @@ class ExegolManager:
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
             exec_payload, str_cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
-            config.setLegacyContainerCommand(f"zsh -c '{exec_payload}'")
-            config.setContainerCommand("cmd", "zsh", "-c", exec_payload)
+            config.entrypointRunCmd()
             config.addEnv("CMD", str_cmd)
             config.addEnv("DISABLE_AUTO_UPDATE", "true")
         # Workspace must be disabled for temporary container because host directory is never deleted
