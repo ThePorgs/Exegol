@@ -212,6 +212,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     list_files = []
                 else:
                     return
+            except FileNotFoundError:
+                logger.debug("This workspace has already been removed.")
+                return
             try:
                 if len(list_files) > 0:
                     # Directory is not empty
