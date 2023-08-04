@@ -1,7 +1,7 @@
 import io
 import tarfile
 
-from exegol import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 
 

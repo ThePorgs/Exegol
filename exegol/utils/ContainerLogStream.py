@@ -44,6 +44,7 @@ class ContainerLogStream:
             if self.__data_stream is None:
                 # The 'follow' mode cannot be used because there is no timeout mechanism and will stuck the process forever
                 self.__data_stream = self.__container.logs(stream=True, follow=False, since=self.__since_date, until=self.__until_date)
+            assert self.__data_stream is not None
             # Parsed the data stream to extract characters and merge them into a line.
             for streamed_char in self.__data_stream:
                 # When detecting an end of line, the buffer is returned as a single line.
