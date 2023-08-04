@@ -2,6 +2,7 @@ import io
 import os
 import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -92,7 +93,8 @@ class GuiUtils:
             # Notify user to change configuration
             logger.error("XQuartz does not allow network connections. "
                          "You need to manually change the configuration to 'Allow connections from network clients'")
-            if os.getuid() == 0:
+            # Add sys.platform check to exclude windows env (fix for mypy static code analysis)
+            if sys.platform != "win32" and os.getuid() == 0:
                 logger.warning("You are running exegol as [red]root[/red]! The root user cannot check in the user context whether XQuartz is properly configured or not.")
             return False
 
