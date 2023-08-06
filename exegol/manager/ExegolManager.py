@@ -21,7 +21,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.ExegolModules import ExegolModules
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.DockerUtils import DockerUtils
-from exegol.utils.ExeLog import logger, ExeLog, console
+from exegol.utils.ExeLog import logger, ExeLog
 
 
 class ExegolManager:
@@ -237,7 +237,6 @@ class ExegolManager:
         logger.success(
             """We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
-
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -460,11 +459,10 @@ class ExegolManager:
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
         if ParametersManager().log:
-            config.enableShellLogging()
+            config.enableShellLogging(ParametersManager().log_method)
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
-                logger.warning(
-                    f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
+                logger.warning(f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
             config.setWorkspaceShare(ParametersManager().workspace_path)
         elif ParametersManager().mount_current_dir:
             config.enableCwdShare()
@@ -484,6 +482,8 @@ class ExegolManager:
         if ParametersManager().envs is not None:
             for env in ParametersManager().envs:
                 config.addRawEnv(env)
+        if UserConfig().desktop_default_enable ^ ParametersManager().desktop:
+            config.enableDesktop(ParametersManager().desktop_config)
         if ParametersManager().comment:
             config.addComment(ParametersManager().comment)
         return config

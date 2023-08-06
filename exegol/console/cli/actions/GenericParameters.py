@@ -3,7 +3,7 @@ from typing import List, Optional
 from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, FilesCompleter
 
 from exegol.config.UserConfig import UserConfig
-from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter
+from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter, DesktopConfigCompleter
 from exegol.console.cli.actions.Command import Option, GroupArg
 
 
@@ -225,18 +225,6 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
 
-        self.vpn = Option("--vpn",
-                          dest="vpn",
-                          default=None,
-                          action="store",
-                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
-                          completer=FilesCompleter(["ovpn"], directories=True))
-        self.vpn_auth = Option("--vpn-auth",
-                               dest="vpn_auth",
-                               default=None,
-                               action="store",
-                               help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
-
         self.comment = Option("--comment",
                               dest="comment",
                               action="store",
@@ -260,6 +248,34 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.comment, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
+        self.vpn = Option("--vpn",
+                          dest="vpn",
+                          default=None,
+                          action="store",
+                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
+                          completer=FilesCompleter(["ovpn"], directories=True))
+        self.vpn_auth = Option("--vpn-auth",
+                               dest="vpn_auth",
+                               default=None,
+                               action="store",
+                               help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
+
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
                                   title="[blue]Container creation VPN options[/blue]"))
+
+        self.desktop = Option("--desktop",
+                              dest="desktop",
+                              action="store_true",
+                              help=f"Enable or disable the Exegol desktop feature (default: {'[green]Enabled[/green]' if UserConfig().desktop_default_enable else '[red]Disabled[/red]'})")
+        self.desktop_config = Option("--desktop-config",
+                                     dest="desktop_config",
+                                     default="",
+                                     action="store",
+                                     help=f"Configure your exegol desktop ([blue]{', '.join(UserConfig.desktop_available_proto)}[/blue]) and its exposition "
+                                          f"(format: [blue]proto[/blue]\[:[blue]ip[/blue]\[:[blue]port[/blue]]]) "
+                                          f"(default: [blue]{UserConfig().desktop_default_proto}[/blue]:[blue]{'127.0.0.1' if UserConfig().desktop_default_localhost else '0.0.0.0'}[/blue]:[blue]<random>[/blue])",
+                                     completer=DesktopConfigCompleter)
+        groupArgs.append(GroupArg({"arg": self.desktop, "required": False},
+                                  {"arg": self.desktop_config, "required": False},
+                                  title="[blue]Container creation Desktop options[/blue]"))

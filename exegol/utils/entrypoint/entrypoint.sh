@@ -10,7 +10,7 @@ function load_setups() {
     # Execute initial setup if lock file doesn't exist
     echo >/.exegol/.setup.lock
     # Run my-resources script. Logs starting with '[exegol]' will be print to the console and report back to the user through the wrapper.
-    if [ -f /.exegol/load_supported_setupsd.sh ]; then
+    if [ -f /.exegol/load_supported_setups.sh ]; then
       echo "Installing [green]my-resources[/green] custom setup ..."
       /.exegol/load_supported_setups.sh |& tee /var/log/exegol/load_setups.log | grep -i '^\[exegol]' | sed "s/^\[exegol\]\s*//gi"
       [ -f /var/log/exegol/load_setups.log ] && echo "Compressing [green]my-resources[/green] logs" && gzip /var/log/exegol/load_setups.log && echo "My-resources loaded"
@@ -20,13 +20,13 @@ function load_setups() {
   fi
 }
 
-function end() {
+function finish() {
     echo "READY"
 }
 
 function endless() {
   # Start action / endless
-  end
+  finish
   # Entrypoint for the container, in order to have a process hanging, to keep the container alive
   # Alternative to running bash/zsh/whatever as entrypoint, which is longer to start and to stop and to very clean
   # shellcheck disable=SC2162
@@ -36,7 +36,7 @@ function endless() {
 function shutdown() {
   # Shutting down the container.
   # Sending SIGTERM to all interactive process for proper closing
-  pgrep guacd && /opt/tools/bin/desktop-stop  # Stop webui desktop if started
+  pgrep vnc && /opt/tools/bin/desktop-stop  # Stop webui desktop if started TODO improve desktop stop
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
@@ -48,7 +48,7 @@ function shutdown() {
   # shellcheck disable=SC2046
   kill $(pgrep -x -f -- -bash) 2>/dev/null
   # Wait for every active process to exit (e.g: shell logging compression, VPN closing, WebUI)
-  wait_list="$(pgrep -f "(.log|start.sh|tomcat)" | grep -vE '^1$')"
+  wait_list="$(pgrep -f "(.log|start.sh|vnc)" | grep -vE '^1$')"
   for i in $wait_list; do
     # Waiting for: $i PID process to exit
     tail --pid="$i" -f /dev/null
@@ -67,14 +67,42 @@ function _resolv_docker_host() {
 
 function ovpn() {
   [[ "$DISPLAY" == *"host.docker.internal"* ]] && _resolv_docker_host
-  # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
-  echo "Starting [green]VPN[/green]"
-  openvpn --log-append /var/log/exegol/vpn.log "$@" &
-  sleep 2  # Waiting 2 seconds for the VPN to start before continuing
+  if ! command -v openvpn &> /dev/null
+  then
+      echo '[E]Your exegol image is not up-to-date! VPN feature is not supported!'
+  else
+    # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
+    echo "Starting [green]VPN[/green]"
+    openvpn --log-append /var/log/exegol/vpn.log "$@" &
+    sleep 2  # Waiting 2 seconds for the VPN to start before continuing
+  fi
+
 }
 
 function run_cmd() {
   /bin/zsh -c "autoload -Uz compinit; compinit; source ~/.zshrc; eval \"$CMD\""
+}
+
+function desktop() {
+  if [ -f /opt/tools/bin/desktop-start ]
+  then
+      echo "Starting Exegol [green]desktop[/green]"
+      /opt/tools/bin/desktop-start &
+      sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
+  else
+      echo '[E]Your exegol image is not up-to-date! Desktop feature is not supported!'
+  fi
+
+    #case "$mode" in
+    #  vnc)
+    #    echo "Start VNC"
+    #    vncserver -localhost "yes" -rfbport "$port" -geometry "1920x1080" -SecurityTypes "VncAuth" -passwd "$HOME/.vnc/passwd" ":0"
+    #    ;;
+    #  http)
+    #    echo "Start VNC"
+    #    echo "Start websockify"
+    #    ;;
+    #esac
 }
 
 ##### How "echo" works here with exegol #####

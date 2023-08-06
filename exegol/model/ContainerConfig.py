@@ -4,6 +4,7 @@ import random
 import re
 import string
 from datetime import datetime
+from enum import Enum
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
@@ -33,13 +34,24 @@ class ContainerConfig:
 
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+    __default_desktop_port = {"http": 6080, "vnc": 5900}
 
-    # Label features (wrapper method to enable the feature / label name)
-    __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
+    class ExegolFeatures(Enum):
+        shell_logging = "org.exegol.feature.shell_logging"
+        desktop = "org.exegol.feature.desktop"
+
+    class ExegolMetadata(Enum):
+        creation_date = "org.exegol.metadata.creation_date"
+        comment = "org.exegol.metadata.comment"
+        password = "org.exegol.metadata.passwd"
+
+    # Label features (label name / wrapper method to enable the feature)
+    __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",
+                        ExegolFeatures.desktop.value: "configureDesktop"}
     # Label metadata (label name / [setter method to set the value, getter method to update labels])
-    __label_metadata = {"org.exegol.metadata.creation_date": ["setCreationDate", "getCreationDate"],
-                        "org.exegol.metadata.comment": ["setComment", "getComment"],
-                        "org.exegol.metadata.passwd": ["setPasswd", "getPasswd"]}
+    __label_metadata = {ExegolMetadata.creation_date.value: ["setCreationDate", "getCreationDate"],
+                        ExegolMetadata.comment.value: ["setComment", "getComment"],
+                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -71,6 +83,9 @@ class ContainerConfig:
         self.__vpn_parameters: Optional[str] = None
         self.__run_cmd: bool = False
         self.__endless_container: bool = True
+        self.__desktop_proto: Optional[str] = None
+        self.__desktop_host: Optional[str] = None
+        self.__desktop_port: Optional[int] = None
         # Metadata attributes
         self.__creation_date: Optional[str] = None
         self.__comment: Optional[str] = None
@@ -140,18 +155,18 @@ class ContainerConfig:
             logger.debug(f"Parsing label : {key}")
             if key.startswith("org.exegol.metadata."):
                 # Find corresponding feature and attributes
-                for label, refs in self.__label_metadata.items():  # Setter
-                    if label == key:
-                        # reflective execution of setter method (set metadata value to the corresponding attribute)
-                        getattr(self, refs[0])(value)
-                        break
+                refs = self.__label_metadata.get(key)  # Setter
+                if refs is not None:
+                    # reflective execution of setter method (set metadata value to the corresponding attribute)
+                    getattr(self, refs[0])(value)
             elif key.startswith("org.exegol.feature."):
                 # Find corresponding feature and attributes
-                for attribute, label in self.__label_features.items():
-                    if label == key:
-                        # reflective execution of the feature enable method (add label & set attributes)
-                        getattr(self, attribute)()
-                        break
+                enable_function = self.__label_features.get(key)
+                if enable_function is not None:
+                    # reflective execution of the feature enable method (add label & set attributes)
+                    if value == "Enabled":
+                        value = ""
+                    getattr(self, enable_function)(value)
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -242,6 +257,16 @@ class ContainerConfig:
         if not self.__enable_gui:
             command_options.append("--disable-X11")
 
+        # Desktop Config
+        if self.isDesktopEnabled():
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]Desktop[/blue]?", False):
+                self.__disableDesktop()
+        elif Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
+            self.enableDesktop()
+        # Command builder info
+        if self.isDesktopEnabled():
+            command_options.append("--desktop")
+
         # Timezone config
         if self.__share_timezone:
             if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
@@ -287,7 +312,7 @@ class ContainerConfig:
             if Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
                 self.__disableShellLogging()
         elif Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
-            self.enableShellLogging()
+            self.enableShellLogging(UserConfig().shell_logging_method)
         # Command builder info
         if self.__shell_logging:
             command_options.append("--log")
@@ -417,19 +442,88 @@ class ContainerConfig:
             self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
-    def enableShellLogging(self):
+    def enableShellLogging(self, log_method: str):
         """Procedure to enable exegol shell logging feature"""
         if not self.__shell_logging:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
-            self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
+            self.addLabel(self.ExegolFeatures.shell_logging.value, log_method)
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
-            self.removeLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'))
+            self.removeLabel(self.ExegolFeatures.shell_logging.value)
+
+    def isDesktopEnabled(self):
+        return self.__desktop_proto is not None
+
+    def enableDesktop(self, desktop_config: str = ""):
+        """Procedure to enable exegol desktop feature"""
+        if not self.isDesktopEnabled():
+            logger.verbose("Config: Enabling exegol desktop")
+            self.configureDesktop(desktop_config)
+            assert self.__desktop_proto is not None
+            assert self.__desktop_host is not None
+            assert self.__desktop_port is not None
+            self.addLabel(self.ExegolFeatures.desktop.value, f"{self.__desktop_proto}:{self.__desktop_host}:{self.__desktop_port}")
+            # Env var are used to send these parameter to the desktop-start script
+            self.addEnv("DESKTOP_PROTO", self.__desktop_proto)
+
+            if self.__network_host:
+                self.addEnv("DESKTOP_HOST", self.__desktop_host)
+                self.addEnv("DESKTOP_PORT", str(self.__desktop_port))
+            else:
+                self.addEnv("DESKTOP_HOST", "localhost")
+                self.addEnv("DESKTOP_PORT", str(self.__default_desktop_port.get(self.__desktop_proto)))
+                # Exposing desktop service
+                self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
+
+    def configureDesktop(self, desktop_config: str):
+        """Configure the exegol desktop feature from user parameters.
+        Accepted format: 'mode:host:port'
+        """
+        self.__desktop_proto = UserConfig().desktop_default_proto
+        self.__desktop_host = "localhost" if UserConfig().desktop_default_localhost else "0.0.0.0"
+
+        for i, data in enumerate(desktop_config.split(":")):
+            if not data:
+                continue
+            if i == 0:
+                data = data.lower()
+                if data in UserConfig.desktop_available_proto:
+                    self.__desktop_proto = data
+                else:
+                    logger.critical(f"The desktop mode '{data}' is not supported. Please choose a supported mode: [green]{', '.join(UserConfig.desktop_available_proto)}[/green].")
+            elif i == 1 and data:
+                self.__desktop_host = data
+                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
+            elif i == 2:
+                try:
+                    self.__desktop_port = int(data)
+                except ValueError:
+                    logger.critical(f"Invalid desktop port: '{data}' is not a valid port.")
+            else:
+                logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
+
+        if self.__desktop_port is None:
+            self.__desktop_port = self.__findAvailableRandomPort()
+
+    def __disableDesktop(self):
+        """Procedure to disable exegol desktop feature"""
+        if self.isDesktopEnabled():
+            logger.verbose("Config: Disabling shell logging")
+            assert self.__desktop_proto is not None
+            if not self.__network_host:
+                self.__removePort(self.__default_desktop_port[self.__desktop_proto])
+            self.__desktop_proto = None
+            self.__desktop_host = None
+            self.__desktop_port = None
+            self.removeLabel(self.ExegolFeatures.desktop.value)
+            self.removeEnv("DESKTOP_PROTO")
+            self.removeEnv("DESKTOP_HOST")
+            self.removeEnv("DESKTOP_PORT")
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
@@ -489,7 +583,7 @@ class ContainerConfig:
         if not self.__comment:
             logger.verbose("Config: Adding comment to container info")
             self.__comment = comment
-            self.addLabel("org.exegol.metadata.comment", comment)
+            self.addLabel(self.ExegolMetadata.comment.value, comment)
 
     # ===== Functional / technical methods section =====
 
@@ -604,6 +698,8 @@ class ContainerConfig:
         entrypoint_actions = []
         if self.__my_resources:
             entrypoint_actions.append("load_setups")
+        if self.isDesktopEnabled():
+            entrypoint_actions.append("desktop")
         if self.__vpn_path is not None:
             entrypoint_actions.append(f"ovpn {self.__vpn_parameters}")
         if self.__run_cmd:
@@ -611,7 +707,7 @@ class ContainerConfig:
         if self.__endless_container:
             entrypoint_actions.append("endless")
         else:
-            entrypoint_actions.append("end")
+            entrypoint_actions.append("finish")
         return self.__container_entrypoint, entrypoint_actions
 
     def getShellCommand(self) -> str:
@@ -640,6 +736,16 @@ class ContainerConfig:
         """
         charset = string.ascii_letters + string.digits + string.punctuation.replace("'", "")
         return ''.join(random.choice(charset) for i in range(length))
+
+    @staticmethod
+    def __findAvailableRandomPort(interface: str = 'localhost') -> int:
+        """Find an available random port. Using the socket system to """
+        import socket
+        sock = socket.socket()
+        sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+        random_port = sock.getsockname()[1]
+        sock.close()
+        return random_port
 
     # ===== Apply config section =====
 
@@ -942,6 +1048,9 @@ class ContainerConfig:
         """Ports config getter"""
         return self.__ports
 
+    def __removePort(self, container_port: Union[int, str], protocol: str = 'tcp'):
+        self.__ports.pop(f"{container_port}/{protocol}", None)
+
     def addLabel(self, key: str, value: str):
         """Add a custom label to the container configuration"""
         self.__labels[key] = value
@@ -1093,6 +1202,8 @@ class ContainerConfig:
         result = ""
         if verbose or self.__privileged:
             result += f"{getColor(not self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[green]Off :heavy_check_mark:[/green]'}{getColor(not self.__privileged)[1]}{os.linesep}"
+        if verbose or self.isDesktopEnabled():
+            result += f"{getColor(self.isDesktopEnabled())[0]}Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
@@ -1112,11 +1223,18 @@ class ContainerConfig:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
 
-    def getVpnName(self):
+    def getVpnName(self) -> str:
         """Get VPN Config name"""
         if self.__vpn_path is None:
             return "[bright_black]N/A[/bright_black]   "
         return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
+
+    def getDesktopConfig(self) -> str:
+        """Get Desktop feature status / config"""
+        if not self.isDesktopEnabled():
+            return boolFormatter(False)
+        config = f"{self.__desktop_proto}://{self.__desktop_host}:{self.__desktop_port}"
+        return f"[link={config}][deep_sky_blue3]{config}[/deep_sky_blue3][/link]"
 
     def getTextNetworkMode(self) -> str:
         """Network mode, text getter"""
@@ -1162,7 +1280,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH", "DESKTOP_PROTO", "DESKTOP_HOST", "DESKTOP_PORT"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
