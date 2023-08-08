@@ -92,7 +92,7 @@ class WebUtils:
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
         version: Optional[str] = None
         if response is not None and response.status_code == 200:
-            data = json.loads(response.text)
+            data = json.loads(response.content.decode("utf-8"))
             # Parse metadata of the current image from v1 schema
             metadata = json.loads(data.get("history", [])[0]['v1Compatibility'])
             # Find version label and extract data
