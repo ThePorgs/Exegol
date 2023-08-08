@@ -84,10 +84,10 @@ function run_cmd() {
 }
 
 function desktop() {
-  if [ -f /usr/sbin/desktop-start ]
+  if command -v desktop-start &> /dev/null
   then
-      echo "Starting Exegol [green]desktop[/green]"
-      desktop-start &> /dev/null &  # Disable logging
+      echo "Starting Exegol [green]desktop[/green] with [blue]${DESKTOP_PROTO}[/blue]"
+      desktop-start &>> ~/.vnc/startup.log  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else
       echo '[E]Your exegol image is not up-to-date! Desktop feature is not supported!'

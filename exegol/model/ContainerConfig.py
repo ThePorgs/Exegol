@@ -1121,6 +1121,7 @@ class ContainerConfig:
         """Add a volume to the container configuration from raw text input.
         Expected format is: /source/path:/target/mount:rw"""
         logger.debug(f"Parsing raw volume config: {volume_string}")
+        # TODO support relative path
         parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
                            volume_string)
         if parsing:

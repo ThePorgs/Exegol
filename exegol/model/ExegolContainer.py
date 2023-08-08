@@ -199,7 +199,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
         str_cmd = command if type(command) is str else ' '.join(command)
-        str_cmd = str_cmd.replace('"', '\\"')
+        #str_cmd = str_cmd.replace('"', '\\"')  # This fix shoudn' be necessary plus it can alter data like passwd
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
