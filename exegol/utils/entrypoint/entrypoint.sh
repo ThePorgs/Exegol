@@ -36,7 +36,7 @@ function endless() {
 function shutdown() {
   # Shutting down the container.
   # Sending SIGTERM to all interactive process for proper closing
-  pgrep vnc && /opt/tools/bin/desktop-stop  # Stop webui desktop if started TODO improve desktop stop
+  pgrep vnc && desktop-stop  # Stop webui desktop if started TODO improve desktop shutdown
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
@@ -84,25 +84,14 @@ function run_cmd() {
 }
 
 function desktop() {
-  if [ -f /opt/tools/bin/desktop-start ]
+  if [ -f /usr/sbin/desktop-start ]
   then
       echo "Starting Exegol [green]desktop[/green]"
-      /opt/tools/bin/desktop-start &
+      desktop-start &> /dev/null &  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else
       echo '[E]Your exegol image is not up-to-date! Desktop feature is not supported!'
   fi
-
-    #case "$mode" in
-    #  vnc)
-    #    echo "Start VNC"
-    #    vncserver -localhost "yes" -rfbport "$port" -geometry "1920x1080" -SecurityTypes "VncAuth" -passwd "$HOME/.vnc/passwd" ":0"
-    #    ;;
-    #  http)
-    #    echo "Start VNC"
-    #    echo "Start websockify"
-    #    ;;
-    #esac
 }
 
 ##### How "echo" works here with exegol #####
