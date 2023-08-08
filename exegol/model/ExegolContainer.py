@@ -1,7 +1,7 @@
 import os
 import shutil
 from datetime import datetime
-from typing import Optional, Dict, Sequence, Tuple
+from typing import Optional, Dict, Sequence, Tuple, Union
 
 from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
@@ -162,7 +162,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Sequence[str], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
+    def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
@@ -191,14 +191,15 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: Sequence[str], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:
+    def formatShellCommand(command: Union[str, Sequence[str]], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:
         """Generic method to format a shell command and support zsh aliases.
         Set quiet to disable any logging here.
         Set entrypoint_mode to start the command with the entrypoint.sh config loader.
         - The first return argument is the payload to execute with every pre-routine for zsh.
         - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
-        str_cmd = ' '.join(command).replace('"', '\\"')
+        str_cmd = command if type(command) is str else ' '.join(command)
+        str_cmd = str_cmd.replace('"', '\\"')
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
@@ -253,7 +254,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except PermissionError:
                 logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
                 # If the host can't remove the container's file and folders, the rm command is exec from the container itself as root
-                self.exec(["rm", "-rf", "/workspace"], as_daemon=False, quiet=True)
+                self.exec("rm -rf /workspace", as_daemon=False, quiet=True)
                 try:
                     shutil.rmtree(volume_path)
                 except PermissionError:
@@ -316,6 +317,4 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if self.config.getPasswd() is not None:
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
             self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
-            if self.config.isDesktopEnabled():
-                # TODO fix passwd update
-                self.exec(f"echo '{self.config.getPasswd()}' | vncpasswd -f > ~/.vnc/passwd", quiet=True)
+            self.exec(f"echo '{self.config.getPasswd()}' | vncpasswd -f > ~/.vnc/passwd", quiet=True)
