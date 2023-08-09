@@ -712,22 +712,8 @@ class ContainerConfig:
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""
-        # If shell logging was enabled at container creation, it'll always be enabled for every shell.
-        # If not, it can be activated per shell basis
-        if self.__shell_logging or ParametersManager().log:
-            if self.__start_delegate_mode:
-                # Use a start.sh script to handle the feature with the tools and feature corresponding to the image version
-                # Start shell_logging feature using the user's specified method with the configured default shell w/ or w/o compression at the end
-                return f"/.exegol/start.sh shell_logging {ParametersManager().log_method} {ParametersManager().shell} {UserConfig().shell_logging_compress ^ ParametersManager().log_compress}"
-            else:
-                # Legacy command support
-                if ParametersManager().log_method != "script":
-                    logger.warning("Your image version does not allow customization of the shell logging method. Using legacy script method.")
-                compression_cmd = ''
-                if UserConfig().shell_logging_compress ^ ParametersManager().log_compress:
-                    compression_cmd = 'echo "Compressing logs, please wait..."; gzip $filelog; '
-                return f"bash -c 'umask 007; mkdir -p /workspace/logs/; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; {compression_cmd}exit'"
-        return ParametersManager().shell
+        # Use a start.sh script to handle features with the wrapper
+        return "/.exegol/start.sh"
 
     @staticmethod
     def generateRandomPassword(length: int = 30) -> str:
@@ -1012,6 +998,9 @@ class ContainerConfig:
     def getShellEnvs(self) -> List[str]:
         """Overriding envs when opening a shell"""
         result = []
+        # Select default shell to use
+        result.append(f"START_SHELL={ParametersManager().shell}")
+        # Share GUI Display config
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
@@ -1021,6 +1010,12 @@ class ContainerConfig:
                 # but exegol can be launched from remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
+        # Handle shell logging
+        # If shell logging was enabled at container creation, it'll always be enabled for every shell.
+        # If not, it can be activated per shell basic
+        if self.__shell_logging or ParametersManager().log:
+            result.append(f"START_SHELL_LOGGING={ParametersManager().log_method}")
+            result.append(f"START_SHELL_COMPRESS={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:
