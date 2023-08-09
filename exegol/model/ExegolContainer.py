@@ -15,7 +15,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger, console
-from exegol.utils.entrypoint.EntrypointUtils import getEntrypointTarData
+from exegol.utils.imgsync.ImageScriptSync import getImageSyncTarData
 
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
@@ -281,7 +281,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
-            self.__container.put_archive("/", getEntrypointTarData())
+            self.__container.put_archive("/", getImageSyncTarData())
             if self.__container.status.lower() == "created":
                 self.__start_container()
             self.__updatePasswd()
