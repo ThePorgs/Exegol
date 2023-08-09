@@ -2,6 +2,10 @@
 # SIGTERM received (the container is stopping, every process must be gracefully stopped before the timeout).
 trap shutdown SIGTERM
 
+function exegol_init() {
+    usermod -s "/.exegol/start.sh" root # TODO review
+}
+
 # Function specific
 function load_setups() {
   # Load custom setups (supported setups, and user setup)
@@ -103,6 +107,7 @@ function desktop() {
 #
 #############################################
 echo "Starting exegol"
+exegol_init
 
 ### Argument parsing
 
