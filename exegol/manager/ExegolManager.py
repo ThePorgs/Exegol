@@ -21,7 +21,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.ExegolModules import ExegolModules
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.DockerUtils import DockerUtils
-from exegol.utils.ExeLog import logger, ExeLog, console
+from exegol.utils.ExeLog import logger, ExeLog
 
 
 class ExegolManager:
@@ -108,7 +108,7 @@ class ExegolManager:
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         assert container is not None and type(container) is list
         for c in container:
-            c.stop(timeout=2)
+            c.stop(timeout=5)
 
     @classmethod
     def restart(cls):
@@ -237,7 +237,6 @@ class ExegolManager:
         logger.success(
             """We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
-
 
     @classmethod
     def __loadOrInstallImage(cls,
@@ -460,11 +459,11 @@ class ExegolManager:
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
         if ParametersManager().log:
-            config.enableShellLogging()
+            config.enableShellLogging(ParametersManager().log_method,
+                                      UserConfig().shell_logging_compress ^ ParametersManager().log_compress)
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
-                logger.warning(
-                    f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
+                logger.warning(f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
             config.setWorkspaceShare(ParametersManager().workspace_path)
         elif ParametersManager().mount_current_dir:
             config.enableCwdShare()
@@ -484,6 +483,8 @@ class ExegolManager:
         if ParametersManager().envs is not None:
             for env in ParametersManager().envs:
                 config.addRawEnv(env)
+        if UserConfig().desktop_default_enable ^ ParametersManager().desktop:
+            config.enableDesktop(ParametersManager().desktop_config)
         if ParametersManager().comment:
             config.addComment(ParametersManager().comment)
         return config
@@ -530,8 +531,7 @@ class ExegolManager:
         if ParametersManager().daemon:
             # Using formatShellCommand to support zsh aliases
             exec_payload, str_cmd = ExegolContainer.formatShellCommand(ParametersManager().exec, entrypoint_mode=True)
-            config.setLegacyContainerCommand(f"zsh -c '{exec_payload}'")
-            config.setContainerCommand("cmd", "zsh", "-c", exec_payload)
+            config.entrypointRunCmd()
             config.addEnv("CMD", str_cmd)
             config.addEnv("DISABLE_AUTO_UPDATE", "true")
         # Workspace must be disabled for temporary container because host directory is never deleted
@@ -540,8 +540,11 @@ class ExegolManager:
         image: ExegolImage = cast(ExegolImage, cls.__loadOrInstallImage(override_image=image_name))
         model = ExegolContainerTemplate(name, config, image, hostname=ParametersManager().hostname)
 
+        # Mount entrypoint as a volume (because in tmp mode the container is created with run instead of create method)
+        model.config.addVolume(str(ConstantConfig.entrypoint_context_path_obj), "/.exegol/entrypoint.sh", must_exist=True, read_only=True)
+
         container = DockerUtils.createContainer(model, temporary=True)
-        container.postCreateSetup()
+        container.postCreateSetup(is_temporary=True)
         return container
 
     @classmethod

@@ -98,32 +98,39 @@ class DockerUtils:
                 docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
-        entrypoint, command = model.config.getEntrypointCommand(model.image.getEntrypointConfig())
+        entrypoint, command = model.config.getEntrypointCommand()
         logger.debug(f"Entrypoint: {entrypoint}")
         logger.debug(f"Cmd: {command}")
+        # The 'create' function must be called to create a container without starting it
+        # in order to hot patch the entrypoint.sh with wrapper features (the container will be started after postCreateSetup)
+        docker_create_function = cls.__client.containers.create
+        docker_args = {"image": model.image.getDockerRef(),
+                       "entrypoint": entrypoint,
+                       "command": command,
+                       "detach": True,
+                       "name": model.container_name,
+                       "hostname": model.hostname,
+                       "extra_hosts": {model.hostname: '127.0.0.1'},
+                       "devices": model.config.getDevices(),
+                       "environment": model.config.getEnvs(),
+                       "labels": model.config.getLabels(),
+                       "network_mode": model.config.getNetworkMode(),
+                       "ports": model.config.getPorts(),
+                       "privileged": model.config.getPrivileged(),
+                       "cap_add": model.config.getCapabilities(),
+                       "sysctls": model.config.getSysctls(),
+                       "shm_size": model.config.shm_size,
+                       "stdin_open": model.config.interactive,
+                       "tty": model.config.tty,
+                       "mounts": model.config.getVolumes(),
+                       "working_dir": model.config.getWorkingDir()}
+        if temporary:
+            # Only the 'run' function support the "remove" parameter
+            docker_create_function = cls.__client.containers.run
+            docker_args["remove"] = temporary
+            docker_args["auto_remove"] = temporary
         try:
-            container = cls.__client.containers.run(model.image.getDockerRef(),
-                                                    entrypoint=entrypoint,
-                                                    command=command,
-                                                    detach=True,
-                                                    name=model.container_name,
-                                                    hostname=model.hostname,
-                                                    extra_hosts={model.hostname: '127.0.0.1'},
-                                                    devices=model.config.getDevices(),
-                                                    environment=model.config.getEnvs(),
-                                                    labels=model.config.getLabels(),
-                                                    network_mode=model.config.getNetworkMode(),
-                                                    ports=model.config.getPorts(),
-                                                    privileged=model.config.getPrivileged(),
-                                                    cap_add=model.config.getCapabilities(),
-                                                    sysctls=model.config.getSysctls(),
-                                                    shm_size=model.config.shm_size,
-                                                    stdin_open=model.config.interactive,
-                                                    tty=model.config.tty,
-                                                    mounts=model.config.getVolumes(),
-                                                    remove=temporary,
-                                                    auto_remove=temporary,
-                                                    working_dir=model.config.getWorkingDir())
+            container = docker_create_function(**docker_args)
         except APIError as err:
             message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
             message = message.replace('[', '\\[')

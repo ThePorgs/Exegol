@@ -2,6 +2,7 @@ from argparse import Namespace
 from typing import Tuple
 
 from exegol.config.DataCache import DataCache
+from exegol.config.UserConfig import UserConfig
 from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.DockerUtils import DockerUtils
 
@@ -62,6 +63,15 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
         if prefix and not obj.lower().startswith(prefix.lower()):
             data.remove(obj)
     return tuple(data)
+
+
+def DesktopConfigCompleter(prefix: str, **kwargs) -> Tuple[str, ...]:
+    options = list(UserConfig.desktop_available_proto)
+    for obj in options:
+        if prefix and not obj.lower().startswith(prefix.lower()):
+            options.remove(obj)
+    # TODO add interface enum
+    return tuple(options)
 
 
 def VoidCompleter(**kwargs) -> Tuple:

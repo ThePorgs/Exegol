@@ -1,18 +1,21 @@
 import os
 import shutil
-from typing import Optional, Dict, Sequence, Tuple
+from datetime import datetime
+from typing import Optional, Dict, Sequence, Tuple, Union
 
 from docker.errors import NotFound, ImageNotFound
 from docker.models.containers import Container
 
+from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.config.EnvInfo import EnvInfo
+from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger, console
+from exegol.utils.imgsync.ImageScriptSync import getImageSyncTarData
 
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
@@ -102,8 +105,34 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
             self.preStartSetup()
-            with console.status(f"Waiting to start {self.name}", spinner_style="blue"):
-                self.__container.start()
+            self.__start_container()
+
+    def __start_container(self):
+        """
+        This method start the container and display startup status update to the user.
+        :return:
+        """
+        with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
+            start_date = datetime.utcnow()
+            self.__container.start()
+            try:
+                # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
+                for line in ContainerLogStream(self.__container, start_date=start_date, timeout=2):
+                    # Once the last log "READY" is received, the startup sequence is over and the execution can continue
+                    if line == "READY":
+                        break
+                    elif line.startswith('[W]'):
+                        line = line.replace('[W]', '')
+                        logger.warning(line)
+                    elif line.startswith('[E]'):
+                        line = line.replace('[E]', '')
+                        logger.error(line)
+                    else:
+                        logger.verbose(line)
+                    progress.update(status=f"[blue]\[Startup][/blue] {line}")
+            except KeyboardInterrupt:
+                # User can cancel startup logging with ctrl+C
+                logger.warning("User skip startup status updates. Spawning a shell now.")
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""
@@ -133,7 +162,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Sequence[str], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
+    def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
@@ -162,18 +191,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
 
     @staticmethod
-    def formatShellCommand(command: Sequence[str], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:
+    def formatShellCommand(command: Union[str, Sequence[str]], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:
         """Generic method to format a shell command and support zsh aliases.
         Set quiet to disable any logging here.
         Set entrypoint_mode to start the command with the entrypoint.sh config loader.
         - The first return argument is the payload to execute with every pre-routine for zsh.
         - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
-        str_cmd = ' '.join(command)
+        str_cmd = command if type(command) is str else ' '.join(command)
+        #str_cmd = str_cmd.replace('"', '\\"')  # This fix shoudn' be necessary plus it can alter data like passwd
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
-        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval $CMD'
+        cmd = f'autoload -Uz compinit; compinit; source ~/.zshrc; eval "$CMD"'
         if not entrypoint_mode:
             # For direct execution, the full command must be supplied not just the zsh argument
             cmd = f"zsh -c '{cmd}'"
@@ -227,7 +257,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except PermissionError:
                 logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
                 # If the host can't remove the container's file and folders, the rm command is exec from the container itself as root
-                self.exec(["rm", "-rf", "/workspace"], as_daemon=False, quiet=True)
+                self.exec("rm -rf /workspace", as_daemon=False, quiet=True)
                 try:
                     shutil.rmtree(volume_path)
                 except PermissionError:
@@ -245,12 +275,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         self.__applyXhostACL()
 
-    def postCreateSetup(self):
+    def postCreateSetup(self, is_temporary: bool = False):
         """
         Operation to be performed after creating a container
         :return:
         """
         self.__applyXhostACL()
+        # if not a temporary container, apply custom config
+        if not is_temporary:
+            # Update entrypoint script in the container
+            self.__container.put_archive("/", getImageSyncTarData())
+            if self.__container.status.lower() == "created":
+                self.__start_container()
+            self.__updatePasswd()
 
     def __applyXhostACL(self):
         """
@@ -274,3 +311,13 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(f"Adding xhost ACL to local:{self.hostname}")
                 # add linux local ACL
                 os.system(f"xhost +local:{self.hostname} > /dev/null")
+
+    def __updatePasswd(self):
+        """
+        If configured, update the password of the user inside the container.
+        :return:
+        """
+        if self.config.getPasswd() is not None:
+            logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
+            self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
+            self.exec(f"echo '{self.config.getPasswd()}' | vncpasswd -f > ~/.vnc/passwd", quiet=True)

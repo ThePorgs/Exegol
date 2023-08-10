@@ -1,7 +1,10 @@
 import logging
 import os
+import random
 import re
+import string
 from datetime import datetime
+from enum import Enum
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
@@ -9,16 +12,16 @@ from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
 
+from exegol.config.EnvInfo import EnvInfo
+from exegol.config.UserConfig import UserConfig
 from exegol.console.ConsoleFormat import boolFormatter, getColor
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation
 from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
-from exegol.config.UserConfig import UserConfig
 
 
 class ContainerConfig:
@@ -26,18 +29,37 @@ class ContainerConfig:
 
     # Default hardcoded value
     __default_entrypoint_legacy = "bash"
-    __default_entrypoint = ["/.exegol/entrypoint.sh"]
-    __default_cmd = ["default"]
+    __default_entrypoint = ["/bin/bash", "/.exegol/entrypoint.sh"]
     __default_shm_size = "64M"
 
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
+    __default_desktop_port = {"http": 6080, "vnc": 5900}
 
-    # Label features (wrapper method to enable the feature / label name)
-    __label_features = {"enableShellLogging": "org.exegol.feature.shell_logging"}
-    # Label metadata (label name / [wrapper attribute to set the value, getter method to update labels])
-    __label_metadata = {"org.exegol.metadata.creation_date": ["creation_date", "getCreationDate"],
-                        "org.exegol.metadata.comment": ["comment", "getComment"]}
+    class ExegolFeatures(Enum):
+        shell_logging = "org.exegol.feature.shell_logging"
+        desktop = "org.exegol.feature.desktop"
+
+    class ExegolMetadata(Enum):
+        creation_date = "org.exegol.metadata.creation_date"
+        comment = "org.exegol.metadata.comment"
+        password = "org.exegol.metadata.passwd"
+
+    class ExegolEnv(Enum):
+        user_shell = "START_SHELL"
+        shell_logging_method = "START_SHELL_LOGGING"
+        shell_logging_compress = "START_SHELL_COMPRESS"
+        desktop_protocol = "DESKTOP_PROTO"
+        desktop_host = "DESKTOP_HOST"
+        desktop_port = "DESKTOP_PORT"
+
+    # Label features (label name / wrapper method to enable the feature)
+    __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",
+                        ExegolFeatures.desktop.value: "configureDesktop"}
+    # Label metadata (label name / [setter method to set the value, getter method to update labels])
+    __label_metadata = {ExegolMetadata.creation_date.value: ["setCreationDate", "getCreationDate"],
+                        ExegolMetadata.comment.value: ["setComment", "getComment"],
+                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
@@ -61,29 +83,37 @@ class ContainerConfig:
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
-        self.__container_command_legacy: Optional[str] = None
-        self.__container_command: List[str] = self.__default_cmd
         self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
-        self.__start_delegate_mode: bool = False
+        # Entrypoint features
+        self.__vpn_parameters: Optional[str] = None
+        self.__run_cmd: bool = False
+        self.__endless_container: bool = True
+        self.__desktop_proto: Optional[str] = None
+        self.__desktop_host: Optional[str] = None
+        self.__desktop_port: Optional[int] = None
         # Metadata attributes
-        self.creation_date: Optional[str] = None
-        self.comment: Optional[str] = None
+        self.__creation_date: Optional[str] = None
+        self.__comment: Optional[str] = None
+        self.__username: str = "root"
+        self.__passwd: Optional[str] = self.generateRandomPassword()
 
         if container is not None:
             self.__parseContainerConfig(container)
 
+    # ===== Config parsing section =====
+
     def __parseContainerConfig(self, container: Container):
         """Parse Docker object to setup self configuration"""
+        # Reset default attributes
+        self.__passwd = None
         # Container Config section
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
-        # If entrypoint is set on the image, considering the presence of start.sh script for delegates features
-        self.__start_delegate_mode = container.attrs['Config']['Entrypoint'] is not None
         self.__enable_gui = False
         for env in self.__envs:
             if "DISPLAY" in env:
@@ -130,18 +160,18 @@ class ContainerConfig:
             logger.debug(f"Parsing label : {key}")
             if key.startswith("org.exegol.metadata."):
                 # Find corresponding feature and attributes
-                for label, refs in self.__label_metadata.items():
-                    if label == key:
-                        # reflective set of the metadata attribute (set metadata value to the corresponding attribute)
-                        setattr(self, refs[0], value)
-                        break
+                refs = self.__label_metadata.get(key)  # Setter
+                if refs is not None:
+                    # reflective execution of setter method (set metadata value to the corresponding attribute)
+                    getattr(self, refs[0])(value)
             elif key.startswith("org.exegol.feature."):
                 # Find corresponding feature and attributes
-                for attribute, label in self.__label_features.items():
-                    if label == key:
-                        # reflective execution of the feature enable method (add label & set attributes)
-                        getattr(self, attribute)()
-                        break
+                enable_function = self.__label_features.get(key)
+                if enable_function is not None:
+                    # reflective execution of the feature enable method (add label & set attributes)
+                    if value == "Enabled":
+                        value = ""
+                    getattr(self, enable_function)(value)
 
     def __parseMounts(self, mounts: Optional[List[Dict]], name: str):
         """Parse Mounts object"""
@@ -196,6 +226,8 @@ class ContainerConfig:
                 self.__vpn_path = obj_path
                 logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
 
+    # ===== Feature section =====
+
     def interactiveConfig(self, container_name: str) -> List[str]:
         """Interactive procedure allowing the user to configure its new container"""
         logger.info("Starting interactive configuration")
@@ -229,6 +261,16 @@ class ContainerConfig:
         # Command builder info
         if not self.__enable_gui:
             command_options.append("--disable-X11")
+
+        # Desktop Config
+        if self.isDesktopEnabled():
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]Desktop[/blue]?", False):
+                self.__disableDesktop()
+        elif Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
+            self.enableDesktop()
+        # Command builder info
+        if self.isDesktopEnabled():
+            command_options.append("--desktop")
 
         # Timezone config
         if self.__share_timezone:
@@ -275,7 +317,7 @@ class ContainerConfig:
             if Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
                 self.__disableShellLogging()
         elif Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
-            self.enableShellLogging()
+            self.enableShellLogging(UserConfig().shell_logging_method, UserConfig().shell_logging_compress)
         # Command builder info
         if self.__shell_logging:
             command_options.append("--log")
@@ -365,13 +407,6 @@ class ContainerConfig:
             self.removeVolume("/etc/timezone")
             self.removeVolume("/etc/localtime")
 
-    def setPrivileged(self, status: bool = True):
-        """Set container as privileged"""
-        logger.verbose(f"Config: Setting container privileged as {status}")
-        if status:
-            logger.warning("Setting container as privileged (this exposes the host to security risks)")
-        self.__privileged = status
-
     def enableMyResources(self):
         """Procedure to enable shared volume feature"""
         # TODO test my resources cross shell source (WSL / PSH) on Windows
@@ -412,42 +447,98 @@ class ContainerConfig:
             self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
-    def enableShellLogging(self):
+    def enableShellLogging(self, log_method: str, compress_mode: Optional[bool] = None):
         """Procedure to enable exegol shell logging feature"""
         if not self.__shell_logging:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
-            self.addLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'), "Enabled")
-
-    def addComment(self, comment):
-        """Procedure to add comment to a container"""
-        if not self.comment:
-            logger.verbose("Config: Adding comment to container info")
-            self.comment = comment
-            self.addLabel("org.exegol.metadata.comment", comment)
+            self.addEnv(self.ExegolEnv.shell_logging_method.value, log_method)
+            if compress_mode is not None:
+                self.addEnv(self.ExegolEnv.shell_logging_compress.value, str(compress_mode))
+            self.addLabel(self.ExegolFeatures.shell_logging.value, log_method)
 
     def __disableShellLogging(self):
         """Procedure to disable exegol shell logging feature"""
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
-            self.removeLabel(self.__label_features.get('enableShellLogging', 'org.exegol.error'))
+            self.removeEnv(self.ExegolEnv.shell_logging_method.value)
+            self.removeEnv(self.ExegolEnv.shell_logging_compress.value)
+            self.removeLabel(self.ExegolFeatures.shell_logging.value)
+
+    def isDesktopEnabled(self):
+        return self.__desktop_proto is not None
+
+    def enableDesktop(self, desktop_config: str = ""):
+        """Procedure to enable exegol desktop feature"""
+        if not self.isDesktopEnabled():
+            logger.verbose("Config: Enabling exegol desktop")
+            self.configureDesktop(desktop_config)
+            assert self.__desktop_proto is not None
+            assert self.__desktop_host is not None
+            assert self.__desktop_port is not None
+            self.addLabel(self.ExegolFeatures.desktop.value, f"{self.__desktop_proto}:{self.__desktop_host}:{self.__desktop_port}")
+            # Env var are used to send these parameter to the desktop-start script
+            self.addEnv(self.ExegolEnv.desktop_protocol.value, self.__desktop_proto)
+
+            if self.__network_host:
+                self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
+                self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
+            else:
+                self.addEnv(self.ExegolEnv.desktop_host.value, "localhost")
+                self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
+                # Exposing desktop service
+                self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
+
+    def configureDesktop(self, desktop_config: str):
+        """Configure the exegol desktop feature from user parameters.
+        Accepted format: 'mode:host:port'
+        """
+        self.__desktop_proto = UserConfig().desktop_default_proto
+        self.__desktop_host = "localhost" if UserConfig().desktop_default_localhost else "0.0.0.0"
+
+        for i, data in enumerate(desktop_config.split(":")):
+            if not data:
+                continue
+            if i == 0:
+                data = data.lower()
+                if data in UserConfig.desktop_available_proto:
+                    self.__desktop_proto = data
+                else:
+                    logger.critical(f"The desktop mode '{data}' is not supported. Please choose a supported mode: [green]{', '.join(UserConfig.desktop_available_proto)}[/green].")
+            elif i == 1 and data:
+                self.__desktop_host = data
+                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
+            elif i == 2:
+                try:
+                    self.__desktop_port = int(data)
+                except ValueError:
+                    logger.critical(f"Invalid desktop port: '{data}' is not a valid port.")
+            else:
+                logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
+
+        if self.__desktop_port is None:
+            self.__desktop_port = self.__findAvailableRandomPort()
+
+    def __disableDesktop(self):
+        """Procedure to disable exegol desktop feature"""
+        if self.isDesktopEnabled():
+            logger.verbose("Config: Disabling shell logging")
+            assert self.__desktop_proto is not None
+            if not self.__network_host:
+                self.__removePort(self.__default_desktop_port[self.__desktop_proto])
+            self.__desktop_proto = None
+            self.__desktop_host = None
+            self.__desktop_port = None
+            self.removeLabel(self.ExegolFeatures.desktop.value)
+            self.removeEnv(self.ExegolEnv.desktop_protocol.value)
+            self.removeEnv(self.ExegolEnv.desktop_host.value)
+            self.removeEnv(self.ExegolEnv.desktop_port.value)
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
         self.__workspace_custom_path = os.getcwd()
         logger.verbose(f"Config: Sharing current workspace directory {self.__workspace_custom_path}")
-
-    def setWorkspaceShare(self, host_directory):
-        """Procedure to share a specific directory with the /workspace of the container"""
-        path = Path(host_directory).expanduser().absolute()
-        try:
-            if not path.is_dir() and path.exists():
-                logger.critical("The specified workspace is not a directory!")
-        except PermissionError as e:
-            logger.critical(f"Unable to use the supplied workspace directory: {e}")
-        logger.verbose(f"Config: Sharing workspace directory {path}")
-        self.__workspace_custom_path = str(path)
 
     def enableVPN(self, config_path: Optional[str] = None):
         """Configure a VPN profile for container startup"""
@@ -473,12 +564,38 @@ class ContainerConfig:
         # Add tun device, this device is needed to create VPN tunnels
         self.__addDevice("/dev/net/tun", mknod=True)
         # Sharing VPN configuration with the container
-        ovpn_parameters = self.__prepareVpnVolumes(config_path)
-        # Execution of the VPN daemon at container startup
-        if ovpn_parameters is not None:
-            vpn_cmd_legacy = f"bash -c 'mkdir -p /var/log/exegol; openvpn --log-append /var/log/exegol/vpn.log {ovpn_parameters}; bash'"
-            self.setLegacyContainerCommand(vpn_cmd_legacy)
-            self.setContainerCommand("ovpn", ovpn_parameters)
+        self.__vpn_parameters = self.__prepareVpnVolumes(config_path)
+
+    def __disableVPN(self) -> bool:
+        """Remove a VPN profile for container startup (Only for interactive config)"""
+        if self.__vpn_path:
+            logger.verbose('Removing VPN configuration')
+            self.__vpn_path = None
+            self.__vpn_parameters = None
+            self.__removeCapability("NET_ADMIN")
+            self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
+            self.removeDevice("/dev/net/tun")
+            # Try to remove each possible volume
+            self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
+            self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
+            self.removeVolume(container_path="/.exegol/vpn/config")
+            return True
+        return False
+
+    def disableDefaultWorkspace(self):
+        """Allows you to disable the default workspace volume"""
+        # If a custom workspace is not define, disable workspace
+        if self.__workspace_custom_path is None:
+            self.__disable_workspace = True
+
+    def addComment(self, comment):
+        """Procedure to add comment to a container"""
+        if not self.__comment:
+            logger.verbose("Config: Adding comment to container info")
+            self.__comment = comment
+            self.addLabel(self.ExegolMetadata.comment.value, comment)
+
+    # ===== Functional / technical methods section =====
 
     def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
@@ -554,28 +671,6 @@ class ContainerConfig:
             logger.info("Press enter to continue or Ctrl+C to cancel the operation")
             input()
 
-    def __disableVPN(self) -> bool:
-        """Remove a VPN profile for container startup (Only for interactive config)"""
-        if self.__vpn_path:
-            logger.verbose('Removing VPN configuration')
-            self.__vpn_path = None
-            self.__removeCapability("NET_ADMIN")
-            self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
-            self.removeDevice("/dev/net/tun")
-            # Try to remove each possible volume
-            self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
-            self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
-            self.removeVolume(container_path="/.exegol/vpn/config")
-            self.__restoreEntrypoint()
-            return True
-        return False
-
-    def disableDefaultWorkspace(self):
-        """Allows you to disable the default workspace volume"""
-        # If a custom workspace is not define, disable workspace
-        if self.__workspace_custom_path is None:
-            self.__disable_workspace = True
-
     def prepareShare(self, share_name: str):
         """Add workspace share before container creation"""
         for mount in self.__mounts:
@@ -601,6 +696,66 @@ class ContainerConfig:
             if directory_path.is_dir():
                 directory_path.rmdir()
 
+    def entrypointRunCmd(self, endless_mode=False):
+        """Enable the run_cmd feature of the entrypoint. This feature execute the command stored in the $CMD container environment variables.
+        The endless_mode parameter can specify if the container must stay alive after command execution or not"""
+        self.__run_cmd = True
+        self.__endless_container = endless_mode
+
+    def getEntrypointCommand(self) -> Tuple[Optional[List[str]], Union[List[str], str]]:
+        """Get container entrypoint/command arguments.
+        The default container_entrypoint is '/bin/bash /.exegol/entrypoint.sh' and the default container_command is ['load_setups', 'endless']."""
+        entrypoint_actions = []
+        if self.__my_resources:
+            entrypoint_actions.append("load_setups")
+        if self.isDesktopEnabled():
+            entrypoint_actions.append("desktop")
+        if self.__vpn_path is not None:
+            entrypoint_actions.append(f"ovpn {self.__vpn_parameters}")
+        if self.__run_cmd:
+            entrypoint_actions.append("run_cmd")
+        if self.__endless_container:
+            entrypoint_actions.append("endless")
+        else:
+            entrypoint_actions.append("finish")
+        return self.__container_entrypoint, entrypoint_actions
+
+    def getShellCommand(self) -> str:
+        """Get container command for opening a new shell"""
+        # Use a start.sh script to handle features with the wrapper
+        return "/.exegol/start.sh"
+
+    @staticmethod
+    def generateRandomPassword(length: int = 30) -> str:
+        """
+        Generate a new random password.
+        """
+        charset = string.ascii_letters + string.digits + string.punctuation.replace("'", "")
+        return ''.join(random.choice(charset) for i in range(length))
+
+    @staticmethod
+    def __findAvailableRandomPort(interface: str = 'localhost') -> int:
+        """Find an available random port. Using the socket system to """
+        import socket
+        sock = socket.socket()
+        sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+        random_port = sock.getsockname()[1]
+        sock.close()
+        return random_port
+
+    # ===== Apply config section =====
+
+    def setWorkspaceShare(self, host_directory):
+        """Procedure to share a specific directory with the /workspace of the container"""
+        path = Path(host_directory).expanduser().absolute()
+        try:
+            if not path.is_dir() and path.exists():
+                logger.critical("The specified workspace is not a directory!")
+        except PermissionError as e:
+            logger.critical(f"Unable to use the supplied workspace directory: {e}")
+        logger.verbose(f"Config: Sharing workspace directory {path}")
+        self.__workspace_custom_path = str(path)
+
     def setNetworkMode(self, host_mode: Optional[bool]):
         """Set container's network mode, true for host, false for bridge"""
         if host_mode is None:
@@ -615,21 +770,12 @@ class ContainerConfig:
             host_mode = False
         self.__network_host = host_mode
 
-    def setContainerCommand(self, entrypoint_function: str, *parameters: str):
-        """Set the entrypoint command of the container. This command is executed at each startup.
-        This parameter is applied to the container at creation."""
-        self.__container_command = [entrypoint_function] + list(parameters)
-
-    def setLegacyContainerCommand(self, cmd: str):
-        """Set the entrypoint command of the container. This command is executed at each startup.
-        This parameter is applied to the container at creation.
-        This method is legacy, before the entrypoint exist (support images before 3.x.x)."""
-        self.__container_command_legacy = cmd
-
-    def __restoreEntrypoint(self):
-        """Restore container's entrypoint to its default configuration"""
-        self.__container_command_legacy = None
-        self.__container_command = self.__default_cmd
+    def setPrivileged(self, status: bool = True):
+        """Set container as privileged"""
+        logger.verbose(f"Config: Setting container privileged as {status}")
+        if status:
+            logger.warning("Setting container as privileged (this exposes the host to security risks)")
+        self.__privileged = status
 
     def addCapability(self, cap_string: str):
         """Add a linux capability to the container"""
@@ -672,13 +818,6 @@ class ContainerConfig:
         """Network mode, docker term getter"""
         return "host" if self.__network_host else "bridge"
 
-    def getTextNetworkMode(self) -> str:
-        """Network mode, text getter"""
-        network_mode = "host" if self.__network_host else "bridge"
-        if self.__vpn_path:
-            network_mode += " with VPN"
-        return network_mode
-
     def getPrivileged(self) -> bool:
         """Privileged getter"""
         return self.__privileged
@@ -695,42 +834,12 @@ class ContainerConfig:
         """Get default container's default working directory path"""
         return "/" if self.__disable_workspace else "/workspace"
 
-    def getEntrypointCommand(self, image_entrypoint: Optional[Union[str, List[str]]]) -> Tuple[Optional[List[str]], Union[List[str], str]]:
-        """Get container entrypoint/command arguments.
-        This method support legacy configuration."""
-        if image_entrypoint is None:
-            # Legacy mode
-            if self.__container_command_legacy is None:
-                return [self.__default_entrypoint_legacy], []
-            return None, self.__container_command_legacy
-        else:
-            return self.__container_entrypoint, self.__container_command
-
-    def getShellCommand(self) -> str:
-        """Get container command for opening a new shell"""
-        # If shell logging was enabled at container creation, it'll always be enabled for every shell.
-        # If not, it can be activated per shell basis
-        if self.__shell_logging or ParametersManager().log:
-            if self.__start_delegate_mode:
-                # Use a start.sh script to handle the feature with the tools and feature corresponding to the image version
-                # Start shell_logging feature using the user's specified method with the configured default shell w/ or w/o compression at the end
-                return f"/.exegol/start.sh shell_logging {ParametersManager().log_method} {ParametersManager().shell} {UserConfig().shell_logging_compress ^ ParametersManager().log_compress}"
-            else:
-                # Legacy command support
-                if ParametersManager().log_method != "script":
-                    logger.warning("Your image version does not allow customization of the shell logging method. Using legacy script method.")
-                compression_cmd = ''
-                if UserConfig().shell_logging_compress ^ ParametersManager().log_compress:
-                    compression_cmd = 'echo "Compressing logs, please wait..."; gzip $filelog; '
-                return f"bash -c 'umask 007; mkdir -p /workspace/logs/; filelog=/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.log; script -qefac {ParametersManager().shell} $filelog; {compression_cmd}exit'"
-        return ParametersManager().shell
-
     def getHostWorkspacePath(self) -> str:
         """Get private volume path (None if not set)"""
         if self.__workspace_custom_path:
             return FsUtils.resolvStrPath(self.__workspace_custom_path)
         elif self.__workspace_dedicated_path:
-            return FsUtils.resolvStrPath(self.__workspace_dedicated_path)
+            return self.getPrivateVolumePath()
         return "not found :("
 
     def getPrivateVolumePath(self) -> str:
@@ -829,34 +938,6 @@ class ContainerConfig:
         mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
-    def addRawVolume(self, volume_string):
-        """Add a volume to the container configuration from raw text input.
-        Expected format is: /source/path:/target/mount:rw"""
-        logger.debug(f"Parsing raw volume config: {volume_string}")
-        parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
-                           volume_string)
-        if parsing:
-            host_path = parsing.group(1)
-            container_path = parsing.group(4)
-            mode = parsing.group(7)
-            if mode is None or mode == "rw":
-                readonly = False
-            elif mode == "ro":
-                readonly = True
-            else:
-                logger.error(f"Error on volume config, mode: {mode} not recognized.")
-                readonly = False
-            logger.debug(
-                f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
-            try:
-                self.addVolume(host_path, container_path, readonly)
-            except CancelOperation as e:
-                logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
-                if not Confirm("Do you want to continue without this volume ?", False):
-                    exit(0)
-        else:
-            logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
-
     def removeVolume(self, host_path: Optional[str] = None, container_path: Optional[str] = None) -> bool:
         """Remove a volume from the container configuration (Only before container creation)"""
         if host_path is None and container_path is None:
@@ -893,14 +974,6 @@ class ContainerConfig:
             perm += 'm'
         self.__devices.append(f"{device_source}:{device_dest}:{perm}")
 
-    def addUserDevice(self, user_device_config: str):
-        """Add a device from a user parameters"""
-        if EnvInfo.isDockerDesktop():
-            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
-            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
-            logger.critical("Device configuration cannot be applied, aborting operation.")
-        self.__addDevice(user_device_config)
-
     def removeDevice(self, device_source: str) -> bool:
         """Remove a device from the container configuration (Only before container creation)"""
         for i in range(len(self.__devices)):
@@ -928,32 +1001,16 @@ class ContainerConfig:
             # When the Key is not present in the dictionary
             return False
 
-    def addRawEnv(self, env: str):
-        """Parse and add an environment variable from raw user input"""
-        key, value = self.__parseUserEnv(env)
-        self.addEnv(key, value)
-
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         return self.__envs
 
-    @classmethod
-    def __parseUserEnv(cls, env: str) -> Tuple[str, str]:
-        env_args = env.split('=')
-        key = env_args[0]
-        if len(env_args) < 2:
-            value = os.getenv(env, '')
-            if not value:
-                logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
-            else:
-                logger.success(f"Using system value for env {env}.")
-        else:
-            value = '='.join(env_args[1:])
-        return key, value
-
     def getShellEnvs(self) -> List[str]:
         """Overriding envs when opening a shell"""
         result = []
+        # Select default shell to use
+        result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
+        # Share GUI Display config
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
@@ -963,6 +1020,12 @@ class ContainerConfig:
                 # but exegol can be launched from remote access via ssh with X11 forwarding
                 # (Be careful, an .Xauthority file may be needed).
                 result.append(f"DISPLAY={current_display}")
+        # Handle shell logging
+        # If shell logging was enabled at container creation, it'll always be enabled for every shell.
+        # If not, it can be activated per shell basic
+        if self.__shell_logging or ParametersManager().log:
+            result.append(f"{self.ExegolEnv.shell_logging_method.value}={ParametersManager().log_method}")
+            result.append(f"{self.ExegolEnv.shell_logging_compress.value}={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:
@@ -971,6 +1034,27 @@ class ContainerConfig:
                 logger.debug(f"Add env to current shell: {env}")
                 result.append(f"{key}={value}")
         return result
+
+    def addPort(self,
+                port_host: int,
+                port_container: Union[int, str],
+                protocol: str = 'tcp',
+                host_ip: str = '0.0.0.0'):
+        """Add port NAT config, only applicable on bridge network mode."""
+        if self.__network_host:
+            logger.warning("Port sharing is configured, disabling the host network mode.")
+            self.setNetworkMode(False)
+        if protocol.lower() not in ['tcp', 'udp', 'sctp']:
+            raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
+        logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
+        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
+
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
+        """Ports config getter"""
+        return self.__ports
+
+    def __removePort(self, container_port: Union[int, str], protocol: str = 'tcp'):
+        self.__ports.pop(f"{container_port}/{protocol}", None)
 
     def addLabel(self, key: str, value: str):
         """Add a custom label to the container configuration"""
@@ -988,38 +1072,92 @@ class ContainerConfig:
     def getLabels(self) -> Dict[str, str]:
         """Labels config getter"""
         # Update metadata (from getter method) to the labels (on container creation)
-        for label_name, refs in self.__label_metadata.items():
+        for label_name, refs in self.__label_metadata.items():  # Getter
             data = getattr(self, refs[1])()
             if data is not None:
                 self.addLabel(label_name, data)
         return self.__labels
 
+    # ===== Metadata labels getter / setter section =====
+
+    def setCreationDate(self, creation_date: str):
+        """Set the container creation date parsed from the labels of an existing container."""
+        self.__creation_date = creation_date
+
     def getCreationDate(self) -> str:
         """Get container creation date.
         If the creation has not been set before, init as right now."""
-        if self.creation_date is None:
-            self.creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
-        return self.creation_date
+        if self.__creation_date is None:
+            self.__creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+        return self.__creation_date
 
-    def getVpnName(self):
-        """Get VPN Config name"""
-        if self.__vpn_path is None:
-            return "[bright_black]N/A[/bright_black]   "
-        return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
+    def setComment(self, comment: str):
+        """Set the container comment parsed from the labels of an existing container."""
+        self.__comment = comment
 
-    def addPort(self,
-                port_host: int,
-                port_container: Union[int, str],
-                protocol: str = 'tcp',
-                host_ip: str = '0.0.0.0'):
-        """Add port NAT config, only applicable on bridge network mode."""
-        if self.__network_host:
-            logger.warning("Port sharing is configured, disabling the host network mode.")
-            self.setNetworkMode(False)
-        if protocol.lower() not in ['tcp', 'udp', 'sctp']:
-            raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
-        logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
-        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
+    def getComment(self) -> Optional[str]:
+        """Get the container comment.
+        If no comment has been supplied, returns None."""
+        return self.__comment
+
+    def setPasswd(self, passwd: str):
+        """
+        Set the container root password parsed from the labels of an existing container.
+        This secret data can be stored inside labels because it is accessible only from the docker socket
+        which give direct access to the container anyway without password.
+        """
+        self.__passwd = passwd
+
+    def getPasswd(self) -> Optional[str]:
+        """
+        Get the container password.
+        """
+        return self.__passwd
+
+    def getUsername(self) -> str:
+        """
+        Get the container username.
+        """
+        return self.__username
+
+    # ===== User parameter parsing section =====
+
+    def addRawVolume(self, volume_string):
+        """Add a volume to the container configuration from raw text input.
+        Expected format is: /source/path:/target/mount:rw"""
+        logger.debug(f"Parsing raw volume config: {volume_string}")
+        # TODO support relative path
+        parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
+                           volume_string)
+        if parsing:
+            host_path = parsing.group(1)
+            container_path = parsing.group(4)
+            mode = parsing.group(7)
+            if mode is None or mode == "rw":
+                readonly = False
+            elif mode == "ro":
+                readonly = True
+            else:
+                logger.error(f"Error on volume config, mode: {mode} not recognized.")
+                readonly = False
+            logger.debug(
+                f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
+            try:
+                self.addVolume(host_path, container_path, readonly)
+            except CancelOperation as e:
+                logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
+                if not Confirm("Do you want to continue without this volume ?", False):
+                    exit(0)
+        else:
+            logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
+
+    def addUserDevice(self, user_device_config: str):
+        """Add a device from a user parameters"""
+        if EnvInfo.isDockerDesktop():
+            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+            logger.critical("Device configuration cannot be applied, aborting operation.")
+        self.__addDevice(user_device_config)
 
     def addRawPort(self, user_test_port: str):
         """Add port config from user input.
@@ -1043,9 +1181,26 @@ class ContainerConfig:
             return
         self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
 
-    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
-        """Ports config getter"""
-        return self.__ports
+    def addRawEnv(self, env: str):
+        """Parse and add an environment variable from raw user input"""
+        key, value = self.__parseUserEnv(env)
+        self.addEnv(key, value)
+
+    @classmethod
+    def __parseUserEnv(cls, env: str) -> Tuple[str, str]:
+        env_args = env.split('=')
+        key = env_args[0]
+        if len(env_args) < 2:
+            value = os.getenv(env, '')
+            if not value:
+                logger.critical(f"Incorrect env syntax ({env}). Please use this format: KEY=value")
+            else:
+                logger.success(f"Using system value for env {env}.")
+        else:
+            value = '='.join(env_args[1:])
+        return key, value
+
+    # ===== Display / text formatting section =====
 
     def getTextFeatures(self, verbose: bool = False) -> str:
         """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)
@@ -1053,6 +1208,8 @@ class ContainerConfig:
         result = ""
         if verbose or self.__privileged:
             result += f"{getColor(not self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[green]Off :heavy_check_mark:[/green]'}{getColor(not self.__privileged)[1]}{os.linesep}"
+        if verbose or self.isDesktopEnabled():
+            result += f"{getColor(self.isDesktopEnabled())[0]}Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
@@ -1072,17 +1229,32 @@ class ContainerConfig:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
 
+    def getVpnName(self) -> str:
+        """Get VPN Config name"""
+        if self.__vpn_path is None:
+            return "[bright_black]N/A[/bright_black]   "
+        return f"[deep_sky_blue3]{self.__vpn_path.name}[/deep_sky_blue3]"
+
+    def getDesktopConfig(self) -> str:
+        """Get Desktop feature status / config"""
+        if not self.isDesktopEnabled():
+            return boolFormatter(False)
+        config = f"{self.__desktop_proto}://{self.__desktop_host}:{self.__desktop_port}"
+        return f"[link={config}][deep_sky_blue3]{config}[/deep_sky_blue3][/link]"
+
+    def getTextNetworkMode(self) -> str:
+        """Network mode, text getter"""
+        network_mode = "host" if self.__network_host else "bridge"
+        if self.__vpn_path:
+            network_mode += " with VPN"
+        return network_mode
+
     def getTextCreationDate(self) -> str:
         """Get the container creation date.
         If the creation date has not been supplied on the container, return empty string."""
-        if self.creation_date is None:
+        if self.__creation_date is None:
             return ""
-        return datetime.strptime(self.creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
-
-    def getComment(self) -> Optional[str]:
-        """Get the container comment. 
-        If no comment has been supplied, returns None."""
-        return self.comment
+        return datetime.strptime(self.__creation_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
 
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
@@ -1114,7 +1286,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
