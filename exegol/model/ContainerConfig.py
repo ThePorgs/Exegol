@@ -252,11 +252,11 @@ class ContainerConfig:
             self.setWorkspaceShare(workspace_path)
             command_options.append(f"-w {workspace_path}")
 
-        # GUI Config
+        # X11 sharing (GUI) config
         if self.__enable_gui:
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]GUI[/blue]?", False):
+            if Confirm("Do you want to [orange3]disable[/orange3] [blue]X11[/blue] (i.e. GUI apps)?", False):
                 self.__disableGUI()
-        elif Confirm("Do you want to [green]enable[/green] [blue]GUI[/blue]?", False):
+        elif Confirm("Do you want to [green]enable[/green] [blue]X11[/blue] (i.e. GUI apps)?", False):
             self.enableGUI()
         # Command builder info
         if not self.__enable_gui:
@@ -343,7 +343,7 @@ class ContainerConfig:
     def enableGUI(self):
         """Procedure to enable GUI feature"""
         if not GuiUtils.isGuiAvailable():
-            logger.error("GUI feature is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
+            logger.error("X11 feature (i.e. GUI apps) is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
             return
         if not self.__enable_gui:
             logger.verbose("Config: Enabling display sharing")
@@ -361,7 +361,7 @@ class ContainerConfig:
             self.__enable_gui = True
 
     def __disableGUI(self):
-        """Procedure to enable GUI feature (Only for interactive config)"""
+        """Procedure to disable X11 (GUI) feature (Only for interactive config)"""
         if self.__enable_gui:
             self.__enable_gui = False
             logger.verbose("Config: Disabling display sharing")
@@ -1010,7 +1010,7 @@ class ContainerConfig:
         result = []
         # Select default shell to use
         result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
-        # Share GUI Display config
+        # Share X11 (GUI Display) config
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
@@ -1203,7 +1203,7 @@ class ContainerConfig:
     # ===== Display / text formatting section =====
 
     def getTextFeatures(self, verbose: bool = False) -> str:
-        """Text formatter for features configurations (Privileged, GUI, Network, Timezone, Shares)
+        """Text formatter for features configurations (Privileged, X11, Network, Timezone, Shares)
         Print config only if they are different from their default config (or print everything in verbose mode)"""
         result = ""
         if verbose or self.__privileged:
@@ -1211,7 +1211,7 @@ class ContainerConfig:
         if verbose or self.isDesktopEnabled():
             result += f"{getColor(self.isDesktopEnabled())[0]}Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
-            result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
+            result += f"{getColor(self.__enable_gui)[0]}X11: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
             result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:

@@ -454,7 +454,7 @@ class ExegolTUI:
         recap.add_row("[bold blue]Desktop[/bold blue]", container.config.getDesktopConfig())
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
-        recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
+        recap.add_row("[bold blue]X11[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getTextNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
         recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +

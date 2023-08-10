@@ -291,7 +291,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __applyXhostACL(self):
         """
-        If GUI is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
+        If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
         On Windows host, WSLg X11 don't have xhost ACL.
         :return:
         """
