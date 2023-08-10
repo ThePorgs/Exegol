@@ -73,7 +73,7 @@ function ovpn() {
   [[ "$DISPLAY" == *"host.docker.internal"* ]] && _resolv_docker_host
   if ! command -v openvpn &> /dev/null
   then
-      echo '[E]Your exegol image is not up-to-date! VPN feature is not supported!'
+      echo '[E]Your exegol image does not support the VPN feature'
   else
     # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
     echo "Starting [green]VPN[/green]"
@@ -94,7 +94,7 @@ function desktop() {
       desktop-start &>> ~/.vnc/startup.log  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else
-      echo '[E]Your exegol image is not up-to-date! Desktop feature is not supported!'
+      echo '[E]Your exegol image does not support the Desktop features'
   fi
 }
 
