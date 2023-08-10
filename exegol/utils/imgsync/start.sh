@@ -8,6 +8,14 @@ function shell_logging() {
     # The third enable compression at the end of the session
     compress=$3
 
+    # Test if the command is supported on the current image
+    if ! command -v "$method" &> /dev/null
+    then
+      echo "Shell logging with $method is not supported by this image version, try with a newer one."
+      $user_shell
+      exit 0
+    fi
+
     # Logging shell using $method and spawn a $user_shell shell
 
     umask 007

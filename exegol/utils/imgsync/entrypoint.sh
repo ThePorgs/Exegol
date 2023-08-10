@@ -3,7 +3,7 @@
 trap shutdown SIGTERM
 
 function exegol_init() {
-    usermod -s "/.exegol/start.sh" root # TODO review
+    usermod -s "/.exegol/start.sh" root
 }
 
 # Function specific

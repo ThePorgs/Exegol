@@ -45,6 +45,14 @@ class ContainerConfig:
         comment = "org.exegol.metadata.comment"
         password = "org.exegol.metadata.passwd"
 
+    class ExegolEnv(Enum):
+        user_shell = "START_SHELL"
+        shell_logging_method = "START_SHELL_LOGGING"
+        shell_logging_compress = "START_SHELL_COMPRESS"
+        desktop_protocol = "DESKTOP_PROTO"
+        desktop_host = "DESKTOP_HOST"
+        desktop_port = "DESKTOP_PORT"
+
     # Label features (label name / wrapper method to enable the feature)
     __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",
                         ExegolFeatures.desktop.value: "configureDesktop"}
@@ -78,7 +86,6 @@ class ContainerConfig:
         self.__container_entrypoint: List[str] = self.__default_entrypoint
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
-        self.__start_delegate_mode: bool = False
         # Entrypoint features
         self.__vpn_parameters: Optional[str] = None
         self.__run_cmd: bool = False
@@ -107,8 +114,6 @@ class ContainerConfig:
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
-        # If entrypoint is set on the image, considering the presence of start.sh script for delegates features
-        self.__start_delegate_mode = container.attrs['Config']['Entrypoint'] is not None
         self.__enable_gui = False
         for env in self.__envs:
             if "DISPLAY" in env:
@@ -312,7 +317,7 @@ class ContainerConfig:
             if Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
                 self.__disableShellLogging()
         elif Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
-            self.enableShellLogging(UserConfig().shell_logging_method)
+            self.enableShellLogging(UserConfig().shell_logging_method, UserConfig().shell_logging_compress)
         # Command builder info
         if self.__shell_logging:
             command_options.append("--log")
@@ -442,11 +447,14 @@ class ContainerConfig:
             self.__exegol_resources = False
             self.removeVolume(container_path='/opt/resources')
 
-    def enableShellLogging(self, log_method: str):
+    def enableShellLogging(self, log_method: str, compress_mode: Optional[bool] = None):
         """Procedure to enable exegol shell logging feature"""
         if not self.__shell_logging:
             logger.verbose("Config: Enabling shell logging")
             self.__shell_logging = True
+            self.addEnv(self.ExegolEnv.shell_logging_method.value, log_method)
+            if compress_mode is not None:
+                self.addEnv(self.ExegolEnv.shell_logging_compress.value, str(compress_mode))
             self.addLabel(self.ExegolFeatures.shell_logging.value, log_method)
 
     def __disableShellLogging(self):
@@ -454,6 +462,8 @@ class ContainerConfig:
         if self.__shell_logging:
             logger.verbose("Config: Disabling shell logging")
             self.__shell_logging = False
+            self.removeEnv(self.ExegolEnv.shell_logging_method.value)
+            self.removeEnv(self.ExegolEnv.shell_logging_compress.value)
             self.removeLabel(self.ExegolFeatures.shell_logging.value)
 
     def isDesktopEnabled(self):
@@ -469,14 +479,14 @@ class ContainerConfig:
             assert self.__desktop_port is not None
             self.addLabel(self.ExegolFeatures.desktop.value, f"{self.__desktop_proto}:{self.__desktop_host}:{self.__desktop_port}")
             # Env var are used to send these parameter to the desktop-start script
-            self.addEnv("DESKTOP_PROTO", self.__desktop_proto)
+            self.addEnv(self.ExegolEnv.desktop_protocol.value, self.__desktop_proto)
 
             if self.__network_host:
-                self.addEnv("DESKTOP_HOST", self.__desktop_host)
-                self.addEnv("DESKTOP_PORT", str(self.__desktop_port))
+                self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
+                self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
             else:
-                self.addEnv("DESKTOP_HOST", "localhost")
-                self.addEnv("DESKTOP_PORT", str(self.__default_desktop_port.get(self.__desktop_proto)))
+                self.addEnv(self.ExegolEnv.desktop_host.value, "localhost")
+                self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
                 # Exposing desktop service
                 self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
 
@@ -521,9 +531,9 @@ class ContainerConfig:
             self.__desktop_host = None
             self.__desktop_port = None
             self.removeLabel(self.ExegolFeatures.desktop.value)
-            self.removeEnv("DESKTOP_PROTO")
-            self.removeEnv("DESKTOP_HOST")
-            self.removeEnv("DESKTOP_PORT")
+            self.removeEnv(self.ExegolEnv.desktop_protocol.value)
+            self.removeEnv(self.ExegolEnv.desktop_host.value)
+            self.removeEnv(self.ExegolEnv.desktop_port.value)
 
     def enableCwdShare(self):
         """Procedure to share Current Working Directory with the /workspace of the container"""
@@ -999,7 +1009,7 @@ class ContainerConfig:
         """Overriding envs when opening a shell"""
         result = []
         # Select default shell to use
-        result.append(f"START_SHELL={ParametersManager().shell}")
+        result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
         # Share GUI Display config
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
@@ -1014,8 +1024,8 @@ class ContainerConfig:
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basic
         if self.__shell_logging or ParametersManager().log:
-            result.append(f"START_SHELL_LOGGING={ParametersManager().log_method}")
-            result.append(f"START_SHELL_COMPRESS={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
+            result.append(f"{self.ExegolEnv.shell_logging_method.value}={ParametersManager().log_method}")
+            result.append(f"{self.ExegolEnv.shell_logging_compress.value}={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
         # Overwrite env from user parameters
         user_envs = ParametersManager().envs
         if user_envs is not None:
@@ -1276,7 +1286,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + ["DISPLAY", "PATH", "DESKTOP_PROTO", "DESKTOP_HOST", "DESKTOP_PORT"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result

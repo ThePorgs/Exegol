@@ -459,7 +459,8 @@ class ExegolManager:
         if ParametersManager().exegol_resources:
             config.enableExegolResources()
         if ParametersManager().log:
-            config.enableShellLogging(ParametersManager().log_method)
+            config.enableShellLogging(ParametersManager().log_method,
+                                      UserConfig().shell_logging_compress ^ ParametersManager().log_compress)
         if ParametersManager().workspace_path:
             if ParametersManager().mount_current_dir:
                 logger.warning(f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
