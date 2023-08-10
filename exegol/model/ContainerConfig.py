@@ -485,7 +485,7 @@ class ContainerConfig:
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
             else:
-                self.addEnv(self.ExegolEnv.desktop_host.value, "localhost")
+                self.addEnv(self.ExegolEnv.desktop_host.value, "0.0.0.0")
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
                 # Exposing desktop service
                 self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
