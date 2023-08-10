@@ -108,7 +108,7 @@ class ExegolManager:
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         assert container is not None and type(container) is list
         for c in container:
-            c.stop(timeout=2)
+            c.stop(timeout=5)
 
     @classmethod
     def restart(cls):
