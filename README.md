@@ -24,6 +24,9 @@
   <a target="_blank" rel="noopener noreferrer" href="https://www.blackhat.com/asia-23/arsenal/schedule/#exegol-professional-hacking-setup-30815" title="Schedule">
    <img alt="Black Hat Asia 2023" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-Asia%202023-blueviolet">
   </a>
+  <a target="_blank" rel="noopener noreferrer" href="https://www.blackhat.com/us-23/arsenal/schedule/#exegol-professional-hacking-setup-31711" title="Schedule">
+   <img alt="Black Hat USA 2023" src="https://img.shields.io/badge/Black%20Hat%20Arsenal-USA%202023-blueviolet">
+  </a>
   <br><br>
   <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/cXThyp7D6P" title="Join us on Discord"><img src="https://raw.githubusercontent.com/ThePorgs/Exegol-docs/main/.assets/discord_join_us.png" width="150" alt="Join us on Discord"></a>
   <br><br>

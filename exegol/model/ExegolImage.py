@@ -616,7 +616,7 @@ class ExegolImage(SelectableInterface):
     def getDisplayName(self) -> str:
         """Image's display name getter"""
         result = self.__alt_name if self.__alt_name else self.__name
-        if self.getArch() != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
+        if self.getArch().split('/')[0] != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
             color = ConsoleFormat.getArchColor(self.getArch())
             result += f" [{color}]({self.getArch()})[/{color}]"
         return result

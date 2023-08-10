@@ -92,7 +92,7 @@ class WebUtils:
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
         version: Optional[str] = None
         if response is not None and response.status_code == 200:
-            data = json.loads(response.text)
+            data = json.loads(response.content.decode("utf-8"))
             # Parse metadata of the current image from v1 schema
             metadata = json.loads(data.get("history", [])[0]['v1Compatibility'])
             # Find version label and extract data
@@ -106,7 +106,7 @@ class WebUtils:
             return None
         data = cls.__runRequest(url, service_name, headers, method, data, retry_count)
         if data is not None and data.status_code == 200:
-            data = json.loads(data.text)
+            data = json.loads(data.content.decode("utf-8"))
         elif data is not None:
             logger.error(f"Error during web request to {service_name} ({data.status_code}) on {url}")
             if data.status_code == 404 and service_name == "Dockerhub":
@@ -127,7 +127,7 @@ class WebUtils:
                     response = requests.request(method=method, url=url, timeout=(5, 10), verify=ParametersManager().verify, headers=headers, data=data)
                     return response
                 except requests.exceptions.HTTPError as e:
-                    logger.error(f"Response error: {e.response.text}")
+                    logger.error(f"Response error: {e.response.content.decode('utf-8')}")
                 except requests.exceptions.ConnectionError as err:
                     logger.debug(f"Error: {err}")
                     error_re = re.search(r"\[Errno [-\d]+]\s?([^']*)('\))+\)*", str(err))

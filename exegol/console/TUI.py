@@ -422,7 +422,7 @@ class ExegolTUI:
             container_info_header += f" - v.{container.image.getImageVersion()}"
         if "Unknown" not in container.image.getStatus():
             container_info_header += f" ({container.image.getStatus(include_version=False)})"
-        if container.image.getArch() != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
+        if container.image.getArch().split('/')[0] != EnvInfo.arch or logger.isEnabledFor(ExeLog.VERBOSE):
             color = ConsoleFormat.getArchColor(container.image.getArch())
             container_info_header += f" [{color}]({container.image.getArch()})[/{color}]"
         recap.add_column(container_info_header)
