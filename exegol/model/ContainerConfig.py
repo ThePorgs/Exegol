@@ -495,7 +495,7 @@ class ContainerConfig:
         Accepted format: 'mode:host:port'
         """
         self.__desktop_proto = UserConfig().desktop_default_proto
-        self.__desktop_host = "localhost" if UserConfig().desktop_default_localhost else "0.0.0.0"
+        self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
 
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
@@ -1239,7 +1239,8 @@ class ContainerConfig:
         """Get Desktop feature status / config"""
         if not self.isDesktopEnabled():
             return boolFormatter(False)
-        config = f"{self.__desktop_proto}://{self.__desktop_host}:{self.__desktop_port}"
+        config = (f"{self.__desktop_proto}://"
+                  f"{'localhost' if self.__desktop_host == '127.0.0.1' else self.__desktop_host}:{self.__desktop_port}")
         return f"[link={config}][deep_sky_blue3]{config}[/deep_sky_blue3][/link]"
 
     def getTextNetworkMode(self) -> str:
