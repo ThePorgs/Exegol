@@ -18,7 +18,12 @@ check_docker_right() {
 }
 
 cloning_repos() {
-    git clone "https://github.com/ThePorgs/Exegol"
+    exegol_dir=$(find . -name 'Exegol' -type d 2>/dev/null)
+    if [ -z "$exegol_dir" ]; then
+        git clone "https://github.com/ThePorgs/Exegol"
+    else
+        printf "Exegol already install here:\n\t%s\n", "$exegol_dir"
+    fi
 }
 
 install_python_requirements() {
