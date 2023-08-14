@@ -785,10 +785,6 @@ class ContainerConfig:
             if EnvInfo.isMacHost():
                 # Add support for /etc
                 path_match = str(path)
-                if path_match.startswith("/etc/"):
-                    if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
-                    path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
                     # Find a match
