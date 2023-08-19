@@ -5,9 +5,52 @@ if [ -r /etc/os-release ]; then
 	. /etc/os-release
 fi
 
+case $ID in
+    debian|ubuntu)
+        PACKAGE_MANAGER="apt"
+        PACKAGE_MANAGER_INSTALL="apt install -y"
+        PACKAGE_MANAGER_UPDATE="apt update"
+    ;;
+    fedora)
+        PACKAGE_MANAGER="dnf"
+        PACKAGE_MANAGER_INSTALL="dnf install -y"
+    ;;
+    alpine)
+        PACKAGE_MANAGER="apk"
+        PACKAGE_MANAGER_INSTALL="apk add"
+    ;;
+    *)
+        echo "Installer not support this version."
+        echo "For install Exegol, pls refert to: https://exegol.readthedocs.io/en/latest/getting-started/install.html"
+        exit 1
+    ;;
+
+esac
+
+usage() {
+    echo "Exegol installer script"
+    echo "USAGE: ./install.sh [OPTION]"
+    echo "OPTION:"
+    echo "-v                verbose output"
+    echo "--fix-install     download missing dependencies"
+    echo "--help            print this help"
+}
+
 check_dependencies() {
+    MISSING_DEPENDENCIES=0
     while [ $# -gt 0 ]; do
-        command -v "$1" > /dev/null 2>&1 || (echo "Missing $1" && exit 1)
+        if ! [ "$(command -v "$1" > /dev/null 2>&1)" ]; then
+            echo "Missing $1"
+            if [ "$FIX_INSTALL" = True ]; then
+                echo "$PACKAGE_MANAGER_INSTALL"
+                if [ "$PACKAGE_MANAGER" == "apt" ]; then
+                    $PACKAGE_MANAGER_UPDATE
+                fi
+                $PACKAGE_MANAGER_INSTALL "$1" 
+            else
+                MISSING_DEPENDENCIES=$( expr "$MISSING_DEPENDENCIES" + 1 )
+            fi
+        fi
     shift
     done
 
@@ -43,11 +86,28 @@ while [ $# -gt 0 ]; do
         -v|--verbose)
             set -x
         ;;
+        --fix-install)
+            FIX_INSTALL=True
+        ;;
+        --help)
+            usage
+            exit 0
+        ;;
     esac
 shift
 done
 
 check_dependencies "git" "python3" "docker" "sudo"
+if [ "$ID" == "alpine" ]; then
+    check_dependencies "py3-pip"
+else
+    check_dependencies "python3-pip"
+fi
+
+if [ "$MISSING_DEPENDENCIES" -ge 1 ]; then
+    echo "For fix missing package, add --fix-install"
+    exit 1
+fi
 check_docker_right
 cloning_repos
 install_python_requirements
