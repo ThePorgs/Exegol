@@ -39,14 +39,18 @@ usage() {
 check_dependencies() {
     MISSING_DEPENDENCIES=0
     while [ $# -gt 0 ]; do
-        if ! [ "$(command -v "$1" > /dev/null 2>&1)" ]; then
+        local command_package="$1"
+        if [ "$1" = "python3-pip" ] || [ "$1" = "py3-pip" ]; then
+            command_package="pip"
+        fi
+        if ! [ "$(command -v "$command_package")" ]; then
             echo "Missing $1"
             if [ "$FIX_INSTALL" = True ]; then
                 echo "$PACKAGE_MANAGER_INSTALL"
-                if [ "$PACKAGE_MANAGER" == "apt" ]; then
-                    $PACKAGE_MANAGER_UPDATE
+                if [ "$PACKAGE_MANAGER" = "apt" ]; then
+                    sudo $PACKAGE_MANAGER_UPDATE
                 fi
-                $PACKAGE_MANAGER_INSTALL "$1" 
+                sudo $PACKAGE_MANAGER_INSTALL "$1" 
             else
                 MISSING_DEPENDENCIES=$( expr "$MISSING_DEPENDENCIES" + 1 )
             fi
@@ -71,9 +75,9 @@ cloning_repos() {
 
 install_python_requirements() {
     if [ $ID = "debian" ] && [ $VERSION_ID -ge "12" ]; then
-    python3 -m pip install --requirement "Exegol/requirements.txt" --break-system-packages
+        python3 -m pip install --requirement "Exegol/requirements.txt" --break-system-packages
     else
-    python3 -m pip install --requirement "Exegol/requirements.txt"
+        python3 -m pip install --requirement "Exegol/requirements.txt"
     fi
 }
 
@@ -98,7 +102,7 @@ shift
 done
 
 check_dependencies "git" "python3" "docker" "sudo"
-if [ "$ID" == "alpine" ]; then
+if [ "$ID" = "alpine" ]; then
     check_dependencies "py3-pip"
 else
     check_dependencies "python3-pip"
