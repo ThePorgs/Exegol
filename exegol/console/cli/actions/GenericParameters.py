@@ -267,6 +267,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.desktop = Option("--desktop",
                               dest="desktop",
                               action="store_true",
+                              default=False,
                               help=f"Enable or disable the Exegol desktop feature (default: {'[green]Enabled[/green]' if UserConfig().desktop_default_enable else '[red]Disabled[/red]'})")
         self.desktop_config = Option("--desktop-config",
                                      dest="desktop_config",
