@@ -12,6 +12,7 @@ from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
 
+from exegol import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.UserConfig import UserConfig
 from exegol.console.ConsoleFormat import boolFormatter, getColor
@@ -70,6 +71,7 @@ class ContainerConfig:
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
+        self.__wrapper_start_enabled: bool = False
         self.__mounts: List[Mount] = []
         self.__devices: List[str] = []
         self.__capabilities: List[str] = []
@@ -101,6 +103,9 @@ class ContainerConfig:
 
         if container is not None:
             self.__parseContainerConfig(container)
+        else:
+            self.__wrapper_start_enabled = True
+            self.addVolume(str(ConstantConfig.start_context_path_obj), "/.exegol/start.sh", read_only=True, must_exist=True)
 
     # ===== Config parsing section =====
 
@@ -225,6 +230,8 @@ class ContainerConfig:
                 obj_path = cast(PurePath, src_path)
                 self.__vpn_path = obj_path
                 logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
+            elif "/.exegol/start.sh" in share.get('Destination', ''):
+                self.__wrapper_start_enabled = True
 
     # ===== Feature section =====
 
@@ -1079,6 +1086,10 @@ class ContainerConfig:
                 self.addLabel(label_name, data)
         return self.__labels
 
+    def isWrapperStartShared(self) -> bool:
+        """Return True if the /.exegol/start.sh is a volume from the up-to-date wrapper script."""
+        return self.__wrapper_start_enabled
+
     # ===== Metadata labels getter / setter section =====
 
     def setCreationDate(self, creation_date: str):
@@ -1264,7 +1275,8 @@ class ContainerConfig:
         for mount in self.__mounts:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                                                       '/etc/timezone', '/my-resources', '/opt/my-resources']:
+                                                       '/etc/timezone', '/my-resources', '/opt/my-resources',
+                                                       '/.exegol/entrypoint.sh', '/.exegol/start.sh']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result

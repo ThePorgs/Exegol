@@ -15,7 +15,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger, console
-from exegol.utils.imgsync.ImageScriptSync import getImageSyncTarData
+from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
@@ -104,7 +104,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
-            self.preStartSetup()
+            self.__preStartSetup()
             self.__start_container()
 
     def __start_container(self):
@@ -143,6 +143,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def spawnShell(self):
         """Spawn a shell on the docker container"""
+        self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         for device in self.config.getDevices():
             logger.info(f"Shared host device: {device.split(':')[0]}")
@@ -199,7 +200,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         - The second return argument is the command itself in str format."""
         # Using base64 to escape special characters
         str_cmd = command if type(command) is str else ' '.join(command)
-        #str_cmd = str_cmd.replace('"', '\\"')  # This fix shoudn' be necessary plus it can alter data like passwd
+        # str_cmd = str_cmd.replace('"', '\\"')  # This fix shoudn' be necessary plus it can alter data like passwd
         if not quiet:
             logger.success(f"Command received: {str_cmd}")
         # ZSH pre-routine: Load zsh aliases and call eval to force aliases interpretation
@@ -268,12 +269,27 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
             logger.success("Private workspace volume removed successfully")
 
-    def preStartSetup(self):
+    def __preStartSetup(self):
         """
         Operation to be performed before starting a container
         :return:
         """
         self.__applyXhostACL()
+
+    def __check_start_version(self):
+        """
+        Check start.sh up-to-date status and update the script if needed
+        :return:
+        """
+        # Up-to-date container have the script shared over a volume
+        # But legacy container must be checked and the code must be pushed
+        if not self.config.isWrapperStartShared():
+            # If the start.sh if not shared, the version must be compared and the script updated
+            current_start = ImageScriptSync.getCurrentStartVersion()
+            container_version = self.__container.exec_run(["/bin/bash", "-c", "egrep '^# Start Version:[0-9]+$' /.exegol/start.sh 2&>/dev/null || echo ':0' | cut -d ':' -f2"]).output.decode("utf-8").strip()
+            if current_start != container_version:
+                logger.debug(f"Updating start.sh script from version {container_version} to version {current_start}")
+                self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_start=True))
 
     def postCreateSetup(self, is_temporary: bool = False):
         """
@@ -284,7 +300,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
-            self.__container.put_archive("/", getImageSyncTarData())
+            self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_entrypoint=True))
             if self.__container.status.lower() == "created":
                 self.__start_container()
             self.__updatePasswd()
