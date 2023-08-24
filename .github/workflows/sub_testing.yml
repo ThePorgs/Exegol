@@ -17,8 +17,10 @@ jobs:
           python-version: "3.10"
       - name: Install requirements
         run: python -m pip install --user mypy types-requests types-PyYAML
-      - name: Run code analysis
+      - name: Run code analysis (package)
         run: mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
+      - name: Run code analysis (source)
+        run: mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Find start.sh script version
         run: egrep '^# Start Version:[0-9]+$' ./exegol/utils/imgsync/start.sh | cut -d ':' -f2
 
