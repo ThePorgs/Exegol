@@ -22,7 +22,7 @@ jobs:
       - name: Run code analysis (source)
         run: mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Find start.sh script version
-        run: egrep '^# Start Version:[0-9]+$' ./exegol/utils/imgsync/start.sh | cut -d ':' -f2
+        run: egrep '^# Start Version:[0-9ab]+$' ./exegol/utils/imgsync/start.sh | cut -d ':' -f2
 
   compatibility:
     name: Compatibility checks

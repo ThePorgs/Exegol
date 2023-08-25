@@ -103,9 +103,9 @@ class ContainerConfig:
 
         if container is not None:
             self.__parseContainerConfig(container)
-        else:
-            self.__wrapper_start_enabled = True
-            self.addVolume(str(ConstantConfig.start_context_path_obj), "/.exegol/start.sh", read_only=True, must_exist=True)
+        #else:
+        #    self.__wrapper_start_enabled = True
+        #    self.addVolume(str(ConstantConfig.start_context_path_obj), "/.exegol/start.sh", read_only=True, must_exist=True)
 
     # ===== Config parsing section =====
 

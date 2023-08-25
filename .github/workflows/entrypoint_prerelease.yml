@@ -9,9 +9,23 @@ on:
       - "**.md"
 
 jobs:
-  test:
+  code_test:
     name: Python tests and checks
     uses: ./.github/workflows/sub_testing.yml
+
+  preprod_test:
+    name: Code testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Find start.sh script version
+        run: egrep '^# Start Version:[0-9]+$' ./exegol/utils/imgsync/start.sh | cut -d ':' -f2
 
   build:
     name: Build Python 🐍 distributions
