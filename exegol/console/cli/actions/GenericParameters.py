@@ -191,7 +191,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               default=[],
                               dest="volumes",
-                              help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/)")
+                              help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/[blue][:ro|rw][/blue])")
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],
@@ -273,8 +273,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      dest="desktop_config",
                                      default="",
                                      action="store",
-                                     help=f"Configure your exegol desktop ([blue]{', '.join(UserConfig.desktop_available_proto)}[/blue]) and its exposition "
-                                          f"(format: [blue]proto[/blue]\[:[blue]ip[/blue]\[:[blue]port[/blue]]]) "
+                                     help=f"Configure your exegol desktop ([blue]{'[/blue] or [blue]'.join(UserConfig.desktop_available_proto)}[/blue]) and its exposure "
+                                          f"(format: [blue]proto[:ip[:port]][/blue]) "
                                           f"(default: [blue]{UserConfig().desktop_default_proto}[/blue]:[blue]{'127.0.0.1' if UserConfig().desktop_default_localhost else '0.0.0.0'}[/blue]:[blue]<random>[/blue])",
                                      completer=DesktopConfigCompleter)
         groupArgs.append(GroupArg({"arg": self.desktop, "required": False},

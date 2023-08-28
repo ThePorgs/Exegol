@@ -1160,7 +1160,7 @@ class ContainerConfig:
             logger.debug(
                 f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
             try:
-                self.addVolume(host_path, container_path, readonly)
+                self.addVolume(host_path, container_path, read_only=readonly)
             except CancelOperation as e:
                 logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
                 if not Confirm("Do you want to continue without this volume ?", False):
@@ -1277,13 +1277,16 @@ class ContainerConfig:
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
+        hidden_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
+                         '/etc/timezone', '/my-resources', '/opt/my-resources',
+                         '/.exegol/entrypoint.sh', '/.exegol/spawn.sh']
         for mount in self.__mounts:
-            # Blacklist technical mount
-            if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                                                       '/etc/timezone', '/my-resources', '/opt/my-resources',
-                                                       '/.exegol/entrypoint.sh', '/.exegol/spawn.sh']:
+            # Not showing technical mounts
+            if not verbose and mount.get('Target') in hidden_mounts:
                 continue
-            result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
+            read_only_text = f"[bright_black](RO)[/bright_black] " if verbose else ''
+            read_write_text = f"[orange3](RW)[/orange3] " if verbose else ''
+            result += f"{read_only_text if mount.get('ReadOnly') else read_write_text}{mount.get('Source')} :right_arrow: {mount.get('Target')}{os.linesep}"
         return result
 
     def getTextDevices(self, verbose: bool = False) -> str:

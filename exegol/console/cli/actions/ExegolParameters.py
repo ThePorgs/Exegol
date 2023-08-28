@@ -21,9 +21,10 @@ class Start(Command, ContainerCreation, ContainerSpawnShell):
             "Create a container [blue]test[/blue] with a custom shared workspace": "exegol start [blue]test[/blue] [bright_blue]full[/bright_blue] -w [magenta]./project/pentest/[/magenta]",
             "Create a container [blue]test[/blue] sharing the current working directory": "exegol start [blue]test[/blue] [bright_blue]full[/bright_blue] -cwd",
             "Create a container [blue]htb[/blue] with a VPN": "exegol start [blue]htb[/blue] [bright_blue]full[/bright_blue] --vpn [magenta]~/vpn/[/magenta][bright_magenta]lab_Dramelac.ovpn[/bright_magenta]",
-            "Create a container [blue]app[/blue] with custom volume": "exegol start [blue]app[/blue] [bright_blue]full[/bright_blue] -V [bright_magenta]'/var/app/:/app/'[/bright_magenta]",
+            "Create a container [blue]app[/blue] with custom volume": "exegol start [blue]app[/blue] [bright_blue]full[/bright_blue] -V [bright_magenta]/var/app/[/bright_magenta]:[bright_magenta]/app/[/bright_magenta]",
+            "Create a container [blue]app[/blue] with custom volume in [blue]ReadOnly[/blue]": "exegol start [blue]app[/blue] [bright_blue]full[/bright_blue] -V [bright_magenta]/var/app/[/bright_magenta]:[bright_magenta]/app/[/bright_magenta]:[blue]ro[/blue]",
             "Get a [blue]tmux[/blue] shell": "exegol start --shell [blue]tmux[/blue]",
-            "Share a specific [blue]hardware device[/blue] (like Proxmark)": "exegol start -d /dev/ttyACM0",
+            "Share a specific [blue]hardware device[/blue] [bright_black](e.g. Proxmark)[/bright_black]": "exegol start -d /dev/ttyACM0",
             "Share every [blue]USB device[/blue] connected to the host": "exegol start -d /dev/bus/usb/",
         }
 
