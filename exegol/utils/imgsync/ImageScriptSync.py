@@ -9,16 +9,16 @@ class ImageScriptSync:
 
     @staticmethod
     def getCurrentStartVersion():
-        """Find the current version of the start.sh script."""
-        with open(ConstantConfig.start_context_path_obj, 'r') as file:
+        """Find the current version of the spawn.sh script."""
+        with open(ConstantConfig.spawn_context_path_obj, 'r') as file:
             for line in file.readlines():
-                if line.startswith('# Start Version:'):
+                if line.startswith('# Spawn Version:'):
                     return line.split(':')[-1].strip()
-        logger.critical(f"The start.sh version cannot be found, check your exegol setup! {ConstantConfig.start_context_path_obj}")
+        logger.critical(f"The spawn.sh version cannot be found, check your exegol setup! {ConstantConfig.spawn_context_path_obj}")
 
     @staticmethod
-    def getImageSyncTarData(include_entrypoint: bool = False, include_start: bool = False):
-        """The purpose of this class is to generate and overwrite scripts like the entrypoint or start.sh inside exegol containers
+    def getImageSyncTarData(include_entrypoint: bool = False, include_spawn: bool = False):
+        """The purpose of this class is to generate and overwrite scripts like the entrypoint or spawn.sh inside exegol containers
         to integrate the latest features, whatever the version of the image."""
 
         # Create tar file
@@ -43,18 +43,18 @@ class ImageScriptSync:
                 entry_tar.addfile(info, fileobj=data)
 
             # Load start data
-            if include_start:
-                start_script_path = ConstantConfig.start_context_path_obj
-                logger.debug(f"Start script path: {str(start_script_path)}")
-                if not start_script_path.is_file():
-                    logger.error("Unable to find the start script! Your Exegol installation is probably broken...")
+            if include_spawn:
+                spawn_script_path = ConstantConfig.spawn_context_path_obj
+                logger.debug(f"Spawn script path: {str(spawn_script_path)}")
+                if not spawn_script_path.is_file():
+                    logger.error("Unable to find the spawn script! Your Exegol installation is probably broken...")
                     return None
-                with open(start_script_path, 'rb') as f:
+                with open(spawn_script_path, 'rb') as f:
                     raw = f.read()
                     data = io.BytesIO(initial_bytes=raw)
 
                 # Import file to tar object
-                info = tarfile.TarInfo(name="/.exegol/start.sh")
+                info = tarfile.TarInfo(name="/.exegol/spawn.sh")
                 info.size = len(raw)
                 info.mode = 0o500
                 entry_tar.addfile(info, fileobj=data)

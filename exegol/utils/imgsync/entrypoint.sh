@@ -3,7 +3,7 @@
 trap shutdown SIGTERM
 
 function exegol_init() {
-    usermod -s "/.exegol/start.sh" root
+    usermod -s "/.exegol/spawn.sh" root
 }
 
 # Function specific
@@ -52,7 +52,7 @@ function shutdown() {
   # shellcheck disable=SC2046
   kill $(pgrep -x -f -- -bash) 2>/dev/null
   # Wait for every active process to exit (e.g: shell logging compression, VPN closing, WebUI)
-  wait_list="$(pgrep -f "(.log|start.sh|vnc)" | grep -vE '^1$')"
+  wait_list="$(pgrep -f "(.log|spawn.sh|vnc)" | grep -vE '^1$')"
   for i in $wait_list; do
     # Waiting for: $i PID process to exit
     tail --pid="$i" -f /dev/null

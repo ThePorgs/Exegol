@@ -278,18 +278,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __check_start_version(self):
         """
-        Check start.sh up-to-date status and update the script if needed
+        Check spawn.sh up-to-date status and update the script if needed
         :return:
         """
         # Up-to-date container have the script shared over a volume
         # But legacy container must be checked and the code must be pushed
         if not self.config.isWrapperStartShared():
-            # If the start.sh if not shared, the version must be compared and the script updated
+            # If the spawn.sh if not shared, the version must be compared and the script updated
             current_start = ImageScriptSync.getCurrentStartVersion()
-            container_version = self.__container.exec_run(["/bin/bash", "-c", "egrep '^# Start Version:[0-9]+$' /.exegol/start.sh 2&>/dev/null || echo ':0' | cut -d ':' -f2"]).output.decode("utf-8").strip()
+            container_version = self.__container.exec_run(["/bin/bash", "-c", "egrep '^# Spawn Version:[0-9]+$' /.exegol/spawn.sh 2&>/dev/null || echo ':0' | cut -d ':' -f2"]).output.decode("utf-8").strip()
             if current_start != container_version:
-                logger.debug(f"Updating start.sh script from version {container_version} to version {current_start}")
-                self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_start=True))
+                logger.debug(f"Updating spawn.sh script from version {container_version} to version {current_start}")
+                self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_spawn=True))
 
     def postCreateSetup(self, is_temporary: bool = False):
         """

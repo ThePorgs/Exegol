@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # DO NOT CHANGE the syntax or text of the following line, only increment the version number
-# Start Version:2b
-# The start version allow the wrapper to compare the current version of the start.sh inside the container compare to the one on the current wrapper version.
+# Spawn Version:2b
+# The spawn version allow the wrapper to compare the current version of the spawn.sh inside the container compare to the one on the current wrapper version.
 # On new container, this file is automatically updated through a docker volume
 # For legacy container, this version is fetch and the file updated if needed.
 

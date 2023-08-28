@@ -103,9 +103,9 @@ class ContainerConfig:
 
         if container is not None:
             self.__parseContainerConfig(container)
-        #else:
-        #    self.__wrapper_start_enabled = True
-        #    self.addVolume(str(ConstantConfig.start_context_path_obj), "/.exegol/start.sh", read_only=True, must_exist=True)
+        else:
+            self.__wrapper_start_enabled = True
+            self.addVolume(str(ConstantConfig.spawn_context_path_obj), "/.exegol/spawn.sh", read_only=True, must_exist=True)
 
     # ===== Config parsing section =====
 
@@ -230,7 +230,7 @@ class ContainerConfig:
                 obj_path = cast(PurePath, src_path)
                 self.__vpn_path = obj_path
                 logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
-            elif "/.exegol/start.sh" in share.get('Destination', ''):
+            elif "/.exegol/spawn.sh" in share.get('Destination', ''):
                 self.__wrapper_start_enabled = True
 
     # ===== Feature section =====
@@ -730,8 +730,8 @@ class ContainerConfig:
 
     def getShellCommand(self) -> str:
         """Get container command for opening a new shell"""
-        # Use a start.sh script to handle features with the wrapper
-        return "/.exegol/start.sh"
+        # Use a spawn.sh script to handle features with the wrapper
+        return "/.exegol/spawn.sh"
 
     @staticmethod
     def generateRandomPassword(length: int = 30) -> str:
@@ -902,6 +902,11 @@ class ContainerConfig:
             if EnvInfo.isMacHost():
                 # Add support for /etc
                 path_match = str(path)
+                if path_match.startswith("/opt/"):
+                    msg = f"{EnvInfo.getDockerEngine()} cannot mount directory from [magenta]/opt/[/magenta] host path."
+                    if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
+                        msg += " Your exegol installation cannot be stored under this directory."
+                    raise CancelOperation(f"{EnvInfo.getDockerEngine()} cannot mount directory from [magenta]/opt/[/magenta] host path.")
                 if path_match.startswith("/etc/"):
                     if EnvInfo.isOrbstack():
                         raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
@@ -1087,7 +1092,7 @@ class ContainerConfig:
         return self.__labels
 
     def isWrapperStartShared(self) -> bool:
-        """Return True if the /.exegol/start.sh is a volume from the up-to-date wrapper script."""
+        """Return True if the /.exegol/spawn.sh is a volume from the up-to-date wrapper script."""
         return self.__wrapper_start_enabled
 
     # ===== Metadata labels getter / setter section =====
@@ -1276,7 +1281,7 @@ class ContainerConfig:
             # Blacklist technical mount
             if not verbose and mount.get('Target') in ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
                                                        '/etc/timezone', '/my-resources', '/opt/my-resources',
-                                                       '/.exegol/entrypoint.sh', '/.exegol/start.sh']:
+                                                       '/.exegol/entrypoint.sh', '/.exegol/spawn.sh']:
                 continue
             result += f"{mount.get('Source')} :right_arrow: {mount.get('Target')} {'(RO)' if mount.get('ReadOnly') else ''}{os.linesep}"
         return result

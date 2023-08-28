@@ -15,10 +15,10 @@ class ConstantConfig:
     # Path of the Dockerfile
     build_context_path_obj: Path
     build_context_path: str
-    # Path of the Entrypoint.sh
+    # Path of the entrypoint.sh
     entrypoint_context_path_obj: Path
-    # Path of the Start.sh
-    start_context_path_obj: Path
+    # Path of the spawn.sh
+    spawn_context_path_obj: Path
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
     # Docker Desktop for mac config file
@@ -66,4 +66,4 @@ ConstantConfig.build_context_path_obj = ConstantConfig.findResourceContextPath("
 ConstantConfig.build_context_path = str(ConstantConfig.build_context_path_obj)
 
 ConstantConfig.entrypoint_context_path_obj = ConstantConfig.findResourceContextPath("exegol-imgsync", "exegol/utils/imgsync/entrypoint.sh")
-ConstantConfig.start_context_path_obj = ConstantConfig.findResourceContextPath("exegol-imgsync", "exegol/utils/imgsync/start.sh")
+ConstantConfig.spawn_context_path_obj = ConstantConfig.findResourceContextPath("exegol-imgsync", "exegol/utils/imgsync/spawn.sh")
