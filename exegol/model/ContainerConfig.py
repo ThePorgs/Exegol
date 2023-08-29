@@ -903,10 +903,10 @@ class ContainerConfig:
                 # Add support for /etc
                 path_match = str(path)
                 if path_match.startswith("/opt/"):
-                    msg = f"{EnvInfo.getDockerEngine()} cannot mount directory from [magenta]/opt/[/magenta] host path."
+                    msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path."
                     if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
-                    raise CancelOperation(f"{EnvInfo.getDockerEngine()} cannot mount directory from [magenta]/opt/[/magenta] host path.")
+                    raise CancelOperation(f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path.")
                 if path_match.startswith("/etc/"):
                     if EnvInfo.isOrbstack():
                         raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
