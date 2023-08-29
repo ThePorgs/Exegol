@@ -906,7 +906,8 @@ class ContainerConfig:
                     msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path."
                     if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
-                    raise CancelOperation(f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path.")
+                        logger.critical(msg)
+                    raise CancelOperation(msg)
                 if path_match.startswith("/etc/"):
                     if EnvInfo.isOrbstack():
                         raise CancelOperation(f"Orbstack doesn't support sharing /etc files with the container")
