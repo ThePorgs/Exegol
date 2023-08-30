@@ -22,7 +22,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     """Class of an exegol container already create in docker"""
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
-        logger.debug(f"== Loading container : {docker_container.name}")
+        logger.debug(f"Loading container: {docker_container.name}")
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
         self.__xhost_applied = False

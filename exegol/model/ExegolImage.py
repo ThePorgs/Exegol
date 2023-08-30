@@ -216,7 +216,6 @@ class ExegolImage(SelectableInterface):
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
         if "N/A" in self.__image_version and self.__image is not None:
-            logger.debug("Try to retrieve image version from labels")
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
@@ -354,6 +353,7 @@ class ExegolImage(SelectableInterface):
             - unknown : no internet connection = no information from the registry
             - not install : other remote images without any match
         Return a list of ordered ExegolImage."""
+        logger.debug("Comparing and merging local and remote images data")
         results = []
         latest_installed: List[str] = []
         cls.__mergeMetaImages(remote_images)
@@ -362,7 +362,8 @@ class ExegolImage(SelectableInterface):
         for r_img in remote_images:
             remote_img_dict[r_img.name] = r_img
 
-        # Find a match for each local image
+        # Searching a match for each local image
+        logger.debug("Searching a match for each image installed")
         for img in local_images:
             current_local_img = ExegolImage(docker_image=img)
             # quick handle of local images
@@ -511,7 +512,7 @@ class ExegolImage(SelectableInterface):
                 if self.getLatestVersion():
                     status += f" (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})"
                 else:
-                    status += f" (v.{self.getImageVersion()})"
+                    status += f" (currently v.{self.getImageVersion()})"
             status += "[/orange3]"
             return status
         else:

@@ -131,14 +131,14 @@ class ContainerConfig:
         caps = host_config.get("CapAdd", [])
         if caps is not None:
             self.__capabilities = caps
-        logger.debug(f"Capabilities : {self.__capabilities}")
+        logger.debug(f"└── Capabilities : {self.__capabilities}")
         self.__sysctls = host_config.get("Sysctls", {})
         devices = host_config.get("Devices", [])
         if devices is not None:
             for device in devices:
                 self.__devices.append(
                     f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
-        logger.debug(f"Load devices : {self.__devices}")
+        logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
         self.__share_timezone = False
@@ -153,7 +153,7 @@ class ContainerConfig:
     def __parseEnvs(self, envs: List[str]):
         """Parse envs object syntax"""
         for env in envs:
-            logger.debug(f"Parsing envs : {env}")
+            logger.debug(f"└── Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
             self.addRawEnv(env.strip("'").strip('"'))
 
@@ -162,7 +162,7 @@ class ContainerConfig:
         for key, value in labels.items():
             if not key.startswith("org.exegol."):
                 continue
-            logger.debug(f"Parsing label : {key}")
+            logger.debug(f"└── Parsing label : {key}")
             if key.startswith("org.exegol.metadata."):
                 # Find corresponding feature and attributes
                 refs = self.__label_metadata.get(key)  # Setter
@@ -184,7 +184,7 @@ class ContainerConfig:
             mounts = []
         self.__disable_workspace = True
         for share in mounts:
-            logger.debug(f"Parsing mount : {share}")
+            logger.debug(f"└── Parsing mount : {share}")
             src_path: Optional[PurePath] = None
             obj_path: PurePath
             if share.get('Type', 'volume') == "volume":
@@ -214,14 +214,14 @@ class ContainerConfig:
                 # Workspace are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
-                logger.debug(f"Loading workspace volume source : {obj_path}")
+                logger.debug(f"└── Loading workspace volume source : {obj_path}")
                 self.__disable_workspace = False
                 if obj_path is not None and obj_path.name == name and \
                         (obj_path.parent.name == "shared-data-volumes" or obj_path.parent == UserConfig().private_volume_path):  # Check legacy path and new custom path
-                    logger.debug("Private workspace detected")
+                    logger.debug("└── Private workspace detected")
                     self.__workspace_dedicated_path = str(obj_path)
                 else:
-                    logger.debug("Custom workspace detected")
+                    logger.debug("└── Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
             # TODO remove support for previous container
             elif "/vpn" in share.get('Destination', '') or "/.exegol/vpn" in share.get('Destination', ''):
@@ -229,7 +229,7 @@ class ContainerConfig:
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
                 self.__vpn_path = obj_path
-                logger.debug(f"Loading VPN config: {self.__vpn_path.name}")
+                logger.debug(f"└── Loading VPN config: {self.__vpn_path.name}")
             elif "/.exegol/spawn.sh" in share.get('Destination', ''):
                 self.__wrapper_start_enabled = True
 
