@@ -104,7 +104,7 @@ while [ $# -gt 0 ]; do
 shift
 done
 
-check_dependencies "sudo" "git" "python3" "python3-venv" "docker"
+check_dependencies "git" "python3" "python3-venv" "docker" "sudo"
 
 if [ "$ID" = "alpine" ]; then
     check_dependencies "py3-pip"
