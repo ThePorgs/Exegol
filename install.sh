@@ -5,6 +5,12 @@ if [ -r /etc/os-release ]; then
 	. /etc/os-release
 fi
 
+if ! [ "$(command -v "sudo")" ]; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
+
 case $ID in
     debian|ubuntu)
         PACKAGE_MANAGER="apt"
@@ -39,18 +45,14 @@ usage() {
 check_dependencies() {
     MISSING_DEPENDENCIES=0
     while [ $# -gt 0 ]; do
-        local command_package="$1"
-        if [ "$1" = "python3-pip" ] || [ "$1" = "py3-pip" ]; then
-            command_package="pip"
-        fi
-        if ! [ "$(command -v "$command_package")" ]; then
+        if ! [ "$(command -v "$1")" ]; then
             echo "Missing $1"
             if [ "$FIX_INSTALL" = True ]; then
                 echo "$PACKAGE_MANAGER_INSTALL"
                 if [ "$PACKAGE_MANAGER" = "apt" ]; then
-                    sudo $PACKAGE_MANAGER_UPDATE
+                    $PACKAGE_MANAGER_UPDATE
                 fi
-                sudo $PACKAGE_MANAGER_INSTALL "$1" 
+                $SUDO $PACKAGE_MANAGER_INSTALL "$1" 
             else
                 MISSING_DEPENDENCIES=$( expr "$MISSING_DEPENDENCIES" + 1 )
             fi
@@ -73,12 +75,13 @@ cloning_repos() {
     fi
 }
 
+activate_venv() {
+    python3 -m venv Exegol/ || echo "Error: cannot create venv"
+    . Exegol/bin/activate
+}
+
 install_python_requirements() {
-    if [ $ID = "debian" ] && [ $VERSION_ID -ge "12" ]; then
-        python3 -m pip install --requirement "Exegol/requirements.txt" --break-system-packages
-    else
-        python3 -m pip install --requirement "Exegol/requirements.txt"
-    fi
+    python3 -m pip install --requirement "Exegol/requirements.txt"
 }
 
 add_exegol_path() {
@@ -101,7 +104,8 @@ while [ $# -gt 0 ]; do
 shift
 done
 
-check_dependencies "git" "python3" "docker" "sudo"
+check_dependencies "sudo" "git" "python3" "python3-venv" "docker"
+
 if [ "$ID" = "alpine" ]; then
     check_dependencies "py3-pip"
 else
@@ -114,6 +118,7 @@ if [ "$MISSING_DEPENDENCIES" -ge 1 ]; then
 fi
 check_docker_right
 cloning_repos
+activate_venv
 install_python_requirements
 add_exegol_path
 
