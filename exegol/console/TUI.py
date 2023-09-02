@@ -145,7 +145,7 @@ class ExegolTUI:
                 else:
                     logger.raw(stream_text, level=ExeLog.ADVANCED)
             if ': FROM ' in stream_text:
-                logger.info("Downloading docker image")
+                logger.info("Downloading base image")
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
         if logfile is not None:
             logfile.close()

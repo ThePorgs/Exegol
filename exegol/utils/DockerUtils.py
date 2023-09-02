@@ -536,7 +536,7 @@ class DockerUtils:
         if build_profile is None or build_dockerfile is None:
             build_profile = "full"
             build_dockerfile = "Dockerfile"
-        logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
+        logger.info("Starting build. Please wait, this will be long.")
         logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
                        f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
         if EnvInfo.arch != ParametersManager().arch:
