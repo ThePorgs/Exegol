@@ -7,7 +7,7 @@ on:
   pull_request:
     branches-ignore:
       - "master"
-    paths-ignore:
+    paths-ignore: # not always respected. See https://github.com/actions/runner/issues/2324#issuecomment-1703345084
       - ".github/**"
       - "**.md"
   push:
