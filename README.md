@@ -37,7 +37,7 @@
 
 # Getting started
 
-You can refer to the [Exegol documentations](https://exegol.readthedocs.io/en/latest/getting-started/install.html).
+You can refer to the [Exegol documentation](https://exegol.readthedocs.io/en/latest/getting-started/install.html).
 
 > Full documentation homepage: https://exegol.rtfd.io/.
 
