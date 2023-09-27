@@ -504,20 +504,24 @@ class ContainerConfig:
         """
         self.__desktop_proto = UserConfig().desktop_default_proto
         self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
+        _host_set_by_user = False
 
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
                 continue
-            if i == 0:
+            if i == 0:  # protocol
+                logger.debug(f"Desktop proto set: {data}")
                 data = data.lower()
                 if data in UserConfig.desktop_available_proto:
                     self.__desktop_proto = data
                 else:
                     logger.critical(f"The desktop mode '{data}' is not supported. Please choose a supported mode: [green]{', '.join(UserConfig.desktop_available_proto)}[/green].")
-            elif i == 1 and data:
+            elif i == 1 and data:  # host
+                logger.debug(f"Desktop host set: {data}")
                 self.__desktop_host = data
-                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
-            elif i == 2:
+                _host_set_by_user = True
+            elif i == 2:  # port
+                logger.debug(f"Desktop port set: {data}")
                 try:
                     self.__desktop_port = int(data)
                 except ValueError:
@@ -526,7 +530,9 @@ class ContainerConfig:
                 logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
 
         if self.__desktop_port is None:
-            self.__desktop_port = self.__findAvailableRandomPort()
+            _desktop_host = self.__desktop_host if _host_set_by_user else None
+            logger.debug(f"Desktop port automatically set for host {_desktop_host}")
+            self.__desktop_port = self.__findAvailableRandomPort(_desktop_host)
 
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
