@@ -744,10 +744,16 @@ class ContainerConfig:
     @staticmethod
     def __findAvailableRandomPort(interface: str = 'localhost') -> int:
         """Find an available random port. Using the socket system to """
+        logger.debug(f"Attempting to bind to interface {interface}")
         import socket
         sock = socket.socket()
-        sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+        try:
+            sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+        except OSError as e:
+            logger.error(f"Unable to bind to interface/port: {e}")
+            return -1
         random_port = sock.getsockname()[1]
+        logger.debug(f"Found available port {random_port}")
         sock.close()
         return random_port
 
