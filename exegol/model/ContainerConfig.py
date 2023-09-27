@@ -530,9 +530,11 @@ class ContainerConfig:
                 logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
 
         if self.__desktop_port is None:
-            _desktop_host = self.__desktop_host if _host_set_by_user else None
-            logger.debug(f"Desktop port automatically set for host {_desktop_host}")
-            self.__desktop_port = self.__findAvailableRandomPort(_desktop_host)
+            logger.debug(f"Desktop port will be set automatically")
+            if _host_set_by_user:
+                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
+            else:
+                self.__desktop_port = self.__findAvailableRandomPort()
 
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
