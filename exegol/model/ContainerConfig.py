@@ -1,7 +1,9 @@
+import errno
 import logging
 import os
 import random
 import re
+import socket
 import string
 from datetime import datetime
 from enum import Enum
@@ -12,9 +14,9 @@ from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.UserConfig import UserConfig
-from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ConsoleFormat import boolFormatter, getColor
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
@@ -480,7 +482,7 @@ class ContainerConfig:
         """Procedure to enable exegol desktop feature"""
         if not self.isDesktopEnabled():
             logger.verbose("Config: Enabling exegol desktop")
-            self.configureDesktop(desktop_config)
+            self.configureDesktop(desktop_config, create_mode=True)
             assert self.__desktop_proto is not None
             assert self.__desktop_host is not None
             assert self.__desktop_port is not None
@@ -498,7 +500,7 @@ class ContainerConfig:
                 # Exposing desktop service
                 self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
 
-    def configureDesktop(self, desktop_config: str):
+    def configureDesktop(self, desktop_config: str, create_mode: bool = False):
         """Configure the exegol desktop feature from user parameters.
         Accepted format: 'mode:host:port'
         """
@@ -508,16 +510,18 @@ class ContainerConfig:
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
                 continue
-            if i == 0:
+            if i == 0:  # protocol
+                logger.debug(f"Desktop proto set: {data}")
                 data = data.lower()
                 if data in UserConfig.desktop_available_proto:
                     self.__desktop_proto = data
                 else:
                     logger.critical(f"The desktop mode '{data}' is not supported. Please choose a supported mode: [green]{', '.join(UserConfig.desktop_available_proto)}[/green].")
-            elif i == 1 and data:
+            elif i == 1 and data:  # host
+                logger.debug(f"Desktop host set: {data}")
                 self.__desktop_host = data
-                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
-            elif i == 2:
+            elif i == 2:  # port
+                logger.debug(f"Desktop port set: {data}")
                 try:
                     self.__desktop_port = int(data)
                 except ValueError:
@@ -526,7 +530,21 @@ class ContainerConfig:
                 logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
 
         if self.__desktop_port is None:
-            self.__desktop_port = self.__findAvailableRandomPort()
+            logger.debug(f"Desktop port will be set automatically")
+            self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
+
+        if create_mode:
+            # Check if the port is available
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                try:
+                    s.bind((self.__desktop_host, self.__desktop_port))
+                except socket.error as e:
+                    if e.errno == errno.EADDRINUSE:
+                        logger.critical(f"The port {self.__desktop_host}:{self.__desktop_port} is already in use !")
+                    elif e.errno == errno.EADDRNOTAVAIL:
+                        logger.critical(f"The network {self.__desktop_host}:{self.__desktop_port} is not available !")
+                    else:
+                        logger.critical(f"The supplied network configuration {self.__desktop_host}:{self.__desktop_port} is not available ! ([{e.errno}] {e})")
 
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
@@ -744,11 +762,14 @@ class ContainerConfig:
     @staticmethod
     def __findAvailableRandomPort(interface: str = 'localhost') -> int:
         """Find an available random port. Using the socket system to """
-        import socket
-        sock = socket.socket()
-        sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
-        random_port = sock.getsockname()[1]
-        sock.close()
+        logger.debug(f"Attempting to bind to interface {interface}")
+        with socket.socket() as sock:
+            try:
+                sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+            except OSError as e:
+                logger.critical(f"Unable to bind a port to the interface {interface} ({e})")
+            random_port = sock.getsockname()[1]
+        logger.debug(f"Found available port {random_port}")
         return random_port
 
     # ===== Apply config section =====
