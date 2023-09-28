@@ -504,7 +504,6 @@ class ContainerConfig:
         """
         self.__desktop_proto = UserConfig().desktop_default_proto
         self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
-        _host_set_by_user = False
 
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
@@ -519,7 +518,6 @@ class ContainerConfig:
             elif i == 1 and data:  # host
                 logger.debug(f"Desktop host set: {data}")
                 self.__desktop_host = data
-                _host_set_by_user = True
             elif i == 2:  # port
                 logger.debug(f"Desktop port set: {data}")
                 try:
@@ -531,10 +529,7 @@ class ContainerConfig:
 
         if self.__desktop_port is None:
             logger.debug(f"Desktop port will be set automatically")
-            if _host_set_by_user:
-                self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
-            else:
-                self.__desktop_port = self.__findAvailableRandomPort()
+            self.__desktop_port = self.__findAvailableRandomPort(self.__desktop_host)
 
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
