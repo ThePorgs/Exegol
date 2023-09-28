@@ -763,14 +763,13 @@ class ContainerConfig:
     def __findAvailableRandomPort(interface: str = 'localhost') -> int:
         """Find an available random port. Using the socket system to """
         logger.debug(f"Attempting to bind to interface {interface}")
-        sock = socket.socket()
-        try:
-            sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
-        except OSError as e:
-            logger.critical(f"Unable to bind a port to the interface {interface} ({e})")
-        random_port = sock.getsockname()[1]
+        with socket.socket() as sock:
+            try:
+                sock.bind((interface, 0))  # Using port 0 let the system decide for a random port
+            except OSError as e:
+                logger.critical(f"Unable to bind a port to the interface {interface} ({e})")
+            random_port = sock.getsockname()[1]
         logger.debug(f"Found available port {random_port}")
-        sock.close()
         return random_port
 
     # ===== Apply config section =====
