@@ -756,7 +756,7 @@ class ContainerConfig:
         """
         Generate a new random password.
         """
-        charset = string.ascii_letters + string.digits + string.punctuation.replace("'", "")
+        charset = string.ascii_letters + string.digits
         return ''.join(random.choice(charset) for i in range(length))
 
     @staticmethod
