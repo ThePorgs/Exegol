@@ -49,12 +49,12 @@ class ContainerConfig:
         password = "org.exegol.metadata.passwd"
 
     class ExegolEnv(Enum):
-        user_shell = "START_SHELL"
-        shell_logging_method = "START_SHELL_LOGGING"
-        shell_logging_compress = "START_SHELL_COMPRESS"
-        desktop_protocol = "DESKTOP_PROTO"
-        desktop_host = "DESKTOP_HOST"
-        desktop_port = "DESKTOP_PORT"
+        user_shell = "EXEGOL_START_SHELL"
+        shell_logging_method = "EXEGOL_START_SHELL_LOGGING"
+        shell_logging_compress = "EXEGOL_START_SHELL_COMPRESS"
+        desktop_protocol = "EXEGOL_DESKTOP_PROTO"
+        desktop_host = "EXEGOL_DESKTOP_HOST"
+        desktop_port = "EXEGOL_DESKTOP_PORT"
 
     # Label features (label name / wrapper method to enable the feature)
     __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",

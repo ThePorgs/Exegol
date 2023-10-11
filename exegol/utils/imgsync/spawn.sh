@@ -53,11 +53,11 @@ function shell_logging() {
 }
 
 # Find default user shell to use from env var
-user_shell=${START_SHELL:-"/bin/zsh"}
+user_shell=${EXEGOL_START_SHELL:-"/bin/zsh"}
 
 # If shell logging is enable, the method to use is stored in env var
-if [ "$START_SHELL_LOGGING" ]; then
-  shell_logging "$START_SHELL_LOGGING" "$user_shell" "$START_SHELL_COMPRESS"
+if [ "$EXEGOL_START_SHELL_LOGGING" ]; then
+  shell_logging "$EXEGOL_START_SHELL_LOGGING" "$user_shell" "$EXEGOL_START_SHELL_COMPRESS"
 else
   $user_shell
 fi
