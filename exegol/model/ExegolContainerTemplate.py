@@ -11,7 +11,7 @@ from exegol.model.ExegolImage import ExegolImage
 class ExegolContainerTemplate:
     """Exegol template class used to create a new container"""
 
-    def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage, hostname: Optional[str] = None):
+    def __init__(self, name: Optional[str], config: ContainerConfig, image: ExegolImage, hostname: Optional[str] = None, new_container: bool = True):
         if name is None:
             name = Prompt.ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
         assert name is not None
@@ -20,12 +20,14 @@ class ExegolContainerTemplate:
             name = name.lower()
         self.container_name: str = name if name.startswith("exegol-") else f'exegol-{name}'
         self.name: str = name.replace('exegol-', '')
-        if hostname:
-            self.hostname: str = hostname
-        else:
-            self.hostname = self.container_name
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
+        if hostname:
+            self.hostname: str = hostname
+            if new_container:
+                self.config.addEnv("EXEGOL_NAME", self.container_name)
+        else:
+            self.hostname = self.container_name
 
     def __str__(self):
         """Default object text formatter, debug only"""
