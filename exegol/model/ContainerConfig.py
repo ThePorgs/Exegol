@@ -55,6 +55,7 @@ class ContainerConfig:
         desktop_protocol = "EXEGOL_DESKTOP_PROTO"
         desktop_host = "EXEGOL_DESKTOP_HOST"
         desktop_port = "EXEGOL_DESKTOP_PORT"
+        exegol_name = "EXEGOL_NAME"
 
     # Label features (label name / wrapper method to enable the feature)
     __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",

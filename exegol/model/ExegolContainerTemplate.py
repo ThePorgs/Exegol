@@ -25,7 +25,7 @@ class ExegolContainerTemplate:
         if hostname:
             self.config.hostname = hostname
             if new_container:
-                self.config.addEnv("EXEGOL_NAME", self.container_name)
+                self.config.addEnv(ContainerConfig.ExegolEnv.exegol_name.value, self.container_name)
         else:
             self.config.hostname = self.container_name
 
