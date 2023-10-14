@@ -66,6 +66,7 @@ class ContainerConfig:
 
     def __init__(self, container: Optional[Container] = None):
         """Container config default value"""
+        self.hostname = ""
         self.__enable_gui: bool = False
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
@@ -81,6 +82,7 @@ class ContainerConfig:
         self.__envs: Dict[str, str] = {}
         self.__labels: Dict[str, str] = {}
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
+        self.__extra_host: Dict[str, str] = {}
         self.interactive: bool = True
         self.tty: bool = True
         self.shm_size: str = self.__default_shm_size
@@ -847,6 +849,25 @@ class ContainerConfig:
     def getNetworkMode(self) -> str:
         """Network mode, docker term getter"""
         return "host" if self.__network_host else "bridge"
+
+    def setExtraHost(self, host: str, ip: str):
+        """Add or update an extra host to resolv inside the container."""
+        self.__extra_host[host] = ip
+
+    def removeExtraHost(self, host: str) -> bool:
+        """Remove an extra host to resolv inside the container.
+        Return true if the host was register in the extra_host configuration."""
+        return self.__extra_host.pop(host, None) is not None
+
+    def getExtraHost(self):
+        """Return the extra_host configuration for the container.
+        Ensure in shared host environment that the container hostname will be correctly resolved to localhost.
+        Return a dictionary of host and matching IP"""
+        self.__extra_host = {}
+        # When using host network mode, you need to add an extra_host to resolve $HOSTNAME
+        if self.__network_host:
+            self.setExtraHost(self.hostname, '127.0.0.1')
+        return self.__extra_host
 
     def getPrivileged(self) -> bool:
         """Privileged getter"""

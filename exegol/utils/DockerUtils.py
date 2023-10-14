@@ -109,8 +109,8 @@ class DockerUtils:
                        "command": command,
                        "detach": True,
                        "name": model.container_name,
-                       "hostname": model.hostname,
-                       #"extra_hosts": {model.hostname: '127.0.0.1'},  # TODO add this extra_host for network none
+                       "hostname": model.config.hostname,
+                       "extra_hosts": model.config.getExtraHost(),
                        "devices": model.config.getDevices(),
                        "environment": model.config.getEnvs(),
                        "labels": model.config.getLabels(),

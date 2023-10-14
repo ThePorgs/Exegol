@@ -95,7 +95,7 @@ class ExegolManager:
                 container.stop(timeout=2)
             else:
                 # Command is passed at container creation in __createTmpContainer()
-                logger.success(f"Command executed as entrypoint of the container [green]'{container.hostname}'[/green]")
+                logger.success(f"Command executed as entrypoint of the container {container.getDisplayName()}")
         else:
             container = cast(ExegolContainer, cls.__loadOrCreateContainer(override_container=ParametersManager().selector))
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)

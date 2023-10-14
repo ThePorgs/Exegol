@@ -53,7 +53,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              config=ContainerConfig(docker_container),
                              # Rebuild config from docker object to update workspace path
                              image=model.image,
-                             hostname=model.hostname,
+                             hostname=model.config.hostname,
                              new_container=False)
             self.__new_container = True
         self.image.syncStatus()
@@ -326,9 +326,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 with console.status(f"Starting XQuartz...", spinner_style="blue"):
                     os.system(f"xhost + localhost > /dev/null")
             else:
-                logger.debug(f"Adding xhost ACL to local:{self.hostname}")
+                logger.debug(f"Adding xhost ACL to local:{self.config.hostname}")
                 # add linux local ACL
-                os.system(f"xhost +local:{self.hostname} > /dev/null")
+                os.system(f"xhost +local:{self.config.hostname} > /dev/null")
 
     def __updatePasswd(self):
         """

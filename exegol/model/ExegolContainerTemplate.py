@@ -23,11 +23,11 @@ class ExegolContainerTemplate:
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
         if hostname:
-            self.hostname: str = hostname
+            self.config.hostname = hostname
             if new_container:
                 self.config.addEnv("EXEGOL_NAME", self.container_name)
         else:
-            self.hostname = self.container_name
+            self.config.hostname = self.container_name
 
     def __str__(self):
         """Default object text formatter, debug only"""
@@ -43,6 +43,6 @@ class ExegolContainerTemplate:
 
     def getDisplayName(self) -> str:
         """Getter of the container's name for TUI purpose"""
-        if self.container_name != self.hostname:
-            return f"{self.name} [bright_black]({self.hostname})[/bright_black]"
+        if self.container_name != self.config.hostname:
+            return f"{self.name} [bright_black]({self.config.hostname})[/bright_black]"
         return self.name
