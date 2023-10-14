@@ -90,7 +90,7 @@ function run_cmd() {
 function desktop() {
   if command -v desktop-start &> /dev/null
   then
-      echo "Starting Exegol [green]desktop[/green] with [blue]${DESKTOP_PROTO}[/blue]"
+      echo "Starting Exegol [green]desktop[/green] with [blue]${EXEGOL_DESKTOP_PROTO}[/blue]"
       desktop-start &>> ~/.vnc/startup.log  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else

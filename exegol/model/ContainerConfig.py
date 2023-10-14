@@ -494,8 +494,9 @@ class ContainerConfig:
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
             else:
-                # FIXME : we are exposing the desktop on the network the container is in. Ex: if we're doing VPN, we're opening the desktop through it's network
-                self.addEnv(self.ExegolEnv.desktop_host.value, "0.0.0.0")
+                # If we do not specify the host to the container it will automatically choose eth0 interface
+                # TODO ensure there is an eth0 interface
+                # Using default port for the service
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
                 # Exposing desktop service
                 self.addPort(port_host=self.__desktop_port, port_container=self.__default_desktop_port[self.__desktop_proto], host_ip=self.__desktop_host)
