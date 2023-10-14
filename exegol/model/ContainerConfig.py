@@ -49,13 +49,16 @@ class ContainerConfig:
         password = "org.exegol.metadata.passwd"
 
     class ExegolEnv(Enum):
-        user_shell = "EXEGOL_START_SHELL"
-        shell_logging_method = "EXEGOL_START_SHELL_LOGGING"
-        shell_logging_compress = "EXEGOL_START_SHELL_COMPRESS"
-        desktop_protocol = "EXEGOL_DESKTOP_PROTO"
-        desktop_host = "EXEGOL_DESKTOP_HOST"
-        desktop_port = "EXEGOL_DESKTOP_PORT"
-        exegol_name = "EXEGOL_NAME"
+        # feature
+        exegol_name = "EXEGOL_NAME"  # Supply the name of the container to itself when overriding the hostname
+        randomize_service_port = "EXEGOL_RANDOMIZE_SERVICE_PORTS"  # Enable the randomize port feature when using exegol is network host mode
+        # config
+        user_shell = "EXEGOL_START_SHELL"  # Set the default shell to use
+        shell_logging_method = "EXEGOL_START_SHELL_LOGGING"  # Enable and select the shell logging method
+        shell_logging_compress = "EXEGOL_START_SHELL_COMPRESS"  # Configure if the logs must be compressed at the end of the shell
+        desktop_protocol = "EXEGOL_DESKTOP_PROTO"  # Configure which desktop module must be started
+        desktop_host = "EXEGOL_DESKTOP_HOST"  # Select the host / ip to expose the desktop service on (container side)
+        desktop_port = "EXEGOL_DESKTOP_PORT"  # Select the port to expose the desktop service on (container side)
 
     # Label features (label name / wrapper method to enable the feature)
     __label_features = {ExegolFeatures.shell_logging.value: "enableShellLogging",
@@ -1047,7 +1050,7 @@ class ContainerConfig:
         return self.__devices
 
     def addEnv(self, key: str, value: str):
-        """Add an environment variable to the container configuration"""
+        """Add or update an environment variable to the container configuration"""
         self.__envs[key] = value
 
     def removeEnv(self, key: str) -> bool:
@@ -1061,6 +1064,9 @@ class ContainerConfig:
 
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
+        # When using host network mode, service port must be randomized to avoid conflict between services and container
+        if self.__network_host:
+            self.addEnv(self.ExegolEnv.randomize_service_port.value, "true")
         return self.__envs
 
     def getShellEnvs(self) -> List[str]:
