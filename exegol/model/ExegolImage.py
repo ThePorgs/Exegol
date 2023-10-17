@@ -572,6 +572,10 @@ class ExegolImage(SelectableInterface):
         """On-Disk size getter"""
         return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
 
+    def getRealSizeRaw(self) -> str:
+        """On-Disk size getter"""
+        return self.__disk_size if self.__is_install else self.__remote_est_size
+
     def getDownloadSize(self) -> str:
         """Remote size getter"""
         if not self.__is_remote:

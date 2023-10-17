@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime
 from typing import List, Optional, Union, cast
 
@@ -446,7 +447,8 @@ class DockerUtils:
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
-            logger.info(f"Starting download. Please wait, this might be (very) long.")
+            logger.raw(f"[bold blue][*][/bold blue] Pulling compressed image, starting a [cyan1]{image.getDownloadSize()}[/cyan1] download :satellite:{os.linesep}", level=logging.INFO, markup=True, emoji=True)
+            logger.raw(f"[bold blue][*][/bold blue] Once downloaded and uncompressed, the image will take [cyan1]~{image.getRealSizeRaw()}[/cyan1] on disk :floppy_disk:{os.linesep}", level=logging.INFO, markup=True, emoji=True)
             logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
