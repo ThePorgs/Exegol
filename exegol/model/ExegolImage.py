@@ -51,6 +51,7 @@ class ExegolImage(SelectableInterface):
         self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
         self.__dl_size: str = "[bright_black]N/A[/bright_black]"
+        self.__remote_est_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # Remote image ID
@@ -73,7 +74,8 @@ class ExegolImage(SelectableInterface):
             if dockerhub_data:
                 self.__is_remote = True
                 self.__setArch(MetaImages.parseArch(dockerhub_data))
-                self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
+                self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
+                self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.6)
             if meta_img and meta_img.meta_id is not None:
                 self.__setDigest(meta_img.meta_id)
                 self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
@@ -190,7 +192,8 @@ class ExegolImage(SelectableInterface):
             if fetch_version:
                 meta.version = fetch_version
         if dockerhub_data is not None:
-            self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
+            self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
+            self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.5)
         self.__setLatestVersion(meta.version)
         if meta.meta_id:
             self.__setLatestRemoteId(meta.meta_id)
@@ -455,12 +458,12 @@ class ExegolImage(SelectableInterface):
         return result
 
     @staticmethod
-    def __processSize(size: int, precision: int = 1) -> str:
+    def __processSize(size: int, precision: int = 1, compression_factor: float = 1) -> str:
         """Text formatter from size number to human-readable size."""
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0
-        calc: float = size
+        calc: float = size * compression_factor
         while calc > 1024 and suffix_index < 4:
             suffix_index += 1  # increment the index of the suffix
             calc = calc / 1024  # apply the division
@@ -567,7 +570,7 @@ class ExegolImage(SelectableInterface):
 
     def getRealSize(self) -> str:
         """On-Disk size getter"""
-        return self.__disk_size
+        return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
 
     def getDownloadSize(self) -> str:
         """Remote size getter"""
@@ -577,7 +580,7 @@ class ExegolImage(SelectableInterface):
 
     def getSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        return self.__disk_size if self.__is_install else f"[bright_black]{self.__dl_size} (compressed)[/bright_black]"
+        return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
 
     def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
         """Image's entrypoint configuration getter.
