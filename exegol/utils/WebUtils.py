@@ -127,7 +127,10 @@ class WebUtils:
                     response = requests.request(method=method, url=url, timeout=(5, 10), verify=ParametersManager().verify, headers=headers, data=data)
                     return response
                 except requests.exceptions.HTTPError as e:
-                    logger.error(f"Response error: {e.response.content.decode('utf-8')}")
+                    if e.response.content is not None:
+                        logger.error(f"Response error: {e.response.content.decode('utf-8')}")
+                    else:
+                        logger.error(f"Response error: {e}")
                 except requests.exceptions.ConnectionError as err:
                     logger.debug(f"Error: {err}")
                     error_re = re.search(r"\[Errno [-\d]+]\s?([^']*)('\))+\)*", str(err))
