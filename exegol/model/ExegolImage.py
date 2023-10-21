@@ -582,10 +582,6 @@ class ExegolImage(SelectableInterface):
             return "local"
         return self.__dl_size
 
-    def getSize(self) -> str:
-        """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
-
     def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
         """Image's entrypoint configuration getter.
         Exegol images before 3.x.x don't have any entrypoint set (because /.exegol/entrypoint.sh don't exist yet. In this case, this getter will return None."""
