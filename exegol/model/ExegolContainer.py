@@ -338,4 +338,3 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if self.config.getPasswd() is not None:
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
             self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
-            self.exec(f"echo '{self.config.getPasswd()}' | vncpasswd -f > ~/.vnc/passwd", quiet=True)

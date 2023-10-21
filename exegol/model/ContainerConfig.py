@@ -54,6 +54,7 @@ class ContainerConfig:
         randomize_service_port = "EXEGOL_RANDOMIZE_SERVICE_PORTS"  # Enable the randomize port feature when using exegol is network host mode
         # config
         user_shell = "EXEGOL_START_SHELL"  # Set the default shell to use
+        exegol_user = "EXEGOL_USERNAME"  # Select the username of the container
         shell_logging_method = "EXEGOL_START_SHELL_LOGGING"  # Enable and select the shell logging method
         shell_logging_compress = "EXEGOL_START_SHELL_COMPRESS"  # Configure if the logs must be compressed at the end of the shell
         desktop_protocol = "EXEGOL_DESKTOP_PROTO"  # Configure which desktop module must be started
@@ -495,6 +496,7 @@ class ContainerConfig:
             self.addLabel(self.ExegolFeatures.desktop.value, f"{self.__desktop_proto}:{self.__desktop_host}:{self.__desktop_port}")
             # Env var are used to send these parameter to the desktop-start script
             self.addEnv(self.ExegolEnv.desktop_protocol.value, self.__desktop_proto)
+            self.addEnv(self.ExegolEnv.exegol_user.value, self.getUsername())
 
             if self.__network_host:
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
@@ -565,6 +567,7 @@ class ContainerConfig:
             self.__desktop_port = None
             self.removeLabel(self.ExegolFeatures.desktop.value)
             self.removeEnv(self.ExegolEnv.desktop_protocol.value)
+            self.removeEnv(self.ExegolEnv.exegol_user.value)
             self.removeEnv(self.ExegolEnv.desktop_host.value)
             self.removeEnv(self.ExegolEnv.desktop_port.value)
 
