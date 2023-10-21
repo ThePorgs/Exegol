@@ -127,7 +127,7 @@ class WebUtils:
                     response = requests.request(method=method, url=url, timeout=(5, 10), verify=ParametersManager().verify, headers=headers, data=data)
                     return response
                 except requests.exceptions.HTTPError as e:
-                    if e.response.content is not None:
+                    if e.response is not None:
                         logger.error(f"Response error: {e.response.content.decode('utf-8')}")
                     else:
                         logger.error(f"Response error: {e}")
