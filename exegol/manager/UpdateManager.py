@@ -172,9 +172,7 @@ class UpdateManager:
             if selected_branch is not None and selected_branch != current_branch:
                 gitUtils.checkout(selected_branch)
         # git pull
-        gitUtils.update()
-        logger.empty_line()
-        return True
+        return gitUtils.update()
 
     @classmethod
     def checkForWrapperUpdate(cls) -> bool:
