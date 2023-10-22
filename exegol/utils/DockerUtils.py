@@ -446,7 +446,8 @@ class DockerUtils:
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
-            logger.info(f"Starting download. Please wait, this might be (very) long.")
+            logger.info(f"Pulling compressed image, starting a [cyan1]~{image.getDownloadSize()}[/cyan1] download :satellite:")
+            logger.info(f"Once downloaded and uncompressed, the image will take [cyan1]~{image.getRealSizeRaw()}[/cyan1] on disk :floppy_disk:")
             logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(

@@ -213,9 +213,9 @@ class ExegolTUI:
                                   image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
                 if safe_key:
-                    table.add_row(str(i + 1), image.getDisplayName(), image.getSize(), image.getStatus())
+                    table.add_row(str(i + 1), image.getDisplayName(), image.getRealSize(), image.getStatus())
                 else:
-                    table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
+                    table.add_row(image.getDisplayName(), image.getRealSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False):
