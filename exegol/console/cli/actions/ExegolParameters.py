@@ -78,7 +78,6 @@ class Install(Command, ImageSelector):
         # Create container build arguments
         self.build_profile = Option("build_profile",
                                     metavar="BUILD_PROFILE",
-                                    choices=UpdateManager.listBuildProfiles().keys(),
                                     nargs="?",
                                     action="store",
                                     help="Select the build profile used to create a local image.",
