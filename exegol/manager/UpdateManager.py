@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import Optional, Dict, cast, Tuple, Sequence
+from pathlib import Path, PurePath
 
 from rich.prompt import Prompt
 
@@ -306,6 +307,7 @@ class UpdateManager:
         """build user process :
         Ask user is he want to update the git source (to get new& updated build profiles),
         User choice a build name (if not supplied)
+        User select the path to the dockerfiles
         User select a build profile
         Start docker image building
         Return the name of the built image"""
@@ -324,8 +326,20 @@ class UpdateManager:
                 logger.error("This name is reserved and cannot be used for local build. Please choose another one.")
             build_name = Prompt.ask("[bold blue][?][/bold blue] Choice a name for your build",
                                     default="local")
+
+        # Choose dockerfiles path
+        build_path: Optional[str] = ParametersManager().build_path
+        if build_path is None:
+            if Confirm("Do you want to build from a [blue]custom build path[/blue]?", False):
+                while True:
+                    build_path = Prompt.ask('Enter the path to the custom Dockerfile(s)')
+                    # TODO: if path is file, only keep the pwd, else check that the dir has dockerfiles in it
+            else:
+                build_path = ConstantConfig.build_context_path
+        logger.debug(f"Using {build_path} as path for dockerfiles")
+
         # Choose dockerfile
-        profiles = cls.listBuildProfiles()
+        profiles = cls.listBuildProfiles(profiles_path=build_path)
         build_profile: Optional[str] = ParametersManager().build_profile
         build_dockerfile: Optional[str] = None
         if build_profile is not None:
@@ -338,7 +352,7 @@ class UpdateManager:
                                                                                              title="[not italic]:dog: [/not italic][gold3]Profile[/gold3]"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
-        DockerUtils.buildImage(build_name, build_profile, build_dockerfile)
+        DockerUtils.buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path)
         return build_name
 
     @classmethod
@@ -348,14 +362,14 @@ class UpdateManager:
         return DockerUtils.getInstalledImage(build_name)
 
     @classmethod
-    def listBuildProfiles(cls) -> Dict:
+    def listBuildProfiles(cls, profiles_path: str = ConstantConfig.build_context_path) -> Dict:
         """List every build profiles available locally
         Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
         profiles = {"full": "Dockerfile"}
         # List file *.dockerfile is the build context directory
-        logger.debug(f"Loading build profile from {ConstantConfig.build_context_path}")
-        docker_files = list(ConstantConfig.build_context_path_obj.glob("*.dockerfile"))
+        logger.debug(f"Loading build profile from {profiles_path}")
+        docker_files = list(Path(profiles_path).glob("*.dockerfile"))
         for file in docker_files:
             # Convert every file to the dict format
             filename = file.name
