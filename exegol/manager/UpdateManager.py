@@ -178,7 +178,7 @@ class UpdateManager:
     def checkForWrapperUpdate(cls) -> bool:
         """Check if there is an exegol wrapper update available.
         Return true if an update is available."""
-        logger.debug(f"Last wrapper update check: {DataCache().get_wrapper_data().metadata.get_last_check()}")
+        logger.debug(f"Last wrapper update check: {DataCache().get_wrapper_data().metadata.get_last_check_text()}")
         # Skipping update check
         if DataCache().get_wrapper_data().metadata.is_outdated() and not ParametersManager().offline_mode:
             logger.debug("Running update check")
