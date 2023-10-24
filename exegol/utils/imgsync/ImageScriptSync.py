@@ -30,7 +30,7 @@ class ImageScriptSync:
                 entrypoint_script_path = ConstantConfig.entrypoint_context_path_obj
                 logger.debug(f"Entrypoint script path: {str(entrypoint_script_path)}")
                 if not entrypoint_script_path.is_file():
-                    logger.error("Unable to find the entrypoint script! Your Exegol installation is probably broken...")
+                    logger.critical("Unable to find the entrypoint script! Your Exegol installation is probably broken...")
                     return None
                 with open(entrypoint_script_path, 'rb') as f:
                     raw = f.read()

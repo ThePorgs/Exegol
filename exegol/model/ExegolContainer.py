@@ -3,7 +3,7 @@ import shutil
 from datetime import datetime
 from typing import Optional, Dict, Sequence, Tuple, Union
 
-from docker.errors import NotFound, ImageNotFound
+from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
 
 from exegol.config.EnvInfo import EnvInfo
@@ -305,7 +305,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_entrypoint=True))
             if self.__container.status.lower() == "created":
                 self.__start_container()
-            self.__updatePasswd()
+            try:
+                self.__updatePasswd()
+            except APIError as e:
+                if "is not running" in e.explanation:
+                    logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
 
     def __applyXhostACL(self):
         """

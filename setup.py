@@ -24,8 +24,8 @@ for path in pathlib.Path(f'{source_directory}/sources').rglob('*'):
         data_files_dict[key] = []
     data_files_dict[key].append(str(path))
 ## exegol scripts pushed from the wrapper
-data_files_dict["exegol-imgsync"] = ["exegol/utils/imgsync/entrypoint.sh"]
-data_files_dict["exegol-imgsync"] = ["exegol/utils/imgsync/spawn.sh"]
+data_files_dict["exegol-imgsync"] = ["exegol/utils/imgsync/entrypoint.sh",
+                                     "exegol/utils/imgsync/spawn.sh"]
 
 # Dict to tuple
 for k, v in data_files_dict.items():
