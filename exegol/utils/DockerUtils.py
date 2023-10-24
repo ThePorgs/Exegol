@@ -528,7 +528,7 @@ class DockerUtils:
         return False
 
     @classmethod
-    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None):
+    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None, dockerfile_path: str = ConstantConfig.build_context_path):
         """Build a docker image from source"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
@@ -538,7 +538,7 @@ class DockerUtils:
             build_profile = "full"
             build_dockerfile = "Dockerfile"
         logger.info("Starting build. Please wait, this will be long.")
-        logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
+        logger.verbose(f"Creating build context from [gold]{dockerfile_path}[/gold] with "
                        f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
         if EnvInfo.arch != ParametersManager().arch:
             logger.warning("Building an image for a different host architecture can cause unexpected problems and slowdowns!")
@@ -547,7 +547,7 @@ class DockerUtils:
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
             ExegolTUI.buildDockerImage(
-                cls.__client.api.build(path=ConstantConfig.build_context_path,
+                cls.__client.api.build(path=dockerfile_path,
                                        dockerfile=build_dockerfile,
                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                        buildargs={"TAG": f"{build_profile}",

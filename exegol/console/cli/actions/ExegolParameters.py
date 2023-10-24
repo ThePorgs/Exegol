@@ -4,6 +4,7 @@ from exegol.console.cli.actions.GenericParameters import *
 from exegol.manager.ExegolManager import ExegolManager
 from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.ExeLog import logger
+from exegol.config.ConstantConfig import ConstantConfig
 
 
 class Start(Command, ContainerCreation, ContainerSpawnShell):
@@ -77,7 +78,6 @@ class Install(Command, ImageSelector):
         # Create container build arguments
         self.build_profile = Option("build_profile",
                                     metavar="BUILD_PROFILE",
-                                    choices=UpdateManager.listBuildProfiles().keys(),
                                     nargs="?",
                                     action="store",
                                     help="Select the build profile used to create a local image.",
@@ -87,10 +87,16 @@ class Install(Command, ImageSelector):
                                 metavar="LOGFILE_PATH",
                                 action="store",
                                 help="Write image building logs to a file.")
+        self.build_path = Option("--build-path",
+                                 dest="build_path",
+                                 metavar="DOCKERFILES_PATH",
+                                 action="store",
+                                 help=f"Path to the dockerfiles and sources.")
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.build_profile, "required": False},
                                        {"arg": self.build_log, "required": False},
+                                       {"arg": self.build_path, "required": False},
                                        title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
