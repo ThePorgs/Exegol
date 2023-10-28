@@ -288,7 +288,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.config.isWrapperStartShared():
             # If the spawn.sh if not shared, the version must be compared and the script updated
             current_start = ImageScriptSync.getCurrentStartVersion()
-            container_version = self.__container.exec_run(["/bin/bash", "-c", "egrep '^# Spawn Version:[0-9]+$' /.exegol/spawn.sh 2&>/dev/null || echo ':0' | cut -d ':' -f2"]).output.decode("utf-8").strip()
+            # Try to parse the spawn version of the container. If an alpha or beta version is in use, the script will always be updated.
+            spawn_parsing_cmd = ["/bin/bash", "-c", "egrep '^# Spawn Version:[0-9]+$' /.exegol/spawn.sh 2&>/dev/null || echo ':0' | cut -d ':' -f2"]
+            container_version = self.__container.exec_run(spawn_parsing_cmd).output.decode("utf-8").strip()
             if current_start != container_version:
                 logger.debug(f"Updating spawn.sh script from version {container_version} to version {current_start}")
                 self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_spawn=True))
