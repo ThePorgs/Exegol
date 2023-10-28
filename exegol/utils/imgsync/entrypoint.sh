@@ -3,7 +3,7 @@
 trap shutdown SIGTERM
 
 function exegol_init() {
-    usermod -s "/.exegol/spawn.sh" root
+    usermod -s "/.exegol/spawn.sh" root > /dev/null
 }
 
 # Function specific
