@@ -7,9 +7,9 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import Confirm
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
@@ -70,8 +70,9 @@ class GuiUtils:
 
         # Add ENV check is case of user don't have it, which will mess up GUI (X11 sharing) if fallback does not work
         # @see https://github.com/ThePorgs/Exegol/issues/148
-        if os.getenv("DISPLAY") is None:
-            logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start through X11 sharing")
+        if not EnvInfo.is_windows_shell:
+            if os.getenv("DISPLAY") is None:
+                logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start through X11 sharing")
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")

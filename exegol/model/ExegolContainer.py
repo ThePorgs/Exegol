@@ -117,24 +117,25 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
             start_date = datetime.utcnow()
             self.__container.start()
-            try:
-                # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
-                for line in ContainerLogStream(self.__container, start_date=start_date, timeout=2):
-                    # Once the last log "READY" is received, the startup sequence is over and the execution can continue
-                    if line == "READY":
-                        break
-                    elif line.startswith('[W]'):
-                        line = line.replace('[W]', '')
-                        logger.warning(line)
-                    elif line.startswith('[E]'):
-                        line = line.replace('[E]', '')
-                        logger.error(line)
-                    else:
-                        logger.verbose(line)
-                    progress.update(status=f"[blue]\[Startup][/blue] {line}")
-            except KeyboardInterrupt:
-                # User can cancel startup logging with ctrl+C
-                logger.warning("User skip startup status updates. Spawning a shell now.")
+            if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
+                try:
+                    # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
+                    for line in ContainerLogStream(self.__container, start_date=start_date, timeout=2):
+                        # Once the last log "READY" is received, the startup sequence is over and the execution can continue
+                        if line == "READY":
+                            break
+                        elif line.startswith('[W]'):
+                            line = line.replace('[W]', '')
+                            logger.warning(line)
+                        elif line.startswith('[E]'):
+                            line = line.replace('[E]', '')
+                            logger.error(line)
+                        else:
+                            logger.verbose(line)
+                        progress.update(status=f"[blue]\[Startup][/blue] {line}")
+                except KeyboardInterrupt:
+                    # User can cancel startup logging with ctrl+C
+                    logger.warning("User skip startup status updates. Spawning a shell now.")
 
     def stop(self, timeout: int = 10):
         """Stop the docker container"""

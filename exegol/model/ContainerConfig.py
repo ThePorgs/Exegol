@@ -31,7 +31,6 @@ class ContainerConfig:
     """Configuration class of an exegol container"""
 
     # Default hardcoded value
-    __default_entrypoint_legacy = "bash"
     __default_entrypoint = ["/bin/bash", "/.exegol/entrypoint.sh"]
     __default_shm_size = "64M"
 
@@ -98,6 +97,7 @@ class ContainerConfig:
         self.__vpn_path: Optional[Union[Path, PurePath]] = None
         self.__shell_logging: bool = False
         # Entrypoint features
+        self.legacy_entrypoint: bool = True
         self.__vpn_parameters: Optional[str] = None
         self.__run_cmd: bool = False
         self.__endless_container: bool = True
@@ -128,6 +128,7 @@ class ContainerConfig:
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
+        self.legacy_entrypoint = container_config.get("Entrypoint") is None
         self.__enable_gui = False
         for env in self.__envs:
             if "DISPLAY" in env:
