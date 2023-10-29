@@ -728,10 +728,12 @@ class ContainerConfig:
         """Undo preparation in case of container creation failure"""
         if self.__workspace_custom_path is None and not self.__disable_workspace:
             # Remove dedicated workspace volume
-            logger.info("Rollback: removing dedicated workspace directory")
             directory_path = UserConfig().private_volume_path.joinpath(share_name)
-            if directory_path.is_dir():
+            if directory_path.is_dir() and len(list(directory_path.iterdir())) == 0:
+                logger.info("Rollback: removing dedicated workspace directory")
                 directory_path.rmdir()
+            else:
+                logger.warning("Rollback: the workspace directory isn't empty, it will NOT be removed automatically")
 
     def entrypointRunCmd(self, endless_mode=False):
         """Enable the run_cmd feature of the entrypoint. This feature execute the command stored in the $CMD container environment variables.

@@ -9,7 +9,10 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 from requests import ReadTimeout
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
+from exegol.config.EnvInfo import EnvInfo
+from exegol.config.UserConfig import UserConfig
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
@@ -17,10 +20,7 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.MetaImages import MetaImages
-from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
-from exegol.config.UserConfig import UserConfig
 from exegol.utils.WebUtils import WebUtils
 
 
@@ -133,8 +133,9 @@ class DockerUtils:
             container = docker_create_function(**docker_args)
         except APIError as err:
             message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
-            message = message.replace('[', '\\[')
-            logger.error(message)
+            if message is not None:
+                message = message.replace('[', '\\[')
+                logger.error(message)
             logger.debug(err)
             model.rollback()
             try:
