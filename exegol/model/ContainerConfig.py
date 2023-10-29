@@ -226,6 +226,7 @@ class ContainerConfig:
                 obj_path = cast(PurePath, src_path)
                 logger.debug(f"└── Loading workspace volume source : {obj_path}")
                 self.__disable_workspace = False
+                # TODO use label to identify manage workspace and support cross env removing
                 if obj_path is not None and obj_path.name == name and \
                         (obj_path.parent.name == "shared-data-volumes" or obj_path.parent == UserConfig().private_volume_path):  # Check legacy path and new custom path
                     logger.debug("└── Private workspace detected")
