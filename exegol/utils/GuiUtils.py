@@ -263,10 +263,12 @@ class GuiUtils:
         :return: bool
         """
         if EnvInfo.current_platform == "WSL":
-            if Path("/mnt/host/wslg/versions.txt").is_file():
+            if (Path("/mnt/host/wslg/versions.txt").is_file() or
+                    Path("/mnt/wslg/versions.txt").is_file()):
                 return True
         else:
-            if cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name):
+            if (cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name) or
+                    cls.__wsl_test("/mnt/wslg/versions.txt", name=cls.__distro_name)):
                 return True
         logger.debug("WSLg check failed.. Trying a fallback check method.")
         return cls.__wsl_test("/mnt/host/wslg/versions.txt") or cls.__wsl_test("/mnt/wslg/versions.txt", name=None)
