@@ -2,7 +2,7 @@ import logging
 import re
 import stat
 import subprocess
-from pathlib import Path, PurePosixPath, PurePath
+from pathlib import Path, PurePath
 from typing import Optional
 
 from exegol.config.EnvInfo import EnvInfo
@@ -20,7 +20,7 @@ def parseDockerVolumePath(source: str) -> PurePath:
         return src_path
     else:
         # Remove docker mount path if exist
-        return PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
+        return PurePath(source.replace('/run/desktop/mnt/host', ''))
 
 
 def resolvPath(path: Path) -> str:
