@@ -299,7 +299,7 @@ class GuiUtils:
         distro_name = ""
         # these distros cannot be used to load WSLg socket
         blacklisted_distro = ["docker-desktop", "docker-desktop-data"]
-        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Wait for WSL process to end
         ret.wait()
         if ret.returncode == 0:
@@ -353,7 +353,7 @@ class GuiUtils:
     @classmethod
     def __create_default_wsl(cls) -> bool:
         logger.info("Creating Ubuntu WSL distribution. Please wait.")
-        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
+        ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
         ret.wait()
         logger.info("Please follow installation instructions on the new window.")
         if ret.returncode != 0:
@@ -369,7 +369,7 @@ class GuiUtils:
             if docker_settings is not None and docker_settings.get("enableIntegrationWithDefaultWslDistro", False):
                 logger.verbose("Set WSL Ubuntu as default to automatically enable docker integration")
                 # Set new WSL distribution as default to start it and enable docker integration
-                ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
+                ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
                 ret.wait()
                 # Wait for the docker integration (10 try, 1 sec apart)
                 with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
