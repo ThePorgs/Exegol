@@ -1,8 +1,5 @@
 import json
 import platform
-import re
-import shutil
-import subprocess
 from enum import Enum
 from typing import Optional, Any, List
 
@@ -114,24 +111,8 @@ class EnvInfo:
             if cls.is_windows_shell:
                 # From a Windows shell, python supply an approximate (close enough) version of windows
                 cls.__windows_release = platform.win32_ver()[1]
-            elif cls.current_platform == "WSL":
-                # From a WSL shell, we must create a process to retrieve the host's version
-                # Find version using MS-DOS command 'ver'
-                if not shutil.which("cmd.exe"):
-                    logger.critical("cmd.exe is not accessible from your WSL environment!")
-                proc = subprocess.Popen(["cmd.exe", "/c", "ver"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-                proc.wait()
-                assert proc.stdout is not None
-                # Try to match Windows version
-                matches = re.search(r"version (\d+\.\d+\.\d+)(\.\d*)?", proc.stdout.read().decode('utf-8'))
-                if matches:
-                    # Select match 1 and apply to the attribute
-                    cls.__windows_release = matches.group(1)
-                else:
-                    # If there is any match, fallback to empty
-                    cls.__windows_release = ""
             else:
-                cls.__windows_release = ""
+                cls.__windows_release = "Unknown"
         return cls.__windows_release
 
     @classmethod

@@ -200,12 +200,12 @@ class GuiUtils:
             return True
         elif cls.__wslg_eligible():
             logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
-            logger.info("Make sure, [green]WSLg[/green] is installed on your Windows by running "
-                        "'wsl --update' as [orange3]admin[/orange3].")
-            return True
+            logger.info("Make sure, your Windows is [green]up-to-date[/green] and [green]WSLg[/green] is installed on "
+                        "your host by running 'wsl --update' as [orange3]admin[/orange3].")
+            return False
         logger.debug("WSLg is [orange3]not available[/orange3]")
         logger.warning("Display sharing is [orange3]not supported[/orange3] on your version of Windows. "
-                       "You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+                       "You need to upgrade to [turquoise2]Windows 10+[/turquoise2].")
         return False
 
     @staticmethod
@@ -279,19 +279,18 @@ class GuiUtils:
         Check if the current Windows version support WSLg
         :return:
         """
+        if EnvInfo.current_platform == "WSL":
+            # WSL is only available on Windows 10 & 11 so WSLg can be installed.
+            return True
         try:
             os_version_raw, _, build_number_raw = EnvInfo.getWindowsRelease().split('.')[:3]
         except ValueError:
             logger.debug(f"Impossible to find the version of windows: '{EnvInfo.getWindowsRelease()}'")
             logger.error("Exegol can't know if your [orange3]version of Windows[/orange3] can support dockerized GUIs (X11 sharing).")
             return False
-        # Available from Windows 10 Build 21364
-        # Available from Windows 11 Build 22000
+        # Available for Windows 10 & 11
         os_version = int(os_version_raw)
-        build_number = int(build_number_raw)
-        if os_version == 10 and build_number >= 21364:
-            return True
-        elif os_version > 10:
+        if os_version >= 10:
             return True
         return False
 
