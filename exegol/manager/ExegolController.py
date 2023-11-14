@@ -1,9 +1,11 @@
 try:
-    from git.exc import GitCommandError
+    import docker
+    import requests
+    import git
 
+    from exegol.utils.ExeLog import logger, ExeLog, console
     from exegol.console.cli.ParametersManager import ParametersManager
     from exegol.console.cli.actions.ExegolParameters import Command
-    from exegol.utils.ExeLog import logger, ExeLog, console
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
     print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
@@ -60,11 +62,11 @@ def main():
     except KeyboardInterrupt:
         logger.empty_line()
         logger.info("Exiting")
-    except GitCommandError as e:
+    except git.exc.GitCommandError as git_error:
         print_exception_banner()
-        error = e.stderr.strip().split(": ")[-1].strip("'")
-        logger.critical(f"A critical error occurred while running this git command: {' '.join(e.command)} => {error}")
+        error = git_error.stderr.strip().split(": ")[-1].strip("'")
+        logger.critical(f"A critical error occurred while running this git command: {' '.join(git_error.command)} => {error}")
     except Exception:
         print_exception_banner()
-        console.print_exception(show_locals=True)
+        console.print_exception(show_locals=True, suppress=[docker, requests, git])
         exit(1)
