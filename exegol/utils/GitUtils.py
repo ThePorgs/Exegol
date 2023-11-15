@@ -44,7 +44,7 @@ class GitUtils:
             elif sys.platform == "win32":
                 # Skip next platform specific code (temp fix for mypy static code analysis)
                 pass
-            elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
+            elif not EnvInfo.is_windows_shell and os.getuid() != 0 and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
             if self.__git_name == "wrapper":
