@@ -62,10 +62,12 @@ function shutdown() {
 
 function _resolv_docker_host() {
   # On docker desktop host, resolving the host.docker.internal before starting a VPN connection for GUI applications
-  docker_ip=$(getent hosts host.docker.internal | head -n1 | awk '{ print $1 }')
+  docker_ip=$(getent ahostsv4 host.docker.internal | head -n1 | awk '{ print $1 }')
   if [ "$docker_ip" ]; then
     # Add docker internal host resolution to the hosts file to preserve access to the X server
     echo "$docker_ip        host.docker.internal" >>/etc/hosts
+    # If the container share the host networks, no need to add a static mapping
+    ip route list match "$docker_ip" table all | grep -v default || ip route add "$docker_ip/32" $(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+') || echo '[W]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
   fi
 }
 
