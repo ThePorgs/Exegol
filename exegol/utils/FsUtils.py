@@ -68,7 +68,12 @@ def setGidPermission(root_folder: Path):
             perm_alert = True
     for sub_item in root_folder.rglob('*'):
         # Find every subdirectory
-        if not sub_item.is_dir():
+        try:
+            if not sub_item.is_dir():
+                continue
+        except PermissionError:
+            if not sub_item.is_symlink():
+                logger.error(f"Permission denied when trying to resolv {str(sub_item)}")
             continue
         # If the permission is already set, skip
         if sub_item.stat().st_mode & stat.S_ISGID:
