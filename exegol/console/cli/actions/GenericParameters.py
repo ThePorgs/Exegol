@@ -279,4 +279,4 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      completer=DesktopConfigCompleter)
         groupArgs.append(GroupArg({"arg": self.desktop, "required": False},
                                   {"arg": self.desktop_config, "required": False},
-                                  title="[blue]Container creation Desktop options[/blue]"))
+                                  title="[blue]Container creation Desktop options[/blue] [spring_green1](beta)[/spring_green1]"))
