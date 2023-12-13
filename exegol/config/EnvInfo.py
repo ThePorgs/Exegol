@@ -21,7 +21,7 @@ class EnvInfo:
         """Dictionary class for static Docker engine name"""
         WLS2 = "WSL2"
         HYPERV = "Hyper-V"
-        MAC = "Docker desktop"
+        DOCKER_DESKTOP = "Docker desktop"
         ORBSTACK = "Orbstack"
         LINUX = "Kernel"
 
@@ -85,8 +85,8 @@ class EnvInfo:
             cls.__docker_host_os = cls.HostOs.WINDOWS
         elif cls.__is_docker_desktop:
             # If docker desktop is detected but not a Windows engine/kernel, it's (probably) a mac
-            cls.__docker_engine = cls.DockerEngine.MAC
-            cls.__docker_host_os = cls.HostOs.MAC
+            cls.__docker_engine = cls.DockerEngine.DOCKER_DESKTOP
+            cls.__docker_host_os = cls.HostOs.LINUX if "linuxkit" in docker_kernel else cls.HostOs.MAC
         elif is_orbstack:
             # Orbstack is only available on Mac
             cls.__docker_engine = cls.DockerEngine.ORBSTACK
@@ -95,6 +95,9 @@ class EnvInfo:
             # Every other case it's a linux distro and docker is powered from the kernel
             cls.__docker_engine = cls.DockerEngine.LINUX
             cls.__docker_host_os = cls.HostOs.LINUX
+
+        if cls.__docker_engine == cls.DockerEngine.DOCKER_DESKTOP and cls.__docker_host_os == cls.HostOs.LINUX:
+            logger.warning(f"Using Docker Desktop on Linux is not officially supported !")
 
     @classmethod
     def getHostOs(cls) -> HostOs:

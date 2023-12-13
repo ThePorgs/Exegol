@@ -41,11 +41,11 @@ class DockerUtils:
         EnvInfo.initData(__daemon_info)
     except DockerException as err:
         if 'ConnectionRefusedError' in str(err):
-            logger.critical("Unable to connect to docker (from env config). Is docker running on your machine? "
-                            "Exiting.")
+            logger.critical(f"Unable to connect to docker (from env config). Is docker running on your machine? Exiting.{os.linesep}"
+                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
         elif 'FileNotFoundError' in str(err):
-            logger.critical("Unable to connect to docker. Is docker installed on your machine? "
-                            "Exiting.")
+            logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
+                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
         else:
             logger.error(err)
             logger.critical(
