@@ -86,7 +86,7 @@ class EnvInfo:
         elif cls.__is_docker_desktop:
             # If docker desktop is detected but not a Windows engine/kernel, it's (probably) a mac
             cls.__docker_engine = cls.DockerEngine.DOCKER_DESKTOP
-            cls.__docker_host_os = cls.HostOs.LINUX if "linuxkit" in docker_kernel else cls.HostOs.MAC
+            cls.__docker_host_os = cls.HostOs.MAC if cls.is_mac_shell else cls.HostOs.LINUX
         elif is_orbstack:
             # Orbstack is only available on Mac
             cls.__docker_engine = cls.DockerEngine.ORBSTACK
