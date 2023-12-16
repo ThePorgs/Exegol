@@ -457,7 +457,7 @@ class DockerUtils:
                                           stream=True,
                                           decode=True,
                                           platform="linux/" + image.getArch()))
-                logger.success(f"Image successfully updated")
+                logger.success(f"Image successfully installed")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
                     cls.removeImage(image, upgrade_mode=not install_mode)
