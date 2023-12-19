@@ -9,8 +9,8 @@ function exegol_init() {
 # Function specific
 function load_setups() {
   # Load custom setups (supported setups, and user setup)
-  [ -d /var/log/exegol ] || mkdir -p /var/log/exegol
-  if [[ ! -f /.exegol/.setup.lock ]]; then
+  [[ -d "/var/log/exegol" ]] || mkdir -p /var/log/exegol
+  if [[ ! -f "/.exegol/.setup.lock" ]]; then
     # Execute initial setup if lock file doesn't exist
     echo >/.exegol/.setup.lock
     # Run my-resources script. Logs starting with '[exegol]' will be print to the console and report back to the user through the wrapper.
@@ -52,8 +52,8 @@ function shutdown() {
   # shellcheck disable=SC2046
   kill $(pgrep -x -f -- -bash) 2>/dev/null
   # Wait for every active process to exit (e.g: shell logging compression, VPN closing, WebUI)
-  wait_list="$(pgrep -f "(.log|spawn.sh|vnc)" | grep -vE '^1$')"
-  for i in $wait_list; do
+  WAIT_LIST="$(pgrep -f "(.log|spawn.sh|vnc)" | grep -vE '^1$')"
+  for i in $WAIT_LIST; do
     # Waiting for: $i PID process to exit
     tail --pid="$i" -f /dev/null
   done
@@ -62,12 +62,12 @@ function shutdown() {
 
 function _resolv_docker_host() {
   # On docker desktop host, resolving the host.docker.internal before starting a VPN connection for GUI applications
-  docker_ip=$(getent ahostsv4 host.docker.internal | head -n1 | awk '{ print $1 }')
-  if [ "$docker_ip" ]; then
+  DOCKER_IP=$(getent ahostsv4 host.docker.internal | head -n1 | awk '{ print $1 }')
+  if [[ "$DOCKER_IP" ]]; then
     # Add docker internal host resolution to the hosts file to preserve access to the X server
-    echo "$docker_ip        host.docker.internal" >>/etc/hosts
+    echo "$DOCKER_IP        host.docker.internal" >>/etc/hosts
     # If the container share the host networks, no need to add a static mapping
-    ip route list match "$docker_ip" table all | grep -v default || ip route add "$docker_ip/32" $(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+') || echo '[W]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
+    ip route list match "$DOCKER_IP" table all | grep -v default || ip route add "$DOCKER_IP/32" $(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+') || echo '[W]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
   fi
 }
 
@@ -116,8 +116,8 @@ exegol_init
 # Par each parameter
 for arg in "$@"; do
  # Check if the function exist
- function_name=$(echo "$arg" | cut -d ' ' -f 1)
- if declare -f "$function_name" > /dev/null; then
+ FUNCTION_NAME=$(echo "$arg" | cut -d ' ' -f 1)
+ if declare -f "$FUNCTION_NAME" > /dev/null; then
    $arg
  else
    echo "The function '$arg' doesn't exist."
