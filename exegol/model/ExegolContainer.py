@@ -132,7 +132,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                             logger.error(line)
                         else:
                             logger.verbose(line)
-                        progress.update(status=f"[blue]\[Startup][/blue] {line}")
+                        progress.update(status=f"[blue][Startup][/blue] {line}")
                 except KeyboardInterrupt:
                     # User can cancel startup logging with ctrl+C
                     logger.warning("User skip startup status updates. Spawning a shell now.")

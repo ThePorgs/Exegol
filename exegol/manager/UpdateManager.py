@@ -263,7 +263,7 @@ class UpdateManager:
         if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
-                commit_version = f" [bright_black]\[{str(module.get_current_commit())[:8]}][/bright_black]"
+                commit_version = f" [bright_black][{str(module.get_current_commit())[:8]}][/bright_black]"
         return f"[blue]v{ConstantConfig.version}[/blue]{commit_version}"
 
     @classmethod
@@ -290,7 +290,7 @@ class UpdateManager:
     def display_latest_version(cls) -> str:
         last_version = DataCache().get_wrapper_data().last_version
         if len(last_version) == 8 and '.' not in last_version:
-            return f"[bright_black]\[{last_version}][/bright_black]"
+            return f"[bright_black][{last_version}][/bright_black]"
         return f"[blue]v{last_version}[/blue]"
 
     @classmethod

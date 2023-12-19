@@ -62,7 +62,7 @@ class ContainerLogStream:
             elif not self.__tips_sent and self.__until_date >= self.__tips_timedelta:
                 self.__tips_sent = True
                 logger.info("Your start-up sequence takes time, your my-resource setup configuration may be significant.")
-                logger.info("[orange3]\[Tips][/orange3] If you want to skip startup update, "
+                logger.info("[orange3][Tips][/orange3] If you want to skip startup update, "
                             "you can use [green]CTRL+C[/green] and spawn a shell immediately. "
                             "[blue](Startup sequence will continue in background)[/blue]")
             # Prepare the next iteration to fetch next logs
