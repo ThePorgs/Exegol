@@ -81,6 +81,9 @@ class DockerUtils:
                 logger.critical(err.explanation)
                 # Not reachable, critical logging will exit
                 return  # type: ignore
+            except TimeoutError:
+                logger.critical("Received a timeout error, Docker is busy... Unable to list containers, retry later.")
+                return  # type: ignore
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -217,6 +220,9 @@ class DockerUtils:
                         logger.debug(e.explanation)
                     else:
                         raise NotFound('Volume must be reloaded')
+                except TimeoutError:
+                    logger.error(f"Received a timeout error, Docker is busy... Volume {volume_name} cannot be automatically removed. Please, retry later the following command:{os.linesep}"
+                                 f"    [orange3]docker volume rm {volume_name}[/orange3]")
         except NotFound:
             try:
                 # Creating a docker volume bind to a host path
@@ -231,8 +237,14 @@ class DockerUtils:
                 logger.debug(err)
                 logger.critical(err.explanation)
                 return None  # type: ignore
+            except TimeoutError:
+                logger.critical(f"Received a timeout error, Docker is busy... Volume {volume_name} cannot be created.")
+                return  # type: ignore
         except APIError as err:
             logger.critical(f"Unexpected error by Docker SDK : {err}")
+            return None  # type: ignore
+        except TimeoutError:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
             return None  # type: ignore
         return volume
 
@@ -312,6 +324,9 @@ class DockerUtils:
                     else:
                         logger.critical(f"Error on image loading: {err}")
                         return  # type: ignore
+                except TimeoutError:
+                    logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
+                    return  # type: ignore
                 return ExegolImage(docker_image=docker_local_image).autoLoad()
             else:
                 for img in cls.__images:
@@ -336,6 +351,9 @@ class DockerUtils:
             logger.debug(err)
             logger.critical(err.explanation)
             # Not reachable, critical logging will exit
+            return  # type: ignore
+        except TimeoutError:
+            logger.critical("Received a timeout error, Docker is busy... Unable to list local images, retry later.")
             return  # type: ignore
         # Filter out image non-related to the right repository
         result = []
@@ -372,6 +390,9 @@ class DockerUtils:
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
+        except TimeoutError:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate lost images, retry later.")
+            return  # type: ignore
         result = []
         id_list = set()
         for img in recovery_images:
@@ -433,6 +454,9 @@ class DockerUtils:
             docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
         except ImageNotFound:
             raise ObjectNotFound
+        except TimeoutError:
+            logger.critical("Received a timeout error, Docker is busy... Unable to find a specific image, retry later.")
+            return  # type: ignore
         remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
@@ -471,6 +495,8 @@ class DockerUtils:
                 else:
                     logger.debug(f"Error: {err}")
                     logger.critical(f"An error occurred while downloading this image: {err.explanation}")
+            except TimeoutError:
+                logger.critical(f"Received a timeout error, Docker is busy... Unable to download {name} image, retry later.")
         return False
 
     @classmethod
@@ -492,6 +518,10 @@ class DockerUtils:
             else:
                 logger.debug(f"Error: {err}")
                 return f"en unknown error occurred while downloading this image : {err.explanation}"
+        except TimeoutError:
+            logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
+                            f"    [orange3]docker pull --platform linux/{image.getArch()} {ConstantConfig.IMAGE_NAME}:{image.getLatestVersionName()}[/orange3].")
+            return  # type: ignore
 
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
@@ -568,3 +598,6 @@ class DockerUtils:
                 logger.debug(f"Error: {err}")
             else:
                 logger.critical(f"An error occurred while building this image : {err}")
+        except TimeoutError:
+            logger.critical("Received a timeout error, Docker is busy... Unable to build the local image, retry later.")
+            return  # type: ignore
