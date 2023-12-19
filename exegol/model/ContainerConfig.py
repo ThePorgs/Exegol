@@ -963,8 +963,6 @@ class ContainerConfig:
                         logger.critical(msg)
                     raise CancelOperation(msg)
                 if path_match.startswith("/etc/"):
-                    if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"{EnvInfo.getDockerEngine().value} doesn't support sharing [magenta]/etc[/magenta] files with the container")
                     path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
