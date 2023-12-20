@@ -14,8 +14,9 @@ jobs:
     uses: ./.github/workflows/sub_testing.yml
 
   preprod_test:
-    name: Code testing
+    name: Pre-prod code testing
     runs-on: ubuntu-latest
+    needs: code_test
     steps:
       - uses: actions/checkout@master
         with:
@@ -30,7 +31,7 @@ jobs:
   build:
     name: Build Python 🐍 distributions
     runs-on: ubuntu-latest
-    needs: test
+    needs: preprod_test
     steps:
       - uses: actions/checkout@master
         with:
