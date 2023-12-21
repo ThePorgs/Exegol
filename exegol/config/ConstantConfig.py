@@ -42,7 +42,7 @@ class ConstantConfig:
         Support source clone installation and pip package (venv / user / global context)"""
         local_src = cls.src_root_path_obj / source_path
         if local_src.is_dir() or local_src.is_file():
-            # If exegol is clone from github, build context is accessible from root src
+            # If exegol is clone from GitHub, build context is accessible from root src
             return local_src
         else:
             # If install from pip

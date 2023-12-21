@@ -505,7 +505,6 @@ class ContainerConfig:
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
             else:
                 # If we do not specify the host to the container it will automatically choose eth0 interface
-                # TODO ensure there is an eth0 interface
                 # Using default port for the service
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
                 # Exposing desktop service

@@ -71,20 +71,19 @@ config:
     
     # Configure your Exegol Desktop
     desktop:
-        # Enables the desktop mode all the time
-        # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the desktop
+        # Enables or not the desktop mode by default
+        # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the feature
         enabled_by_default: {self.desktop_default_enable}
     
         # Default desktop protocol,can be "http", or "vnc" (additional protocols to come in the future, check online documentation for updates).
         default_protocol: {self.desktop_default_proto}
     
-        # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) other it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
+        # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
         localhost_by_default: {self.desktop_default_localhost}
 
 """
         # TODO handle default image selection
         # TODO handle default start container
-        # TODO add custom build profiles path
         return config
 
     @staticmethod
