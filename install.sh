@@ -11,27 +11,38 @@ else
     SUDO="sudo"
 fi
 
-case $ID in
-    debian|ubuntu)
-        PACKAGE_MANAGER="apt"
-        PACKAGE_MANAGER_INSTALL="apt install -y"
-        PACKAGE_MANAGER_UPDATE="apt update"
-    ;;
-    fedora)
-        PACKAGE_MANAGER="dnf"
-        PACKAGE_MANAGER_INSTALL="dnf install -y"
-    ;;
-    alpine)
-        PACKAGE_MANAGER="apk"
-        PACKAGE_MANAGER_INSTALL="apk add"
-    ;;
-    *)
-        echo "Installer not support this version."
+if [ -z "$lsb_dist" ]; then
+    if command -v brew >/dev/null 2>&1; then
+        PACKAGE_MANAGER="brew"
+        PACKAGE_MANAGER_INSTALL="brew install -y"
+    else
+        echo "Homebrew isn't install."
         echo "For install Exegol, pls refert to: https://exegol.readthedocs.io/en/latest/getting-started/install.html"
         exit 1
-    ;;
+    fi
+else
+    case $ID in
+        debian|ubuntu)
+            PACKAGE_MANAGER="apt"
+            PACKAGE_MANAGER_INSTALL="apt install -y"
+            PACKAGE_MANAGER_UPDATE="apt update"
+        ;;
+        fedora)
+            PACKAGE_MANAGER="dnf"
+            PACKAGE_MANAGER_INSTALL="dnf install -y"
+        ;;
+        alpine)
+            PACKAGE_MANAGER="apk"
+            PACKAGE_MANAGER_INSTALL="apk add"
+        ;;
+        *)
+            echo "Installer not support this version."
+            echo "For install Exegol, pls refert to: https://exegol.readthedocs.io/en/latest/getting-started/install.html"
+            exit 1
+        ;;
 
-esac
+    esac
+fi
 
 usage() {
     echo "Exegol installer script"
