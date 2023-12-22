@@ -1,8 +1,5 @@
 import json
 import platform
-import re
-import shutil
-import subprocess
 from enum import Enum
 from typing import Optional, Any, List
 
@@ -24,7 +21,7 @@ class EnvInfo:
         """Dictionary class for static Docker engine name"""
         WLS2 = "WSL2"
         HYPERV = "Hyper-V"
-        MAC = "Docker desktop"
+        DOCKER_DESKTOP = "Docker desktop"
         ORBSTACK = "Orbstack"
         LINUX = "Kernel"
 
@@ -88,8 +85,8 @@ class EnvInfo:
             cls.__docker_host_os = cls.HostOs.WINDOWS
         elif cls.__is_docker_desktop:
             # If docker desktop is detected but not a Windows engine/kernel, it's (probably) a mac
-            cls.__docker_engine = cls.DockerEngine.MAC
-            cls.__docker_host_os = cls.HostOs.MAC
+            cls.__docker_engine = cls.DockerEngine.DOCKER_DESKTOP
+            cls.__docker_host_os = cls.HostOs.MAC if cls.is_mac_shell else cls.HostOs.LINUX
         elif is_orbstack:
             # Orbstack is only available on Mac
             cls.__docker_engine = cls.DockerEngine.ORBSTACK
@@ -98,6 +95,9 @@ class EnvInfo:
             # Every other case it's a linux distro and docker is powered from the kernel
             cls.__docker_engine = cls.DockerEngine.LINUX
             cls.__docker_host_os = cls.HostOs.LINUX
+
+        if cls.__docker_engine == cls.DockerEngine.DOCKER_DESKTOP and cls.__docker_host_os == cls.HostOs.LINUX:
+            logger.warning(f"Using Docker Desktop on Linux is not officially supported !")
 
     @classmethod
     def getHostOs(cls) -> HostOs:
@@ -114,24 +114,8 @@ class EnvInfo:
             if cls.is_windows_shell:
                 # From a Windows shell, python supply an approximate (close enough) version of windows
                 cls.__windows_release = platform.win32_ver()[1]
-            elif cls.current_platform == "WSL":
-                # From a WSL shell, we must create a process to retrieve the host's version
-                # Find version using MS-DOS command 'ver'
-                if not shutil.which("cmd.exe"):
-                    logger.critical("cmd.exe is not accessible from your WSL environment!")
-                proc = subprocess.Popen(["cmd.exe", "/c", "ver"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-                proc.wait()
-                assert proc.stdout is not None
-                # Try to match Windows version
-                matches = re.search(r"version (\d+\.\d+\.\d+)(\.\d*)?", proc.stdout.read().decode('utf-8'))
-                if matches:
-                    # Select match 1 and apply to the attribute
-                    cls.__windows_release = matches.group(1)
-                else:
-                    # If there is any match, fallback to empty
-                    cls.__windows_release = ""
             else:
-                cls.__windows_release = ""
+                cls.__windows_release = "Unknown"
         return cls.__windows_release
 
     @classmethod

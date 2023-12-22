@@ -44,7 +44,7 @@ class GitUtils:
             elif sys.platform == "win32":
                 # Skip next platform specific code (temp fix for mypy static code analysis)
                 pass
-            elif not EnvInfo.is_windows_shell and test_git_dir.lstat().st_uid != os.getuid():
+            elif not EnvInfo.is_windows_shell and os.getuid() != 0 and test_git_dir.lstat().st_uid != os.getuid():
                 raise PermissionError(test_git_dir.owner())
         except ReferenceError:
             if self.__git_name == "wrapper":
@@ -288,8 +288,6 @@ class GitUtils:
         logger.verbose(f"Git {self.getName()} init submodules")
         # These modules are init / updated manually
         blacklist_heavy_modules = ["exegol-resources"]
-        # Submodules dont have depth submodule limits
-        depth_limit = not self.__is_submodule
         if self.__gitRepo is None:
             return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
@@ -299,9 +297,9 @@ class GitUtils:
                 logger.error(f"Unable to find any git submodule from '{self.getName()}' repository. Check the path in the file {self.__repo_path / '.git'}")
                 return
             for current_sub in submodules:
+                logger.debug(f"Loading repo submodules: {current_sub}")
                 # Submodule update are skipped if blacklisted or if the depth limit is set
-                if current_sub.name in blacklist_heavy_modules or \
-                        (depth_limit and ('/' in current_sub.name or '\\' in current_sub.name)):
+                if current_sub.name in blacklist_heavy_modules:
                     continue
                 s.update(status=f"Downloading git submodules [green]{current_sub.name}[/green]")
                 from git.exc import GitCommandError

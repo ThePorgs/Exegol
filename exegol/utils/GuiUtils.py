@@ -7,15 +7,15 @@ import time
 from pathlib import Path
 from typing import Optional
 
+from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import Confirm
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console
 
 
 class GuiUtils:
     """This utility class allows determining if the current system supports the GUI
-    from the information of the system."""
+    from the information of the system (through X11 sharing)."""
 
     __distro_name = ""
     default_x11_path = "/tmp/.X11-unix"
@@ -26,7 +26,7 @@ class GuiUtils:
         Check if the host OS can support GUI application with X11 sharing
         :return: bool
         """
-        # GUI was not supported on Windows before WSLg
+        # GUI (X11 sharing) was not supported on Windows before WSLg
         if EnvInfo.isWindowsHost():
             return cls.__windowsGuiChecks()
         elif EnvInfo.isMacHost():
@@ -48,9 +48,9 @@ class GuiUtils:
                 # Mount point from a WSL shell context
                 return f"/mnt/wslg/.X11-unix"
             else:
-                # From a Windows context, a WSL distro should have been supply during GUI checks
+                # From a Windows context, a WSL distro should have been supply during GUI (X11 sharing) checks
                 logger.debug(f"No WSL distro have been previously found: '{cls.__distro_name}'")
-                raise CancelOperation("Exegol tried to create a container with GUI support on a Windows host "
+                raise CancelOperation("Exegol tried to create a container with X11 sharing on a Windows host "
                                       "without having performed the availability tests before.")
         elif EnvInfo.isMacHost():
             # Docker desktop don't support UNIX socket through volume, we are using XQuartz over the network until then
@@ -68,10 +68,11 @@ class GuiUtils:
             # xquartz Mac mode
             return "host.docker.internal:0"
 
-        # Add ENV check is case of user don't have it, which will mess up GUI if fallback does not work
+        # Add ENV check is case of user don't have it, which will mess up GUI (X11 sharing) if fallback does not work
         # @see https://github.com/ThePorgs/Exegol/issues/148
-        if os.getenv("DISPLAY") is None:
-            logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start")
+        if not EnvInfo.is_windows_shell:
+            if os.getenv("DISPLAY") is None:
+                logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start through X11 sharing")
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
@@ -81,7 +82,7 @@ class GuiUtils:
     @classmethod
     def __macGuiChecks(cls) -> bool:
         """
-        Procedure to check if the Mac host supports GUI with docker through XQuartz
+        Procedure to check if the Mac host supports GUI (X11 sharing) with docker through XQuartz
         :return: bool
         """
         if not cls.__isXQuartzInstalled():
@@ -170,27 +171,27 @@ class GuiUtils:
     @classmethod
     def __windowsGuiChecks(cls) -> bool:
         """
-        Procedure to check if the Windows host supports GUI with docker through WSLg
+        Procedure to check if the Windows host supports GUI (X11 sharing) with docker through WSLg
         :return: bool
         """
         logger.debug("Testing WSLg availability")
-        # WSL + WSLg must be available on the Windows host for the GUI to work
+        # WSL + WSLg must be available on the Windows host for the GUI to work through X11 sharing
         if not cls.__wsl_available():
-            logger.error("WSL is [orange3]not available[/orange3] on your system. GUI is not supported.")
+            logger.error("WSL is [orange3]not available[/orange3] on your system. X11 sharing is not supported.")
             return False
         # Only WSL2 support WSLg
         if EnvInfo.getDockerEngine() != EnvInfo.DockerEngine.WLS2:
-            logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support GUI applications.")
+            logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support X11 sharing (i.e. GUI apps).")
             return False
         logger.debug("WSL is [green]available[/green] and docker is using WSL2")
-        # X11 GUI socket can only be shared from a WSL (to find WSLg mount point)
+        # X11 socket can only be shared from a WSL (to find WSLg mount point)
         if EnvInfo.current_platform != "WSL":
             logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share WSLg X11 socket")
             cls.__distro_name = cls.__find_wsl_distro()
             logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
-            # If no WSL is found, propose to continue without GUI
+            # If no WSL is found, propose to continue without GUI (X11 sharing)
             if not cls.__distro_name and not Confirm(
-                    "Do you want to continue [orange3]without[/orange3] GUI support ?", default=True):
+                    "Do you want to continue [orange3]without[/orange3] X11 sharing (i.e. GUI support)?", default=True):
                 raise KeyboardInterrupt
         else:
             logger.debug("Using current WSL context for X11 socket sharing")
@@ -199,12 +200,12 @@ class GuiUtils:
             return True
         elif cls.__wslg_eligible():
             logger.info("[green]WSLg[/green] is available on your system but [orange3]not installed[/orange3].")
-            logger.info("Make sure, [green]WSLg[/green] is installed on your Windows by running "
-                        "'wsl --update' as [orange3]admin[/orange3].")
-            return True
+            logger.info("Make sure, your Windows is [green]up-to-date[/green] and [green]WSLg[/green] is installed on "
+                        "your host by running 'wsl --update' as [orange3]admin[/orange3].")
+            return False
         logger.debug("WSLg is [orange3]not available[/orange3]")
         logger.warning("Display sharing is [orange3]not supported[/orange3] on your version of Windows. "
-                       "You need to upgrade to [turquoise2]Windows 11[/turquoise2].")
+                       "You need to upgrade to [turquoise2]Windows 10+[/turquoise2].")
         return False
 
     @staticmethod
@@ -262,10 +263,12 @@ class GuiUtils:
         :return: bool
         """
         if EnvInfo.current_platform == "WSL":
-            if Path("/mnt/host/wslg/versions.txt").is_file():
+            if (Path("/mnt/host/wslg/versions.txt").is_file() or
+                    Path("/mnt/wslg/versions.txt").is_file()):
                 return True
         else:
-            if cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name):
+            if (cls.__wsl_test("/mnt/host/wslg/versions.txt", name=cls.__distro_name) or
+                    cls.__wsl_test("/mnt/wslg/versions.txt", name=cls.__distro_name)):
                 return True
         logger.debug("WSLg check failed.. Trying a fallback check method.")
         return cls.__wsl_test("/mnt/host/wslg/versions.txt") or cls.__wsl_test("/mnt/wslg/versions.txt", name=None)
@@ -276,19 +279,18 @@ class GuiUtils:
         Check if the current Windows version support WSLg
         :return:
         """
+        if EnvInfo.current_platform == "WSL":
+            # WSL is only available on Windows 10 & 11 so WSLg can be installed.
+            return True
         try:
             os_version_raw, _, build_number_raw = EnvInfo.getWindowsRelease().split('.')[:3]
         except ValueError:
             logger.debug(f"Impossible to find the version of windows: '{EnvInfo.getWindowsRelease()}'")
-            logger.error("Exegol can't know if your [orange3]version of Windows[/orange3] can support dockerized GUIs.")
+            logger.error("Exegol can't know if your [orange3]version of Windows[/orange3] can support dockerized GUIs (X11 sharing).")
             return False
-        # Available from Windows 10 Build 21364
-        # Available from Windows 11 Build 22000
+        # Available for Windows 10 & 11
         os_version = int(os_version_raw)
-        build_number = int(build_number_raw)
-        if os_version == 10 and build_number >= 21364:
-            return True
-        elif os_version > 10:
+        if os_version >= 10:
             return True
         return False
 
@@ -297,7 +299,7 @@ class GuiUtils:
         distro_name = ""
         # these distros cannot be used to load WSLg socket
         blacklisted_distro = ["docker-desktop", "docker-desktop-data"]
-        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # Wait for WSL process to end
         ret.wait()
         if ret.returncode == 0:
@@ -325,7 +327,7 @@ class GuiUtils:
                     while not cls.__check_wsl_docker_integration(name):
                         eligible = False
                         logger.warning(
-                            f"The '{name}' WSL distribution could be used to [green]enable the GUI[/green] on exegol but the docker integration is [orange3]not enabled[/orange3].")
+                            f"The '{name}' WSL distribution can be used to [green]enable X11 sharing[/green] (i.e. GUI apps) on exegol but the docker integration is [orange3]not enabled[/orange3].")
                         if not Confirm(
                                 f"Do you want to [red]manually[/red] enable docker integration for WSL '{name}'?",
                                 default=True):
@@ -351,7 +353,7 @@ class GuiUtils:
     @classmethod
     def __create_default_wsl(cls) -> bool:
         logger.info("Creating Ubuntu WSL distribution. Please wait.")
-        ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
+        ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
         ret.wait()
         logger.info("Please follow installation instructions on the new window.")
         if ret.returncode != 0:
@@ -367,7 +369,7 @@ class GuiUtils:
             if docker_settings is not None and docker_settings.get("enableIntegrationWithDefaultWslDistro", False):
                 logger.verbose("Set WSL Ubuntu as default to automatically enable docker integration")
                 # Set new WSL distribution as default to start it and enable docker integration
-                ret = subprocess.Popen(["C:\Windows\system32\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
+                ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
                 ret.wait()
                 # Wait for the docker integration (10 try, 1 sec apart)
                 with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):

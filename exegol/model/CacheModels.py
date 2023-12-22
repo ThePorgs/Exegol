@@ -20,6 +20,9 @@ class MetadataCacheModel:
     def get_last_check(self) -> datetime.datetime:
         return datetime.datetime.strptime(self.last_check, self.__TIME_FORMAT)
 
+    def get_last_check_text(self) -> str:
+        return self.last_check
+
     def is_outdated(self, days: int = 15, hours: int = 0):
         """Check if the cache must be considered as expired."""
         now = datetime.datetime.now()

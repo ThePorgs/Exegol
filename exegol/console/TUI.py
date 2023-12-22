@@ -145,7 +145,7 @@ class ExegolTUI:
                 else:
                     logger.raw(stream_text, level=ExeLog.ADVANCED)
             if ': FROM ' in stream_text:
-                logger.info("Downloading docker image")
+                logger.info("Downloading base image")
                 ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
         if logfile is not None:
             logfile.close()
@@ -213,9 +213,9 @@ class ExegolTUI:
                                   image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
                 if safe_key:
-                    table.add_row(str(i + 1), image.getDisplayName(), image.getSize(), image.getStatus())
+                    table.add_row(str(i + 1), image.getDisplayName(), image.getRealSize(), image.getStatus())
                 else:
-                    table.add_row(image.getDisplayName(), image.getSize(), image.getStatus())
+                    table.add_row(image.getDisplayName(), image.getRealSize(), image.getStatus())
 
     @staticmethod
     def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False):
@@ -396,8 +396,27 @@ class ExegolTUI:
 
     @classmethod
     def printContainerRecap(cls, container: ExegolContainerTemplate):
+        """
+        Build and print a rich table with every configuration of the container
+        :param container: Exegol container to print the table of
+        :return:
+        """
         # Load the image status if it is not already set.
         container.image.autoLoad()
+
+        recap = cls.__buildContainerRecapTable(container)
+
+        logger.empty_line()
+        console.print(recap)
+        logger.empty_line()
+
+    @staticmethod
+    def __buildContainerRecapTable(container: ExegolContainerTemplate):
+        """
+        Build a rich table to recap in detail the configuration of a specified ExegolContainerTemplate or ExegolContainer
+        :param container: The container to fetch config from
+        :return: A rich table fully built
+        """
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -407,12 +426,13 @@ class ExegolTUI:
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
         creation_date = container.config.getTextCreationDate()
         comment = container.config.getComment()
+        passwd = container.config.getPasswd()
 
         # Color code
         privilege_color = "bright_magenta"
         path_color = "magenta"
 
-        logger.empty_line()
+        # Build table
         recap = Table(border_style="grey35", box=box.SQUARE, title_justify="left", show_header=True)
         recap.title = "[not italic]:white_medium_star: [/not italic][gold3][g]Container summary[/g][/gold3]"
         # Header
@@ -429,9 +449,12 @@ class ExegolTUI:
         # Main features
         if comment:
             recap.add_row("[bold blue]Comment[/bold blue]", comment)
+        if passwd:
+            recap.add_row(f"[bold blue]Credentials[/bold blue]", f"[deep_sky_blue3]{container.config.getUsername()}[/deep_sky_blue3] : [deep_sky_blue3]{passwd}[/deep_sky_blue3]")
+        recap.add_row("[bold blue]Desktop[/bold blue]", container.config.getDesktopConfig())
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
-        recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()))
+        recap.add_row("[bold blue]X11[/bold blue]", boolFormatter(container.config.isGUIEnable()))
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getTextNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
         recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +
@@ -466,8 +489,7 @@ class ExegolTUI:
             recap.add_row("[bold blue]Systctls[/bold blue]", os.linesep.join(
                 [f"[{privilege_color}]{key}[/{privilege_color}] = {getColor(value)[0]}{value}{getColor(value)[1]}" for
                  key, value in sysctls.items()]))
-        console.print(recap)
-        logger.empty_line()
+        return recap
 
     @classmethod
     def __isInteractionAllowed(cls):

@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timedelta
 from typing import Optional, Dict, cast, Tuple, Sequence
+from pathlib import Path, PurePath
 
 from rich.prompt import Prompt
 
@@ -92,7 +93,7 @@ class UpdateManager:
     def __askToBuild(cls, tag: str) -> Optional[ExegolImage]:
         """Build confirmation process and image building"""
         # Need confirmation from the user before starting building.
-        if ParametersManager().build_profile is not None or \
+        if ParametersManager().build_profile is not None or ParametersManager().build_path is not None or \
                 Confirm("Do you want to build locally a custom image?", default=False):
             return cls.buildAndLoad(tag)
         return None
@@ -172,15 +173,13 @@ class UpdateManager:
             if selected_branch is not None and selected_branch != current_branch:
                 gitUtils.checkout(selected_branch)
         # git pull
-        gitUtils.update()
-        logger.empty_line()
-        return True
+        return gitUtils.update()
 
     @classmethod
     def checkForWrapperUpdate(cls) -> bool:
         """Check if there is an exegol wrapper update available.
         Return true if an update is available."""
-        logger.debug(f"Last wrapper update check: {DataCache().get_wrapper_data().metadata.get_last_check()}")
+        logger.debug(f"Last wrapper update check: {DataCache().get_wrapper_data().metadata.get_last_check_text()}")
         # Skipping update check
         if DataCache().get_wrapper_data().metadata.is_outdated() and not ParametersManager().offline_mode:
             logger.debug("Running update check")
@@ -264,7 +263,7 @@ class UpdateManager:
         if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
-                commit_version = f" [bright_black]\[{str(module.get_current_commit())[:8]}][/bright_black]"
+                commit_version = f" [bright_black][{str(module.get_current_commit())[:8]}][/bright_black]"
         return f"[blue]v{ConstantConfig.version}[/blue]{commit_version}"
 
     @classmethod
@@ -291,7 +290,7 @@ class UpdateManager:
     def display_latest_version(cls) -> str:
         last_version = DataCache().get_wrapper_data().last_version
         if len(last_version) == 8 and '.' not in last_version:
-            return f"[bright_black]\[{last_version}][/bright_black]"
+            return f"[bright_black][{last_version}][/bright_black]"
         return f"[blue]v{last_version}[/blue]"
 
     @classmethod
@@ -308,17 +307,20 @@ class UpdateManager:
         """build user process :
         Ask user is he want to update the git source (to get new& updated build profiles),
         User choice a build name (if not supplied)
+        User select the path to the dockerfiles (only from CLI parameter)
         User select a build profile
         Start docker image building
         Return the name of the built image"""
-        # Ask to update git
-        try:
-            if ExegolModules().getSourceGit().isAvailable and not ExegolModules().getSourceGit().isUpToDate() and \
-                    Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True):
-                cls.updateImageSource()
-        except AssertionError:
-            # Catch None git object assertions
-            logger.warning("Git update is [orange3]not available[/orange3]. Skipping.")
+        # Don't force update source if using a custom build_path
+        if ParametersManager().build_path is None:
+            # Ask to update git
+            try:
+                if ExegolModules().getSourceGit().isAvailable and not ExegolModules().getSourceGit().isUpToDate() and \
+                        Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True):
+                    cls.updateImageSource()
+            except AssertionError:
+                # Catch None git object assertions
+                logger.warning("Git update is [orange3]not available[/orange3]. Skipping.")
         # Choose tag name
         blacklisted_build_name = ["stable", "full"]
         while build_name is None or build_name in blacklisted_build_name:
@@ -326,8 +328,25 @@ class UpdateManager:
                 logger.error("This name is reserved and cannot be used for local build. Please choose another one.")
             build_name = Prompt.ask("[bold blue][?][/bold blue] Choice a name for your build",
                                     default="local")
+
+        # Choose dockerfiles path
+        # Selecting the default path
+        build_path = ConstantConfig.build_context_path_obj
+        if ParametersManager().build_path is not None:
+            custom_build_path = Path(ParametersManager().build_path).expanduser().absolute()
+            # Check if we have a directory or a file to select the project directory
+            if not custom_build_path.is_dir():
+                custom_build_path = custom_build_path.parent
+            # Check if there is Dockerfile profiles
+            if (custom_build_path / "Dockerfile").is_file() or len(list(custom_build_path.glob("*.dockerfile"))) > 0:
+                # There is at least one Dockerfile
+                build_path = custom_build_path
+            else:
+                logger.critical(f"The directory {custom_build_path.absolute()} doesn't contain any Dockerfile profile.")
+        logger.debug(f"Using {build_path} as path for dockerfiles")
+
         # Choose dockerfile
-        profiles = cls.listBuildProfiles()
+        profiles = cls.listBuildProfiles(profiles_path=build_path)
         build_profile: Optional[str] = ParametersManager().build_profile
         build_dockerfile: Optional[str] = None
         if build_profile is not None:
@@ -340,7 +359,7 @@ class UpdateManager:
                                                                                              title="[not italic]:dog: [/not italic][gold3]Profile[/gold3]"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
-        DockerUtils.buildImage(build_name, build_profile, build_dockerfile)
+        DockerUtils.buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path.as_posix())
         return build_name
 
     @classmethod
@@ -350,14 +369,16 @@ class UpdateManager:
         return DockerUtils.getInstalledImage(build_name)
 
     @classmethod
-    def listBuildProfiles(cls) -> Dict:
+    def listBuildProfiles(cls, profiles_path: Path = ConstantConfig.build_context_path_obj) -> Dict:
         """List every build profiles available locally
         Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
-        profiles = {"full": "Dockerfile"}
+        profiles = {}
+        if (profiles_path / "Dockerfile").is_file():
+            profiles["full"] = "Dockerfile"
         # List file *.dockerfile is the build context directory
-        logger.debug(f"Loading build profile from {ConstantConfig.build_context_path}")
-        docker_files = list(ConstantConfig.build_context_path_obj.glob("*.dockerfile"))
+        logger.debug(f"Loading build profile from {profiles_path}")
+        docker_files = list(profiles_path.glob("*.dockerfile"))
         for file in docker_files:
             # Convert every file to the dict format
             filename = file.name

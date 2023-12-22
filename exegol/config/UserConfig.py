@@ -13,6 +13,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
     # Static choices
     start_shell_options = {'zsh', 'bash', 'tmux'}
     shell_logging_method_options = {'script', 'asciinema'}
+    desktop_available_proto = {'http', 'vnc'}
 
     def __init__(self):
         # Defaults User config
@@ -25,11 +26,15 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         self.default_start_shell: str = "zsh"
         self.shell_logging_method: str = "asciinema"
         self.shell_logging_compress: bool = True
+        self.desktop_default_enable: bool = False
+        self.desktop_default_localhost: bool = True
+        self.desktop_default_proto: str = "http"
 
         super().__init__("config.yml", "yml")
 
     def _build_file_content(self):
         config = f"""# Exegol configuration
+# Full documentation: https://exegol.readthedocs.io/en/latest/exegol-wrapper/advanced-uses.html#id1
 
 # Volume path can be changed at any time but existing containers will not be affected by the update
 volumes:
@@ -63,11 +68,22 @@ config:
         
         # Enable automatic compression of log files (with gzip)
         enable_log_compression: {self.shell_logging_compress}
+    
+    # Configure your Exegol Desktop
+    desktop:
+        # Enables or not the desktop mode by default
+        # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the feature
+        enabled_by_default: {self.desktop_default_enable}
+    
+        # Default desktop protocol,can be "http", or "vnc" (additional protocols to come in the future, check online documentation for updates).
+        default_protocol: {self.desktop_default_proto}
+    
+        # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
+        localhost_by_default: {self.desktop_default_localhost}
 
 """
         # TODO handle default image selection
         # TODO handle default start container
-        # TODO add custom build profiles path
         return config
 
     @staticmethod
@@ -105,6 +121,12 @@ config:
         self.shell_logging_method = self._load_config_str(shell_logging_data, 'logging_method', self.shell_logging_method, choices=self.shell_logging_method_options)
         self.shell_logging_compress = self._load_config_bool(shell_logging_data, 'enable_log_compression', self.shell_logging_compress)
 
+        # Desktop section
+        desktop_data = config_data.get("desktop", {})
+        self.desktop_default_enable = self._load_config_bool(desktop_data, 'enabled_by_default', self.desktop_default_enable)
+        self.desktop_default_proto = self._load_config_str(desktop_data, 'default_proto', self.desktop_default_proto, choices=self.desktop_available_proto)
+        self.desktop_default_localhost = self._load_config_bool(desktop_data, 'localhost_by_default', self.desktop_default_localhost)
+
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
         configs = [
@@ -118,6 +140,9 @@ config:
             f"Default start shell: [blue]{self.default_start_shell}[/blue]",
             f"Shell logging method: [blue]{self.shell_logging_method}[/blue]",
             f"Shell logging compression: {boolFormatter(self.shell_logging_compress)}",
+            f"Desktop enabled by default: {boolFormatter(self.desktop_default_enable)}",
+            f"Desktop default protocol: [blue]{self.desktop_default_proto}[/blue]",
+            f"Desktop default host: [blue]{'localhost' if self.desktop_default_localhost else '0.0.0.0'}[/blue]",
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

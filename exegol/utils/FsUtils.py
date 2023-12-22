@@ -2,7 +2,7 @@ import logging
 import re
 import stat
 import subprocess
-from pathlib import Path, PurePosixPath, PurePath
+from pathlib import Path, PurePath
 from typing import Optional
 
 from exegol.config.EnvInfo import EnvInfo
@@ -20,7 +20,7 @@ def parseDockerVolumePath(source: str) -> PurePath:
         return src_path
     else:
         # Remove docker mount path if exist
-        return PurePosixPath(source.replace('/run/desktop/mnt/host', ''))
+        return PurePath(source.replace('/run/desktop/mnt/host', ''))
 
 
 def resolvPath(path: Path) -> str:
@@ -68,7 +68,12 @@ def setGidPermission(root_folder: Path):
             perm_alert = True
     for sub_item in root_folder.rglob('*'):
         # Find every subdirectory
-        if not sub_item.is_dir():
+        try:
+            if not sub_item.is_dir():
+                continue
+        except PermissionError:
+            if not sub_item.is_symlink():
+                logger.error(f"Permission denied when trying to resolv {str(sub_item)}")
             continue
         # If the permission is already set, skip
         if sub_item.stat().st_mode & stat.S_ISGID:
@@ -82,6 +87,6 @@ def setGidPermission(root_folder: Path):
     if perm_alert:
         logger.warning(f"In order to share files between your host and exegol (without changing the permission), you can run [orange3]manually[/orange3] this command from your [red]host[/red]:")
         logger.empty_line()
-        logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+rws {{}} \;", level=logging.WARNING)
+        logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+rws {{}} \\;", level=logging.WARNING)
         logger.empty_line()
         logger.empty_line()

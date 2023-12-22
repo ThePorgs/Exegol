@@ -59,6 +59,21 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
 
     def update_image_cache(self, images: List):
         """Refresh image cache data"""
-        cache_images = [ImageCacheModel(img.getName(), img.getLatestVersion(), img.getLatestRemoteId(), "local" if img.isLocal() else "remote") for img in images]
+        logger.debug("Updating image cache data")
+        cache_images = []
+        for img in images:
+            name = img.getName()
+            version = img.getLatestVersion()
+            remoteid = img.getLatestRemoteId()
+            type = "local" if img.isLocal() else "remote"
+            logger.debug(f"└── {name} (version: {version})\t→ ({type}) {remoteid}")
+            cache_images.append(
+                ImageCacheModel(
+                    name,
+                    version,
+                    remoteid,
+                    type
+                )
+            )
         self.__cache_data.images = ImagesCacheModel(cache_images)
         self.save_updates()

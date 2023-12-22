@@ -1,6 +1,6 @@
 name: 🐞 Bug report [WRAPPER]
 description: Report a bug in Exegol WRAPPER to help us improve it
-title: "[BUG] <title>"
+title: "<title>"
 labels:
   - bug
 body:

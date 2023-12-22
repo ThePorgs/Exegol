@@ -51,6 +51,7 @@ class ExegolImage(SelectableInterface):
         self.__build_date = "[bright_black]N/A[/bright_black]"
         # Remote image size
         self.__dl_size: str = "[bright_black]N/A[/bright_black]"
+        self.__remote_est_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # Remote image ID
@@ -73,7 +74,8 @@ class ExegolImage(SelectableInterface):
             if dockerhub_data:
                 self.__is_remote = True
                 self.__setArch(MetaImages.parseArch(dockerhub_data))
-                self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
+                self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
+                self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.6)
             if meta_img and meta_img.meta_id is not None:
                 self.__setDigest(meta_img.meta_id)
                 self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
@@ -190,7 +192,8 @@ class ExegolImage(SelectableInterface):
             if fetch_version:
                 meta.version = fetch_version
         if dockerhub_data is not None:
-            self.__dl_size = self.__processSize(dockerhub_data.get("size", 0))
+            self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
+            self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.5)
         self.__setLatestVersion(meta.version)
         if meta.meta_id:
             self.__setLatestRemoteId(meta.meta_id)
@@ -216,7 +219,6 @@ class ExegolImage(SelectableInterface):
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
         if "N/A" in self.__image_version and self.__image is not None:
-            logger.debug("Try to retrieve image version from labels")
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
@@ -354,6 +356,7 @@ class ExegolImage(SelectableInterface):
             - unknown : no internet connection = no information from the registry
             - not install : other remote images without any match
         Return a list of ordered ExegolImage."""
+        logger.debug("Comparing and merging local and remote images data")
         results = []
         latest_installed: List[str] = []
         cls.__mergeMetaImages(remote_images)
@@ -362,7 +365,8 @@ class ExegolImage(SelectableInterface):
         for r_img in remote_images:
             remote_img_dict[r_img.name] = r_img
 
-        # Find a match for each local image
+        # Searching a match for each local image
+        logger.debug("Searching a match for each image installed")
         for img in local_images:
             current_local_img = ExegolImage(docker_image=img)
             # quick handle of local images
@@ -454,12 +458,12 @@ class ExegolImage(SelectableInterface):
         return result
 
     @staticmethod
-    def __processSize(size: int, precision: int = 1) -> str:
+    def __processSize(size: int, precision: int = 1, compression_factor: float = 1) -> str:
         """Text formatter from size number to human-readable size."""
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0
-        calc: float = size
+        calc: float = size * compression_factor
         while calc > 1024 and suffix_index < 4:
             suffix_index += 1  # increment the index of the suffix
             calc = calc / 1024  # apply the division
@@ -511,7 +515,7 @@ class ExegolImage(SelectableInterface):
                 if self.getLatestVersion():
                     status += f" (v.{self.getImageVersion()} :arrow_right: v.{self.getLatestVersion()})"
                 else:
-                    status += f" (v.{self.getImageVersion()})"
+                    status += f" (currently v.{self.getImageVersion()})"
             status += "[/orange3]"
             return status
         else:
@@ -565,18 +569,18 @@ class ExegolImage(SelectableInterface):
         self.__disk_size = self.__processSize(value)
 
     def getRealSize(self) -> str:
-        """On-Disk size getter"""
-        return self.__disk_size
+        """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
+        return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
+
+    def getRealSizeRaw(self) -> str:
+        """Image size getter without color. If the image is installed, return the on-disk size, otherwise return the remote size"""
+        return self.__disk_size if self.__is_install else self.__remote_est_size
 
     def getDownloadSize(self) -> str:
         """Remote size getter"""
         if not self.__is_remote:
             return "local"
         return self.__dl_size
-
-    def getSize(self) -> str:
-        """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        return self.__disk_size if self.__is_install else f"[bright_black]{self.__dl_size} (compressed)[/bright_black]"
 
     def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
         """Image's entrypoint configuration getter.
@@ -585,7 +589,10 @@ class ExegolImage(SelectableInterface):
 
     def getBuildDate(self):
         """Build date getter"""
-        if "N/A" not in self.__build_date.upper():
+        if not self.__build_date:
+            # Handle empty string
+            return "[bright_black]N/A[/bright_black]"
+        elif "N/A" not in self.__build_date.upper():
             return datetime.strptime(self.__build_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
         else:
             return self.__build_date

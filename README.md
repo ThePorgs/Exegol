@@ -3,7 +3,7 @@
   <br><br>
   <a target="_blank" rel="noopener noreferrer" href="https://pypi.org/project/Exegol" title=""><img src="https://img.shields.io/pypi/v/Exegol?color=informational" alt="pip package version"></a>
   <img alt="Python3.7" src="https://img.shields.io/badge/Python-3.7+-informational">
-  <a target="_blank" rel="noopener noreferrer" href="https://pepy.tech/project/exegol" title=""><img src="https://static.pepy.tech/personalized-badge/exegol?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=Downloads" alt="pip stats"></a>
+  <img alt="latest commit on master" src="https://img.shields.io/docker/pulls/nwodtuhs/exegol.svg?label=downloads">
   <br><br>
   <img alt="latest commit on master" src="https://img.shields.io/github/last-commit/ThePorgs/Exegol/master?label=latest%20release">
   <img alt="latest commit on dev" src="https://img.shields.io/github/last-commit/ThePorgs/Exegol/dev?label=latest%20dev">
@@ -37,7 +37,7 @@
 
 # Getting started
 
-You can refer to the [Exegol documentations](https://exegol.readthedocs.io/en/latest/getting-started/install.html).
+You can refer to the [Exegol documentation](https://exegol.readthedocs.io/en/latest/getting-started/install.html).
 
 > Full documentation homepage: https://exegol.rtfd.io/.
 

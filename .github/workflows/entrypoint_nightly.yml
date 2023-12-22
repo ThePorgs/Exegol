@@ -15,6 +15,10 @@ jobs:
   build-n-publish:
     name: Build and publish Python 🐍 distributions to TestPyPI 📦
     runs-on: ubuntu-latest
+    environment: nightly
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     needs: test
     steps:
       - uses: actions/checkout@master
@@ -33,6 +37,5 @@ jobs:
       - name: Publish distribution 📦 to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true

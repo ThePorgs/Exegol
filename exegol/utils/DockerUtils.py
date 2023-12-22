@@ -9,7 +9,10 @@ from docker.models.images import Image
 from docker.models.volumes import Volume
 from requests import ReadTimeout
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
+from exegol.config.EnvInfo import EnvInfo
+from exegol.config.UserConfig import UserConfig
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
@@ -17,10 +20,7 @@ from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.MetaImages import MetaImages
-from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger, console, ExeLog
-from exegol.config.UserConfig import UserConfig
 from exegol.utils.WebUtils import WebUtils
 
 
@@ -41,11 +41,11 @@ class DockerUtils:
         EnvInfo.initData(__daemon_info)
     except DockerException as err:
         if 'ConnectionRefusedError' in str(err):
-            logger.critical("Unable to connect to docker (from env config). Is docker running on your machine? "
-                            "Exiting.")
+            logger.critical(f"Unable to connect to docker (from env config). Is docker running on your machine? Exiting.{os.linesep}"
+                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
         elif 'FileNotFoundError' in str(err):
-            logger.critical("Unable to connect to docker. Is docker installed on your machine? "
-                            "Exiting.")
+            logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
+                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
         else:
             logger.error(err)
             logger.critical(
@@ -81,6 +81,9 @@ class DockerUtils:
                 logger.critical(err.explanation)
                 # Not reachable, critical logging will exit
                 return  # type: ignore
+            except ReadTimeout:
+                logger.critical("Received a timeout error, Docker is busy... Unable to list containers, retry later.")
+                return  # type: ignore
             for container in docker_containers:
                 cls.__containers.append(ExegolContainer(container))
         return cls.__containers
@@ -98,36 +101,44 @@ class DockerUtils:
                 docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
-        entrypoint, command = model.config.getEntrypointCommand(model.image.getEntrypointConfig())
+        entrypoint, command = model.config.getEntrypointCommand()
         logger.debug(f"Entrypoint: {entrypoint}")
         logger.debug(f"Cmd: {command}")
+        # The 'create' function must be called to create a container without starting it
+        # in order to hot patch the entrypoint.sh with wrapper features (the container will be started after postCreateSetup)
+        docker_create_function = cls.__client.containers.create
+        docker_args = {"image": model.image.getDockerRef(),
+                       "entrypoint": entrypoint,
+                       "command": command,
+                       "detach": True,
+                       "name": model.container_name,
+                       "hostname": model.config.hostname,
+                       "extra_hosts": model.config.getExtraHost(),
+                       "devices": model.config.getDevices(),
+                       "environment": model.config.getEnvs(),
+                       "labels": model.config.getLabels(),
+                       "network_mode": model.config.getNetworkMode(),
+                       "ports": model.config.getPorts(),
+                       "privileged": model.config.getPrivileged(),
+                       "cap_add": model.config.getCapabilities(),
+                       "sysctls": model.config.getSysctls(),
+                       "shm_size": model.config.shm_size,
+                       "stdin_open": model.config.interactive,
+                       "tty": model.config.tty,
+                       "mounts": model.config.getVolumes(),
+                       "working_dir": model.config.getWorkingDir()}
+        if temporary:
+            # Only the 'run' function support the "remove" parameter
+            docker_create_function = cls.__client.containers.run
+            docker_args["remove"] = temporary
+            docker_args["auto_remove"] = temporary
         try:
-            container = cls.__client.containers.run(model.image.getDockerRef(),
-                                                    entrypoint=entrypoint,
-                                                    command=command,
-                                                    detach=True,
-                                                    name=model.container_name,
-                                                    hostname=model.hostname,
-                                                    extra_hosts={model.hostname: '127.0.0.1'},
-                                                    devices=model.config.getDevices(),
-                                                    environment=model.config.getEnvs(),
-                                                    labels=model.config.getLabels(),
-                                                    network_mode=model.config.getNetworkMode(),
-                                                    ports=model.config.getPorts(),
-                                                    privileged=model.config.getPrivileged(),
-                                                    cap_add=model.config.getCapabilities(),
-                                                    sysctls=model.config.getSysctls(),
-                                                    shm_size=model.config.shm_size,
-                                                    stdin_open=model.config.interactive,
-                                                    tty=model.config.tty,
-                                                    mounts=model.config.getVolumes(),
-                                                    remove=temporary,
-                                                    auto_remove=temporary,
-                                                    working_dir=model.config.getWorkingDir())
+            container = docker_create_function(**docker_args)
         except APIError as err:
             message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
-            message = message.replace('[', '\\[')
-            logger.error(message)
+            if message is not None:
+                message = message.replace('[', '\\[')
+                logger.error(message)
             logger.debug(err)
             model.rollback()
             try:
@@ -209,6 +220,9 @@ class DockerUtils:
                         logger.debug(e.explanation)
                     else:
                         raise NotFound('Volume must be reloaded')
+                except ReadTimeout:
+                    logger.error(f"Received a timeout error, Docker is busy... Volume {volume_name} cannot be automatically removed. Please, retry later the following command:{os.linesep}"
+                                 f"    [orange3]docker volume rm {volume_name}[/orange3]")
         except NotFound:
             try:
                 # Creating a docker volume bind to a host path
@@ -223,8 +237,14 @@ class DockerUtils:
                 logger.debug(err)
                 logger.critical(err.explanation)
                 return None  # type: ignore
+            except ReadTimeout:
+                logger.critical(f"Received a timeout error, Docker is busy... Volume {volume_name} cannot be created.")
+                return  # type: ignore
         except APIError as err:
             logger.critical(f"Unexpected error by Docker SDK : {err}")
+            return None  # type: ignore
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
             return None  # type: ignore
         return volume
 
@@ -304,6 +324,9 @@ class DockerUtils:
                     else:
                         logger.critical(f"Error on image loading: {err}")
                         return  # type: ignore
+                except ReadTimeout:
+                    logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
+                    return  # type: ignore
                 return ExegolImage(docker_image=docker_local_image).autoLoad()
             else:
                 for img in cls.__images:
@@ -328,6 +351,9 @@ class DockerUtils:
             logger.debug(err)
             logger.critical(err.explanation)
             # Not reachable, critical logging will exit
+            return  # type: ignore
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to list local images, retry later.")
             return  # type: ignore
         # Filter out image non-related to the right repository
         result = []
@@ -364,6 +390,9 @@ class DockerUtils:
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate lost images, retry later.")
+            return  # type: ignore
         result = []
         id_list = set()
         for img in recovery_images:
@@ -425,6 +454,9 @@ class DockerUtils:
             docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
         except ImageNotFound:
             raise ObjectNotFound
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to find a specific image, retry later.")
+            return  # type: ignore
         remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
@@ -439,7 +471,8 @@ class DockerUtils:
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
-            logger.info(f"Starting download. Please wait, this might be (very) long.")
+            logger.info(f"Pulling compressed image, starting a [cyan1]~{image.getDownloadSize()}[/cyan1] download :satellite:")
+            logger.info(f"Once downloaded and uncompressed, the image will take [cyan1]~{image.getRealSizeRaw()}[/cyan1] on disk :floppy_disk:")
             logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
@@ -448,7 +481,7 @@ class DockerUtils:
                                           stream=True,
                                           decode=True,
                                           platform="linux/" + image.getArch()))
-                logger.success(f"Image successfully updated")
+                logger.success(f"Image successfully {'installed' if install_mode else 'updated'}")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
                     cls.removeImage(image, upgrade_mode=not install_mode)
@@ -462,6 +495,8 @@ class DockerUtils:
                 else:
                     logger.debug(f"Error: {err}")
                     logger.critical(f"An error occurred while downloading this image: {err.explanation}")
+            except ReadTimeout:
+                logger.critical(f"Received a timeout error, Docker is busy... Unable to download {name} image, retry later.")
         return False
 
     @classmethod
@@ -483,6 +518,10 @@ class DockerUtils:
             else:
                 logger.debug(f"Error: {err}")
                 return f"en unknown error occurred while downloading this image : {err.explanation}"
+        except ReadTimeout:
+            logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
+                            f"    [orange3]docker pull --platform linux/{image.getArch()} {ConstantConfig.IMAGE_NAME}:{image.getLatestVersionName()}[/orange3].")
+            return  # type: ignore
 
     @classmethod
     def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
@@ -520,7 +559,7 @@ class DockerUtils:
         return False
 
     @classmethod
-    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None):
+    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None, dockerfile_path: str = ConstantConfig.build_context_path):
         """Build a docker image from source"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
@@ -529,8 +568,8 @@ class DockerUtils:
         if build_profile is None or build_dockerfile is None:
             build_profile = "full"
             build_dockerfile = "Dockerfile"
-        logger.info("Starting build. Please wait, this might be [bold](very)[/bold] long.")
-        logger.verbose(f"Creating build context from [gold]{ConstantConfig.build_context_path}[/gold] with "
+        logger.info("Starting build. Please wait, this will be long.")
+        logger.verbose(f"Creating build context from [gold]{dockerfile_path}[/gold] with "
                        f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
         if EnvInfo.arch != ParametersManager().arch:
             logger.warning("Building an image for a different host architecture can cause unexpected problems and slowdowns!")
@@ -539,7 +578,7 @@ class DockerUtils:
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
             ExegolTUI.buildDockerImage(
-                cls.__client.api.build(path=ConstantConfig.build_context_path,
+                cls.__client.api.build(path=dockerfile_path,
                                        dockerfile=build_dockerfile,
                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                        buildargs={"TAG": f"{build_profile}",
@@ -559,3 +598,6 @@ class DockerUtils:
                 logger.debug(f"Error: {err}")
             else:
                 logger.critical(f"An error occurred while building this image : {err}")
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to build the local image, retry later.")
+            return  # type: ignore

@@ -10,6 +10,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 # Additional non-code data used by Exegol to build local docker image from source
+## exegol-docker-build Dockerfiles
 source_directory = "exegol-docker-build"
 data_files_dict = {source_directory: [f"{source_directory}/Dockerfile"] + [str(profile) for profile in pathlib.Path(source_directory).rglob('*.dockerfile')]}
 data_files = []
@@ -22,6 +23,10 @@ for path in pathlib.Path(f'{source_directory}/sources').rglob('*'):
     if data_files_dict.get(key) is None:
         data_files_dict[key] = []
     data_files_dict[key].append(str(path))
+## exegol scripts pushed from the wrapper
+data_files_dict["exegol-imgsync"] = ["exegol/utils/imgsync/entrypoint.sh",
+                                     "exegol/utils/imgsync/spawn.sh"]
+
 # Dict to tuple
 for k, v in data_files_dict.items():
     data_files.append((k, v))
@@ -45,16 +50,17 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'docker~=6.1.3',
+        'docker~=7.0.0',
         'requests>=2.31.0',
-        'rich~=13.4.2',
+        'rich~=13.7.0',
         'PyYAML',
-        'GitPython',
-        'argcomplete~=3.1.1'
+        'GitPython~=3.1.40',
+        'argcomplete~=3.2.1'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,

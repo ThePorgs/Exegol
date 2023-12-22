@@ -1,7 +1,10 @@
 from argparse import Namespace
+from pathlib import Path
 from typing import Tuple
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
+from exegol.config.UserConfig import UserConfig
 from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.DockerUtils import DockerUtils
 
@@ -57,11 +60,32 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
     # The build profile completer must be trigger only when an image name have been set by user
     if parsed_args is not None and parsed_args.imagetag is None:
         return ()
-    data = list(UpdateManager.listBuildProfiles().keys())
+
+    # Default build path
+    build_path = ConstantConfig.build_context_path_obj
+    # Handle custom build path
+    if parsed_args is not None and parsed_args.build_path is not None:
+        custom_build_path = Path(parsed_args.build_path).expanduser().absolute()
+        # Check if we have a directory or a file to select the project directory
+        if not custom_build_path.is_dir():
+            custom_build_path = custom_build_path.parent
+        build_path = custom_build_path
+
+    # Find profile list
+    data = list(UpdateManager.listBuildProfiles(profiles_path=build_path).keys())
     for obj in data:
         if prefix and not obj.lower().startswith(prefix.lower()):
             data.remove(obj)
     return tuple(data)
+
+
+def DesktopConfigCompleter(prefix: str, **kwargs) -> Tuple[str, ...]:
+    options = list(UserConfig.desktop_available_proto)
+    for obj in options:
+        if prefix and not obj.lower().startswith(prefix.lower()):
+            options.remove(obj)
+    # TODO add interface enum
+    return tuple(options)
 
 
 def VoidCompleter(**kwargs) -> Tuple:

@@ -14,11 +14,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install requirements
         run: python -m pip install --user mypy types-requests types-PyYAML
-      - name: Run code analysis
+      - name: Run code analysis (package)
         run: mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
+      - name: Run code analysis (source)
+        run: mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
+      - name: Find spawn.sh script version
+        run: egrep '^# Spawn Version:[0-9ab]+$' ./exegol/utils/imgsync/spawn.sh | cut -d ':' -f2
 
   compatibility:
     name: Compatibility checks
@@ -27,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
         os: [win32, linux, darwin]
     steps:
       - uses: actions/checkout@master
@@ -36,7 +40,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Install requirements
         run: python -m pip install --user mypy types-requests types-PyYAML
       - name: Check python compatibility for ${{ matrix.os }}/${{ matrix.version }}

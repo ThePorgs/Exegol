@@ -4,19 +4,38 @@ on:
   pull_request:
     branches:
       - "master"
-    paths-ignore:
+    paths-ignore: # not always respected. See https://github.com/actions/runner/issues/2324#issuecomment-1703345084
       - ".github/**"
       - "**.md"
 
 jobs:
-  test:
+  preprod_test:
+    name: Pre-prod code testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: false
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Find spawn.sh script version
+        run: egrep '^# Spawn Version:[0-9ab]+$' ./exegol/utils/imgsync/spawn.sh | cut -d ':' -f2
+      - name: Check for prod readiness of spawn.sh script version
+        run: egrep '^# Spawn Version:[0-9]+$' ./exegol/utils/imgsync/spawn.sh
+      - name: Check package version (alpha and beta version cannot be released)
+        run: python3 -c 'from exegol.config.ConstantConfig import ConstantConfig; print(ConstantConfig.version); exit(any(c in ConstantConfig.version for c in ["a", "b"]))'
+
+  code_test:
     name: Python tests and checks
+    needs: preprod_test
     uses: ./.github/workflows/sub_testing.yml
 
   build:
     name: Build Python 🐍 distributions
     runs-on: ubuntu-latest
-    needs: test
+    needs: code_test
     steps:
       - uses: actions/checkout@master
         with:
