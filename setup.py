@@ -54,12 +54,12 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'docker~=6.1.3',
+        'docker~=7.0.0',
         'requests>=2.31.0',
-        'rich~=13.4.2',
+        'rich~=13.7.0',
         'PyYAML',
-        'GitPython',
-        'argcomplete~=3.1.1'
+        'GitPython~=3.1.40',
+        'argcomplete~=3.2.1'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
