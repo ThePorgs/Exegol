@@ -11,7 +11,7 @@ else
     SUDO="sudo"
 fi
 
-if [ -z "$lsb_dist" ]; then
+if [ -f "$lsb_dist" ]; then
     if command -v brew >/dev/null 2>&1; then
         PACKAGE_MANAGER="brew"
         PACKAGE_MANAGER_INSTALL="brew install -y"
@@ -73,6 +73,25 @@ check_dependencies() {
 
 }
 
+check_python_dependencies() {
+    while [ $# -gt 0 ]; do
+        local python_lib_status="$(${1})"
+        if [ -z "${python_lib_status}" ]; then
+            echo "missing ${1}"
+            if [ "$FIX_INSTALL" = True ]; then
+                if [ "${1}" = "python3 -m pip --version" ]; then
+                    check_dependencies "python3-pip"
+                else
+                    python3 -m pip install $(echo $1 | awk -F ' ' '{print $3}')
+                fi
+            else
+                MISSING_DEPENDENCIES=$( expr "$MISSING_DEPENDENCIES" + 1 )
+            fi
+        fi
+    shift
+    done
+}
+
 check_docker_right() {
     docker ps 1>/dev/null || (echo "Docker execution error for ${USER}" && exit 1)
 }
@@ -115,13 +134,9 @@ while [ $# -gt 0 ]; do
 shift
 done
 
-check_dependencies "git" "python3" "python3-venv" "docker" "sudo"
+check_dependencies "git" "python3" "docker" "sudo"
+check_python_dependencies "python3 -m venv -h" "python3 -m pip --version"
 
-if [ "$ID" = "alpine" ]; then
-    check_dependencies "py3-pip"
-else
-    check_dependencies "python3-pip"
-fi
 
 if [ "$MISSING_DEPENDENCIES" -ge 1 ]; then
     echo "For fix missing package, add --fix-install"
