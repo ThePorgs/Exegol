@@ -1,4 +1,5 @@
 import json
+import os
 import platform
 from enum import Enum
 from typing import Optional, Any, List
@@ -16,6 +17,11 @@ class EnvInfo:
         WINDOWS = "Windows"
         LINUX = "Linux"
         MAC = "Mac"
+    
+    class DisplayServer(Enum):
+        """Dictionary class for static Display Server"""
+        WAYLAND = "Wayland"
+        X11 = "X11"
 
     class DockerEngine(Enum):
         """Dictionary class for static Docker engine name"""
@@ -108,6 +114,18 @@ class EnvInfo:
         return cls.__docker_host_os
 
     @classmethod
+    def getDisplayServer(cls) -> DisplayServer:
+        """Returns the display server
+        Can be 'X11' or 'Wayland'"""
+        if "wayland" in os.getenv("XDG_SESSION_TYPE"):
+            return cls.DisplayServer.WAYLAND
+        elif "x11" in os.getenv("XDG_SESSION_TYPE"):
+            return cls.DisplayServer.X11
+        else:
+            # Should return an error
+            return os.getenv("XDG_SESSION_TYPE")
+
+    @classmethod
     def getWindowsRelease(cls) -> str:
         # Cache check
         if cls.__windows_release is None:
@@ -127,6 +145,16 @@ class EnvInfo:
     def isMacHost(cls) -> bool:
         """Return true if macOS is detected on the host"""
         return cls.getHostOs() == cls.HostOs.MAC
+
+    @classmethod
+    def isX11(cls) -> bool:
+        """Return true if x11 is detected on the host"""
+        return cls.getDisplayServer() == cls.DisplayServer.X11
+
+    @classmethod
+    def isWayland(cls) -> bool:
+        """Return true if wayland is detected on the host"""
+        return cls.getDisplayServer() == cls.DisplayServer.WAYLAND
 
     @classmethod
     def isDockerDesktop(cls) -> bool:

@@ -61,9 +61,17 @@ class GuiUtils:
     @classmethod
     def getDisplayEnv(cls) -> str:
         """
-        Get the current DISPLAY env to access X11 socket
+        Get the current DISPLAY environment to access the display server
         :return:
         """
+        if EnvInfo.isWayland():
+            # Wayland
+            return os.getenv('WAYLAND_DISPLAY', 'wayland-1')
+
+        if EnvInfo.isX11():
+            # X11
+            return os.getenv('DISPLAY', ":0")
+
         if EnvInfo.isMacHost():
             # xquartz Mac mode
             return "host.docker.internal:0"

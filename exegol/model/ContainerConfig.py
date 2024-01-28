@@ -1080,9 +1080,17 @@ class ContainerConfig:
         result = []
         # Select default shell to use
         result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
-        # Share X11 (GUI Display) config
+        # Manage the GUI
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
+
+            # Wayland
+            if EnvInfo.isWayland():
+                result.append(f"WAYLAND_DISPLAY={current_display}")
+                result.append(f"XDG_RUNTIME_DIR=/tmp")
+
+            # Share X11 (GUI Display) config
+
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
             # the environment variable will be updated in the exegol shell.
             if current_display and self.__envs.get('DISPLAY', '') != current_display:
