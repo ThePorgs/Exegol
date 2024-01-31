@@ -72,6 +72,7 @@ class ContainerConfig:
         """Container config default value"""
         self.hostname = ""
         self.__enable_gui: bool = False
+        self.__gui_engine: List[str] = []
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
         self.__my_resources_path: str = "/opt/my-resources"
@@ -130,10 +131,13 @@ class ContainerConfig:
         self.interactive = container_config.get("OpenStdin", True)
         self.legacy_entrypoint = container_config.get("Entrypoint") is None
         self.__enable_gui = False
-        for env in self.__envs:
-            if "DISPLAY" in env:
-                self.__enable_gui = True
-                break
+        envs_key = self.__envs.keys()
+        if "DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("X11")
+        if "WAYLAND_DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("Wayland")
 
         # Host Config section
         host_config = container.attrs.get("HostConfig", {})
@@ -365,15 +369,35 @@ class ContainerConfig:
             return
         if not self.__enable_gui:
             logger.verbose("Config: Enabling display sharing")
+            x11_enable = False
+            wayland_enable = False
             try:
                 host_path = GuiUtils.getX11SocketPath()
                 if host_path is not None:
                     self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
+                    self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
+                    self.__gui_engine.append("X11")
+                    x11_enable = True
             except CancelOperation as e:
-                logger.warning(f"Graphical interface sharing could not be enabled: {e}")
+                logger.warning(f"Graphical X11 interface sharing could not be enabled: {e}")
+            try:
+                if EnvInfo.isWaylandAvailable():
+                    host_path = GuiUtils.getWaylandSocketPath()
+                    if host_path is not None:
+                        self.addVolume(host_path.as_posix(), f"/tmp/{host_path.name}", must_exist=True)
+                        self.addEnv("XDG_SESSION_TYPE", "wayland")
+                        self.addEnv("XDG_RUNTIME_DIR", "/tmp")
+                        self.addEnv("WAYLAND_DISPLAY", GuiUtils.getWaylandEnv())
+                        self.__gui_engine.append("Wayland")
+                        wayland_enable = True
+            except CancelOperation as e:
+                logger.warning(f"Graphical Wayland interface sharing could not be enabled: {e}")
+            if not wayland_enable and not x11_enable:
                 return
+            elif not x11_enable:
+                # Only wayland setup
+                logger.warning("X11 cannot be shared, only wayland, some graphical applications might not work...")
             # TODO support pulseaudio
-            self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)
             self.__enable_gui = True
@@ -385,8 +409,12 @@ class ContainerConfig:
             logger.verbose("Config: Disabling display sharing")
             self.removeVolume(container_path="/tmp/.X11-unix")
             self.removeEnv("DISPLAY")
+            self.removeEnv("XDG_SESSION_TYPE")
+            self.removeEnv("XDG_RUNTIME_DIR")
+            self.removeEnv("WAYLAND_DISPLAY")
             for k in self.__static_gui_envs.keys():
                 self.removeEnv(k)
+            self.__gui_engine.clear()
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
@@ -980,7 +1008,7 @@ class ContainerConfig:
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
             try:
-                if not (path.is_file() or path.is_dir()):
+                if not path.exists():
                     if must_exist:
                         raise CancelOperation(f"{host_path} does not exist on your host.")
                     else:
@@ -1080,16 +1108,9 @@ class ContainerConfig:
         result = []
         # Select default shell to use
         result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
-        # Manage the GUI
+        # Update X11 DISPLAY socket if needed
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()
-
-            # Wayland
-            if EnvInfo.isWayland():
-                result.append(f"WAYLAND_DISPLAY={current_display}")
-                result.append(f"XDG_RUNTIME_DIR=/tmp")
-
-            # Share X11 (GUI Display) config
 
             # If the default DISPLAY environment in the container is not the same as the DISPLAY of the user's session,
             # the environment variable will be updated in the exegol shell.
@@ -1293,7 +1314,7 @@ class ContainerConfig:
         if verbose or self.isDesktopEnabled():
             result += f"{getColor(self.isDesktopEnabled())[0]}Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
-            result += f"{getColor(self.__enable_gui)[0]}X11: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
+            result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
             result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:
@@ -1325,6 +1346,12 @@ class ContainerConfig:
                   f"{'localhost' if self.__desktop_host == '127.0.0.1' else self.__desktop_host}:{self.__desktop_port}")
         return f"[link={config}][deep_sky_blue3]{config}[/deep_sky_blue3][/link]"
 
+    def getTextGuiSockets(self):
+        if self.__enable_gui:
+            return f"[bright_black]({' + '.join(self.__gui_engine)})[/bright_black]"
+        else:
+            return ""
+
     def getTextNetworkMode(self) -> str:
         """Network mode, text getter"""
         network_mode = "host" if self.__network_host else "bridge"
@@ -1344,7 +1371,7 @@ class ContainerConfig:
         result = ''
         hidden_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
                          '/etc/timezone', '/my-resources', '/opt/my-resources',
-                         '/.exegol/entrypoint.sh', '/.exegol/spawn.sh']
+                         '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
         for mount in self.__mounts:
             # Not showing technical mounts
             if not verbose and mount.get('Target') in hidden_mounts:
@@ -1373,7 +1400,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH"]:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result

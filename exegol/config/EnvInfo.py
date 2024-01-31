@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Any, List
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -17,7 +18,7 @@ class EnvInfo:
         WINDOWS = "Windows"
         LINUX = "Linux"
         MAC = "Mac"
-    
+
     class DisplayServer(Enum):
         """Dictionary class for static Display Server"""
         WAYLAND = "Wayland"
@@ -117,13 +118,14 @@ class EnvInfo:
     def getDisplayServer(cls) -> DisplayServer:
         """Returns the display server
         Can be 'X11' or 'Wayland'"""
-        if "wayland" in os.getenv("XDG_SESSION_TYPE"):
+        session_type = os.getenv("XDG_SESSION_TYPE", "")
+        if session_type == "wayland":
             return cls.DisplayServer.WAYLAND
-        elif "x11" in os.getenv("XDG_SESSION_TYPE"):
+        elif session_type == "x11":
             return cls.DisplayServer.X11
         else:
             # Should return an error
-            return os.getenv("XDG_SESSION_TYPE")
+            return session_type
 
     @classmethod
     def getWindowsRelease(cls) -> str:
@@ -147,12 +149,7 @@ class EnvInfo:
         return cls.getHostOs() == cls.HostOs.MAC
 
     @classmethod
-    def isX11(cls) -> bool:
-        """Return true if x11 is detected on the host"""
-        return cls.getDisplayServer() == cls.DisplayServer.X11
-
-    @classmethod
-    def isWayland(cls) -> bool:
+    def isWaylandAvailable(cls) -> bool:
         """Return true if wayland is detected on the host"""
         return cls.getDisplayServer() == cls.DisplayServer.WAYLAND
 

@@ -59,19 +59,23 @@ class GuiUtils:
         return cls.default_x11_path
 
     @classmethod
-    def getDisplayEnv(cls) -> str:
+    def getWaylandSocketPath(cls) -> Optional[Path]:
         """
-        Get the current DISPLAY environment to access the display server
+        Get the host path of the Wayland socket
         :return:
         """
-        if EnvInfo.isWayland():
-            # Wayland
-            return os.getenv('WAYLAND_DISPLAY', 'wayland-1')
+        wayland_dir = os.getenv("XDG_RUNTIME_DIR")
+        wayland_socket = os.getenv("WAYLAND_DISPLAY")
+        if wayland_dir is None or wayland_socket is None:
+            return None
+        return Path(wayland_dir + os.sep + wayland_socket)
 
-        if EnvInfo.isX11():
-            # X11
-            return os.getenv('DISPLAY', ":0")
-
+    @classmethod
+    def getDisplayEnv(cls) -> str:
+        """
+        Get the current DISPLAY environment to access X11 socket
+        :return:
+        """
         if EnvInfo.isMacHost():
             # xquartz Mac mode
             return "host.docker.internal:0"
@@ -84,6 +88,14 @@ class GuiUtils:
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
+
+    @classmethod
+    def getWaylandEnv(cls) -> str:
+        """
+        Get the current WAYLAND_DISPLAY environment to access wayland socket
+        :return:
+        """
+        return os.getenv('WAYLAND_DISPLAY', 'wayland-0')
 
     # # # # # # Mac specific methods # # # # # #
 
