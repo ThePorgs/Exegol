@@ -559,7 +559,7 @@ class ContainerConfig:
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
         if self.isDesktopEnabled():
-            logger.verbose("Config: Disabling exegol desktop")
+            logger.verbose("Config: Disabling shell logging")
             assert self.__desktop_proto is not None
             if not self.__network_host:
                 self.__removePort(self.__default_desktop_port[self.__desktop_proto])
