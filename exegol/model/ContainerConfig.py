@@ -559,7 +559,7 @@ class ContainerConfig:
     def __disableDesktop(self):
         """Procedure to disable exegol desktop feature"""
         if self.isDesktopEnabled():
-            logger.verbose("Config: Disabling shell logging")
+            logger.verbose("Config: Disabling exegol desktop")
             assert self.__desktop_proto is not None
             if not self.__network_host:
                 self.__removePort(self.__default_desktop_port[self.__desktop_proto])
@@ -1234,26 +1234,41 @@ class ContainerConfig:
         self.__addDevice(user_device_config)
 
     def addRawPort(self, user_test_port: str):
-        """Add port config from user input.
-        Format must be [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]
+        """Add port config or range of ports from user input.
+        Format must be [<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>]
         If host_ipv4 is not set, default to 0.0.0.0
-        If container_port is not set, default is the same as host port
+        If container_port is not set, the same port(s) as host port(s) will be used
         If protocol is not set, default is 'tcp'"""
-        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+):?(\d+)?:?(udp|tcp|sctp)?$", user_test_port)
+        # Regex to capture port ranges and protocols correctly
+        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+)(-(\d+))?:?(\d+)?(-(\d+))?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
-            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[:<container_port>][:<protocol>][/green]")
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use the correct format.")
             return
+        
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
-        protocol = "tcp" if match.group(5) is None else match.group(5)
-        try:
-            host_port = int(match.group(3))
-            container_port = host_port if match.group(4) is None else int(match.group(4))
-            if host_port > 65535 or container_port > 65535:
-                raise ValueError
-        except ValueError:
-            logger.critical(f"The syntax for opening prot in NAT is incorrect. The ports must be numbers between 0 and 65535. ({match.group(3)}:{match.group(4)})")
+        start_host_port = int(match.group(3))
+        end_host_port = int(match.group(5)) if match.group(5) else start_host_port
+        start_container_port = int(match.group(6)) if match.group(6) else start_host_port
+        end_container_port = int(match.group(8)) if match.group(8) else end_host_port
+        protocol = match.group(9) if match.group(9) else 'tcp'
+
+        # Check if start port is lower than end port
+        if end_host_port < start_host_port or end_container_port < start_container_port:
+            logger.critical("End port cannot be less than start port.")
             return
-        self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
+
+        # Check if any port in the range exceeds the valid range
+        if end_host_port > 65535 or end_container_port > 65535:
+            logger.critical(f"The syntax for opening prot in NAT is incorrect. The ports must be numbers between 0 and 65535. ({end_host_port}:{end_container_port})")
+            return
+
+        try:
+            for host_port, container_port in zip(range(start_host_port, end_host_port + 1), range(start_container_port, end_container_port + 1)):
+                self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
+        except ValueError as e:
+            logger.critical(f"The syntax for opening prot in NAT is incorrect. The format must be [<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>] ({match.group(3)}:{match.group(4)})")
+
+
 
     def addRawEnv(self, env: str):
         """Parse and add an environment variable from raw user input"""

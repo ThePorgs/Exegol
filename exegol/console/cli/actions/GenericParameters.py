@@ -196,7 +196,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                             action="append",
                             default=[],
                             dest="ports",
-                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.",
+                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>]. This configuration will disable the shared network with the host.",
                             completer=VoidCompleter)
         self.hostname = Option("--hostname",
                                dest="hostname",
