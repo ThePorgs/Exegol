@@ -1242,7 +1242,7 @@ class ContainerConfig:
         # Regex to capture port ranges and protocols correctly
         match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+)(-(\d+))?:?(\d+)?(-(\d+))?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
-            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>].")
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>][/green]")
             return
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
         protocol = match.group(9) if match.group(9) else 'tcp'
