@@ -1249,8 +1249,17 @@ class ContainerConfig:
         try:
             start_host_port = int(match.group(3))
             end_host_port = int(match.group(5)) if match.group(5) else start_host_port
-            start_container_port = int(match.group(6)) if match.group(6) else start_host_port
-            end_container_port = int(match.group(8)) if match.group(8) else end_host_port
+            start_container_port_defined = match.group(6) is not None
+            end_container_port_defined = match.group(8) is not None
+            start_container_port = int(match.group(6)) if start_container_port_defined else start_host_port
+            # If start_container_port is not defined, use end_host_port, otherwise use start_container_port or end_container_port if defined
+            if not start_container_port_defined:
+                end_container_port = end_host_port
+            else:
+                end_container_port = int(match.group(8)) if match.group(8) else start_container_port
+            # check port consistency
+            if (len(range(start_host_port,end_host_port)) != len(range(start_container_port,end_container_port))) or (start_host_port != end_host_port and (not start_container_port_defined and end_container_port_defined)) or (start_host_port != end_host_port and (start_container_port_defined and not end_container_port_defined)) :
+                logger.info(f"Ports sharing configuration could be wrong ({user_test_port}). The configuration in the 'Container sumamry' below will be applied.")
             # Check if start port is lower than end port
             if end_host_port < start_host_port or end_container_port < start_container_port:
                 raise ValueError("End port cannot be less than start port.")
