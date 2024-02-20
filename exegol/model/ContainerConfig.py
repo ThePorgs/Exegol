@@ -1242,7 +1242,7 @@ class ContainerConfig:
         # Regex to capture port ranges and protocols correctly
         match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+)(-(\d+))?:?(\d+)?(-(\d+))?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
-            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>][/green]")
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: '[<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>]'")
             return
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
         protocol = match.group(9) if match.group(9) else 'tcp'
@@ -1259,7 +1259,7 @@ class ContainerConfig:
                 end_container_port = int(match.group(8)) if match.group(8) else start_container_port
             # check port consistency
             if (len(range(start_host_port,end_host_port)) != len(range(start_container_port,end_container_port))) or (start_host_port != end_host_port and (not start_container_port_defined and end_container_port_defined)) or (start_host_port != end_host_port and (start_container_port_defined and not end_container_port_defined)) :
-                logger.info(f"Ports sharing configuration could be wrong ({user_test_port}). The configuration in the 'Container sumamry' below will be applied.")
+                logger.info(f"Port sharing configuration does not respect standard usage ({user_test_port}). The configuration in the 'Container sumamry' below will be applied. Please consult the help section for more information on using the -p/--port option.")
             # Check if start port is lower than end port
             if end_host_port < start_host_port or end_container_port < start_container_port:
                 raise ValueError("End port cannot be less than start port.")
