@@ -85,7 +85,7 @@ class ContainerConfig:
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
         self.__labels: Dict[str, str] = {}
-        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int]]], List[Dict[str, Union[int, str]]]]]] = {}
         self.__extra_host: Dict[str, str] = {}
         self.interactive: bool = True
         self.tty: bool = True
@@ -1117,7 +1117,9 @@ class ContainerConfig:
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
         logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
-        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
+        existing_config = self.__ports.get(f"{port_container}/{protocol}", [])
+        existing_config.append((host_ip, port_host))
+        self.__ports[f"{port_container}/{protocol}"] = existing_config
 
     def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
         """Ports config getter"""
@@ -1428,29 +1430,31 @@ class ContainerConfig:
             if host_config is None:
                 current_host_contexts.append({"ip": "0.0.0.0",
                                               "port": "<Random port>"})
-            elif type(host_config) is int:
-                current_host_contexts.append({"ip": "0.0.0.0",
-                                              "port": host_config})
-            elif type(host_config) is tuple:
-                assert len(host_config) == 2
-                current_host_contexts.append({"ip": host_config[0],
-                                              "port": int(host_config[1])})
-            elif type(host_config) is list:
-                # Unpack and parse multiple host configs
-                for sub_host_config in host_config:
-                    if type(sub_host_config) is int:
-                        current_host_contexts.append({"ip": "0.0.0.0", "port": sub_host_config})
-                    elif type(sub_host_config) is dict:
-                        sub_port = sub_host_config.get('HostPort')
+            else:
+                if type(host_config) is list:
+                    host_configs = host_config
+                else:
+                    host_configs = [host_config]
+
+                for current_host_config in host_configs:
+                    if type(current_host_config) is int:
+                        current_host_contexts.append({"ip": "0.0.0.0",
+                                                      "port": current_host_config})
+                    elif type(current_host_config) is tuple:
+                        assert len(current_host_config) == 2
+                        current_host_contexts.append({"ip": current_host_config[0],
+                                                      "port": int(current_host_config[1])})
+                    elif type(current_host_config) is dict:
+                        sub_port = current_host_config.get('HostPort')
                         if sub_port is None:
                             sub_port = "<Random port>"
                         elif type(sub_port) is str:
                             sub_port = int(sub_port)
-                        current_host_contexts.append({"ip": sub_host_config.get('HostIp', '0.0.0.0'), "port": sub_port})
-
-            else:
-                logger.debug(f"Unknown port config: {type(host_config)}={host_config} :right_arrow: {container_config}")
-                continue
+                        current_host_contexts.append({"ip": current_host_config.get('HostIp', '0.0.0.0'),
+                                                      "port": sub_port})
+                    else:
+                        logger.debug(f"Unknown port config: {type(host_config)}={host_config} :right_arrow: {container_config}")
+                        continue
 
             for current_context in current_host_contexts:
                 current_host_port = current_context.get("port")
@@ -1483,7 +1487,6 @@ class ContainerConfig:
                     previous_container_port = current_container_port
                     start_container_protocole = current_container_protocole
 
-                # TODO handle weird edge case / init container ?
                 # Register last range
                 range_host_port = ""
                 if type(start_host_port) is int:
