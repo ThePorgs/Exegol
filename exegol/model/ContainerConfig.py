@@ -1258,8 +1258,11 @@ class ContainerConfig:
             else:
                 end_container_port = int(match.group(8)) if match.group(8) else start_container_port
             # check port consistency
-            if (len(range(start_host_port,end_host_port)) != len(range(start_container_port,end_container_port))) or (start_host_port != end_host_port and (not start_container_port_defined and end_container_port_defined)) or (start_host_port != end_host_port and (start_container_port_defined and not end_container_port_defined)) :
-                logger.info(f"Port sharing configuration does not respect standard usage ({user_test_port}). The configuration in the 'Container sumamry' below will be applied. Please consult the help section for more information on using the -p/--port option.")
+            if (len(range(start_host_port, end_host_port)) != len(range(start_container_port, end_container_port))) or (
+                    start_host_port != end_host_port and (not start_container_port_defined and end_container_port_defined)) or (
+                    start_host_port != end_host_port and (start_container_port_defined and not end_container_port_defined)):
+                logger.info(
+                    f"Port sharing configuration does not respect standard usage ({user_test_port}). The configuration in the 'Container sumamry' below will be applied. Please consult the help section for more information on using the -p/--port option.")
             # Check if start port is lower than end port
             if end_host_port < start_host_port or end_container_port < start_container_port:
                 raise ValueError("End port cannot be less than start port.")
@@ -1271,8 +1274,6 @@ class ContainerConfig:
             return
         for host_port, container_port in zip(range(start_host_port, end_host_port + 1), range(start_container_port, end_container_port + 1)):
             self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
- 
-
 
     def addRawEnv(self, env: str):
         """Parse and add an environment variable from raw user input"""
@@ -1394,35 +1395,107 @@ class ContainerConfig:
         Dict Port key = container port/protocol
         Dict Port Values:
           None = Random port
-          int = open port ont he host
+          int = open port on the host
           tuple = (host_ip, port)
           list of int = open multiple host port
           list of dict = open one or more ports on host, key ('HostIp' / 'HostPort') and value ip or port"""
         result = ''
+        # TODO if network bridge and container not started, ports config cannot be printed: add a user warning message
+
+        start_host_ip = None
+        start_host_port = None
+        previous_host_port = None
+
+        start_container_protocole = None
+        start_container_port = None
+        previous_container_port = None
+
+        previous_entry = None
+
         for container_config, host_config in self.__ports.items():
-            host_info = "Unknown"
+            # Parse config
+            current_container_port = int(container_config.split('/')[0])
+            current_container_protocole = container_config.split('/')[-1]
+            # We might have multiple host context config at the same time for the same container config
+            current_host_contexts = []
+            # Init range context, container side
+            if start_container_port is None:
+                start_container_port = current_container_port
+                previous_container_port = current_container_port
+                start_container_protocole = current_container_protocole
+
+            # Parse host config multiple format
             if host_config is None:
-                host_info = "0.0.0.0:<Random port>"
+                current_host_contexts.append({"ip": "0.0.0.0",
+                                              "port": "<Random port>"})
             elif type(host_config) is int:
-                host_info = f"0.0.0.0:{host_config}"
+                current_host_contexts.append({"ip": "0.0.0.0",
+                                              "port": host_config})
             elif type(host_config) is tuple:
                 assert len(host_config) == 2
-                host_info = f"{host_config[0]}:{host_config[1]}"
+                current_host_contexts.append({"ip": host_config[0],
+                                              "port": int(host_config[1])})
             elif type(host_config) is list:
-                sub_info = []
+                # Unpack and parse multiple host configs
                 for sub_host_config in host_config:
                     if type(sub_host_config) is int:
-                        sub_info.append(f"0.0.0.0:{sub_host_config}")
+                        current_host_contexts.append({"ip": "0.0.0.0", "port": sub_host_config})
                     elif type(sub_host_config) is dict:
-                        sub_port = sub_host_config.get('HostPort', '<Random port>')
+                        sub_port = sub_host_config.get('HostPort')
                         if sub_port is None:
                             sub_port = "<Random port>"
-                        sub_info.append(f"{sub_host_config.get('HostIp', '0.0.0.0')}:{sub_port}")
-                if len(sub_info) > 0:
-                    host_info = ", ".join(sub_info)
+                        elif type(sub_port) is str:
+                            sub_port = int(sub_port)
+                        current_host_contexts.append({"ip": sub_host_config.get('HostIp', '0.0.0.0'), "port": sub_port})
+
             else:
-                logger.debug(f"Unknown port config: {type(host_config)}={host_config}")
-            result += f"{host_info} :right_arrow: {container_config}{os.linesep}"
+                logger.debug(f"Unknown port config: {type(host_config)}={host_config} :right_arrow: {container_config}")
+                continue
+
+            for current_context in current_host_contexts:
+                current_host_port = current_context.get("port")
+                current_host_ip = current_context.get('ip')
+
+                # Init range context
+                if start_host_port is None:
+                    start_host_port = current_host_port
+                    previous_host_port = current_host_port
+                    start_host_ip = current_host_ip
+                # Check if range continue
+                elif (start_host_ip == current_host_ip and
+                      current_container_protocole == start_container_protocole and
+                      (current_host_port == previous_host_port or
+                       current_host_port == previous_host_port + 1) and
+                      (current_container_port == previous_container_port or
+                       current_container_port == previous_container_port + 1)):
+                    previous_host_port = current_host_port
+                    previous_container_port = current_container_port
+                # If range exit, submit previous entry + reset new range context
+                else:
+                    # Register previous range
+                    if previous_entry:
+                        result += previous_entry
+                    # reset context host and container side
+                    start_host_port = current_host_port
+                    previous_host_port = current_host_port
+                    start_host_ip = current_host_ip
+                    start_container_port = current_container_port
+                    previous_container_port = current_container_port
+                    start_container_protocole = current_container_protocole
+
+                # TODO handle weird edge case / init container ?
+                # Register last range
+                range_host_port = ""
+                if type(start_host_port) is int:
+                    range_host_port = "" if previous_host_port - start_host_port <= 0 else f"-{previous_host_port}"
+                range_container_port = "" if previous_container_port - start_container_port <= 0 else f"-{previous_container_port}"
+                previous_entry = (f"{start_host_ip}:{start_host_port}{range_host_port} :right_arrow: "
+                                  f"{start_container_port}{range_container_port}/{start_container_protocole}{os.linesep}")
+
+        # Submit last entry is any
+        if previous_entry:
+            result += previous_entry
+
         return result
 
     def __str__(self):
