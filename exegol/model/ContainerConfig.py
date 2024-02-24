@@ -86,7 +86,7 @@ class ContainerConfig:
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
         self.__labels: Dict[str, str] = {}
-        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int]]], List[Dict[str, Union[int, str]]]]]] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]]]]] = {}
         self.__extra_host: Dict[str, str] = {}
         self.interactive: bool = True
         self.tty: bool = True
@@ -1118,11 +1118,13 @@ class ContainerConfig:
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
         logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
+        # Casting type because at this stage, the data is only controlled by the wrapper itself.
         existing_config = self.__ports.get(f"{port_container}/{protocol}", [])
+        assert type(existing_config) is list
         existing_config.append((host_ip, port_host))
         self.__ports[f"{port_container}/{protocol}"] = existing_config
 
-    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]]]]]:
         """Ports config getter"""
         return self.__ports
 
@@ -1407,7 +1409,7 @@ class ContainerConfig:
 
         start_host_ip = None
         start_host_port = None
-        previous_host_port = None
+        previous_host_port: Optional[Union[str, int]] = None
 
         start_container_protocole = None
         start_container_port = None
@@ -1420,7 +1422,7 @@ class ContainerConfig:
             current_container_port = int(container_config.split('/')[0])
             current_container_protocole = container_config.split('/')[-1]
             # We might have multiple host context config at the same time for the same container config
-            current_host_contexts = []
+            current_host_contexts: List[Dict[str, Union[str, int]]] = []
             # Init range context, container side
             if start_container_port is None:
                 start_container_port = current_container_port
@@ -1433,9 +1435,9 @@ class ContainerConfig:
                                               "port": "<Random port>"})
             else:
                 if type(host_config) is list:
-                    host_configs = host_config
+                    host_configs: List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]] = host_config
                 else:
-                    host_configs = [host_config]
+                    host_configs = cast(List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]], [host_config])
 
                 for current_host_config in host_configs:
                     if type(current_host_config) is int:
@@ -1491,6 +1493,7 @@ class ContainerConfig:
                 # Register last range
                 range_host_port = ""
                 if type(start_host_port) is int:
+                    assert type(previous_host_port) is int
                     range_host_port = "" if previous_host_port - start_host_port <= 0 else f"-{previous_host_port}"
                 range_container_port = "" if previous_container_port - start_container_port <= 0 else f"-{previous_container_port}"
                 previous_entry = (f"{start_host_ip}:{start_host_port}{range_host_port} :right_arrow: "
