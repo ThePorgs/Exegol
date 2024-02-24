@@ -14,6 +14,7 @@ from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
 
+from exegol.console.cli.SyntaxFormat import SyntaxFormat
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.UserConfig import UserConfig
@@ -512,7 +513,7 @@ class ContainerConfig:
 
     def configureDesktop(self, desktop_config: str, create_mode: bool = False):
         """Configure the exegol desktop feature from user parameters.
-        Accepted format: 'mode:host:port'
+        Accepted format: 'proto:host:port'
         """
         self.__desktop_proto = UserConfig().desktop_default_proto
         self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
@@ -537,7 +538,7 @@ class ContainerConfig:
                 except ValueError:
                     logger.critical(f"Invalid desktop port: '{data}' is not a valid port.")
             else:
-                logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
+                logger.critical(f"Your configuration is invalid, please use the following format: {SyntaxFormat.desktop_config}")
 
         if self.__desktop_port is None:
             logger.debug(f"Desktop port will be set automatically")
@@ -1244,7 +1245,7 @@ class ContainerConfig:
         # Regex to capture port ranges and protocols correctly
         match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+)(-(\d+))?:?(\d+)?(-(\d+))?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
-            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: '[<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>]'")
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: '{SyntaxFormat.port_sharing}'")
             return
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
         protocol = match.group(9) if match.group(9) else 'tcp'
