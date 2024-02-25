@@ -451,10 +451,10 @@ class ExegolTUI:
             recap.add_row("[bold blue]Comment[/bold blue]", comment)
         if passwd:
             recap.add_row(f"[bold blue]Credentials[/bold blue]", f"[deep_sky_blue3]{container.config.getUsername()}[/deep_sky_blue3] : [deep_sky_blue3]{passwd}[/deep_sky_blue3]")
-        recap.add_row("[bold blue]Desktop[/bold blue]", container.config.getDesktopConfig())
+        recap.add_row("[bold blue]Remote Desktop[/bold blue]", container.config.getDesktopConfig())
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
-        recap.add_row("[bold blue]GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()) + container.config.getTextGuiSockets())
+        recap.add_row("[bold blue]Console GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()) + container.config.getTextGuiSockets())
         recap.add_row("[bold blue]Network[/bold blue]", container.config.getTextNetworkMode())
         recap.add_row("[bold blue]Timezone[/bold blue]", boolFormatter(container.config.isTimezoneShared()))
         recap.add_row("[bold blue]Exegol resources[/bold blue]", boolFormatter(container.config.isExegolResourcesEnable()) +

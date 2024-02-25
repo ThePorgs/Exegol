@@ -118,14 +118,15 @@ class EnvInfo:
     def getDisplayServer(cls) -> DisplayServer:
         """Returns the display server
         Can be 'X11' or 'Wayland'"""
-        session_type = os.getenv("XDG_SESSION_TYPE", "")
+        session_type = os.getenv("XDG_SESSION_TYPE", "x11")
         if session_type == "wayland":
             return cls.DisplayServer.WAYLAND
         elif session_type == "x11":
             return cls.DisplayServer.X11
         else:
             # Should return an error
-            return session_type
+            logger.warning(f"Unknown session type {session_type}. Using X11 as fallback.")
+            return cls.DisplayServer.X11
 
     @classmethod
     def getWindowsRelease(cls) -> str:

@@ -68,7 +68,7 @@ class GuiUtils:
         wayland_socket = os.getenv("WAYLAND_DISPLAY")
         if wayland_dir is None or wayland_socket is None:
             return None
-        return Path(wayland_dir + os.sep + wayland_socket)
+        return Path(wayland_dir, wayland_socket)
 
     @classmethod
     def getDisplayEnv(cls) -> str:

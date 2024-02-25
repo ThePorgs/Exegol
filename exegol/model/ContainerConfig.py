@@ -372,8 +372,9 @@ class ContainerConfig:
             x11_enable = False
             wayland_enable = False
             try:
-                host_path = GuiUtils.getX11SocketPath()
+                host_path: Optional[Union[Path, str]] = GuiUtils.getX11SocketPath()
                 if host_path is not None:
+                    assert type(host_path) is str
                     self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
                     self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
                     self.__gui_engine.append("X11")
@@ -1312,9 +1313,9 @@ class ContainerConfig:
         if verbose or self.__privileged:
             result += f"{getColor(not self.__privileged)[0]}Privileged: {'On :fire:' if self.__privileged else '[green]Off :heavy_check_mark:[/green]'}{getColor(not self.__privileged)[1]}{os.linesep}"
         if verbose or self.isDesktopEnabled():
-            result += f"{getColor(self.isDesktopEnabled())[0]}Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
+            result += f"{getColor(self.isDesktopEnabled())[0]}Remote Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
-            result += f"{getColor(self.__enable_gui)[0]}GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
+            result += f"{getColor(self.__enable_gui)[0]}Console GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.__network_host:
             result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:
