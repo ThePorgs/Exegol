@@ -42,9 +42,9 @@ class GuiUtils:
         """
         if EnvInfo.isWindowsHost():
             return False  # TODO To Be defined (WSLg works fine for now)
-        elif EnvInfo.isMacHost():
-            return False  # TODO To Be defined
-        # Linux, rely on var env settings
+        # elif EnvInfo.isMacHost():
+        #    return False
+        # Linux or Mac, rely on var env settings
         return EnvInfo.isWaylandAvailable()
 
     @classmethod
