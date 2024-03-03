@@ -21,7 +21,7 @@ class GuiUtils:
     default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
-    def isGuiAvailable(cls) -> bool:
+    def isX11GuiAvailable(cls) -> bool:
         """
         Check if the host OS can support GUI application with X11 sharing
         :return: bool
@@ -33,6 +33,19 @@ class GuiUtils:
             return cls.__macGuiChecks()
         # Linux default is True
         return True
+
+    @classmethod
+    def isWaylandGuiAvailable(cls) -> bool:
+        """
+        Check if the host OS can support GUI application with WAYLAND sharing
+        :return: bool
+        """
+        if EnvInfo.isWindowsHost():
+            return False  # TODO To Be defined (WSLg works fine for now)
+        elif EnvInfo.isMacHost():
+            return False  # TODO To Be defined
+        # Linux, rely on var env settings
+        return EnvInfo.isWaylandAvailable()
 
     @classmethod
     def getX11SocketPath(cls) -> Optional[str]:

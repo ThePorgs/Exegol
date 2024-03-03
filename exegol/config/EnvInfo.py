@@ -152,7 +152,7 @@ class EnvInfo:
     @classmethod
     def isWaylandAvailable(cls) -> bool:
         """Return true if wayland is detected on the host"""
-        return cls.getDisplayServer() == cls.DisplayServer.WAYLAND
+        return cls.getDisplayServer() == cls.DisplayServer.WAYLAND or bool(os.getenv("WAYLAND_DISPLAY"))
 
     @classmethod
     def isDockerDesktop(cls) -> bool:

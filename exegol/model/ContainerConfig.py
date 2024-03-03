@@ -364,25 +364,28 @@ class ContainerConfig:
 
     def enableGUI(self):
         """Procedure to enable GUI feature"""
-        if not GuiUtils.isGuiAvailable():
-            logger.error("X11 feature (i.e. GUI apps) is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
+        x11_available = GuiUtils.isX11GuiAvailable()
+        wayland_available = GuiUtils.isWaylandGuiAvailable()
+        if not x11_available or wayland_available:
+            logger.error("Console GUI feature (i.e. GUI apps) is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
             return
         if not self.__enable_gui:
             logger.verbose("Config: Enabling display sharing")
-            x11_enable = False
-            wayland_enable = False
-            try:
-                host_path: Optional[Union[Path, str]] = GuiUtils.getX11SocketPath()
-                if host_path is not None:
-                    assert type(host_path) is str
-                    self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
+            if x11_available:
+                try:
+                    host_path: Optional[Union[Path, str]] = GuiUtils.getX11SocketPath()
+                    if host_path is not None:
+                        assert type(host_path) is str
+                        self.addVolume(host_path, GuiUtils.default_x11_path, must_exist=True)
+                    # X11 can be used accros network without volume on Mac
                     self.addEnv("DISPLAY", GuiUtils.getDisplayEnv())
                     self.__gui_engine.append("X11")
-                    x11_enable = True
-            except CancelOperation as e:
-                logger.warning(f"Graphical X11 interface sharing could not be enabled: {e}")
-            try:
-                if EnvInfo.isWaylandAvailable():
+                except CancelOperation as e:
+                    logger.warning(f"Graphical X11 interface sharing could not be enabled: {e}")
+            else:
+                logger.warning("X11 cannot be shared, only wayland, some graphical applications might not work...")
+            if wayland_available:
+                try:
                     host_path = GuiUtils.getWaylandSocketPath()
                     if host_path is not None:
                         self.addVolume(host_path.as_posix(), f"/tmp/{host_path.name}", must_exist=True)
@@ -390,14 +393,8 @@ class ContainerConfig:
                         self.addEnv("XDG_RUNTIME_DIR", "/tmp")
                         self.addEnv("WAYLAND_DISPLAY", GuiUtils.getWaylandEnv())
                         self.__gui_engine.append("Wayland")
-                        wayland_enable = True
-            except CancelOperation as e:
-                logger.warning(f"Graphical Wayland interface sharing could not be enabled: {e}")
-            if not wayland_enable and not x11_enable:
-                return
-            elif not x11_enable:
-                # Only wayland setup
-                logger.warning("X11 cannot be shared, only wayland, some graphical applications might not work...")
+                except CancelOperation as e:
+                    logger.warning(f"Graphical Wayland interface sharing could not be enabled: {e}")
             # TODO support pulseaudio
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)
