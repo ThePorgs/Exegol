@@ -124,7 +124,7 @@ config:
         # Desktop section
         desktop_data = config_data.get("desktop", {})
         self.desktop_default_enable = self._load_config_bool(desktop_data, 'enabled_by_default', self.desktop_default_enable)
-        self.desktop_default_proto = self._load_config_str(desktop_data, 'default_proto', self.desktop_default_proto, choices=self.desktop_available_proto)
+        self.desktop_default_proto = self._load_config_str(desktop_data, 'default_protocol', self.desktop_default_proto, choices=self.desktop_available_proto)
         self.desktop_default_localhost = self._load_config_bool(desktop_data, 'localhost_by_default', self.desktop_default_localhost)
 
     def get_configs(self) -> List[str]:
