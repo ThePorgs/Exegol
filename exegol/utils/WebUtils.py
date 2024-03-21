@@ -1,6 +1,7 @@
 import json
 import re
 import time
+import os
 from typing import Any, Optional, Dict
 
 import requests
@@ -124,7 +125,8 @@ class WebUtils:
         for i in range(retry_count):
             try:
                 try:
-                    response = requests.request(method=method, url=url, timeout=(5, 10), verify=ParametersManager().verify, headers=headers, data=data)
+                    proxy = os.environ.get('HTTP_PROXY') or os.environ.get('HTTPS_PROXY')
+                    response = requests.request(method=method, url=url, timeout=(5, 10), verify=ParametersManager().verify, headers=headers, data=data, proxies={'http': proxy, 'https': proxy} if proxy else None)
                     return response
                 except requests.exceptions.HTTPError as e:
                     if e.response is not None:
