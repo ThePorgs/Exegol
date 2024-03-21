@@ -125,9 +125,14 @@ class WebUtils:
         for i in range(retry_count):
             try:
                 try:
+                    proxies={}
                     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
+                    if http_proxy:
+                        proxies['http'] = http_proxy
                     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
-                    response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies={'http': http_proxy, 'https': https_proxy} if http_proxy or https_proxy else None)
+                    if https_proxy:
+                        proxies['https'] = https_proxy
+                    response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
                     return response
                 except requests.exceptions.HTTPError as e:
                     if e.response is not None:
