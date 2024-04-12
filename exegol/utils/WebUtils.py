@@ -125,7 +125,7 @@ class WebUtils:
         for i in range(retry_count):
             try:
                 try:
-                    proxies={}
+                    proxies = {}
                     http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
                     if http_proxy:
                         proxies['http'] = http_proxy

@@ -139,7 +139,7 @@ class DockerUtils:
             message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
             if message is not None:
                 message = message.replace('[', '\\[')
-                logger.error(message)
+                logger.error(f"Docker error received: {message}")
             logger.debug(err)
             model.rollback()
             try:
