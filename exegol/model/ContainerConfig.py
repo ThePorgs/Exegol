@@ -366,7 +366,7 @@ class ContainerConfig:
         """Procedure to enable GUI feature"""
         x11_available = GuiUtils.isX11GuiAvailable()
         wayland_available = GuiUtils.isWaylandGuiAvailable()
-        if not x11_available or wayland_available:
+        if not x11_available and not wayland_available:
             logger.error("Console GUI feature (i.e. GUI apps) is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
             return
         if not self.__enable_gui:
