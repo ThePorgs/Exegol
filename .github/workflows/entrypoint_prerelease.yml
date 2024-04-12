@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
         with:
           submodules: false
       - name: Set up Python
@@ -47,7 +47,7 @@ jobs:
     if: github.event.pull_request.draft == false
     needs: code_test
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
         with:
           submodules: true
       - name: Set up Python
