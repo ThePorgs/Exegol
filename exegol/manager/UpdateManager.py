@@ -354,6 +354,8 @@ class UpdateManager:
 
         # Choose dockerfile
         profiles = cls.listBuildProfiles(profiles_path=build_path)
+        if len(profiles) == 0:
+            logger.critical(f"No build profile found in {build_path}. Check your exegol installation, it seems to be broken...")
         build_profile: Optional[str] = ParametersManager().build_profile
         build_dockerfile: Optional[str] = None
         if build_profile is not None:
