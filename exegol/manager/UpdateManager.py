@@ -250,7 +250,7 @@ class UpdateManager:
     def __get_current_version(cls):
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         current_version = ConstantConfig.version
-        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE) and ConstantConfig.git_source_installation:
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
                 current_version = str(module.get_current_commit())[:8]
@@ -259,12 +259,19 @@ class UpdateManager:
     @staticmethod
     def display_current_version():
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
-        commit_version = ""
-        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+        version_details = ""
+        if ConstantConfig.git_source_installation:
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
-                commit_version = f" [bright_black]\\[{str(module.get_current_commit())[:8]}][/bright_black]"
-        return f"[blue]v{ConstantConfig.version}[/blue]{commit_version}"
+                current_branch = module.getCurrentBranch()
+                commit_version = ""
+                if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+                    commit_version = "-" + str(module.get_current_commit())[:8]
+                if current_branch is None:
+                    current_branch = "HEAD"
+                if current_branch != "master" or commit_version != "":
+                    version_details = f" [bright_black]\\[{current_branch}{commit_version}][/bright_black]"
+        return f"[blue]v{ConstantConfig.version}[/blue]{version_details}"
 
     @classmethod
     def __tagUpdateAvailable(cls, latest_version, current_version=None):
@@ -347,6 +354,8 @@ class UpdateManager:
 
         # Choose dockerfile
         profiles = cls.listBuildProfiles(profiles_path=build_path)
+        if len(profiles) == 0:
+            logger.critical(f"No build profile found in {build_path}. Check your exegol installation, it seems to be broken...")
         build_profile: Optional[str] = ParametersManager().build_profile
         build_dockerfile: Optional[str] = None
         if build_profile is not None:

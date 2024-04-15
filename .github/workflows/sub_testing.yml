@@ -8,11 +8,11 @@ jobs:
     name: Code testing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
         with:
           submodules: false
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install requirements
@@ -31,14 +31,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
         os: [win32, linux, darwin]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
         with:
           submodules: false
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Install requirements

@@ -21,7 +21,7 @@ class GuiUtils:
     default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
-    def isGuiAvailable(cls) -> bool:
+    def isX11GuiAvailable(cls) -> bool:
         """
         Check if the host OS can support GUI application with X11 sharing
         :return: bool
@@ -33,6 +33,19 @@ class GuiUtils:
             return cls.__macGuiChecks()
         # Linux default is True
         return True
+
+    @classmethod
+    def isWaylandGuiAvailable(cls) -> bool:
+        """
+        Check if the host OS can support GUI application with WAYLAND sharing
+        :return: bool
+        """
+        if EnvInfo.isWindowsHost():
+            return False  # TODO To Be defined (WSLg works fine for now)
+        # elif EnvInfo.isMacHost():
+        #    return False
+        # Linux or Mac, rely on var env settings
+        return EnvInfo.isWaylandAvailable()
 
     @classmethod
     def getX11SocketPath(cls) -> Optional[str]:
@@ -59,9 +72,21 @@ class GuiUtils:
         return cls.default_x11_path
 
     @classmethod
+    def getWaylandSocketPath(cls) -> Optional[Path]:
+        """
+        Get the host path of the Wayland socket
+        :return:
+        """
+        wayland_dir = os.getenv("XDG_RUNTIME_DIR")
+        wayland_socket = os.getenv("WAYLAND_DISPLAY")
+        if wayland_dir is None or wayland_socket is None:
+            return None
+        return Path(wayland_dir, wayland_socket)
+
+    @classmethod
     def getDisplayEnv(cls) -> str:
         """
-        Get the current DISPLAY env to access X11 socket
+        Get the current DISPLAY environment to access X11 socket
         :return:
         """
         if EnvInfo.isMacHost():
@@ -76,6 +101,14 @@ class GuiUtils:
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
+
+    @classmethod
+    def getWaylandEnv(cls) -> str:
+        """
+        Get the current WAYLAND_DISPLAY environment to access wayland socket
+        :return:
+        """
+        return os.getenv('WAYLAND_DISPLAY', 'wayland-0')
 
     # # # # # # Mac specific methods # # # # # #
 

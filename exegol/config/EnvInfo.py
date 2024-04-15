@@ -1,6 +1,8 @@
 import json
+import os
 import platform
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Any, List
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -16,6 +18,11 @@ class EnvInfo:
         WINDOWS = "Windows"
         LINUX = "Linux"
         MAC = "Mac"
+
+    class DisplayServer(Enum):
+        """Dictionary class for static Display Server"""
+        WAYLAND = "Wayland"
+        X11 = "X11"
 
     class DockerEngine(Enum):
         """Dictionary class for static Docker engine name"""
@@ -108,6 +115,20 @@ class EnvInfo:
         return cls.__docker_host_os
 
     @classmethod
+    def getDisplayServer(cls) -> DisplayServer:
+        """Returns the display server
+        Can be 'X11' or 'Wayland'"""
+        session_type = os.getenv("XDG_SESSION_TYPE", "x11")
+        if session_type == "wayland":
+            return cls.DisplayServer.WAYLAND
+        elif session_type == "x11":
+            return cls.DisplayServer.X11
+        else:
+            # Should return an error
+            logger.warning(f"Unknown session type {session_type}. Using X11 as fallback.")
+            return cls.DisplayServer.X11
+
+    @classmethod
     def getWindowsRelease(cls) -> str:
         # Cache check
         if cls.__windows_release is None:
@@ -127,6 +148,11 @@ class EnvInfo:
     def isMacHost(cls) -> bool:
         """Return true if macOS is detected on the host"""
         return cls.getHostOs() == cls.HostOs.MAC
+
+    @classmethod
+    def isWaylandAvailable(cls) -> bool:
+        """Return true if wayland is detected on the host"""
+        return cls.getDisplayServer() == cls.DisplayServer.WAYLAND or bool(os.getenv("WAYLAND_DISPLAY"))
 
     @classmethod
     def isDockerDesktop(cls) -> bool:

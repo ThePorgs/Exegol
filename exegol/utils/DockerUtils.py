@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from time import sleep
 from typing import List, Optional, Union, cast
 
 import docker
@@ -138,7 +139,7 @@ class DockerUtils:
             message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
             if message is not None:
                 message = message.replace('[', '\\[')
-                logger.error(message)
+                logger.error(f"Docker error received: {message}")
             logger.debug(err)
             model.rollback()
             try:
@@ -529,33 +530,62 @@ class DockerUtils:
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
-        try:
-            with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
+        with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
+            try:
                 if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName() and not upgrade_mode:
                     # Docker can't remove multiple images at the same tag, version specific tag must be remove first
                     logger.debug(f"Removing image {image.getFullVersionName()}")
-                    cls.__client.images.remove(image.getFullVersionName(), force=False, noprune=False)
+                    if not cls.__remove_image(image.getFullVersionName()):
+                        logger.critical(f"An error occurred while removing this image : {image.getFullVersionName()}")
                 logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
-                cls.__client.images.remove(image.getLocalId(), force=False, noprune=False)
-            logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
-            logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
-            return True
-        except APIError as err:
-            # Handle docker API error code
-            logger.verbose(err.explanation)
-            if err.status_code == 409:
-                if upgrade_mode:
-                    logger.error(f"The '{image.getName()}' image cannot be deleted yet, "
-                                 "all containers using this old image must be deleted first.")
+                if cls.__remove_image(image.getLocalId()):
+                    logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
+                    logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
+                    return True
+            except APIError as err:
+                # Handle docker API error code
+                logger.verbose(err.explanation)
+                if err.status_code == 409:
+                    if upgrade_mode:
+                        logger.error(f"The '{image.getName()}' image cannot be deleted yet, "
+                                     "all containers using this old image must be deleted first.")
+                    else:
+                        logger.error(f"The '{image.getName()}' image cannot be deleted because "
+                                     f"it is currently used by a container. Aborting.")
+                elif err.status_code == 404:
+                    logger.error(f"This image doesn't exist locally {image.getLocalId()} ({image.getFullName()}). Aborting.")
                 else:
-                    logger.error(f"The '{image.getName()}' image cannot be deleted because "
-                                 f"it is currently used by a container. Aborting.")
-            elif err.status_code == 404:
-                logger.error(f"This image doesn't exist locally {image.getLocalId()} ({image.getFullName()}). Aborting.")
-            else:
-                logger.critical(f"An error occurred while removing this image : {err}")
+                    logger.critical(f"An error occurred while removing this image : {err}")
+        return False
+
+    @classmethod
+    def __remove_image(cls, image_name: str) -> bool:
+        """
+        Handle docker image removal with timeout support
+        :param image_name: Name of the docker image to remove
+        :return: True is removal successful and False otherwise
+        """
+        try:
+            cls.__client.images.remove(image_name, force=False, noprune=False)
+            return True
         except ReadTimeout:
-            logger.error(f"The deletion of the image has timeout, the deletion may be incomplete.")
+            logger.warning("The deletion of the image has timeout. Docker is still processing the removal, please wait.")
+            max_retry = 5
+            wait_time = 5
+            for i in range(5):
+                try:
+                    _ = cls.__client.images.get(image_name)
+                    # DockerSDK image getter is an exact matching, no need to add more check
+                except APIError as err:
+                    if err.status_code == 404:
+                        return True
+                    else:
+                        logger.debug(f"Unexpected error after timeout: {err}")
+                except ReadTimeout:
+                    wait_time = wait_time + wait_time*i
+                    logger.info(f"Docker timeout again ({i+1}/{max_retry}). Next retry in {wait_time} seconds...")
+                    sleep(wait_time)  # Wait x seconds before retry
+            logger.error(f"The deletion of the image '{image_name}' has timeout, the deletion may be incomplete.")
         return False
 
     @classmethod
