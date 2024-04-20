@@ -1005,8 +1005,8 @@ class ContainerConfig:
                             match = True
                             break
                     if not match:
-                        logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
-                                        f"You need to modify the config to share a parent directory in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
+                        logger.error(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is [red]incorrect[/red].")
+                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
