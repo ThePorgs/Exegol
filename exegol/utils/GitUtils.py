@@ -162,7 +162,7 @@ class GitUtils:
                 logger.warning(f"Branch name is not correct: {branch.name}")
                 result.append(branch.name)
             else:
-                result.append(branch_parts[1])
+                result.append('/'.join(branch_parts[1:]))
         return result
 
     def safeCheck(self) -> bool:
