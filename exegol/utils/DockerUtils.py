@@ -50,6 +50,9 @@ class DockerUtils(metaclass=MetaSingleton):
             elif 'FileNotFoundError' in str(err):
                 logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
                                 f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
+            elif 'PermissionError' in str(err):
+                logger.critical(f"Docker is installed on your host but you don't have the permission to interact with it. Exiting.{os.linesep}"
+                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/install.html#optional-run-exegol-with-appropriate-privileges")
             else:
                 logger.error(err)
                 logger.critical(
