@@ -22,61 +22,61 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.MetaImages import MetaImages
 from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.MetaSingleton import MetaSingleton
 from exegol.utils.WebUtils import WebUtils
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
 
-class DockerUtils:
-    """Utility class between exegol and the Docker SDK"""
-    try:
-        # Connect Docker SDK to the local docker instance.
-        # Docker connection setting is loaded from the user environment variables.
-        __client: DockerClient = docker.from_env()
-        # Check if the docker daemon is serving linux container
-        __daemon_info = __client.info()
-        if __daemon_info.get("OSType", "linux").lower() != "linux":
-            logger.critical(
-                f"Docker daemon is not serving linux container ! Docker OS Type is: {__daemon_info.get('OSType', 'linux')}")
-        EnvInfo.initData(__daemon_info)
-    except DockerException as err:
-        if 'ConnectionRefusedError' in str(err):
-            logger.critical(f"Unable to connect to docker (from env config). Is docker running on your machine? Exiting.{os.linesep}"
-                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
-        elif 'FileNotFoundError' in str(err):
-            logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
-                            f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
-        else:
-            logger.error(err)
-            logger.critical(
-                "Unable to connect to docker (from env config). Is docker operational and accessible? on your machine? "
-                "Exiting.")
-    __images: Optional[List[ExegolImage]] = None
-    __containers: Optional[List[ExegolContainer]] = None
+class DockerUtils(metaclass=MetaSingleton):
 
-    @classmethod
-    def clearCache(cls):
+    def __init__(self):
+        """Utility class between exegol and the Docker SDK"""
+        try:
+            # Connect Docker SDK to the local docker instance.
+            # Docker connection setting is loaded from the user environment variables.
+            self.__client: DockerClient = docker.from_env()
+            # Check if the docker daemon is serving linux container
+            self.__daemon_info = self.__client.info()
+            if self.__daemon_info.get("OSType", "linux").lower() != "linux":
+                logger.critical(
+                    f"Docker daemon is not serving linux container ! Docker OS Type is: {self.__daemon_info.get('OSType', 'linux')}")
+            EnvInfo.initData(self.__daemon_info)
+        except DockerException as err:
+            if 'ConnectionRefusedError' in str(err):
+                logger.critical(f"Unable to connect to docker (from env config). Is docker running on your machine? Exiting.{os.linesep}"
+                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
+            elif 'FileNotFoundError' in str(err):
+                logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
+                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
+            else:
+                logger.error(err)
+                logger.critical(
+                    "Unable to connect to docker (from env config). Is docker operational and accessible? on your machine? "
+                    "Exiting.")
+        self.__images: Optional[List[ExegolImage]] = None
+        self.__containers: Optional[List[ExegolContainer]] = None
+
+    def clearCache(self):
         """Remove class's images and containers data cache
         Only needed if the list has to be updated in the same runtime at a later moment"""
-        cls.__containers = None
-        cls.__images = None
+        self.__containers = None
+        self.__images = None
 
-    @classmethod
-    def getDockerInfo(cls) -> dict:
+    def getDockerInfo(self) -> dict:
         """Fetch info from docker daemon"""
-        return cls.__daemon_info
+        return self.__daemon_info
 
     # # # Container Section # # #
 
-    @classmethod
-    def listContainers(cls) -> List[ExegolContainer]:
+    def listContainers(self) -> List[ExegolContainer]:
         """List available docker containers.
         Return a list of ExegolContainer"""
-        if cls.__containers is None:
-            cls.__containers = []
+        if self.__containers is None:
+            self.__containers = []
             try:
-                docker_containers = cls.__client.containers.list(all=True, filters={"name": "exegol-"})
+                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-"})
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -86,11 +86,10 @@ class DockerUtils:
                 logger.critical("Received a timeout error, Docker is busy... Unable to list containers, retry later.")
                 return  # type: ignore
             for container in docker_containers:
-                cls.__containers.append(ExegolContainer(container))
-        return cls.__containers
+                self.__containers.append(ExegolContainer(container))
+        return self.__containers
 
-    @classmethod
-    def createContainer(cls, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
+    def createContainer(self, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
@@ -99,7 +98,7 @@ class DockerUtils:
         # Preload docker volume before container creation
         for volume in model.config.getVolumes():
             if volume.get('Type', '?') == "volume":
-                docker_volume = cls.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
+                docker_volume = self.__loadDockerVolume(volume_path=volume['Source'], volume_name=volume['Target'])
                 if docker_volume is None:
                     logger.warning(f"Error while creating docker volume '{volume['Target']}'")
         entrypoint, command = model.config.getEntrypointCommand()
@@ -107,7 +106,7 @@ class DockerUtils:
         logger.debug(f"Cmd: {command}")
         # The 'create' function must be called to create a container without starting it
         # in order to hot patch the entrypoint.sh with wrapper features (the container will be started after postCreateSetup)
-        docker_create_function = cls.__client.containers.create
+        docker_create_function = self.__client.containers.create
         docker_args = {"image": model.image.getDockerRef(),
                        "entrypoint": entrypoint,
                        "command": command,
@@ -130,7 +129,7 @@ class DockerUtils:
                        "working_dir": model.config.getWorkingDir()}
         if temporary:
             # Only the 'run' function support the "remove" parameter
-            docker_create_function = cls.__client.containers.run
+            docker_create_function = self.__client.containers.run
             docker_args["remove"] = temporary
             docker_args["auto_remove"] = temporary
         try:
@@ -143,7 +142,7 @@ class DockerUtils:
             logger.debug(err)
             model.rollback()
             try:
-                container = cls.__client.containers.list(all=True, filters={"name": model.container_name})
+                container = self.__client.containers.list(all=True, filters={"name": model.container_name})
                 if container is not None and len(container) > 0:
                     for c in container:
                         if c.name == model.container_name:  # Search for exact match
@@ -162,12 +161,11 @@ class DockerUtils:
             return  # type: ignore
         return ExegolContainer(container, model)
 
-    @classmethod
-    def getContainer(cls, tag: str) -> ExegolContainer:
+    def getContainer(self, tag: str) -> ExegolContainer:
         """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = cls.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
+            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -181,7 +179,7 @@ class DockerUtils:
                 # If the user's input didn't match any container, try to force the name in lowercase if not already tried
                 lowered_tag = tag.lower()
                 if lowered_tag != tag:
-                    return cls.getContainer(lowered_tag)
+                    return self.getContainer(lowered_tag)
             raise ObjectNotFound
         # Filter results with exact name matching
         for c in container:
@@ -195,8 +193,7 @@ class DockerUtils:
 
     # # # Volumes Section # # #
 
-    @classmethod
-    def __loadDockerVolume(cls, volume_path: str, volume_name: str) -> Volume:
+    def __loadDockerVolume(self, volume_path: str, volume_name: str) -> Volume:
         """Load or create a docker volume for exegol containers
         (must be created before the container, SDK limitation)
         Return the docker volume object"""
@@ -207,11 +204,11 @@ class DockerUtils:
             logger.critical(f"Insufficient permission to create the folder: {volume_path}")
         try:
             # Check if volume already exist
-            volume = cls.__client.volumes.get(volume_name)
+            volume = self.__client.volumes.get(volume_name)
             path = volume.attrs.get('Options', {}).get('device', '')
             if path != volume_path:
                 try:
-                    cls.__client.api.remove_volume(name=volume_name)
+                    self.__client.api.remove_volume(name=volume_name)
                     raise NotFound('Volume must be reloaded')
                 except APIError as e:
                     if e.status_code == 409:
@@ -229,10 +226,10 @@ class DockerUtils:
                 # Creating a docker volume bind to a host path
                 # Docker volume are more easily shared by container
                 # Docker volume can load data from container image on host's folder creation
-                volume = cls.__client.volumes.create(volume_name, driver="local",
-                                                     driver_opts={'o': 'bind',
-                                                                  'device': volume_path,
-                                                                  'type': 'none'})
+                volume = self.__client.volumes.create(volume_name, driver="local",
+                                                      driver_opts={'o': 'bind',
+                                                                   'device': volume_path,
+                                                                   'type': 'none'})
             except APIError as err:
                 logger.error(f"Error while creating docker volume '{volume_name}'.")
                 logger.debug(err)
@@ -251,15 +248,14 @@ class DockerUtils:
 
     # # # Image Section # # #
 
-    @classmethod
-    def listImages(cls, include_version_tag: bool = False, include_locked: bool = False) -> List[ExegolImage]:
+    def listImages(self, include_version_tag: bool = False, include_locked: bool = False) -> List[ExegolImage]:
         """List available docker images.
         Return a list of ExegolImage"""
-        if cls.__images is None:
-            remote_images = cls.__listRemoteImages()
-            local_images = cls.__listLocalImages()
-            cls.__images = ExegolImage.mergeImages(remote_images, local_images)
-        result = cls.__images
+        if self.__images is None:
+            remote_images = self.__listRemoteImages()
+            local_images = self.__listLocalImages()
+            self.__images = ExegolImage.mergeImages(remote_images, local_images)
+        result = self.__images
         assert result is not None
         # Caching latest images
         DataCache().update_image_cache([img for img in result if not img.isVersionSpecific()])
@@ -271,19 +267,17 @@ class DockerUtils:
             result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
         return result
 
-    @classmethod
-    def listInstalledImages(cls) -> List[ExegolImage]:
+    def listInstalledImages(self) -> List[ExegolImage]:
         """List installed docker images.
         Return a list of ExegolImage"""
-        images = cls.listImages()
+        images = self.listImages()
         # Selecting only installed image
         return [img for img in images if img.isInstall()]
 
-    @classmethod
-    def getImage(cls, tag: str) -> ExegolImage:
+    def getImage(self, tag: str) -> ExegolImage:
         """Get an ExegolImage from tag name."""
         # Fetch every images available
-        images = cls.listImages(include_version_tag=True, include_locked=True)
+        images = self.listImages(include_version_tag=True, include_locked=True)
         match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
@@ -300,19 +294,18 @@ class DockerUtils:
         # If there is no match at all, raise ObjectNotFound to handle the error
         raise ObjectNotFound
 
-    @classmethod
-    def getInstalledImage(cls, tag: str) -> ExegolImage:
+    def getInstalledImage(self, tag: str) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
         try:
-            if cls.__images is None:
+            if self.__images is None:
                 try:
-                    docker_local_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
+                    docker_local_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
                     # DockerSDK image get is an exact matching, no need to add more check
                 except APIError as err:
                     if err.status_code == 404:
                         # try to find it in recovery mode
                         logger.verbose("Unable to find your image. Trying to find in recovery mode.")
-                        recovery_images = cls.__findLocalRecoveryImages(include_untag=True)
+                        recovery_images = self.__findLocalRecoveryImages(include_untag=True)
                         match = []
                         for img in recovery_images:
                             if ExegolImage.parseAliasTagName(img) == tag:
@@ -330,24 +323,23 @@ class DockerUtils:
                     return  # type: ignore
                 return ExegolImage(docker_image=docker_local_image).autoLoad()
             else:
-                for img in cls.__images:
+                for img in self.__images:
                     if img.getName() == tag:
                         if not img.isInstall() or not img.isUpToDate():
                             # Refresh local image status in case of installation/upgrade operations
-                            cls.__findImageMatch(img)
+                            self.__findImageMatch(img)
                         return img
         except ObjectNotFound:
             logger.critical(f"The desired image is not installed or do not exist ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting.")
         return  # type: ignore
 
-    @classmethod
-    def __listLocalImages(cls, tag: Optional[str] = None) -> List[Image]:
+    def __listLocalImages(self, tag: Optional[str] = None) -> List[Image]:
         """List local docker images already installed.
         Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
             image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
-            images = cls.__client.images.list(image_name, filters={"dangling": False})
+            images = self.__client.images.list(image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -367,7 +359,7 @@ class DockerUtils:
                 ids.add(img.id)
 
         # Try to find lost Exegol images
-        recovery_images = cls.__findLocalRecoveryImages()
+        recovery_images = self.__findLocalRecoveryImages()
         for img in recovery_images:
             # Docker can keep track of 2 images maximum with RepoTag or RepoDigests, after it's hard to track origin without labels, so this recovery option is "best effort"
             if img.id in ids:
@@ -379,15 +371,14 @@ class DockerUtils:
                 ids.add(img.id)
         return result
 
-    @classmethod
-    def __findLocalRecoveryImages(cls, include_untag: bool = False) -> List[Image]:
+    def __findLocalRecoveryImages(self, include_untag: bool = False) -> List[Image]:
         """This method try to recovery untagged docker images.
         Set include_untag option to recover images with a valid RepoDigest (no not dangling) but without tag."""
         try:
             # Try to find lost Exegol images
-            recovery_images = cls.__client.images.list(filters={"dangling": True})
+            recovery_images = self.__client.images.list(filters={"dangling": True})
             if include_untag:
-                recovery_images += cls.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
+                recovery_images += self.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
@@ -408,8 +399,7 @@ class DockerUtils:
                 id_list.add(img.id)
         return result
 
-    @classmethod
-    def __listRemoteImages(cls) -> List[MetaImages]:
+    def __listRemoteImages(self) -> List[MetaImages]:
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
@@ -443,8 +433,7 @@ class DockerUtils:
         # Remove duplication (version specific / latest release)
         return remote_results
 
-    @classmethod
-    def __findImageMatch(cls, remote_image: ExegolImage):
+    def __findImageMatch(self, remote_image: ExegolImage):
         """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
         remote_id = remote_image.getLatestRemoteId()
@@ -452,7 +441,7 @@ class DockerUtils:
             logger.debug("Latest remote id is not available... Falling back to the current remote id.")
             remote_id = remote_image.getRemoteId()
         try:
-            docker_image = cls.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
+            docker_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
         except ImageNotFound:
             raise ObjectNotFound
         except ReadTimeout:
@@ -461,8 +450,7 @@ class DockerUtils:
         remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
-    @classmethod
-    def downloadImage(cls, image: ExegolImage, install_mode: bool = False) -> bool:
+    def downloadImage(self, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to download a docker image in offline mode ...")
@@ -477,15 +465,15 @@ class DockerUtils:
             logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
-                    cls.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
-                                          tag=name,
-                                          stream=True,
-                                          decode=True,
-                                          platform="linux/" + image.getArch()))
+                    self.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
+                                           tag=name,
+                                           stream=True,
+                                           decode=True,
+                                           platform="linux/" + image.getArch()))
                 logger.success(f"Image successfully {'installed' if install_mode else 'updated'}")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
-                    cls.removeImage(image, upgrade_mode=not install_mode)
+                    self.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:
                 if err.status_code == 500:
@@ -500,16 +488,15 @@ class DockerUtils:
                 logger.critical(f"Received a timeout error, Docker is busy... Unable to download {name} image, retry later.")
         return False
 
-    @classmethod
-    def downloadVersionTag(cls, image: ExegolImage) -> Union[ExegolImage, str]:
+    def downloadVersionTag(self, image: ExegolImage) -> Union[ExegolImage, str]:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return ""
         try:
-            image = cls.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
-                                             tag=image.getLatestVersionName(),
-                                             platform="linux/" + image.getArch())
+            image = self.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
+                                              tag=image.getLatestVersionName(),
+                                              platform="linux/" + image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
@@ -524,8 +511,7 @@ class DockerUtils:
                             f"    [orange3]docker pull --platform linux/{image.getArch()} {ConstantConfig.IMAGE_NAME}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
 
-    @classmethod
-    def removeImage(cls, image: ExegolImage, upgrade_mode: bool = False) -> bool:
+    def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
@@ -535,10 +521,10 @@ class DockerUtils:
                 if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName() and not upgrade_mode:
                     # Docker can't remove multiple images at the same tag, version specific tag must be remove first
                     logger.debug(f"Removing image {image.getFullVersionName()}")
-                    if not cls.__remove_image(image.getFullVersionName()):
+                    if not self.__remove_image(image.getFullVersionName()):
                         logger.critical(f"An error occurred while removing this image : {image.getFullVersionName()}")
                 logger.debug(f"Removing image {image.getLocalId()} ({image.getFullVersionName() if upgrade_mode else image.getFullName()})")
-                if cls.__remove_image(image.getLocalId()):
+                if self.__remove_image(image.getLocalId()):
                     logger.verbose(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...")
                     logger.success(f"{'Previous d' if upgrade_mode else 'D'}ocker image successfully removed.")
                     return True
@@ -558,15 +544,14 @@ class DockerUtils:
                     logger.critical(f"An error occurred while removing this image : {err}")
         return False
 
-    @classmethod
-    def __remove_image(cls, image_name: str) -> bool:
+    def __remove_image(self, image_name: str) -> bool:
         """
         Handle docker image removal with timeout support
         :param image_name: Name of the docker image to remove
         :return: True is removal successful and False otherwise
         """
         try:
-            cls.__client.images.remove(image_name, force=False, noprune=False)
+            self.__client.images.remove(image_name, force=False, noprune=False)
             return True
         except ReadTimeout:
             logger.warning("The deletion of the image has timeout. Docker is still processing the removal, please wait.")
@@ -574,7 +559,7 @@ class DockerUtils:
             wait_time = 5
             for i in range(5):
                 try:
-                    _ = cls.__client.images.get(image_name)
+                    _ = self.__client.images.get(image_name)
                     # DockerSDK image getter is an exact matching, no need to add more check
                 except APIError as err:
                     if err.status_code == 404:
@@ -582,14 +567,13 @@ class DockerUtils:
                     else:
                         logger.debug(f"Unexpected error after timeout: {err}")
                 except ReadTimeout:
-                    wait_time = wait_time + wait_time*i
-                    logger.info(f"Docker timeout again ({i+1}/{max_retry}). Next retry in {wait_time} seconds...")
+                    wait_time = wait_time + wait_time * i
+                    logger.info(f"Docker timeout again ({i + 1}/{max_retry}). Next retry in {wait_time} seconds...")
                     sleep(wait_time)  # Wait x seconds before retry
             logger.error(f"The deletion of the image '{image_name}' has timeout, the deletion may be incomplete.")
         return False
 
-    @classmethod
-    def buildImage(cls, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None, dockerfile_path: str = ConstantConfig.build_context_path):
+    def buildImage(self, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None, dockerfile_path: str = ConstantConfig.build_context_path):
         """Build a docker image from source"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
@@ -608,17 +592,17 @@ class DockerUtils:
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
             ExegolTUI.buildDockerImage(
-                cls.__client.api.build(path=dockerfile_path,
-                                       dockerfile=build_dockerfile,
-                                       tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
-                                       buildargs={"TAG": f"{build_profile}",
-                                                  "VERSION": "local",
-                                                  "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
-                                       platform="linux/" + ParametersManager().arch,
-                                       rm=True,
-                                       forcerm=True,
-                                       pull=True,
-                                       decode=True))
+                self.__client.api.build(path=dockerfile_path,
+                                        dockerfile=build_dockerfile,
+                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
+                                        buildargs={"TAG": f"{build_profile}",
+                                                   "VERSION": "local",
+                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
+                                        platform="linux/" + ParametersManager().arch,
+                                        rm=True,
+                                        forcerm=True,
+                                        pull=True,
+                                        decode=True))
             logger.success(f"Exegol image successfully built")
         except APIError as err:
             logger.debug(f"Error: {err}")

@@ -1,3 +1,6 @@
+from exegol.manager.ExegolManager import ExegolManager
+from exegol.utils.DockerUtils import DockerUtils
+
 try:
     import docker
     import requests
@@ -32,6 +35,9 @@ class ExegolController:
     def call_action(cls):
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
+        ExegolManager.print_version()
+        DockerUtils()  # Init dockerutils
+        ExegolManager.print_debug_banner()
         # Check for missing parameters
         missing_params = cls.__action.check_parameters()
         if len(missing_params) == 0:
