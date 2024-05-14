@@ -200,13 +200,12 @@ class EnvInfo:
                     path = ConstantConfig.docker_desktop_windows_config_path
                 else:
                     # Find docker desktop config
-                    path = None
-                    for i in Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}"):
-                        path = i
-                        logger.debug(f"Docker desktop config found at {path}")
-                        break
-                    if path is None:
+                    config_file = list(Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}"))
+                    if len(config_file) == 0:
                         return {}
+                    else:
+                        path = config_file[0]
+                        logger.debug(f"Docker desktop config found at {path}")
                 try:
                     with open(path, 'r') as docker_desktop_config:
                         cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
