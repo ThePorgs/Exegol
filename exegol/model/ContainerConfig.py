@@ -838,10 +838,13 @@ class ContainerConfig:
             logger.warning("Host mode cannot be set with NAT ports configured. Disabling the shared network mode.")
             host_mode = False
         if EnvInfo.isDockerDesktop() and host_mode:
-            logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
-            logger.verbose("Official doc: https://docs.docker.com/network/host/")
-            logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
-            host_mode = False
+            if not EnvInfo.isHostNetworkAvailable():
+                logger.warning("Host network mode for Docker desktop (Windows & macOS) is not available.")
+                logger.verbose("Official doc: https://docs.docker.com/network/drivers/host/#docker-desktop")
+                logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
+                host_mode = False
+            else:
+                logger.warning("Docker desktop host network mode is enabled but in beta. Everything might not work as you expect.")
         self.__network_host = host_mode
 
     def setPrivileged(self, status: bool = True):
