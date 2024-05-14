@@ -1455,10 +1455,10 @@ class ContainerConfig:
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__my_resources}{os.linesep}" \
-               f"Envs ({len(self.__envs)}): {self.__envs}{os.linesep}" \
-               f"Labels ({len(self.__labels)}): {self.__labels}{os.linesep}" \
-               f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
-               f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \
+               f"Envs ({len(self.__envs)}): {os.linesep.join(self.__envs)}{os.linesep}" \
+               f"Labels ({len(self.__labels)}): {os.linesep.join(self.__labels)}{os.linesep}" \
+               f"Shares ({len(self.__mounts)}): {os.linesep.join([str(x) for x in self.__mounts])}{os.linesep}" \
+               f"Devices ({len(self.__devices)}): {os.linesep.join(self.__devices)}{os.linesep}" \
                f"VPN: {self.getVpnName()}"
 
     def printConfig(self):

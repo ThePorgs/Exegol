@@ -1,14 +1,13 @@
-from exegol.manager.ExegolManager import ExegolManager
-from exegol.utils.DockerUtils import DockerUtils
-
 try:
     import docker
     import requests
     import git
 
     from exegol.utils.ExeLog import logger, ExeLog, console
+    from exegol.utils.DockerUtils import DockerUtils
     from exegol.console.cli.ParametersManager import ParametersManager
     from exegol.console.cli.actions.ExegolParameters import Command
+    from exegol.manager.ExegolManager import ExegolManager
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
     print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
