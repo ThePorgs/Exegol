@@ -423,7 +423,7 @@ class ContainerConfig:
             # On Orbstack /etc cannot be shared + we should test how Orbstack handle symlink
             # With docker desktop, symlink are resolved as full path on container creation. When tzdata is updated on the host, the container can no longer be started because the files of the previous package version are missing.
             # TODO Test if env var can be used as replacement
-            logger.warning("Timezone sharing on Mac isn't supported for instability issues. Skipping.")
+            logger.warning("Timezone sharing on Mac is not supported (for stability reasons). Skipping.")
             return
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
