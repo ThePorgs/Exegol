@@ -984,7 +984,7 @@ class ContainerConfig:
         if set_sticky_group is set (on a Linux host), the permission setgid will be added to every folder on the volume."""
         # The creation of the directory is ignored when it is a path to the remote drive
         if volume_type == 'bind' and not (type(host_path) is str and host_path.startswith("\\\\")):
-            path = Path(host_path).absolute() if type(host_path) is str else host_path.absolute()
+            path: Path = host_path.absolute() if type(host_path) is Path else Path(host_path).absolute()
             host_path = path.as_posix()
             # Docker Desktop for Windows based on WSL2 don't have filesystem limitation
             if EnvInfo.isMacHost():
@@ -1236,7 +1236,7 @@ class ContainerConfig:
         """Add a volume to the container configuration from raw text input.
         Expected format is one of:
         /source/path:/target/mount:rw
-        C:\source\path:/target/mount:ro
+        C:\\source\\path:/target/mount:ro
         ./relative/path:target/mount"""
         logger.debug(f"Parsing raw volume config: {volume_string}")
         parsing = re.match(r'^((\w:|\.|~)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$', volume_string)
