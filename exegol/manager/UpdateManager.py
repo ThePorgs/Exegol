@@ -33,9 +33,9 @@ class UpdateManager:
         if tag is None:
             # Filter for updatable images
             if install_mode:
-                available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+                available_images = [i for i in DockerUtils().listImages() if not i.isLocked()]
             else:
-                available_images = [i for i in DockerUtils.listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
+                available_images = [i for i in DockerUtils().listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
                 if len(available_images) == 0:
                     logger.success("All images already installed are up to date!")
                     return None
@@ -55,7 +55,7 @@ class UpdateManager:
         else:
             try:
                 # Find image by name
-                selected_image = DockerUtils.getImage(tag)
+                selected_image = DockerUtils().getImage(tag)
             except ObjectNotFound:
                 # If the image do not exist, ask to build it
                 if install_mode:
@@ -66,13 +66,13 @@ class UpdateManager:
 
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
-            if DockerUtils.downloadImage(selected_image, install_mode):
+            if DockerUtils().downloadImage(selected_image, install_mode):
                 sync_result = None
                 # Name comparison allow detecting images without version tag
                 if not selected_image.isVersionSpecific() and selected_image.getName() != selected_image.getLatestVersionName():
                     with console.status(f"Synchronizing version tag information. Please wait.", spinner_style="blue"):
                         # Download associated version tag.
-                        sync_result = DockerUtils.downloadVersionTag(selected_image)
+                        sync_result = DockerUtils().downloadVersionTag(selected_image)
                     # Detect if an error have been triggered during the download
                     if type(sync_result) is str:
                         logger.error(f"Error while downloading version tag, {sync_result}")
@@ -80,7 +80,7 @@ class UpdateManager:
                 # if version tag have been successfully download, returning ExegolImage from docker response
                 if sync_result is not None and type(sync_result) is ExegolImage:
                     return sync_result
-                return DockerUtils.getInstalledImage(selected_image.getName())
+                return DockerUtils().getInstalledImage(selected_image.getName())
         elif type(selected_image) is str:
             # Build a new image using TUI selected name, confirmation has already been requested by TUI
             return cls.buildAndLoad(selected_image)
@@ -368,14 +368,14 @@ class UpdateManager:
                                                                                              title="[not italic]:dog: [/not italic][gold3]Profile[/gold3]"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
-        DockerUtils.buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path.as_posix())
+        DockerUtils().buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path.as_posix())
         return build_name
 
     @classmethod
     def buildAndLoad(cls, tag: str):
         """Build an image and load it"""
         build_name = cls.__buildSource(tag)
-        return DockerUtils.getInstalledImage(build_name)
+        return DockerUtils().getInstalledImage(build_name)
 
     @classmethod
     def listBuildProfiles(cls, profiles_path: Path = ConstantConfig.build_context_path_obj) -> Dict:

@@ -1,7 +1,7 @@
-# Generic singleton class
 from typing import Dict
 
 
+# Generic singleton class
 class MetaSingleton(type):
     """Metaclass to create a singleton class"""
     __instances: Dict[type, object] = {}

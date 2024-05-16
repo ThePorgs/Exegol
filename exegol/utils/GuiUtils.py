@@ -154,6 +154,7 @@ class GuiUtils:
              mount /tmp/.X11-unix for display sharing.
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
+        # Function not used for now because the X11 socket cannot be used for now with Docker Desktop
         docker_config = EnvInfo.getDockerDesktopResources()
         logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
         return '/tmp' in docker_config

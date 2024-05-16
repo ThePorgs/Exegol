@@ -3,7 +3,7 @@ import os
 import platform
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Any, List
+from typing import Optional, List, Dict
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -150,6 +150,11 @@ class EnvInfo:
         return cls.getHostOs() == cls.HostOs.MAC
 
     @classmethod
+    def isLinuxHost(cls) -> bool:
+        """Return true if Linux is detected on the host"""
+        return cls.getHostOs() == cls.HostOs.LINUX
+
+    @classmethod
     def isWaylandAvailable(cls) -> bool:
         """Return true if wayland is detected on the host"""
         return cls.getDisplayServer() == cls.DisplayServer.WAYLAND or bool(os.getenv("WAYLAND_DISPLAY"))
@@ -185,7 +190,7 @@ class EnvInfo:
             return "Unknown"
 
     @classmethod
-    def getDockerDesktopSettings(cls) -> Optional[Any]:
+    def getDockerDesktopSettings(cls) -> Dict:
         """Applicable only for docker desktop on macos"""
         if cls.isDockerDesktop():
             if cls.__docker_desktop_resource_config is None:
@@ -194,20 +199,34 @@ class EnvInfo:
                 elif cls.is_windows_shell:
                     path = ConstantConfig.docker_desktop_windows_config_path
                 else:
-                    return None
-                    # TODO support from WSL shell
+                    # Find docker desktop config
+                    config_file = list(Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}"))
+                    if len(config_file) == 0:
+                        return {}
+                    else:
+                        path = config_file[0]
+                        logger.debug(f"Docker desktop config found at {path}")
                 try:
                     with open(path, 'r') as docker_desktop_config:
                         cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{path}'")
-                    return None
+                    return {}
             return cls.__docker_desktop_resource_config
-        return None
+        return {}
 
     @classmethod
     def getDockerDesktopResources(cls) -> List[str]:
-        config = cls.getDockerDesktopSettings()
-        if config:
-            return config.get('filesharingDirectories', [])
-        return []
+        return cls.getDockerDesktopSettings().get('filesharingDirectories', [])
+
+    @classmethod
+    def isHostNetworkAvailable(cls) -> bool:
+        if cls.isLinuxHost():
+            return True
+        elif cls.isOrbstack():
+            return True
+        elif cls.isDockerDesktop():
+            res = cls.getDockerDesktopSettings().get('hostNetworkingEnabled', False)
+            return res if res is not None else False
+        logger.warning("Unknown or not supported environment for host network mode.")
+        return False

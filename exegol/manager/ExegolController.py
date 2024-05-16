@@ -4,8 +4,10 @@ try:
     import git
 
     from exegol.utils.ExeLog import logger, ExeLog, console
+    from exegol.utils.DockerUtils import DockerUtils
     from exegol.console.cli.ParametersManager import ParametersManager
     from exegol.console.cli.actions.ExegolParameters import Command
+    from exegol.manager.ExegolManager import ExegolManager
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
     print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
@@ -32,6 +34,9 @@ class ExegolController:
     def call_action(cls):
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
+        ExegolManager.print_version()
+        DockerUtils()  # Init dockerutils
+        ExegolManager.print_debug_banner()
         # Check for missing parameters
         missing_params = cls.__action.check_parameters()
         if len(missing_params) == 0:

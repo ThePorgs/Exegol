@@ -388,7 +388,7 @@ class ContainerConfig:
                 try:
                     host_path = GuiUtils.getWaylandSocketPath()
                     if host_path is not None:
-                        self.addVolume(host_path.as_posix(), f"/tmp/{host_path.name}", must_exist=True)
+                        self.addVolume(host_path, f"/tmp/{host_path.name}", must_exist=True)
                         self.addEnv("XDG_SESSION_TYPE", "wayland")
                         self.addEnv("XDG_RUNTIME_DIR", "/tmp")
                         self.addEnv("WAYLAND_DISPLAY", GuiUtils.getWaylandEnv())
@@ -423,7 +423,7 @@ class ContainerConfig:
             # On Orbstack /etc cannot be shared + we should test how Orbstack handle symlink
             # With docker desktop, symlink are resolved as full path on container creation. When tzdata is updated on the host, the container can no longer be started because the files of the previous package version are missing.
             # TODO Test if env var can be used as replacement
-            logger.warning("Timezone sharing on Mac isn't supported for instability issues. Skipping.")
+            logger.warning("Timezone sharing on Mac is not supported (for stability reasons). Skipping.")
             return
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
@@ -459,12 +459,11 @@ class ContainerConfig:
 
     def enableMyResources(self):
         """Procedure to enable shared volume feature"""
-        # TODO test my resources cross shell source (WSL / PSH) on Windows
         if not self.__my_resources:
             logger.verbose("Config: Enabling my-resources volume")
             self.__my_resources = True
             # Adding volume config
-            self.addVolume(str(UserConfig().my_resources_path), '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
+            self.addVolume(UserConfig().my_resources_path, '/opt/my-resources', enable_sticky_group=True, force_sticky_group=True)
 
     def __disableMyResources(self):
         """Procedure to disable shared volume feature (Only for interactive config)"""
@@ -487,7 +486,7 @@ class ContainerConfig:
             logger.verbose("Config: Enabling exegol resources volume")
             self.__exegol_resources = True
             # Adding volume config
-            self.addVolume(str(UserConfig().exegol_resources_path), '/opt/resources')
+            self.addVolume(UserConfig().exegol_resources_path, '/opt/resources')
         return True
 
     def disableExegolResources(self):
@@ -682,13 +681,13 @@ class ContainerConfig:
         if vpn_path.is_file():
             self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
-            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config/client.ovpn", read_only=True)
+            self.addVolume(vpn_path, "/.exegol/vpn/config/client.ovpn", read_only=True)
             ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
         else:
             # Configure VPN with directory
             logger.verbose("Folder detected for VPN configuration. "
                            "Only the first *.ovpn file will be automatically launched when the container starts.")
-            self.addVolume(str(vpn_path.absolute()), "/.exegol/vpn/config", read_only=True)
+            self.addVolume(vpn_path, "/.exegol/vpn/config", read_only=True)
             vpn_filename = None
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
@@ -712,7 +711,7 @@ class ContainerConfig:
         if vpn_auth is not None:
             if vpn_auth.is_file():
                 logger.info(f"Adding VPN credentials from: {str(vpn_auth.absolute())}")
-                self.addVolume(str(vpn_auth.absolute()), "/.exegol/vpn/auth/creds.txt", read_only=True)
+                self.addVolume(vpn_auth, "/.exegol/vpn/auth/creds.txt", read_only=True)
                 ovpn_parameters.append("--auth-user-pass /.exegol/vpn/auth/creds.txt")
             else:
                 # Supply a directory instead of a file for VPN authentication is not supported.
@@ -838,10 +837,13 @@ class ContainerConfig:
             logger.warning("Host mode cannot be set with NAT ports configured. Disabling the shared network mode.")
             host_mode = False
         if EnvInfo.isDockerDesktop() and host_mode:
-            logger.warning("Docker desktop (Windows & macOS) does not support sharing of host network interfaces.")
-            logger.verbose("Official doc: https://docs.docker.com/network/host/")
-            logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
-            host_mode = False
+            if not EnvInfo.isHostNetworkAvailable():
+                logger.warning("Host network mode for Docker desktop (Windows & macOS) is not available.")
+                logger.verbose("Official doc: https://docs.docker.com/network/drivers/host/#docker-desktop")
+                logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
+                host_mode = False
+            else:
+                logger.warning("Docker desktop host network mode is enabled but in beta. Everything might not work as you expect.")
         self.__network_host = host_mode
 
     def setPrivileged(self, status: bool = True):
@@ -968,7 +970,7 @@ class ContainerConfig:
         return bool(self.__workspace_custom_path)
 
     def addVolume(self,
-                  host_path: str,
+                  host_path: Union[str, Path],
                   container_path: str,
                   must_exist: bool = False,
                   read_only: bool = False,
@@ -981,12 +983,14 @@ class ContainerConfig:
         Otherwise, a folder will attempt to be created at the specified path.
         if set_sticky_group is set (on a Linux host), the permission setgid will be added to every folder on the volume."""
         # The creation of the directory is ignored when it is a path to the remote drive
-        if volume_type == 'bind' and not host_path.startswith("\\\\"):
-            path = Path(host_path)
-            # TODO extend to docker desktop Windows
+        if volume_type == 'bind' and not (type(host_path) is str and host_path.startswith("\\\\")):
+            path: Path = host_path.absolute() if type(host_path) is Path else Path(host_path).absolute()
+            host_path = path.as_posix()
+            # Docker Desktop for Windows based on WSL2 don't have filesystem limitation
             if EnvInfo.isMacHost():
                 # Add support for /etc
-                path_match = str(path)
+                # TODO check if path_match + replace really useful , path_match rever used
+                path_match = host_path
                 if path_match.startswith("/opt/") and EnvInfo.isOrbstack():
                     msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path."
                     if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
@@ -1005,8 +1009,8 @@ class ContainerConfig:
                             match = True
                             break
                     if not match:
-                        logger.critical(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is incorrect. "
-                                        f"You need to modify the config to share a parent directory in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta].")
+                        logger.error(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is [red]incorrect[/red].")
+                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
@@ -1033,7 +1037,7 @@ class ContainerConfig:
                     # If user choose not to update, print tips
                     logger.warning(f"The file sharing permissions between the container and the host will not be applied automatically by Exegol. ("
                                    f"{'Currently enabled by default according to the user config' if UserConfig().auto_update_workspace_fs else 'Use the --update-fs option to enable the feature'})")
-        mount = Mount(container_path, host_path, read_only=read_only, type=volume_type)
+        mount = Mount(container_path, str(host_path), read_only=read_only, type=volume_type)
         self.__mounts.append(mount)
 
     def removeVolume(self, host_path: Optional[str] = None, container_path: Optional[str] = None) -> bool:
@@ -1230,11 +1234,12 @@ class ContainerConfig:
 
     def addRawVolume(self, volume_string):
         """Add a volume to the container configuration from raw text input.
-        Expected format is: /source/path:/target/mount:rw"""
+        Expected format is one of:
+        /source/path:/target/mount:rw
+        C:\\source\\path:/target/mount:ro
+        ./relative/path:target/mount"""
         logger.debug(f"Parsing raw volume config: {volume_string}")
-        # TODO support relative path
-        parsing = re.match(r'^((\w:)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$',
-                           volume_string)
+        parsing = re.match(r'^((\w:|\.|~)?([\\/][\w .,:\-|()&;]*)+):(([\\/][\w .,\-|()&;]*)+)(:(ro|rw))?$', volume_string)
         if parsing:
             host_path = parsing.group(1)
             container_path = parsing.group(4)
@@ -1246,10 +1251,11 @@ class ContainerConfig:
             else:
                 logger.error(f"Error on volume config, mode: {mode} not recognized.")
                 readonly = False
+            full_host_path = Path(host_path).expanduser()
             logger.debug(
-                f"Adding a volume from '{host_path}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
+                f"Adding a volume from '{full_host_path.as_posix()}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
             try:
-                self.addVolume(host_path, container_path, read_only=readonly)
+                self.addVolume(full_host_path, container_path, read_only=readonly)
             except CancelOperation as e:
                 logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
                 if not Confirm("Do you want to continue without this volume ?", False):
@@ -1455,10 +1461,10 @@ class ContainerConfig:
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__my_resources}{os.linesep}" \
-               f"Envs ({len(self.__envs)}): {self.__envs}{os.linesep}" \
-               f"Labels ({len(self.__labels)}): {self.__labels}{os.linesep}" \
-               f"Shares ({len(self.__mounts)}): {self.__mounts}{os.linesep}" \
-               f"Devices ({len(self.__devices)}): {self.__devices}{os.linesep}" \
+               f"Envs ({len(self.__envs)}): {os.linesep.join(self.__envs)}{os.linesep}" \
+               f"Labels ({len(self.__labels)}): {os.linesep.join(self.__labels)}{os.linesep}" \
+               f"Shares ({len(self.__mounts)}): {os.linesep.join([str(x) for x in self.__mounts])}{os.linesep}" \
+               f"Devices ({len(self.__devices)}): {os.linesep.join(self.__devices)}{os.linesep}" \
                f"VPN: {self.getVpnName()}"
 
     def printConfig(self):
