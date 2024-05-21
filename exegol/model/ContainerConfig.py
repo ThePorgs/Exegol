@@ -428,6 +428,7 @@ class ContainerConfig:
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
             if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
+                # TODO improve tz resolution
                 if len(tzname) > 0:
                     logger.debug(f"Sharing timezone via TZ env var: '{tzname[0]}'")
                     self.addEnv("TZ", tzname[0])

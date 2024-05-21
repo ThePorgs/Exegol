@@ -41,10 +41,9 @@ class GuiUtils:
         :return: bool
         """
         if EnvInfo.isWindowsHost():
-            return False  # TODO To Be defined (WSLg works fine for now)
-        # elif EnvInfo.isMacHost():
-        #    return False
-        # Linux or Mac, rely on var env settings
+            return False
+        elif EnvInfo.isMacHost():
+            return False
         return EnvInfo.isWaylandAvailable()
 
     @classmethod
