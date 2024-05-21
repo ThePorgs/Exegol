@@ -56,11 +56,11 @@ setup(
     ],
     install_requires=[
         'docker~=7.0.0',
-        'requests>=2.31.0',
-        'rich~=13.7.0',
+        'requests~=2.31.0',
+        'rich~=13.7.1',
         'PyYAML',
-        'GitPython~=3.1.40',
-        'argcomplete~=3.2.1'
+        'GitPython~=3.1.43',
+        'argcomplete~=3.3.0'
     ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
