@@ -8,6 +8,7 @@ import string
 from datetime import datetime
 from enum import Enum
 from pathlib import Path, PurePath
+from time import tzname
 from typing import Optional, List, Dict, Union, Tuple, cast
 
 from docker.models.containers import Container
@@ -37,6 +38,12 @@ class ContainerConfig:
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
     __default_desktop_port = {"http": 6080, "vnc": 5900}
+
+    # Verbose only filters
+    __verbose_only_envs = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH", "TZ"]
+    __verbose_only_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
+                             '/etc/timezone', '/my-resources', '/opt/my-resources',
+                             '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
 
     class ExegolFeatures(Enum):
         shell_logging = "org.exegol.feature.shell_logging"
@@ -123,6 +130,9 @@ class ContainerConfig:
         """Parse Docker object to setup self configuration"""
         # Reset default attributes
         self.__passwd = None
+        self.__share_timezone = False
+        self.__my_resources = False
+        self.__enable_gui = False
         # Container Config section
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
@@ -130,14 +140,6 @@ class ContainerConfig:
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
         self.legacy_entrypoint = container_config.get("Entrypoint") is None
-        self.__enable_gui = False
-        envs_key = self.__envs.keys()
-        if "DISPLAY" in envs_key:
-            self.__enable_gui = True
-            self.__gui_engine.append("X11")
-        if "WAYLAND_DISPLAY" in envs_key:
-            self.__enable_gui = True
-            self.__gui_engine.append("Wayland")
 
         # Host Config section
         host_config = container.attrs.get("HostConfig", {})
@@ -155,8 +157,6 @@ class ContainerConfig:
         logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
-        self.__share_timezone = False
-        self.__my_resources = False
         self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
 
         # Network section
@@ -170,6 +170,15 @@ class ContainerConfig:
             logger.debug(f"└── Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
             self.addRawEnv(env.strip("'").strip('"'))
+        envs_key = self.__envs.keys()
+        if "DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("X11")
+        if "WAYLAND_DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("Wayland")
+        if "TZ" in envs_key:
+            self.__share_timezone = True
 
     def __parseLabels(self, labels: Dict[str, str]):
         """Parse envs object syntax"""
@@ -416,37 +425,36 @@ class ContainerConfig:
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
-        if EnvInfo.is_windows_shell:
-            logger.warning("Timezone sharing is not supported from a Windows shell. Skipping.")
-            return
-        elif EnvInfo.isMacHost():
-            # On Orbstack /etc cannot be shared + we should test how Orbstack handle symlink
-            # With docker desktop, symlink are resolved as full path on container creation. When tzdata is updated on the host, the container can no longer be started because the files of the previous package version are missing.
-            # TODO Test if env var can be used as replacement
-            logger.warning("Timezone sharing on Mac is not supported (for stability reasons). Skipping.")
-            return
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
-            # Try to share /etc/timezone (deprecated old timezone file)
-            try:
-                self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
-                logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
-                timezone_loaded = True
-            except CancelOperation:
-                logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
-                timezone_loaded = False
-            # Try to share /etc/localtime (new timezone file)
-            try:
-                self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
-                logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
-            except CancelOperation as e:
-                if not timezone_loaded:
-                    # If neither file was found, disable the functionality
-                    logger.error(f"The host's timezone could not be shared: {e}")
-                    return
+            if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
+                if len(tzname) > 0:
+                    logger.debug(f"Sharing timezone via TZ env var: '{tzname[0]}'")
+                    self.addEnv("TZ", tzname[0])
                 else:
-                    logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
-                                   "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
+                    logger.warning("Your system timezone cannot be shared.")
+                    return
+            else:
+                # Try to share /etc/timezone (deprecated old timezone file)
+                try:
+                    self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
+                    logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
+                    timezone_loaded = True
+                except CancelOperation:
+                    logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
+                    timezone_loaded = False
+                # Try to share /etc/localtime (new timezone file)
+                try:
+                    self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
+                    logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
+                except CancelOperation as e:
+                    if not timezone_loaded:
+                        # If neither file was found, disable the functionality
+                        logger.error(f"The host's timezone could not be shared: {e}")
+                        return
+                    else:
+                        logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
+                                       "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
             self.__share_timezone = True
 
     def __disableSharedTimezone(self):
@@ -1378,12 +1386,9 @@ class ContainerConfig:
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
-        hidden_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                         '/etc/timezone', '/my-resources', '/opt/my-resources',
-                         '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
         for mount in self.__mounts:
             # Not showing technical mounts
-            if not verbose and mount.get('Target') in hidden_mounts:
+            if not verbose and mount.get('Target') in self.__verbose_only_mounts:
                 continue
             read_only_text = f"[bright_black](RO)[/bright_black] " if verbose else ''
             read_write_text = f"[orange3](RW)[/orange3] " if verbose else ''
@@ -1409,7 +1414,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + self.__verbose_only_envs:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result
