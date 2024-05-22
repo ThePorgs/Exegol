@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install requirements
-        run: python -m pip install --user mypy types-requests types-PyYAML
+        run: python -m pip install --user mypy types-requests types-PyYAML types-tzlocal
       - name: Run code analysis (package)
         run: mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Run code analysis (source)
