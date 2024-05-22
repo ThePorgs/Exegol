@@ -281,11 +281,16 @@ class GuiUtils:
         if EnvInfo.isWindowsHost():
             wsl = shutil.which("wsl.exe")
             if not wsl:
+                logger.debug("wsl.exe not found on the local system.")
                 return False
             ret = subprocess.Popen(["wsl.exe", "--status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             ret.wait()
             if ret.returncode == 0:
                 return True
+            else:
+                logger.debug(f"wsl.exe --status return code {ret.returncode}")
+                logger.debug(str(ret.stdout))
+                logger.debug(str(ret.stderr))
         logger.debug("WSL status command failed.. Trying a fallback check method.")
         return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 
