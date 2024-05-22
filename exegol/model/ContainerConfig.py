@@ -10,7 +10,6 @@ from enum import Enum
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
-import tzlocal
 from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
@@ -428,7 +427,8 @@ class ContainerConfig:
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
             if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
-                current_tz = tzlocal.get_localzone_name()
+                from tzlocal import get_localzone_name
+                current_tz = get_localzone_name()
                 if current_tz:
                     logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
                     self.addEnv("TZ", current_tz)
