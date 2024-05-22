@@ -8,9 +8,9 @@ import string
 from datetime import datetime
 from enum import Enum
 from pathlib import Path, PurePath
-from time import tzname
 from typing import Optional, List, Dict, Union, Tuple, cast
 
+import tzlocal
 from docker.models.containers import Container
 from docker.types import Mount
 from rich.prompt import Prompt
@@ -428,10 +428,10 @@ class ContainerConfig:
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
             if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
-                # TODO improve tz resolution
-                if len(tzname) > 0:
-                    logger.debug(f"Sharing timezone via TZ env var: '{tzname[0]}'")
-                    self.addEnv("TZ", tzname[0])
+                current_tz = tzlocal.get_localzone_name()
+                if current_tz:
+                    logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
+                    self.addEnv("TZ", current_tz)
                 else:
                     logger.warning("Your system timezone cannot be shared.")
                     return
@@ -1019,7 +1019,8 @@ class ContainerConfig:
                             break
                     if not match:
                         logger.error(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is [red]incorrect[/red].")
-                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
+                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in "
+                                        f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
