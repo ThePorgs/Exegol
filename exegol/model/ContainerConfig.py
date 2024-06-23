@@ -26,6 +26,9 @@ from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.GuiUtils import GuiUtils
 
+if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
+    from tzlocal import get_localzone_name
+
 
 class ContainerConfig:
     """Configuration class of an exegol container"""
@@ -427,7 +430,6 @@ class ContainerConfig:
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
             if EnvInfo.is_windows_shell or EnvInfo.isMacHost():
-                from tzlocal import get_localzone_name
                 current_tz = get_localzone_name()
                 if current_tz:
                     logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
