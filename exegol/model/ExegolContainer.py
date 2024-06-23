@@ -77,10 +77,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if status == "unknown":
             return "Unknown"
         elif status == "exited":
-            return "[red]Stopped"
+            return "[red]Stopped[/red]"
         elif status == "running":
-            return "[green]Running"
-        return status
+            return "[green]Running[/green]"
+        return f"[orange3]{status}[/orange3]"
 
     def isNew(self) -> bool:
         """Check if the container has just been created or not"""
