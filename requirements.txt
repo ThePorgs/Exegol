@@ -1,6 +1,5 @@
-docker~=7.0.0
-# Request holdback: temp fix for https://github.com/docker/docker-py/issues/3256
-requests~=2.31.0
+docker~=7.1.0
+requests~=2.32.3
 rich~=13.7.1
 GitPython~=3.1.43
 PyYAML>=6.0.1
