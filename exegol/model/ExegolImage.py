@@ -589,7 +589,10 @@ class ExegolImage(SelectableInterface):
 
     def getBuildDate(self):
         """Build date getter"""
-        if "N/A" not in self.__build_date.upper():
+        if not self.__build_date:
+            # Handle empty string
+            return "[bright_black]N/A[/bright_black]"
+        elif "N/A" not in self.__build_date.upper():
             return datetime.strptime(self.__build_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
         else:
             return self.__build_date

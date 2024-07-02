@@ -71,20 +71,19 @@ config:
     
     # Configure your Exegol Desktop
     desktop:
-        # Enables the desktop mode all the time
-        # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the desktop
+        # Enables or not the desktop mode by default
+        # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the feature
         enabled_by_default: {self.desktop_default_enable}
     
         # Default desktop protocol,can be "http", or "vnc" (additional protocols to come in the future, check online documentation for updates).
         default_protocol: {self.desktop_default_proto}
     
-        # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) other it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
+        # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
         localhost_by_default: {self.desktop_default_localhost}
 
 """
         # TODO handle default image selection
         # TODO handle default start container
-        # TODO add custom build profiles path
         return config
 
     @staticmethod
@@ -125,7 +124,7 @@ config:
         # Desktop section
         desktop_data = config_data.get("desktop", {})
         self.desktop_default_enable = self._load_config_bool(desktop_data, 'enabled_by_default', self.desktop_default_enable)
-        self.desktop_default_proto = self._load_config_str(desktop_data, 'default_proto', self.desktop_default_proto, choices=self.desktop_available_proto)
+        self.desktop_default_proto = self._load_config_str(desktop_data, 'default_protocol', self.desktop_default_proto, choices=self.desktop_available_proto)
         self.desktop_default_localhost = self._load_config_bool(desktop_data, 'localhost_by_default', self.desktop_default_localhost)
 
     def get_configs(self) -> List[str]:

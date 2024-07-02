@@ -1,18 +1,18 @@
 #!/bin/bash
 
 # DO NOT CHANGE the syntax or text of the following line, only increment the version number
-# Spawn Version:2b
+# Spawn Version:2
 # The spawn version allow the wrapper to compare the current version of the spawn.sh inside the container compare to the one on the current wrapper version.
 # On new container, this file is automatically updated through a docker volume
 # For legacy container, this version is fetch and the file updated if needed.
 
 function shell_logging() {
     # First parameter is the method to use for shell logging (default to script)
-    method=$1
+    local method=$1
     # The second parameter is the shell command to use for the user
-    user_shell=$2
+    local user_shell=$2
     # The third enable compression at the end of the session
-    compress=$3
+    local compress=$3
 
     # Test if the command is supported on the current image
     if ! command -v "$method" &> /dev/null
@@ -26,6 +26,7 @@ function shell_logging() {
 
     umask 007
     mkdir -p /workspace/logs/
+    local filelog
     filelog="/workspace/logs/$(date +%d-%m-%Y_%H-%M-%S)_shell.${method}"
 
     case $method in
@@ -45,8 +46,8 @@ function shell_logging() {
         ;;
     esac
 
-    if [ "$compress" = 'True' ]; then
-      echo 'Compressing logs, please wait...'
+    if [[ "$compress" = 'True' ]]; then
+      echo 'compressing logs, please wait...'
       gzip "$filelog"
     fi
     exit 0

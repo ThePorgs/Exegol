@@ -21,7 +21,7 @@ class GuiUtils:
     default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
-    def isGuiAvailable(cls) -> bool:
+    def isX11GuiAvailable(cls) -> bool:
         """
         Check if the host OS can support GUI application with X11 sharing
         :return: bool
@@ -33,6 +33,18 @@ class GuiUtils:
             return cls.__macGuiChecks()
         # Linux default is True
         return True
+
+    @classmethod
+    def isWaylandGuiAvailable(cls) -> bool:
+        """
+        Check if the host OS can support GUI application with WAYLAND sharing
+        :return: bool
+        """
+        if EnvInfo.isWindowsHost():
+            return False
+        elif EnvInfo.isMacHost():
+            return False
+        return EnvInfo.isWaylandAvailable()
 
     @classmethod
     def getX11SocketPath(cls) -> Optional[str]:
@@ -59,9 +71,21 @@ class GuiUtils:
         return cls.default_x11_path
 
     @classmethod
+    def getWaylandSocketPath(cls) -> Optional[Path]:
+        """
+        Get the host path of the Wayland socket
+        :return:
+        """
+        wayland_dir = os.getenv("XDG_RUNTIME_DIR")
+        wayland_socket = os.getenv("WAYLAND_DISPLAY")
+        if wayland_dir is None or wayland_socket is None:
+            return None
+        return Path(wayland_dir, wayland_socket)
+
+    @classmethod
     def getDisplayEnv(cls) -> str:
         """
-        Get the current DISPLAY env to access X11 socket
+        Get the current DISPLAY environment to access X11 socket
         :return:
         """
         if EnvInfo.isMacHost():
@@ -76,6 +100,14 @@ class GuiUtils:
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
         return os.getenv('DISPLAY', ":0")
+
+    @classmethod
+    def getWaylandEnv(cls) -> str:
+        """
+        Get the current WAYLAND_DISPLAY environment to access wayland socket
+        :return:
+        """
+        return os.getenv('WAYLAND_DISPLAY', 'wayland-0')
 
     # # # # # # Mac specific methods # # # # # #
 
@@ -121,6 +153,7 @@ class GuiUtils:
              mount /tmp/.X11-unix for display sharing.
              Return True if the configuration is correct and /tmp is part of the whitelisted resources
         """
+        # Function not used for now because the X11 socket cannot be used for now with Docker Desktop
         docker_config = EnvInfo.getDockerDesktopResources()
         logger.debug(f"Docker Desktop configuration filesharingDirectories: {docker_config}")
         return '/tmp' in docker_config
@@ -248,11 +281,16 @@ class GuiUtils:
         if EnvInfo.isWindowsHost():
             wsl = shutil.which("wsl.exe")
             if not wsl:
+                logger.debug("wsl.exe not found on the local system.")
                 return False
             ret = subprocess.Popen(["wsl.exe", "--status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             ret.wait()
             if ret.returncode == 0:
                 return True
+            else:
+                logger.debug(f"wsl.exe --status return code {ret.returncode}")
+                logger.debug(str(ret.stdout))
+                logger.debug(str(ret.stderr))
         logger.debug("WSL status command failed.. Trying a fallback check method.")
         return cls.__wsl_test("/etc/os-release", name=None) or cls.__wsl_test("/etc/os-release")
 

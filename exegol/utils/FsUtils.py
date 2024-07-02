@@ -87,6 +87,6 @@ def setGidPermission(root_folder: Path):
     if perm_alert:
         logger.warning(f"In order to share files between your host and exegol (without changing the permission), you can run [orange3]manually[/orange3] this command from your [red]host[/red]:")
         logger.empty_line()
-        logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+rws {{}} \;", level=logging.WARNING)
+        logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+rws {{}} \\;", level=logging.WARNING)
         logger.empty_line()
         logger.empty_line()

@@ -5,7 +5,7 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.3.0b1"
+    version: str = "4.3.5b1"
 
     # Exegol documentation link
     documentation: str = "https://exegol.rtfd.io/"
@@ -23,7 +23,8 @@ class ConstantConfig:
     exegol_config_path: Path = Path().home() / ".exegol"
     # Docker Desktop for mac config file
     docker_desktop_mac_config_path = Path().home() / "Library/Group Containers/group.com.docker/settings.json"
-    docker_desktop_windows_config_path = Path().home() / "AppData/Roaming/Docker/settings.json"
+    docker_desktop_windows_config_short_path = "AppData/Roaming/Docker/settings.json"
+    docker_desktop_windows_config_path = Path().home() / docker_desktop_windows_config_short_path
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"
@@ -42,7 +43,7 @@ class ConstantConfig:
         Support source clone installation and pip package (venv / user / global context)"""
         local_src = cls.src_root_path_obj / source_path
         if local_src.is_dir() or local_src.is_file():
-            # If exegol is clone from github, build context is accessible from root src
+            # If exegol is clone from GitHub, build context is accessible from root src
             return local_src
         else:
             # If install from pip

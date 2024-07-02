@@ -57,15 +57,5 @@ Below are some bullet points to better understand how Exegol works
   </a>
 </div>
 
-Dramelac and I work at *Capgemini* and we thank them for allocating some time for us to develop and maintain Exegol! Visit Capgemini website at https://www.capgemini.com/.
-
-___
-
-<div align="center">
-  <a href="https://www.hackthebox.com/" title="Follow">
-    <img width="300" src="https://exegol.readthedocs.io/en/latest/_images/hackthebox.png">
-  </a>
-</div>
-
-We also thank *HackTheBox* for continuously supporting the community and for helping us financially to acquire the necessary hardware for supporting multiple architectures (AMD64, ARM64). Show some love at https://www.hackthebox.com/ !
+Dramelac and I work at [Capgemini](https://www.capgemini.com/) and we thank them for believing in the project since day 1, and for allowing us to have this personal initiative keep going.
 

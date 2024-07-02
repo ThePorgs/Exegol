@@ -1,7 +1,10 @@
-# Wrapper & images
+# Contributors documentation
+Check the full contributors (up-to-date) documentation here: https://exegol.readthedocs.io/en/dev/community/contributors.html
+
+# Wrapper & images (legacy)
 - the `master` branch is the stable version. Only Pull Requests are allowed on this branch.
 - the `dev` branch is used for active development. This is the bleeding-edge version, but is sometimes not as stable as the `master` (depending on the development cycle).
-- the `Exegol` repository includes the exegol.py wrapper code base, and features a `exegol-docker-images` submodule tracking [Exegol-images](https://github.com/ThePorgs/Exegol-images).
+- the `Exegol` repository includes the exegol.py wrapper code base, and features a `exegol-docker-build` submodule tracking [Exegol-images](https://github.com/ThePorgs/Exegol-images).
 - changes to the images/dockerfiles/tools/installs must be done on the [Exegol-images](https://github.com/ThePorgs/Exegol-images) repo.
 - by default, the wrapper pulls the latest DockerHub pre-built image for the install and updates
 - DockerHub automatic builds are configured as follows 

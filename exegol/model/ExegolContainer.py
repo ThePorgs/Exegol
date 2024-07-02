@@ -77,10 +77,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if status == "unknown":
             return "Unknown"
         elif status == "exited":
-            return "[red]Stopped"
+            return "[red]Stopped[/red]"
         elif status == "running":
-            return "[green]Running"
-        return status
+            return "[green]Running[/green]"
+        return f"[orange3]{status}[/orange3]"
 
     def isNew(self) -> bool:
         """Check if the container has just been created or not"""
@@ -116,7 +116,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
             start_date = datetime.utcnow()
-            self.__container.start()
+            try:
+                self.__container.start()
+            except APIError as e:
+                logger.debug(e)
+                logger.critical(f"Docker raise a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -132,7 +136,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                             logger.error(line)
                         else:
                             logger.verbose(line)
-                        progress.update(status=f"[blue]\[Startup][/blue] {line}")
+                        progress.update(status=f"[blue][Startup][/blue] {line}")
                 except KeyboardInterrupt:
                     # User can cancel startup logging with ctrl+C
                     logger.warning("User skip startup status updates. Spawning a shell now.")
@@ -323,8 +327,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             if shutil.which("xhost") is None:
-                logger.error("The [green]xhost[/green] command is not available on your [bold]host[/bold]. "
-                             "Exegol was unable to allow your container to access your graphical environment (or you don't have one).")
+                if EnvInfo.is_linux_shell:
+                    debug_msg = "Try to install the package [green]xorg-xhost[/green] or maybe you don't have X11 on your host?"
+                else:
+                    debug_msg = "or you don't have one"
+                logger.error(f"The [green]xhost[/green] command is not available on your [bold]host[/bold]. "
+                             f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
                 return
 
             if EnvInfo.isMacHost():
@@ -333,9 +341,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 with console.status(f"Starting XQuartz...", spinner_style="blue"):
                     os.system(f"xhost + localhost > /dev/null")
             else:
-                logger.debug(f"Adding xhost ACL to local:{self.config.hostname}")
+                logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
                 # add linux local ACL
-                os.system(f"xhost +local:{self.config.hostname} > /dev/null")
+                os.system(f"xhost +local:{self.config.getUsername()} > /dev/null")
 
     def __updatePasswd(self):
         """

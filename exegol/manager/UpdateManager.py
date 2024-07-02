@@ -33,9 +33,9 @@ class UpdateManager:
         if tag is None:
             # Filter for updatable images
             if install_mode:
-                available_images = [i for i in DockerUtils.listImages() if not i.isLocked()]
+                available_images = [i for i in DockerUtils().listImages() if not i.isLocked()]
             else:
-                available_images = [i for i in DockerUtils.listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
+                available_images = [i for i in DockerUtils().listImages() if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
                 if len(available_images) == 0:
                     logger.success("All images already installed are up to date!")
                     return None
@@ -55,7 +55,7 @@ class UpdateManager:
         else:
             try:
                 # Find image by name
-                selected_image = DockerUtils.getImage(tag)
+                selected_image = DockerUtils().getImage(tag)
             except ObjectNotFound:
                 # If the image do not exist, ask to build it
                 if install_mode:
@@ -66,13 +66,13 @@ class UpdateManager:
 
         if selected_image is not None and type(selected_image) is ExegolImage:
             # Update existing ExegolImage
-            if DockerUtils.downloadImage(selected_image, install_mode):
+            if DockerUtils().downloadImage(selected_image, install_mode):
                 sync_result = None
                 # Name comparison allow detecting images without version tag
                 if not selected_image.isVersionSpecific() and selected_image.getName() != selected_image.getLatestVersionName():
                     with console.status(f"Synchronizing version tag information. Please wait.", spinner_style="blue"):
                         # Download associated version tag.
-                        sync_result = DockerUtils.downloadVersionTag(selected_image)
+                        sync_result = DockerUtils().downloadVersionTag(selected_image)
                     # Detect if an error have been triggered during the download
                     if type(sync_result) is str:
                         logger.error(f"Error while downloading version tag, {sync_result}")
@@ -80,7 +80,7 @@ class UpdateManager:
                 # if version tag have been successfully download, returning ExegolImage from docker response
                 if sync_result is not None and type(sync_result) is ExegolImage:
                     return sync_result
-                return DockerUtils.getInstalledImage(selected_image.getName())
+                return DockerUtils().getInstalledImage(selected_image.getName())
         elif type(selected_image) is str:
             # Build a new image using TUI selected name, confirmation has already been requested by TUI
             return cls.buildAndLoad(selected_image)
@@ -250,7 +250,7 @@ class UpdateManager:
     def __get_current_version(cls):
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         current_version = ConstantConfig.version
-        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE) and ConstantConfig.git_source_installation:
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
                 current_version = str(module.get_current_commit())[:8]
@@ -259,12 +259,19 @@ class UpdateManager:
     @staticmethod
     def display_current_version():
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
-        commit_version = ""
-        if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+        version_details = ""
+        if ConstantConfig.git_source_installation:
             module = ExegolModules().getWrapperGit(fast_load=True)
             if module.isAvailable:
-                commit_version = f" [bright_black]\[{str(module.get_current_commit())[:8]}][/bright_black]"
-        return f"[blue]v{ConstantConfig.version}[/blue]{commit_version}"
+                current_branch = module.getCurrentBranch()
+                commit_version = ""
+                if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE):
+                    commit_version = "-" + str(module.get_current_commit())[:8]
+                if current_branch is None:
+                    current_branch = "HEAD"
+                if current_branch != "master" or commit_version != "":
+                    version_details = f" [bright_black]\\[{current_branch}{commit_version}][/bright_black]"
+        return f"[blue]v{ConstantConfig.version}[/blue]{version_details}"
 
     @classmethod
     def __tagUpdateAvailable(cls, latest_version, current_version=None):
@@ -290,7 +297,7 @@ class UpdateManager:
     def display_latest_version(cls) -> str:
         last_version = DataCache().get_wrapper_data().last_version
         if len(last_version) == 8 and '.' not in last_version:
-            return f"[bright_black]\[{last_version}][/bright_black]"
+            return f"[bright_black]\\[{last_version}][/bright_black]"
         return f"[blue]v{last_version}[/blue]"
 
     @classmethod
@@ -347,6 +354,8 @@ class UpdateManager:
 
         # Choose dockerfile
         profiles = cls.listBuildProfiles(profiles_path=build_path)
+        if len(profiles) == 0:
+            logger.critical(f"No build profile found in {build_path}. Check your exegol installation, it seems to be broken...")
         build_profile: Optional[str] = ParametersManager().build_profile
         build_dockerfile: Optional[str] = None
         if build_profile is not None:
@@ -359,14 +368,14 @@ class UpdateManager:
                                                                                              title="[not italic]:dog: [/not italic][gold3]Profile[/gold3]"))
         logger.debug(f"Using {build_profile} build profile ({build_dockerfile})")
         # Docker Build
-        DockerUtils.buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path.as_posix())
+        DockerUtils().buildImage(tag=build_name, build_profile=build_profile, build_dockerfile=build_dockerfile, dockerfile_path=build_path.as_posix())
         return build_name
 
     @classmethod
     def buildAndLoad(cls, tag: str):
         """Build an image and load it"""
         build_name = cls.__buildSource(tag)
-        return DockerUtils.getInstalledImage(build_name)
+        return DockerUtils().getInstalledImage(build_name)
 
     @classmethod
     def listBuildProfiles(cls, profiles_path: Path = ConstantConfig.build_context_path_obj) -> Dict:
