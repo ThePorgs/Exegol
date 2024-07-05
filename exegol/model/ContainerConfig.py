@@ -1265,7 +1265,7 @@ class ContainerConfig:
 
     def addUserDevice(self, user_device_config: str):
         """Add a device from a user parameters"""
-        if EnvInfo.isDockerDesktop():
+        if EnvInfo.isDockerDesktop() and user_device_config != "/dev/net/tun":
             logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
             logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
             logger.critical("Device configuration cannot be applied, aborting operation.")
