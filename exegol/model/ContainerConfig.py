@@ -38,6 +38,9 @@ class ContainerConfig:
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
     __default_desktop_port = {"http": 6080, "vnc": 5900}
 
+    # Whitelist device for Docker Desktop
+    __whitelist_dd_devices = ["/dev/net/tun"]
+
     class ExegolFeatures(Enum):
         shell_logging = "org.exegol.feature.shell_logging"
         desktop = "org.exegol.feature.desktop"
@@ -642,7 +645,7 @@ class ContainerConfig:
             self.__vpn_parameters = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
-            self.removeDevice("/dev/net/tun")
+            self.removeDevice("")
             # Try to remove each possible volume
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
@@ -1265,7 +1268,7 @@ class ContainerConfig:
 
     def addUserDevice(self, user_device_config: str):
         """Add a device from a user parameters"""
-        if EnvInfo.isDockerDesktop() and user_device_config != "/dev/net/tun":
+        if EnvInfo.isDockerDesktop() and user_device_config not in self.__whitelist_dd_devices:
             logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
             logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
             logger.critical("Device configuration cannot be applied, aborting operation.")
