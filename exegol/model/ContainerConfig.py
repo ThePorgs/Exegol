@@ -645,7 +645,7 @@ class ContainerConfig:
             self.__vpn_parameters = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
-            self.removeDevice("")
+            self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
