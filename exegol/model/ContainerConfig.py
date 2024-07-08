@@ -1280,9 +1280,13 @@ class ContainerConfig:
 
     def addUserDevice(self, user_device_config: str):
         """Add a device from a user parameters"""
-        if EnvInfo.isDockerDesktop() and user_device_config not in self.__whitelist_dd_devices:
-            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
-            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+        if (EnvInfo.isDockerDesktop() or EnvInfo.isOrbstack()) and user_device_config not in self.__whitelist_dd_devices:
+            if EnvInfo.isDockerDesktop():
+                logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+                logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+            elif EnvInfo.isOrbstack():
+                logger.warning("Orbstack does not support (yet) USB device passthrough.")
+                logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
             logger.critical("Device configuration cannot be applied, aborting operation.")
         self.__addDevice(user_device_config)
 
