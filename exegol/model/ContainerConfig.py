@@ -24,6 +24,7 @@ from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOpera
 from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.FsUtils import check_sysctl_value
 from exegol.utils.GuiUtils import GuiUtils
 
 if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
@@ -638,9 +639,8 @@ class ContainerConfig:
         skip_sysctl = False
         if self.__network_host and EnvInfo.is_linux_shell:
             # Check if IPv6 have been disabled on the host with sysctl
-            with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
-                if int(conf.read()) == 0:
-                    skip_sysctl = True
+            if check_sysctl_value("net.ipv6.conf.all.disable_ipv6", "0"):
+                skip_sysctl = True
         if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
@@ -883,17 +883,18 @@ class ContainerConfig:
             # When the capability is not present
             return False
 
-    def __addSysctl(self, sysctl_key: str, config: str):
+    def __addSysctl(self, sysctl_key: str, config: Union[str, int]):
         """Add a linux sysctl to the container"""
         if sysctl_key in self.__sysctls.keys():
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
             return
-        if self.__network_host:
+        # Docs of supported sysctl by linux / docker: https://docs.docker.com/reference/cli/docker/container/run/#currently-supported-sysctls
+        if self.__network_host and sysctl_key.startswith('net.'):
             logger.warning(f"The sysctl container configuration is [red]not[/red] supported by docker in [blue]host[/blue] network mode.")
             logger.warning(f"Skipping the sysctl config: [magenta]{sysctl_key}[/magenta] = [orange3]{config}[/orange3].")
             logger.warning(f"If this configuration is mandatory in your situation, try to change it in sudo mode on your host.")
             return
-        self.__sysctls[sysctl_key] = config
+        self.__sysctls[sysctl_key] = str(config)
 
     def __removeSysctl(self, sysctl_key: str):
         """Remove a linux capability from the container's config"""
