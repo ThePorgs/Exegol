@@ -1007,14 +1007,14 @@ class ContainerConfig:
                 # TODO check if path_match + replace really useful , path_match rever used
                 path_match = host_path
                 if path_match.startswith("/opt/") and EnvInfo.isOrbstack():
-                    msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path."
+                    msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from /opt/ host path."
                     if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
                         logger.critical(msg)
                     raise CancelOperation(msg)
                 if path_match.startswith("/etc/"):
                     if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"{EnvInfo.getDockerEngine().value} doesn't support sharing [magenta]/etc[/magenta] files with the container")
+                        raise CancelOperation(f"{EnvInfo.getDockerEngine().value} doesn't support sharing /etc files with the container")
                     path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False

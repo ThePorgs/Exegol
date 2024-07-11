@@ -22,7 +22,7 @@ class Parser:
 
     __description = """This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.
 
-[red]Official documentation[/red]: https://exegol.rtfd.io"""
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io[/underline magenta]"""
     __formatter_class = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
@@ -56,9 +56,8 @@ class Parser:
             # the 'help' description of the current action is retrieved
             # from the comment of the corresponding action class
             sub_parser = self.subParser.add_parser(action.name, help=action.__doc__,
-                                                   description=action.__doc__ + f"""
-
-[red]Official documentation[/red]: https://exegol.rtfd.io/en/latest/exegol-wrapper/{action.name}.html""",
+                                                   description=action.__doc__ + f"""\n
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io/en/latest/exegol-wrapper/{action.name}.html[/underline magenta]""",
                                                    epilog=action.formatEpilog(),
                                                    formatter_class=self.__formatter_class)
             sub_parser.set_defaults(action=action)
