@@ -46,3 +46,6 @@ class ExegolContainerTemplate:
         if self.container_name != self.config.hostname:
             return f"{self.name} [bright_black]({self.config.hostname})[/bright_black]"
         return self.name
+
+    def getTextStatus(self) -> str:
+        return ""
