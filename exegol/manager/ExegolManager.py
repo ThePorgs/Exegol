@@ -362,7 +362,13 @@ class ExegolManager:
             # Return cache
             return cls.__container
         container_tag: Optional[str] = override_container if override_container is not None else ParametersManager().containertag
-        container_tags: Optional[Sequence[str]] = ParametersManager().multicontainertag
+        container_tags: Optional[List[str]] = None
+        if ParametersManager().multicontainertag:
+            container_tags = []
+            for tag in ParametersManager().multicontainertag:
+                # Prevent duplicate tag selection
+                if tag not in container_tags:
+                    container_tags.append(tag)
         try:
             if container_tag is None and (container_tags is None or len(container_tags) == 0):
                 # Interactive container selection

@@ -55,6 +55,8 @@ class Parser:
             # Each action has a dedicated sub-parser with different options
             # the 'help' description of the current action is retrieved
             # from the comment of the corresponding action class
+            if action.__doc__ is None:
+                action.__doc__ = "Unknown action"
             sub_parser = self.subParser.add_parser(action.name, help=action.__doc__,
                                                    description=action.__doc__ + f"""\n
 [bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io/en/latest/exegol-wrapper/{action.name}.html[/underline magenta]""",
