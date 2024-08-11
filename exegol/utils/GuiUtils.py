@@ -210,6 +210,8 @@ class GuiUtils:
         logger.debug("Testing WSLg availability")
         # WSL + WSLg must be available on the Windows host for the GUI to work through X11 sharing
         if not cls.__wsl_available():
+            if sys.platform != "win32" and os.getuid() == 0:
+                logger.critical("You are running exegol as [red]root[/red]! The root user cannot be used to run Exegol on a Windows environment.")
             logger.error("WSL is [orange3]not available[/orange3] on your system. X11 sharing is not supported.")
             return False
         logger.debug("WSL is [green]available[/green] on the local system")
