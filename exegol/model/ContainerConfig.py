@@ -84,7 +84,7 @@ class ContainerConfig:
         self.__gui_engine: List[str] = []
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
-        self.__my_resources_: str = "/opt/my-resources"
+        self.__my_resources_path: str = "/opt/my-resources"
         self.__exegol_resources: bool = False
         self.__network_host: bool = True
         self.__privileged: bool = False
