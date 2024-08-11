@@ -1004,23 +1004,17 @@ class ContainerConfig:
             # Docker Desktop for Windows based on WSL2 don't have filesystem limitation
             if EnvInfo.isMacHost():
                 # Add support for /etc
-                # TODO check if path_match + replace really useful , path_match rever used
-                path_match = host_path
-                if path_match.startswith("/opt/") and EnvInfo.isOrbstack():
+                if host_path.startswith("/opt/") and EnvInfo.isOrbstack():
                     msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from /opt/ host path."
-                    if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
+                    if host_path.endswith("entrypoint.sh") or host_path.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
                         logger.critical(msg)
                     raise CancelOperation(msg)
-                if path_match.startswith("/etc/"):
-                    if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"{EnvInfo.getDockerEngine().value} doesn't support sharing /etc files with the container")
-                    path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
                     # Find a match
                     for resource in EnvInfo.getDockerDesktopResources():
-                        if path_match.startswith(resource):
+                        if host_path.startswith(resource):
                             match = True
                             break
                     if not match:
