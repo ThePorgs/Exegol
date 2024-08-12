@@ -93,6 +93,7 @@ function desktop() {
   if command -v desktop-start &> /dev/null
   then
       echo "Starting Exegol [green]desktop[/green] with [blue]${EXEGOL_DESKTOP_PROTO}[/blue]"
+      ln -sf /root/.vnc /var/log/exegol/vnc
       desktop-start &>> ~/.vnc/startup.log  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else
