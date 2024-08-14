@@ -43,7 +43,7 @@ class ContainerConfig:
     __default_desktop_port = {"http": 6080, "vnc": 5900}
 
     # Verbose only filters
-    __verbose_only_envs = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH", "TZ"]
+    __verbose_only_envs = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH", "TZ", "_JAVA_OPTIONS"]
     __verbose_only_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
                              '/etc/timezone', '/my-resources', '/opt/my-resources',
                              '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
@@ -413,6 +413,11 @@ class ContainerConfig:
             # TODO support pulseaudio
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)
+
+            # Fix XQuartz render: https://github.com/ThePorgs/Exegol/issues/229
+            if EnvInfo.isMacHost():
+                self.addEnv("_JAVA_OPTIONS", '-Dsun.java2d.xrender=false')
+
             self.__enable_gui = True
 
     def __disableGUI(self):
