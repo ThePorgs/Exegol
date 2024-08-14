@@ -132,6 +132,9 @@ class WebUtils:
                     https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
                     if https_proxy:
                         proxies['https'] = https_proxy
+                    no_proxy = os.environ.get('NO_PROXY') or os.environ.get('no_proxy')
+                    if no_proxy:
+                        proxies['no_proxy'] = no_proxy
                     response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
                     return response
                 except requests.exceptions.HTTPError as e:
