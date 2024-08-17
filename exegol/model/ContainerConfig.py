@@ -1014,6 +1014,8 @@ class ContainerConfig:
                     if host_path.endswith("entrypoint.sh") or host_path.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
                         logger.critical(msg)
+                    else:
+                        msg += f" The volume {host_path} cannot be mounted to the container, please move it outside of this directory."
                     raise CancelOperation(msg)
                 if EnvInfo.isDockerDesktop():
                     match = False
