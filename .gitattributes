@@ -1,0 +1,8 @@
+# Default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Handle python file as text
+*.py text
+
+# Every shell file must be cloned with LF line ending
+*.sh text eol=lf
