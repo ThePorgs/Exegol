@@ -90,3 +90,17 @@ def setGidPermission(root_folder: Path):
         logger.raw(f"sudo chgrp -R $(id -g) {root_folder} && sudo find {root_folder} -type d -exec chmod g+rws {{}} \\;", level=logging.WARNING)
         logger.empty_line()
         logger.empty_line()
+
+
+def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
+    sysctl_path = "/proc/sys/" + sysctl.replace('.', '/')
+    try:
+        with open(sysctl_path, 'r') as conf:
+            config = conf.read().strip()
+            logger.debug(f"Checking sysctl value {sysctl}={config} (compare to {compare_to})")
+            return conf.read().strip() == compare_to
+    except FileNotFoundError:
+        logger.debug(f"Sysctl file {sysctl} not found!")
+    except PermissionError:
+        logger.debug(f"Unable to read sysctl {sysctl} permission!")
+    return False

@@ -24,7 +24,11 @@ from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOpera
 from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.FsUtils import check_sysctl_value
 from exegol.utils.GuiUtils import GuiUtils
+
+if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
+    from tzlocal import get_localzone_name
 
 
 class ContainerConfig:
@@ -37,6 +41,12 @@ class ContainerConfig:
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
     __default_desktop_port = {"http": 6080, "vnc": 5900}
+
+    # Verbose only filters
+    __verbose_only_envs = ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH", "TZ", "_JAVA_OPTIONS"]
+    __verbose_only_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
+                             '/etc/timezone', '/my-resources', '/opt/my-resources',
+                             '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
 
     # Whitelist device for Docker Desktop
     __whitelist_dd_devices = ["/dev/net/tun"]
@@ -126,6 +136,9 @@ class ContainerConfig:
         """Parse Docker object to setup self configuration"""
         # Reset default attributes
         self.__passwd = None
+        self.__share_timezone = False
+        self.__my_resources = False
+        self.__enable_gui = False
         # Container Config section
         container_config = container.attrs.get("Config", {})
         self.tty = container_config.get("Tty", True)
@@ -133,14 +146,6 @@ class ContainerConfig:
         self.__parseLabels(container_config.get("Labels", {}))
         self.interactive = container_config.get("OpenStdin", True)
         self.legacy_entrypoint = container_config.get("Entrypoint") is None
-        self.__enable_gui = False
-        envs_key = self.__envs.keys()
-        if "DISPLAY" in envs_key:
-            self.__enable_gui = True
-            self.__gui_engine.append("X11")
-        if "WAYLAND_DISPLAY" in envs_key:
-            self.__enable_gui = True
-            self.__gui_engine.append("Wayland")
 
         # Host Config section
         host_config = container.attrs.get("HostConfig", {})
@@ -158,8 +163,6 @@ class ContainerConfig:
         logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
-        self.__share_timezone = False
-        self.__my_resources = False
         self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
 
         # Network section
@@ -173,6 +176,15 @@ class ContainerConfig:
             logger.debug(f"└── Parsing envs : {env}")
             # Removing " and ' at the beginning and the end of the string before splitting key / value
             self.addRawEnv(env.strip("'").strip('"'))
+        envs_key = self.__envs.keys()
+        if "DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("X11")
+        if "WAYLAND_DISPLAY" in envs_key:
+            self.__enable_gui = True
+            self.__gui_engine.append("Wayland")
+        if "TZ" in envs_key:
+            self.__share_timezone = True
 
     def __parseLabels(self, labels: Dict[str, str]):
         """Parse envs object syntax"""
@@ -401,6 +413,11 @@ class ContainerConfig:
             # TODO support pulseaudio
             for k, v in self.__static_gui_envs.items():
                 self.addEnv(k, v)
+
+            # Fix XQuartz render: https://github.com/ThePorgs/Exegol/issues/229
+            if EnvInfo.isMacHost():
+                self.addEnv("_JAVA_OPTIONS", '-Dsun.java2d.xrender=false')
+
             self.__enable_gui = True
 
     def __disableGUI(self):
@@ -419,37 +436,37 @@ class ContainerConfig:
 
     def enableSharedTimezone(self):
         """Procedure to enable shared timezone feature"""
-        if EnvInfo.is_windows_shell:
-            logger.warning("Timezone sharing is not supported from a Windows shell. Skipping.")
-            return
-        elif EnvInfo.isMacHost():
-            # On Orbstack /etc cannot be shared + we should test how Orbstack handle symlink
-            # With docker desktop, symlink are resolved as full path on container creation. When tzdata is updated on the host, the container can no longer be started because the files of the previous package version are missing.
-            # TODO Test if env var can be used as replacement
-            logger.warning("Timezone sharing on Mac is not supported (for stability reasons). Skipping.")
-            return
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
-            # Try to share /etc/timezone (deprecated old timezone file)
-            try:
-                self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
-                logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
-                timezone_loaded = True
-            except CancelOperation:
-                logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
-                timezone_loaded = False
-            # Try to share /etc/localtime (new timezone file)
-            try:
-                self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
-                logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
-            except CancelOperation as e:
-                if not timezone_loaded:
-                    # If neither file was found, disable the functionality
-                    logger.error(f"The host's timezone could not be shared: {e}")
-                    return
+            if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
+                current_tz = get_localzone_name()
+                if current_tz:
+                    logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
+                    self.addEnv("TZ", current_tz)
                 else:
-                    logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
-                                   "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
+                    logger.warning("Your system timezone cannot be shared.")
+                    return
+            else:
+                # Try to share /etc/timezone (deprecated old timezone file)
+                try:
+                    self.addVolume("/etc/timezone", "/etc/timezone", read_only=True, must_exist=True)
+                    logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
+                    timezone_loaded = True
+                except CancelOperation:
+                    logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
+                    timezone_loaded = False
+                # Try to share /etc/localtime (new timezone file)
+                try:
+                    self.addVolume("/etc/localtime", "/etc/localtime", read_only=True, must_exist=True)
+                    logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
+                except CancelOperation as e:
+                    if not timezone_loaded:
+                        # If neither file was found, disable the functionality
+                        logger.error(f"The host's timezone could not be shared: {e}")
+                        return
+                    else:
+                        logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
+                                       "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
             self.__share_timezone = True
 
     def __disableSharedTimezone(self):
@@ -627,9 +644,8 @@ class ContainerConfig:
         skip_sysctl = False
         if self.__network_host and EnvInfo.is_linux_shell:
             # Check if IPv6 have been disabled on the host with sysctl
-            with open('/proc/sys/net/ipv6/conf/all/disable_ipv6', 'r') as conf:
-                if int(conf.read()) == 0:
-                    skip_sysctl = True
+            if check_sysctl_value("net.ipv6.conf.all.disable_ipv6", "0"):
+                skip_sysctl = True
         if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
         # Add tun device, this device is needed to create VPN tunnels
@@ -872,17 +888,18 @@ class ContainerConfig:
             # When the capability is not present
             return False
 
-    def __addSysctl(self, sysctl_key: str, config: str):
+    def __addSysctl(self, sysctl_key: str, config: Union[str, int]):
         """Add a linux sysctl to the container"""
         if sysctl_key in self.__sysctls.keys():
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
             return
-        if self.__network_host:
+        # Docs of supported sysctl by linux / docker: https://docs.docker.com/reference/cli/docker/container/run/#currently-supported-sysctls
+        if self.__network_host and sysctl_key.startswith('net.'):
             logger.warning(f"The sysctl container configuration is [red]not[/red] supported by docker in [blue]host[/blue] network mode.")
             logger.warning(f"Skipping the sysctl config: [magenta]{sysctl_key}[/magenta] = [orange3]{config}[/orange3].")
             logger.warning(f"If this configuration is mandatory in your situation, try to change it in sudo mode on your host.")
             return
-        self.__sysctls[sysctl_key] = config
+        self.__sysctls[sysctl_key] = str(config)
 
     def __removeSysctl(self, sysctl_key: str):
         """Remove a linux capability from the container's config"""
@@ -992,28 +1009,25 @@ class ContainerConfig:
             # Docker Desktop for Windows based on WSL2 don't have filesystem limitation
             if EnvInfo.isMacHost():
                 # Add support for /etc
-                # TODO check if path_match + replace really useful , path_match rever used
-                path_match = host_path
-                if path_match.startswith("/opt/") and EnvInfo.isOrbstack():
-                    msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from [magenta]/opt/[/magenta] host path."
-                    if path_match.endswith("entrypoint.sh") or path_match.endswith("spawn.sh"):
+                if host_path.startswith("/opt/") and EnvInfo.isOrbstack():
+                    msg = f"{EnvInfo.getDockerEngine().value} cannot mount directory from /opt/ host path."
+                    if host_path.endswith("entrypoint.sh") or host_path.endswith("spawn.sh"):
                         msg += " Your exegol installation cannot be stored under this directory."
                         logger.critical(msg)
+                    else:
+                        msg += f" The volume {host_path} cannot be mounted to the container, please move it outside of this directory."
                     raise CancelOperation(msg)
-                if path_match.startswith("/etc/"):
-                    if EnvInfo.isOrbstack():
-                        raise CancelOperation(f"{EnvInfo.getDockerEngine().value} doesn't support sharing [magenta]/etc[/magenta] files with the container")
-                    path_match = path_match.replace("/etc/", "/private/etc/")
                 if EnvInfo.isDockerDesktop():
                     match = False
                     # Find a match
                     for resource in EnvInfo.getDockerDesktopResources():
-                        if path_match.startswith(resource):
+                        if host_path.startswith(resource):
                             match = True
                             break
                     if not match:
                         logger.error(f"Bind volume from {host_path} is not possible, Docker Desktop configuration is [red]incorrect[/red].")
-                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in [magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
+                        logger.critical(f"You need to modify the [green]Docker Desktop[/green] config and [green]add[/green] this path (or the root directory) in "
+                                        f"[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta] configuration.")
             # Choose to update fs directory perms if available and depending on user choice
             # if force_sticky_group is set, user choice is bypassed, fs will be updated.
             execute_update_fs = force_sticky_group or (enable_sticky_group and (UserConfig().auto_update_workspace_fs ^ ParametersManager().update_fs_perms))
@@ -1268,9 +1282,13 @@ class ContainerConfig:
 
     def addUserDevice(self, user_device_config: str):
         """Add a device from a user parameters"""
-        if EnvInfo.isDockerDesktop() and user_device_config not in self.__whitelist_dd_devices:
-            logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
-            logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+        if (EnvInfo.isDockerDesktop() or EnvInfo.isOrbstack()) and user_device_config not in self.__whitelist_dd_devices:
+            if EnvInfo.isDockerDesktop():
+                logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+                logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+            elif EnvInfo.isOrbstack():
+                logger.warning("Orbstack does not support (yet) USB device passthrough.")
+                logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
             logger.critical("Device configuration cannot be applied, aborting operation.")
         self.__addDevice(user_device_config)
 
@@ -1381,12 +1399,9 @@ class ContainerConfig:
     def getTextMounts(self, verbose: bool = False) -> str:
         """Text formatter for Mounts configurations. The verbose mode does not exclude technical volumes."""
         result = ''
-        hidden_mounts = ['/tmp/.X11-unix', '/opt/resources', '/etc/localtime',
-                         '/etc/timezone', '/my-resources', '/opt/my-resources',
-                         '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
         for mount in self.__mounts:
             # Not showing technical mounts
-            if not verbose and mount.get('Target') in hidden_mounts:
+            if not verbose and mount.get('Target') in self.__verbose_only_mounts:
                 continue
             read_only_text = f"[bright_black](RO)[/bright_black] " if verbose else ''
             read_write_text = f"[orange3](RW)[/orange3] " if verbose else ''
@@ -1412,7 +1427,7 @@ class ContainerConfig:
         result = ''
         for k, v in self.__envs.items():
             # Blacklist technical variables, only shown in verbose
-            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + ["DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "XDG_RUNTIME_DIR", "PATH"]:
+            if not verbose and k in list(self.__static_gui_envs.keys()) + [v.value for v in self.ExegolEnv] + self.__verbose_only_envs:
                 continue
             result += f"{k}={v}{os.linesep}"
         return result

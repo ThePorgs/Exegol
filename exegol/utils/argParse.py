@@ -1,7 +1,8 @@
 import argparse
-import argcomplete
 from logging import CRITICAL
 from typing import IO, Optional, List, Union, Dict, cast
+
+import argcomplete
 
 from exegol.console.cli.actions.Command import Command, Option
 from exegol.utils.ExeLog import logger
@@ -19,8 +20,9 @@ class ExegolArgParse(argparse.ArgumentParser):
 class Parser:
     """Custom Exegol CLI Parser. Main controller of argument building and parsing."""
 
-    __description = "This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on " \
-                    "your machine."
+    __description = """This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.
+
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io[/underline magenta]"""
     __formatter_class = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
@@ -53,8 +55,11 @@ class Parser:
             # Each action has a dedicated sub-parser with different options
             # the 'help' description of the current action is retrieved
             # from the comment of the corresponding action class
+            if action.__doc__ is None:
+                action.__doc__ = "Unknown action"
             sub_parser = self.subParser.add_parser(action.name, help=action.__doc__,
-                                                   description=action.__doc__,
+                                                   description=action.__doc__ + f"""\n
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io/en/latest/exegol-wrapper/{action.name}.html[/underline magenta]""",
                                                    epilog=action.formatEpilog(),
                                                    formatter_class=self.__formatter_class)
             sub_parser.set_defaults(action=action)
