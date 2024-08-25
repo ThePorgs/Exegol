@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - "dev"
-    paths:
-      - "**.py"
+    #paths:
+    #  - "**.py"
 
 jobs:
   test:
