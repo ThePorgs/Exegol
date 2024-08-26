@@ -1,4 +1,2 @@
-from exegol.config.ConstantConfig import ConstantConfig
-
-__version__ = ConstantConfig.version
+__version__ = "4.3.5"
 __title__ = "exegol"

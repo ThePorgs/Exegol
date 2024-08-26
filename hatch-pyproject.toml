@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Exegol"
+dynamic = ["version"]
+description = "Python wrapper to use Exegol, a container based fully featured and community-driven hacking environment."
+authors = [
+    { name = "Dramelac", email = "dramelac@pm.me" },
+    { name = "Shutdown", email = "nwodtuhs@pm.me" },
+]
+license = { file = "LICENSE" }
+readme = { file = "README.md", content-type = "text/markdown" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+keywords = ["pentest", "redteam", "ctf", "exegol"]
+
+requires-python = ">=3.8"
+dependencies = [
+    "docker~=7.1.0",
+    "requests~=2.32.3",
+    "rich~=13.7.1",
+    "GitPython~=3.1.43",
+    "PyYAML>=6.0.2",
+    "argcomplete~=3.5.0",
+    "tzlocal~=5.2; platform_system != 'Linux'"
+]
+
+[project.scripts]
+exegol = "exegol.manager.ExegolController:main"
+
+[project.urls]
+Homepage = "https://exegol.readthedocs.io/"
+Documentation = "https://exegol.readthedocs.io/"
+Repository = "https://github.com/ThePorgs/Exegol"
+Issues = "https://github.com/ThePorgs/Exegol/issues"
+Funding = "https://patreon.com/nwodtuhs"
+
+# Build backend specific
+[tool.hatch.version]
+path = "exegol/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "exegol",
+    "exegol-docker-build/Dockerfile",
+    "exegol-docker-build/*.dockerfile",
+    "exegol-docker-build/sources"
+]
+exclude = [
+    "tests"
+]

@@ -1,11 +1,12 @@
 import site
 from pathlib import Path
+from exegol import __version__
 
 
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.3.10b1"
+    version: str = __version__
 
     # Exegol documentation link
     documentation: str = "https://exegol.rtfd.io/"
