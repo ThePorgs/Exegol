@@ -31,9 +31,6 @@ data_files_dict["exegol-imgsync"] = ["exegol/utils/imgsync/entrypoint.sh",
 for k, v in data_files_dict.items():
     data_files.append((k, v))
 
-with open("requirements.txt", "r", encoding="utf-8") as f:
-    requirements = [x.strip() for x in f.readlines()]
-
 setup(
     name='Exegol',
     version=__version__,
@@ -57,7 +54,15 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
-    install_requires=requirements,
+    install_requires=[
+        'docker~=7.1.0',
+        'requests~=2.32.3',
+        'rich~=13.7.1',
+        'GitPython~=3.1.43',
+        'PyYAML>=6.0.2',
+        'argcomplete~=3.5.0',
+        'tzlocal~=5.2; platform_system != "Linux"'
+    ],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     data_files=data_files,
