@@ -31,7 +31,7 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
       - name: Install requirements
-        run: python -m pip install --user build virtualenv
+        run: python -m pip install --user build virtualenv setuptools
       - name: Cleaning
         run : python setup.py clean
       - name: Build Exegol
