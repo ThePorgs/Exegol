@@ -4,4 +4,4 @@ rich~=13.7.1
 GitPython~=3.1.43
 PyYAML>=6.0.2
 argcomplete~=3.5.0
-tzlocal~=5.2
+tzlocal~=5.2; platform_system != 'Linux'
