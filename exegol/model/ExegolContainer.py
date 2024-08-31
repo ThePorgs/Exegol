@@ -339,12 +339,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
                 return
             
-            # Another way of passing the argument without importing subprocess: os.system('xauth list | grep "${DISPLAY%.*}" > '+f"{self.config.getPrivateVolumePath()}/testyu")
             logger.debug(f"DISPLAY variable: {GuiUtils.getDisplayEnv()}")
-            tmpXauthority = f"/tmp/.tmpXauthority{random.randint(0, 999)}"
-            output = os.system(f"xauth extract {tmpXauthority} $DISPLAY > /dev/null 2>&1")
-            xauthEntry = subprocess.check_output(f"xauth -f {tmpXauthority} list 2>/dev/null",shell=True).decode()
-            logger.debug(f"xauthEntry to propagate: {xauthEntry}")
+
             display_host = GuiUtils.getDisplayEnv().split(':')[0]
             if display_host=='':
                 logger.debug("Connecting to container from local GUI, no X11 forwarding to set up")
@@ -358,19 +354,43 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
                     # add linux local ACL
                     os.system(f"xhost +local:{self.config.getUsername()} > /dev/null")
-            elif display_host=="localhost" and self.config.getTextNetworkMode() == "bridge":
+                return
+            
+            if shutil.which("xauth") is None:
+                if EnvInfo.is_linux_shell:
+                    debug_msg = "Try to install the package [green]xorg-xauth[/green] or maybe you don't have X11 on your host?"
+                else:
+                    debug_msg = "or you don't have one"
+                logger.error(f"The [green]xauth[/green] command is not available on your [bold]host[/bold]. "
+                             f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
+                return
+            
+            if display_host=="localhost" and self.config.getTextNetworkMode() != "host":
                 logger.warning("X11 forwarding won't work on a bridged container unless you specify \"X11UseLocalhost no\" in your host sshd_config")
-            elif display_host=="localhost":
+                logger.warning("[red]Be aware[/red] changing \"X11UseLocalhost\" value can [red]expose your device[/red], correct firewalling is [red]required[/red]")
+                logger.warning("The following documentation can be usefull to limit the exposure of your x11 socket: https://studioware.com/wikislax/index.php?title=X11_over_the_network#X11_firewalling")
+                return
+
+            # Setting up the temporary file to pass the xauth cookie to the container
+            tmpXauthority = f"/tmp/.tmpXauthority{random.randint(0, 999)}"
+            logger.debug(f"Extracting xauth entries to {tmpXauthority}")
+            os.system(f"xauth extract {tmpXauthority} $DISPLAY > /dev/null 2>&1")
+            xauthEntry = subprocess.check_output(f"xauth -f {tmpXauthority} list 2>/dev/null",shell=True).decode()
+            logger.debug(f"xauthEntry to propagate: {xauthEntry}")
+            if display_host=="localhost":
                 logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connection can be received only on loopback");
                 # Modifing the entry to convert <hostname>/unix:<display_number> to localhost:<display_number>
                 xauthEntry = f"localhost:{xauthEntry.split(':')[1]}"
             else:
                 logger.debug("X11UseLocalhost directive is set to \"no\", X11 connection can be received from anywere");
+            # Check if the host has a xauth entry corresponding to the current display.
             if xauthEntry:
                 logger.debug(f"Adding xauth cookie to container: {xauthEntry}")
                 self.exec(f"xauth add {xauthEntry}", as_daemon=False, quiet=True)
                 logger.debug(f"Removing {tmpXauthority}")
                 os.remove(tmpXauthority)
+            else:
+                logger.warning(f"No xauth cookie corresponding to the current display was found.")
 
     def __updatePasswd(self):
         """
