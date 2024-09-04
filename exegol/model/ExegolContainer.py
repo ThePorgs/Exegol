@@ -344,7 +344,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             # Extracts the left part of the display variable to determine if remote access is used
             display_host = GuiUtils.getDisplayEnv().split(':')[0]
             # Left part is empty, local access is used to start Exegol
-            if display_host=='':
+            if display_host=='' or EnvInfo.isMacHost():
                 logger.debug("Connecting to container from local GUI, no X11 forwarding to set up")
                 # TODO verify that the display format is the same on macOS, otherwise might not set up xauth and xhost correctly
                 if EnvInfo.isMacHost():
