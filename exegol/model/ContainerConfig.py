@@ -501,7 +501,8 @@ class ContainerConfig:
                     raise CancelOperation
             except CancelOperation:
                 # Error during installation, skipping operation
-                logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled")
+                if UserConfig().enable_exegol_resources:
+                    logger.warning("Exegol resources have not been downloaded, the feature cannot be enabled yet")
                 return False
             logger.verbose("Config: Enabling exegol resources volume")
             self.__exegol_resources = True

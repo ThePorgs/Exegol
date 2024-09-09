@@ -1,14 +1,14 @@
 from pathlib import Path
 from typing import Optional, Union
 
+from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.UserConfig import UserConfig
 from exegol.console.ExegolPrompt import Confirm
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
 from exegol.utils.GitUtils import GitUtils
 from exegol.utils.MetaSingleton import MetaSingleton
-from exegol.config.UserConfig import UserConfig
 
 
 class ExegolModules(metaclass=MetaSingleton):
@@ -51,7 +51,7 @@ class ExegolModules(metaclass=MetaSingleton):
         if self.__git_resources is None:
             self.__git_resources = GitUtils(UserConfig().exegol_resources_path, "resources", "",
                                             skip_submodule_update=fast_load)
-        if not self.__git_resources.isAvailable and not skip_install:
+        if not self.__git_resources.isAvailable and not skip_install and UserConfig().enable_exegol_resources:
             self.__init_resources_repo()
         return self.__git_resources
 
