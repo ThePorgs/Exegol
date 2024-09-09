@@ -1,9 +1,11 @@
+import http
 import logging
 
 try:
     import docker
-    import requests
     import git
+    import requests
+    import urllib3
 
     from exegol.utils.ExeLog import logger, ExeLog, console
     from exegol.utils.DockerUtils import DockerUtils
@@ -83,5 +85,5 @@ def main():
         logger.critical(f"A critical error occurred while running this git command: {' '.join(git_error.command)}")
     except Exception:
         print_exception_banner()
-        console.print_exception(show_locals=True, suppress=[docker, requests, git])
+        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http])
         exit(1)
