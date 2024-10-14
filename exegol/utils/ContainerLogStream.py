@@ -1,12 +1,8 @@
-import asyncio
-import concurrent.futures
-import threading
 import time
 from datetime import datetime, timedelta
-from typing import Union, List, Any, Optional
+from typing import Optional
 
 from docker.models.containers import Container
-from docker.types import CancellableStream
 
 from exegol.utils.ExeLog import logger
 
@@ -17,7 +13,7 @@ class ContainerLogStream:
         # Container to extract logs from
         self.__container = container
         # Fetch more logs from this datetime
-        self.__start_date: datetime = datetime.utcnow() if start_date is None else start_date
+        self.__start_date: datetime = datetime.now() if start_date is None else start_date
         self.__since_date = self.__start_date
         self.__until_date: Optional[datetime] = None
         # The data stream is returned from the docker SDK. It can contain multiple line at the same.
@@ -30,7 +26,7 @@ class ContainerLogStream:
 
         # Hint message flag
         self.__tips_sent = False
-        self.__tips_timedelta = self.__start_date + timedelta(seconds=15)
+        self.__tips_timedelta = self.__start_date + timedelta(seconds=30)
 
     def __iter__(self):
         return self
@@ -38,7 +34,7 @@ class ContainerLogStream:
     def __next__(self):
         """Get the next line of the stream"""
         if self.__until_date is None:
-            self.__until_date = datetime.utcnow()
+            self.__until_date = datetime.now()
         while True:
             # The data stream is fetch from the docker SDK once empty.
             if self.__data_stream is None:
@@ -69,4 +65,4 @@ class ContainerLogStream:
             self.__data_stream = None
             self.__since_date = self.__until_date
             time.sleep(0.5)  # Wait for more logs
-            self.__until_date = datetime.utcnow()
+            self.__until_date = datetime.now()

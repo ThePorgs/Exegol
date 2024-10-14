@@ -118,7 +118,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         :return:
         """
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
-            start_date = datetime.utcnow()
+            start_date = datetime.now()
             try:
                 self.__container.start()
             except APIError as e:

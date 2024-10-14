@@ -603,7 +603,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                         tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                         buildargs={"TAG": f"{build_profile}",
                                                    "VERSION": "local",
-                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
+                                                   "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                         platform="linux/" + ParametersManager().arch,
                                         rm=True,
                                         forcerm=True,
