@@ -24,7 +24,7 @@ from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOpera
 from exegol.model.ExegolModules import ExegolModules
 from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
-from exegol.utils.FsUtils import check_sysctl_value
+from exegol.utils.FsUtils import check_sysctl_value, mkdir
 from exegol.utils.GuiUtils import GuiUtils
 
 if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
@@ -1039,7 +1039,7 @@ class ContainerConfig:
                     else:
                         # If the directory is created by exegol, bypass user preference and enable shared perms (if available)
                         execute_update_fs = force_sticky_group or enable_sticky_group
-                        path.mkdir(parents=True, exist_ok=True)
+                        mkdir(path)
             except PermissionError:
                 logger.error("Unable to create the volume folder on the filesystem locally.")
                 logger.critical(f"Insufficient permissions to create the folder: {host_path}")
