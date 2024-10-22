@@ -193,7 +193,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 # stream[0] : exit code
                 # stream[1] : text stream
                 for log in stream[1]:
-                    logger.raw(log.decode("utf-8"))
+                    if type(log) is bytes:
+                        log = log.decode("utf-8")
+                    logger.raw(log)
                 if not quiet:
                     logger.success("End of the command")
             except KeyboardInterrupt:
