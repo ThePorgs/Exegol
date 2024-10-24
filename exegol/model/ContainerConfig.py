@@ -10,8 +10,9 @@ from enum import Enum
 from pathlib import Path, PurePath
 from typing import Optional, List, Dict, Union, Tuple, cast
 
-from docker.models.containers import Container
+from docker.models.containers import Container as DockerContainer
 from docker.types import Mount
+from podman.domain.containers import Container as PodmanContainer
 from rich.prompt import Prompt
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -81,7 +82,7 @@ class ContainerConfig:
                         ExegolMetadata.comment.value: ["setComment", "getComment"],
                         ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
 
-    def __init__(self, container: Optional[Container] = None):
+    def __init__(self, container: Optional[Union[DockerContainer, PodmanContainer]] = None):
         """Container config default value"""
         self.hostname = ""
         self.__enable_gui: bool = False
@@ -132,7 +133,7 @@ class ContainerConfig:
 
     # ===== Config parsing section =====
 
-    def __parseContainerConfig(self, container: Container):
+    def __parseContainerConfig(self, container: Union[DockerContainer, PodmanContainer]):
         """Parse Docker object to setup self configuration"""
         # Reset default attributes
         self.__passwd = None
