@@ -77,8 +77,9 @@ class ExegolManager:
         if not container.isNew():
             # Check and warn user if some parameters don't apply to the current session
             cls.__checkUselessParameters()
+        docker_utils_instance = DockerUtils()
         container.start()
-        container.spawnShell()
+        container.spawnShell(docker_utils_instance.get_container_runtime())
 
     @classmethod
     def exec(cls):
@@ -114,7 +115,8 @@ class ExegolManager:
             container.stop(timeout=5)
             container.start()
             logger.success(f"Container [green]{container.name}[/green] successfully restarted!")
-            container.spawnShell()
+            docker_utils_instance = DockerUtils()
+            container.spawnShell(docker_utils_instance.get_container_runtime())
 
     @classmethod
     def install(cls):
