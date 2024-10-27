@@ -24,6 +24,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
         self.default_start_shell: str = "zsh"
+        self.enable_exegol_resources: bool = True
         self.shell_logging_method: str = "asciinema"
         self.shell_logging_compress: bool = True
         self.desktop_default_enable: bool = False
@@ -61,6 +62,9 @@ config:
     # Default shell command to start
     default_start_shell: {self.default_start_shell}
     
+    # Enable Exegol resources
+    enable_exegol_resources: {self.enable_exegol_resources}
+    
     # Change the configuration of the shell logging functionality
     shell_logging: 
         #Choice of the method used to record the sessions (script or asciinema)
@@ -82,8 +86,6 @@ config:
         localhost_by_default: {self.desktop_default_localhost}
 
 """
-        # TODO handle default image selection
-        # TODO handle default start container
         return config
 
     @staticmethod
@@ -115,6 +117,7 @@ config:
         self.auto_remove_images = self._load_config_bool(config_data, 'auto_remove_image', self.auto_remove_images)
         self.auto_update_workspace_fs = self._load_config_bool(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
         self.default_start_shell = self._load_config_str(config_data, 'default_start_shell', self.default_start_shell, choices=self.start_shell_options)
+        self.enable_exegol_resources = self._load_config_bool(config_data, 'enable_exegol_resources', self.enable_exegol_resources)
 
         # Shell_logging section
         shell_logging_data = config_data.get("shell_logging", {})
@@ -132,7 +135,9 @@ config:
         configs = [
             f"User config file: [magenta]{self._file_path}[/magenta]",
             f"Private workspace: [magenta]{self.private_volume_path}[/magenta]",
-            f"Exegol resources: [magenta]{self.exegol_resources_path}[/magenta]",
+            "Exegol resources: " + (f"[magenta]{self.exegol_resources_path}[/magenta]"
+                                    if self.enable_exegol_resources else
+                                    boolFormatter(self.enable_exegol_resources)),
             f"My resources: [magenta]{self.my_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",

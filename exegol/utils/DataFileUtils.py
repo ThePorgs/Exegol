@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 from json import JSONEncoder, JSONDecodeError
 from pathlib import Path
 from typing import Union, Dict, cast, Optional, Set, Any
@@ -8,6 +10,7 @@ import yaml.parser
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
+from exegol.utils.FsUtils import mkdir, get_user_id
 
 
 class DataFileUtils:
@@ -47,7 +50,7 @@ class DataFileUtils:
         """
         if not self._file_path.parent.is_dir():
             logger.verbose(f"Creating config folder: {self._file_path.parent}")
-            self._file_path.parent.mkdir(parents=True, exist_ok=True)
+            mkdir(self._file_path.parent)
         if not self._file_path.is_file():
             logger.verbose(f"Creating default file: {self._file_path}")
             self._create_config_file()
@@ -72,6 +75,9 @@ class DataFileUtils:
         try:
             with open(self._file_path, 'w') as file:
                 file.write(self._build_file_content())
+            if sys.platform == "linux" and os.getuid() == 0:
+                user_uid, user_gid = get_user_id()
+                os.chown(self._file_path, user_uid, user_gid)
         except PermissionError as e:
             logger.critical(f"Unable to open the file '{self._file_path}' ({e}). Please fix your file permissions or run exegol with the correct rights.")
 

@@ -1,9 +1,11 @@
 import logging
+import os
 import re
 import stat
 import subprocess
+import sys
 from pathlib import Path, PurePath
-from typing import Optional
+from typing import Optional, Tuple
 
 from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
@@ -93,6 +95,7 @@ def setGidPermission(root_folder: Path):
 
 
 def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
+    """Function to find a sysctl configured value and compare it to a desired value."""
     sysctl_path = "/proc/sys/" + sysctl.replace('.', '/')
     try:
         with open(sysctl_path, 'r') as conf:
@@ -104,3 +107,37 @@ def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
     except PermissionError:
         logger.debug(f"Unable to read sysctl {sysctl} permission!")
     return False
+
+
+def get_user_id() -> Tuple[int, int]:
+    """On linux system, retrieve the original user id when using SUDO."""
+    if sys.platform == "win32":
+        raise SystemError
+    user_uid_raw = os.getenv("SUDO_UID")
+    if user_uid_raw is None:
+        user_uid = os.getuid()
+    else:
+        user_uid = int(user_uid_raw)
+    user_gid_raw = os.getenv("SUDO_GID")
+    if user_gid_raw is None:
+        user_gid = os.getgid()
+    else:
+        user_gid = int(user_gid_raw)
+    return user_uid, user_gid
+
+
+def mkdir(path):
+    """Function to recursively create a directory and setting the right user and group id to allow host user access."""
+    try:
+        path.mkdir(parents=False, exist_ok=False)
+        if sys.platform == "linux" and os.getuid() == 0:
+            user_uid, user_gid = get_user_id()
+            os.chown(path, user_uid, user_gid)
+    except FileExistsError:
+        # The directory already exist, this setup can be skipped
+        pass
+    except FileNotFoundError:
+        # Create parent directory first
+        mkdir(path.parent)
+        # Then create the targeted directory
+        mkdir(path)

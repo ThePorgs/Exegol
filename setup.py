@@ -78,6 +78,5 @@ setup(
         'Source': 'https://github.com/ThePorgs/Exegol',
         'Documentation': 'https://exegol.readthedocs.io/',
         'Funding': 'https://patreon.com/nwodtuhs',
-    },
-    test_suite='tests'
+    }
 )

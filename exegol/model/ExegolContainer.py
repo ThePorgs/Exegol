@@ -1,5 +1,7 @@
 import os
 import shutil
+import subprocess
+import tempfile
 from datetime import datetime
 from typing import Optional, Dict, Sequence, Tuple, Union
 
@@ -15,6 +17,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger, console
+from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
 
@@ -115,7 +118,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         :return:
         """
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
-            start_date = datetime.utcnow()
+            start_date = datetime.now()
             try:
                 self.__container.start()
             except APIError as e:
@@ -156,7 +159,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info(f"Shared host device: {device.split(':')[0]}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
         # In case of multi-user environment, xhost must be set before opening each session to be sure
-        self.__applyXhostACL()
+        self.__applyX11ACLs()
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         envs = self.config.getShellEnvs()
         options = ""
@@ -190,7 +193,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 # stream[0] : exit code
                 # stream[1] : text stream
                 for log in stream[1]:
-                    logger.raw(log.decode("utf-8"))
+                    if type(log) is bytes:
+                        log = log.decode("utf-8")
+                    logger.raw(log)
                 if not quiet:
                     logger.success("End of the command")
             except KeyboardInterrupt:
@@ -281,7 +286,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Operation to be performed before starting a container
         :return:
         """
-        self.__applyXhostACL()
+        self.__applyX11ACLs()
 
     def __check_start_version(self):
         """
@@ -305,7 +310,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Operation to be performed after creating a container
         :return:
         """
-        self.__applyXhostACL()
+        self.__applyX11ACLs()
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
@@ -318,12 +323,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
 
-    def __applyXhostACL(self):
+    def __applyX11ACLs(self):
         """
         If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
-        On Windows host, WSLg X11 don't have xhost ACL.
+        If the host is accessed by SSH, propagate xauth cookie authentication if applicable.
+        On Windows host, WSLg X11 don't have xhost ACL. #TODO xauth remote x11 forwarding
         :return:
         """
+        # TODO check if the xauth propagation should be performed on Windows, if so remove the "and not EnvInfo.isWindowsHost()"
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             if shutil.which("xhost") is None:
@@ -335,15 +342,65 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
                 return
 
-            if EnvInfo.isMacHost():
-                logger.debug(f"Adding xhost ACL to localhost")
-                # add xquartz inet ACL
-                with console.status(f"Starting XQuartz...", spinner_style="blue"):
-                    os.system(f"xhost + localhost > /dev/null")
+            logger.debug(f"DISPLAY variable: {GuiUtils.getDisplayEnv()}")
+            # Extracts the left part of the display variable to determine if remote access is used
+            display_host = GuiUtils.getDisplayEnv().split(':')[0]
+            # Left part is empty, local access is used to start Exegol
+            if display_host == '' or EnvInfo.isMacHost():
+                logger.debug("Connecting to container from local GUI, no X11 forwarding to set up")
+                # TODO verify that the display format is the same on macOS, otherwise might not set up xauth and xhost correctly
+                if EnvInfo.isMacHost():
+                    logger.debug(f"Adding xhost ACL to localhost")
+                    # add xquartz inet ACL
+                    with console.status(f"Starting XQuartz...", spinner_style="blue"):
+                        os.system(f"xhost + localhost > /dev/null")
+                elif not EnvInfo.isWindowsHost():
+                    logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
+                    # add linux local ACL
+                    os.system(f"xhost +local:{self.config.getUsername()} > /dev/null")
+                return
+
+            if shutil.which("xauth") is None:
+                if EnvInfo.is_linux_shell:
+                    debug_msg = "Try to install the package [green]xorg-xauth[/green] to support X11 forwarding in your current environment?"
+                else:
+                    debug_msg = "or it might not be supported for now"
+                logger.error(f"The [green]xauth[/green] command is not available on your [bold]host[/bold]. "
+                             f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
+                return
+
+            # If the left part of the display variable is "localhost", x11 socket is exposed only on loopback and remote access is used
+            # If the container is not in host mode, it won't be able to reach the loopback interface of the host 
+            if display_host == "localhost" and self.config.getNetworkMode() != "host":
+                logger.warning("X11 forwarding won't work on a bridged container unless you specify \"X11UseLocalhost no\" in your host sshd_config")
+                logger.warning("[red]Be aware[/red] changing \"X11UseLocalhost\" value can [red]expose your device[/red], correct firewalling is [red]required[/red]")
+                # TODO Add documentation to restrict the exposure of the x11 socket to the docker subnet
+                return
+
+            # Extracting the xauth cookie corresponding to the current display to a temporary file and reading it from there (grep cannot be used because display names are not accurate enough)
+            _, tmpXauthority = tempfile.mkstemp()
+            logger.debug(f"Extracting xauth entries to {tmpXauthority}")
+            os.system(f"xauth extract {tmpXauthority} $DISPLAY > /dev/null 2>&1")
+            xauthEntry = subprocess.check_output(f"xauth -f {tmpXauthority} list 2>/dev/null", shell=True).decode()
+            logger.debug(f"xauthEntry to propagate: {xauthEntry}")
+
+            # Replacing the hostname with localhost to support loopback exposed x11 socket and container in host mode (loopback is the same)
+            if display_host == "localhost":
+                logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connections can be received only on loopback");
+                # Modifing the entry to convert <hostname>/unix:<display_number> to localhost:<display_number>
+                xauthEntry = f"localhost:{xauthEntry.split(':')[1]}"
             else:
-                logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
-                # add linux local ACL
-                os.system(f"xhost +local:{self.config.getUsername()} > /dev/null")
+                # TODO latter implement a check to see if the x11 socket is correctly firewalled and warn the user if it is not
+                logger.debug("X11UseLocalhost directive is set to \"no\", X11 connections can be received from anywere");
+
+            # Check if the host has a xauth entry corresponding to the current display.
+            if xauthEntry:
+                logger.debug(f"Adding xauth cookie to container: {xauthEntry}")
+                self.exec(f"xauth add {xauthEntry}", as_daemon=False, quiet=True)
+                logger.debug(f"Removing {tmpXauthority}")
+                os.remove(tmpXauthority)
+            else:
+                logger.warning(f"No xauth cookie corresponding to the current display was found.")
 
     def __updatePasswd(self):
         """

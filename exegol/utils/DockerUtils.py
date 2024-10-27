@@ -4,6 +4,7 @@ from time import sleep
 from typing import List, Optional, Union, cast
 
 import docker
+import requests.exceptions
 from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
@@ -58,6 +59,8 @@ class DockerUtils(metaclass=MetaSingleton):
                 logger.critical(
                     "Unable to connect to docker (from env config). Is docker operational and accessible? on your machine? "
                     "Exiting.")
+        except (ReadTimeout, requests.exceptions.ConnectionError):
+            logger.critical("Docker daemon seems busy, Exegol receives timeout response. Try again later.")
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
 
@@ -556,9 +559,9 @@ class DockerUtils(metaclass=MetaSingleton):
         try:
             self.__client.images.remove(image_name, force=False, noprune=False)
             return True
-        except ReadTimeout:
+        except (ReadTimeout, requests.exceptions.ConnectionError):
             logger.warning("The deletion of the image has timeout. Docker is still processing the removal, please wait.")
-            max_retry = 5
+            max_retry = 10
             wait_time = 5
             for i in range(5):
                 try:
@@ -569,7 +572,7 @@ class DockerUtils(metaclass=MetaSingleton):
                         return True
                     else:
                         logger.debug(f"Unexpected error after timeout: {err}")
-                except ReadTimeout:
+                except (ReadTimeout, requests.exceptions.ConnectionError):
                     wait_time = wait_time + wait_time * i
                     logger.info(f"Docker timeout again ({i + 1}/{max_retry}). Next retry in {wait_time} seconds...")
                     sleep(wait_time)  # Wait x seconds before retry
@@ -600,7 +603,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                         tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
                                         buildargs={"TAG": f"{build_profile}",
                                                    "VERSION": "local",
-                                                   "BUILD_DATE": datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')},
+                                                   "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                         platform="linux/" + ParametersManager().arch,
                                         rm=True,
                                         forcerm=True,
