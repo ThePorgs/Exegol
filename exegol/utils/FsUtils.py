@@ -95,6 +95,7 @@ def setGidPermission(root_folder: Path):
 
 
 def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
+    """Function to find a sysctl configured value and compare it to a desired value."""
     sysctl_path = "/proc/sys/" + sysctl.replace('.', '/')
     try:
         with open(sysctl_path, 'r') as conf:
@@ -109,6 +110,9 @@ def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
 
 
 def get_user_id() -> Tuple[int, int]:
+    """On linux system, retrieve the original user id when using SUDO."""
+    if sys.platform == "win32":
+        raise SystemError
     user_uid_raw = os.getenv("SUDO_UID")
     if user_uid_raw is None:
         user_uid = os.getuid()
@@ -123,6 +127,7 @@ def get_user_id() -> Tuple[int, int]:
 
 
 def mkdir(path):
+    """Function to recursively create a directory and setting the right user and group id to allow host user access."""
     try:
         path.mkdir(parents=False, exist_ok=False)
         if sys.platform == "linux" and os.getuid() == 0:
