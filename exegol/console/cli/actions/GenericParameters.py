@@ -260,8 +260,14 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
+        self.vpn_cert = Option("--vpn-cert",
+                               dest="vpn_cert",
+                               default=None,
+                               action="store",
+                               help="Enter the certificate using the file that came with your config pack to establish the VPN connection automatically (example: --vpn-cert /home/user/vpn/cert.crt)")
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
+                                  {"arg": self.vpn_cert, "required":False},
                                   title="[blue]Container creation VPN options[/blue]"))
 
         self.desktop = Option("--desktop",

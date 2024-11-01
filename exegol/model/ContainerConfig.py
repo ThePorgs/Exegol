@@ -665,6 +665,7 @@ class ContainerConfig:
             self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
+            self.removeVolume(container_path="/.exegol/vpn/auth/certificate.crt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
             self.removeVolume(container_path="/.exegol/vpn/config")
             return True
@@ -692,6 +693,24 @@ class ContainerConfig:
         OVPN config file directly supplied or a config directory,
         the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
+
+        # VPN certificate path
+
+        vpn_cert_path = ParametersManager().vpn_cert_path
+        vpn_cert = None
+
+        if vpn_cert_path is not None:
+            vpn_cert = Path(vpn_cert_path).expanduser()
+
+        if vpn_cert is not None:
+            if vpn_cert.is_file():
+                logger.info(f"Adding VPN certificate from: {str(vpn_cert.absolute())}")
+                self.addVolume(vpn_cert, "/.exegol/vpn/auth/certificate.crt", read_only=True)
+                ovpn_parameters.append("--ca /.exegol/vpn/auth/certificate.crt")
+            else:
+                # Supply a directory instead of a file for a VPN certificate is not supported.
+                logger.critical(
+                    f"The path provided to the VPN connection certificate ({str(vpn_auth)}) does not lead to a file. Aborting operation.")
 
         # VPN config path
         vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
