@@ -706,8 +706,7 @@ class ContainerConfig:
             if vpn_cert.is_file():
                 logger.info(f"Adding VPN certificate from: {str(vpn_cert.absolute())}")
                 self.addVolume(vpn_cert, "/.exegol/vpn/auth/certificate.crt", read_only=True)
-                ovpn_parameters.append("--ca /.exegol/vpn/auth/certificate.crt"
-
+                ovpn_parameters.append("--ca /.exegol/vpn/auth/certificate.crt")
             else:
                 # Supply a directory instead of a file for a VPN certificate is not supported.
                 logger.critical(
