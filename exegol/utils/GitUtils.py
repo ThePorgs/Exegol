@@ -49,7 +49,10 @@ class GitUtils:
         except ReferenceError:
             if self.__git_name == "wrapper":
                 logger.warning("Exegol has [red]not[/red] been installed via git clone. Skipping wrapper auto-update operation.")
-                if ConstantConfig.pip_installed:
+                if ConstantConfig.pipx_installed:
+                    logger.info("If you have installed Exegol with pipx, check for an update with the command "
+                                "[green]pipx upgrade exegol[/green]")
+                elif ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
             abort_loading = True
