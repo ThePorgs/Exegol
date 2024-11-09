@@ -5,7 +5,7 @@ from pathlib import Path
 class ConstantConfig:
     """Constant parameters information"""
     # Exegol Version
-    version: str = "4.3.7"
+    version: str = "4.3.8"
 
     # Exegol documentation link
     documentation: str = "https://exegol.rtfd.io/"
@@ -28,6 +28,7 @@ class ConstantConfig:
     # Install mode, check if Exegol has been git cloned or installed using pip package
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"
+    pipx_installed: bool = "/pipx/venvs/" in src_root_path_obj.as_posix()
     # Dockerhub Exegol images repository
     DOCKER_HUB: str = "hub.docker.com"  # Don't handle docker login operations
     DOCKER_REGISTRY: str = "registry-1.docker.io"  # Don't handle docker login operations

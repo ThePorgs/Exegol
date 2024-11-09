@@ -94,10 +94,47 @@ class WebUtils:
         version: Optional[str] = None
         if response is not None and response.status_code == 200:
             data = json.loads(response.content.decode("utf-8"))
-            # Parse metadata of the current image from v1 schema
-            metadata = json.loads(data.get("history", [])[0]['v1Compatibility'])
-            # Find version label and extract data
-            version = metadata.get("config", {}).get("Labels", {}).get("org.exegol.version", "")
+            received_media_type = data.get("mediaType")
+            if received_media_type == "application/vnd.docker.distribution.manifest.v1+json":
+                # Get image version from legacy v1 manifest (faster)
+                # Parse metadata of the current image from v1 schema
+                metadata = json.loads(data.get("history", [])[0]['v1Compatibility'])
+                # Find version label and extract data
+                version = metadata.get("config", {}).get("Labels", {}).get("org.exegol.version", "")
+
+            # Convert image list to a specific image
+            elif received_media_type == "application/vnd.docker.distribution.manifest.list.v2+json":
+                # Get image version from v2 manifest list (slower)
+                # Retrieve image digest id from manifest image list
+                manifest = data.get("manifests")
+                # Get first image manifest
+                # Handle application/vnd.docker.distribution.manifest.list.v2+json spec
+                if type(manifest) is list and len(manifest) > 0:
+                    # Get Image digest
+                    first_digest = manifest[0].get("digest")
+                    # Retrieve specific image detail from first image digest (architecture not sensitive)
+                    manifest_headers["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{first_digest}"
+                    response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
+                    if response is not None and response.status_code == 200:
+                        data = json.loads(response.content.decode("utf-8"))
+                        # Update received media type to ba handle later
+                        received_media_type = data.get("mediaType")
+            # Try to extract version tag from a specific image
+            if received_media_type == "application/vnd.docker.distribution.manifest.v2+json":
+                # Get image version from v2 manifest (slower)
+                # Retrieve config detail from config digest
+                config_digest: Optional[str] = data.get("config", {}).get('digest')
+                if config_digest is not None:
+                    manifest_headers["Accept"] = "application/json"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/blobs/{config_digest}"
+                    response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
+                    if response is not None and response.status_code == 200:
+                        data = json.loads(response.content.decode("utf-8"))
+                        # Find version label and extract data
+                        version = data.get("config", {}).get("Labels", {}).get("org.exegol.version")
+            else:
+                logger.debug(f"WARNING: Docker API not supported: {received_media_type}")
         return version
 
     @classmethod
@@ -135,6 +172,7 @@ class WebUtils:
                     no_proxy = os.environ.get('NO_PROXY') or os.environ.get('no_proxy')
                     if no_proxy:
                         proxies['no_proxy'] = no_proxy
+                    logger.debug(f"Fetching information from {url}")
                     response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
                     return response
                 except requests.exceptions.HTTPError as e:

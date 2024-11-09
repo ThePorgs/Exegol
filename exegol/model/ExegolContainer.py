@@ -109,8 +109,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
-            self.__preStartSetup()
             self.__start_container()
+            self.__postStartSetup()
 
     def __start_container(self):
         """
@@ -281,9 +281,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
             logger.success("Private workspace volume removed successfully")
 
-    def __preStartSetup(self):
+    def __postStartSetup(self):
         """
-        Operation to be performed before starting a container
+        Operation to be performed after starting a container
         :return:
         """
         self.__applyX11ACLs()
