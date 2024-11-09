@@ -217,9 +217,9 @@ class ExegolManager:
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().value}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
         logger.debug(f"Shell type: {EnvInfo.getShellType().value}")
-        if not UpdateManager.isUpdateTag() and UserConfig().auto_check_updates:
+        if UserConfig().auto_check_updates:
             UpdateManager.checkForWrapperUpdate()
-        if UpdateManager.isUpdateTag():
+        if UpdateManager.isUpdateAvailable():
             logger.empty_line()
             if Confirm(f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()}), do you want to update ?", default=True):
                 UpdateManager.updateWrapper()

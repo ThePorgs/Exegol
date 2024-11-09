@@ -283,7 +283,7 @@ class UpdateManager:
         DataCache().get_wrapper_data().current_version = cls.__get_current_version() if current_version is None else current_version
 
     @classmethod
-    def isUpdateTag(cls) -> bool:
+    def isUpdateAvailable(cls) -> bool:
         """Check if the cache file is present to announce an available update of the exegol wrapper."""
         current_version = cls.__get_current_version()
         wrapper_data = DataCache().get_wrapper_data()
