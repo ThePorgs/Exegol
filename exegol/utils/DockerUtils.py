@@ -10,6 +10,7 @@ from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
 from docker.models.volumes import Volume
 from requests import ReadTimeout
+from rich.status import Status
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
@@ -258,9 +259,14 @@ class DockerUtils(metaclass=MetaSingleton):
         """List available docker images.
         Return a list of ExegolImage"""
         if self.__images is None:
-            remote_images = self.__listRemoteImages()
-            local_images = self.__listLocalImages()
-            self.__images = ExegolImage.mergeImages(remote_images, local_images)
+            logger.verbose("Loading every Exegol images")
+            with console.status(f"Loading Exegol images from registry", spinner_style="blue") as s:
+                remote_images = self.__listRemoteImages(s)
+                logger.verbose("Retrieve [green]local[/green] Exegol images")
+                s.update(status=f"Retrieving [green]local[/green] Exegol images")
+                local_images = self.__listLocalImages()
+                self.__images = ExegolImage.mergeImages(remote_images, local_images, s)
+            logger.verbose("Images fetched")
         result = self.__images
         assert result is not None
         # Caching latest images
@@ -405,7 +411,8 @@ class DockerUtils(metaclass=MetaSingleton):
                 id_list.add(img.id)
         return result
 
-    def __listRemoteImages(self) -> List[MetaImages]:
+    @staticmethod
+    def __listRemoteImages(status: Status) -> List[MetaImages]:
         """List remote dockerhub images available.
         Return a list of ExegolImage"""
         logger.debug("Fetching remote image tags, digests and sizes")
@@ -416,25 +423,25 @@ class DockerUtils(metaclass=MetaSingleton):
         current_page = 1
         url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page=1&page_size={page_size}"
         # Handle multi-page tags from registry
-        with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
-            while url is not None:
-                if current_page > page_max:
-                    logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
-                    if not logger.isEnabledFor(ExeLog.VERBOSE):
-                        break
-                current_page += 1
-                s.update(status=f"Fetching registry information from [green]{url}[/green]")
-                docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
-                if docker_repo_response is None:
-                    logger.warning("Skipping online queries.")
-                    return []
-                error_message = docker_repo_response.get("message")
-                if error_message:
-                    logger.error(f"Dockerhub send an error message: {error_message}")
-                for docker_images in docker_repo_response.get("results", []):
-                    meta_image = MetaImages(docker_images)
-                    remote_results.append(meta_image)
-                url = docker_repo_response.get("next")  # handle multiple page tags
+        while url is not None:
+            if current_page > page_max:
+                logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
+                if not logger.isEnabledFor(ExeLog.VERBOSE):
+                    break
+            current_page += 1
+            if logger.isEnabledFor(ExeLog.VERBOSE):
+                status.update(status=f"Fetching registry information from [green]{url}[/green]")
+            docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
+            if docker_repo_response is None:
+                logger.warning("Skipping online queries.")
+                return []
+            error_message = docker_repo_response.get("message")
+            if error_message:
+                logger.error(f"Dockerhub send an error message: {error_message}")
+            for docker_images in docker_repo_response.get("results", []):
+                meta_image = MetaImages(docker_images)
+                remote_results.append(meta_image)
+            url = docker_repo_response.get("next")  # handle multiple page tags
         # Remove duplication (version specific / latest release)
         return remote_results
 

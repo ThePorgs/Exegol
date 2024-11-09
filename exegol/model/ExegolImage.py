@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any, Union
 
 from docker.models.containers import Container
 from docker.models.images import Image
+from rich.status import Status
 
 from exegol.config.DataCache import DataCache
 from exegol.console import ConsoleFormat
@@ -179,7 +180,7 @@ class ExegolImage(SelectableInterface):
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
 
-    def setMetaImage(self, meta: MetaImages):
+    def setMetaImage(self, meta: MetaImages, status: Status):
         dockerhub_data = meta.getDockerhubImageForArch(self.getArch())
         self.__is_remote = True
         if self.__version_specific:
@@ -189,6 +190,8 @@ class ExegolImage(SelectableInterface):
             self.__outdated = self.__version_specific
         elif not meta.version:
             # nightly image don't have a version in their tag. The latest version must be fetch from label on the registry directly
+            logger.verbose(f"Fetch latest [green]{self.getName()}[/green] image version")
+            status.update(status=f"Retrieving latest [green]{self.getName()}[/green] image version")
             fetch_version = WebUtils.getRemoteVersion(self.__name)
             if fetch_version:
                 meta.version = fetch_version
@@ -269,7 +272,7 @@ class ExegolImage(SelectableInterface):
             logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
             # Find remote metadata for the specific current image
             with console.status(f"Synchronization of the [green]{self.__name}[/green] image status...",
-                                spinner_style="blue"):
+                                spinner_style="blue") as s:
                 remote_digest = None
                 version = None
                 if from_cache:
@@ -283,6 +286,8 @@ class ExegolImage(SelectableInterface):
                                 break
                 if not from_cache or version is None:
                     remote_digest = WebUtils.getMetaDigestId(self.__name)
+                    logger.verbose(f"Fetch latest [green]{self.getName()}[/green] image version")
+                    s.update(status=f"Retrieving latest [green]{self.getName()}[/green] image version")
                     version = WebUtils.getRemoteVersion(self.__name)
             if remote_digest is not None:
                 self.__setLatestRemoteId(remote_digest)
@@ -347,7 +352,7 @@ class ExegolImage(SelectableInterface):
                         pass
 
     @classmethod
-    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Image]) -> List['ExegolImage']:
+    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Image], status: Status) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
             - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
@@ -400,7 +405,7 @@ class ExegolImage(SelectableInterface):
                 selected = default
             if selected:
                 # Remote match found
-                current_local_img.setMetaImage(selected)
+                current_local_img.setMetaImage(selected, status)
             else:
                 if len(remote_images) > 0:
                     # If there is some result from internet but no match and this is not a local image, this image is probably discontinued or the remote image is too old (relative to other images)
