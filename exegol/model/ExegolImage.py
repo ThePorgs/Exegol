@@ -79,7 +79,8 @@ class ExegolImage(SelectableInterface):
             if meta_img and meta_img.meta_id is not None:
                 self.__setDigest(meta_img.meta_id)
                 self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
-        logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
+        # Debug every Exegol image init
+        # logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
     def __initFromDockerImage(self):
         """Parse Docker object to set up self configuration on creation."""

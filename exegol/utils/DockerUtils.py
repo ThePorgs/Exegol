@@ -412,18 +412,17 @@ class DockerUtils(metaclass=MetaSingleton):
         remote_results = []
         # Define max number of tags to download from dockerhub (in order to limit download time and discard historical versions)
         page_size = 20
-        page_max = 2
-        current_page = 0
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page_size={page_size}"
+        page_max = 3
+        current_page = 1
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page=1&page_size={page_size}"
         # Handle multi-page tags from registry
         with console.status(f"Loading registry information from [green]{url}[/green]", spinner_style="blue") as s:
             while url is not None:
-                if current_page == page_max:
+                if current_page > page_max:
                     logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
                     if not logger.isEnabledFor(ExeLog.VERBOSE):
                         break
                 current_page += 1
-                logger.debug(f"Fetching information from: {url}")
                 s.update(status=f"Fetching registry information from [green]{url}[/green]")
                 docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
                 if docker_repo_response is None:
