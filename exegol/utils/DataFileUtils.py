@@ -80,6 +80,8 @@ class DataFileUtils:
                 os.chown(self._file_path, user_uid, user_gid)
         except PermissionError as e:
             logger.critical(f"Unable to open the file '{self._file_path}' ({e}). Please fix your file permissions or run exegol with the correct rights.")
+        except OSError as e:
+            logger.critical(f"A critical error occurred while interacting with filesystem: [{type(e)}] {e}")
 
     def _parse_config(self):
         data: Dict = {}
