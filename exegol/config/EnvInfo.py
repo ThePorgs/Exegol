@@ -216,7 +216,7 @@ class EnvInfo:
                 if file_path is None:
                     # Try to find settings file with new filename or fallback to legacy filename for Docker Desktop older than 4.34
                     file_path = (dir_path / "settings-store.json") if (dir_path / "settings-store.json").is_file() else (dir_path / "settings.json")
-                logger.debug(f"Docker desktop config found at {file_path}")
+                logger.debug(f"Loading Docker Desktop config from {file_path}")
                 try:
                     with open(file_path, 'r') as docker_desktop_config:
                         cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
@@ -228,7 +228,9 @@ class EnvInfo:
 
     @classmethod
     def getDockerDesktopResources(cls) -> List[str]:
-        return cls.getDockerDesktopSettings().get('filesharingDirectories', [])
+        settings = cls.getDockerDesktopSettings()
+        # Handle legacy settings key
+        return settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
 
     @classmethod
     def isHostNetworkAvailable(cls) -> bool:
@@ -237,7 +239,9 @@ class EnvInfo:
         elif cls.isOrbstack():
             return True
         elif cls.isDockerDesktop():
-            res = cls.getDockerDesktopSettings().get('hostNetworkingEnabled', False)
+            settings = cls.getDockerDesktopSettings()
+            # Handle legacy settings key
+            res = settings.get('HostNetworkingEnabled', settings.get('hostNetworkingEnabled', False))
             return res if res is not None else False
         logger.warning("Unknown or not supported environment for host network mode.")
         return False
