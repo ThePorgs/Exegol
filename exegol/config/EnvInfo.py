@@ -194,30 +194,44 @@ class EnvInfo:
         """Applicable only for docker desktop on macos"""
         if cls.isDockerDesktop():
             if cls.__docker_desktop_resource_config is None:
+                dir_path = None
+                file_path = None
                 if cls.is_mac_shell:
-                    path = ConstantConfig.docker_desktop_mac_config_path
+                    # Mac PATH
+                    dir_path = ConstantConfig.docker_desktop_mac_config_path
                 elif cls.is_windows_shell:
-                    path = ConstantConfig.docker_desktop_windows_config_path
+                    # Windows PATH
+                    dir_path = ConstantConfig.docker_desktop_windows_config_path
                 else:
+                    # Windows PATH from WSL shell
                     # Find docker desktop config
-                    config_file = list(Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}"))
+                    config_file = list(Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}/settings-store.json"))
                     if len(config_file) == 0:
-                        return {}
-                    else:
-                        path = config_file[0]
-                        logger.debug(f"Docker desktop config found at {path}")
+                        # Testing with legacy file name
+                        config_file = list(Path("/mnt/c/Users").glob(f"*/{ConstantConfig.docker_desktop_windows_config_short_path}/settings.json"))
+                        if len(config_file) == 0:
+                            logger.warning(f"No docker desktop settings file found.")
+                            return {}
+                    file_path = config_file[0]
+                if file_path is None:
+                    assert dir_path is not None
+                    # Try to find settings file with new filename or fallback to legacy filename for Docker Desktop older than 4.34
+                    file_path = (dir_path / "settings-store.json") if (dir_path / "settings-store.json").is_file() else (dir_path / "settings.json")
+                logger.debug(f"Loading Docker Desktop config from {file_path}")
                 try:
-                    with open(path, 'r') as docker_desktop_config:
+                    with open(file_path, 'r') as docker_desktop_config:
                         cls.__docker_desktop_resource_config = json.load(docker_desktop_config)
                 except FileNotFoundError:
-                    logger.warning(f"Docker Desktop configuration file not found: '{path}'")
+                    logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
             return cls.__docker_desktop_resource_config
         return {}
 
     @classmethod
     def getDockerDesktopResources(cls) -> List[str]:
-        return cls.getDockerDesktopSettings().get('filesharingDirectories', [])
+        settings = cls.getDockerDesktopSettings()
+        # Handle legacy settings key
+        return settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
 
     @classmethod
     def isHostNetworkAvailable(cls) -> bool:
@@ -226,7 +240,9 @@ class EnvInfo:
         elif cls.isOrbstack():
             return True
         elif cls.isDockerDesktop():
-            res = cls.getDockerDesktopSettings().get('hostNetworkingEnabled', False)
+            settings = cls.getDockerDesktopSettings()
+            # Handle legacy settings key
+            res = settings.get('HostNetworkingEnabled', settings.get('hostNetworkingEnabled', False))
             return res if res is not None else False
         logger.warning("Unknown or not supported environment for host network mode.")
         return False

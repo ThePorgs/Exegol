@@ -486,7 +486,7 @@ class ExegolManager:
             if ParametersManager().envs is not None:
                 for env in ParametersManager().envs:
                     config.addRawEnv(env)
-            if UserConfig().desktop_default_enable ^ ParametersManager().desktop:
+            if (UserConfig().desktop_default_enable ^ ParametersManager().desktop) or ParametersManager().desktop_config != "":
                 config.enableDesktop(ParametersManager().desktop_config)
             if ParametersManager().comment:
                 config.addComment(ParametersManager().comment)
