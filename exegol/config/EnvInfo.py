@@ -214,6 +214,7 @@ class EnvInfo:
                             return {}
                     file_path = config_file[0]
                 if file_path is None:
+                    assert dir_path is not None
                     # Try to find settings file with new filename or fallback to legacy filename for Docker Desktop older than 4.34
                     file_path = (dir_path / "settings-store.json") if (dir_path / "settings-store.json").is_file() else (dir_path / "settings.json")
                 logger.debug(f"Loading Docker Desktop config from {file_path}")
