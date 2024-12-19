@@ -1,15 +1,16 @@
 import time
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Union
 
-from docker.models.containers import Container
+from docker.models.containers import Container as DockerContainer
+from podman.domain.containers import Container as PodmanContainer
 
 from exegol.utils.ExeLog import logger
 
 
 class ContainerLogStream:
 
-    def __init__(self, container: Container, start_date: Optional[datetime] = None, timeout: int = 5):
+    def __init__(self, container: Union[DockerContainer, PodmanContainer], start_date: Optional[datetime] = None, timeout: int = 5):
         # Container to extract logs from
         self.__container = container
         # Fetch more logs from this datetime
