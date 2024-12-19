@@ -1,6 +1,7 @@
 from typing import Optional, Set, Union
 
-from docker.models.images import Image
+from docker.models.images import Image as DockerImage
+from podman.domain.images import Image as PodmanImage
 
 from exegol.utils.ExeLog import logger
 from exegol.utils.WebUtils import WebUtils
@@ -58,13 +59,13 @@ class MetaImages:
         return version
 
     @staticmethod
-    def parseArch(docker_image: Union[dict, Image]) -> str:
+    def parseArch(docker_image: Union[dict, DockerImage, PodmanImage]) -> str:
         """Parse and format arch in dockerhub style from registry dict struct.
         Return arch in format 'arch/variant'."""
         arch_key = "architecture"
         variant_key = "variant"
-        # Support Docker image struct with specific dict key
-        if type(docker_image) is Image:
+        # Support Docker and Podman image struct with specific dict key
+        if isinstance(docker_image, (DockerImage, PodmanImage)):
             docker_image = docker_image.attrs
             arch_key = "Architecture"
             variant_key = "Variant"
