@@ -55,12 +55,10 @@ class DockerUtils(metaclass=MetaSingleton):
                 if (client := self.__connect_to_docker()):
                     self.__client = client
             except DockerException:
-                logger.warning("Docker not available, trying to connect to Podman...")
+                logger.debug("Docker not available, trying to connect to Podman...")
 
                 if (client := self.__connect_to_podman()):
                     self.__client = client
-                else:
-                    raise RuntimeError("Neither Docker nor Podman is running.")
 
             # Check if the docker daemon is serving linux container
             self.__daemon_info = self.__client.info()
@@ -84,22 +82,22 @@ class DockerUtils(metaclass=MetaSingleton):
     def __connect_to_docker(self):
         """Attempts to connect to Docker."""
         self.container_runtime = "docker"
-        client = docker.from_env()  # Removed try-except block to let exceptions propagate
+        client = docker.from_env()
         logger.info("Connected to Docker.")
         return client
 
     def __connect_to_podman(self):
         """Attempts to connect to Podman."""
         self.container_runtime = "podman"
-        client = podman.from_env()  # Removed try-except block to let exceptions propagate
+        client = podman.from_env()
         client.ping()  # Check if the Podman service is reachable
         logger.info("Connected to Podman.")
         return client
 
     def __handle_connection_error(self, err):
         """Handles connection errors for both Docker and Podman."""
-        if 'ConnectionRefusedError' in str(err) or 'APIError' in str(err):
-            logger.critical(f"Unable to connect to {self.get_container_runtime()}. Is it running on your machine? Exiting.{os.linesep}"
+        if 'ConnectionRefusedError' in str(err) or 'HEAD operation failed' in str(err) or 'APIError' in str(err):
+            logger.critical(f"Unable to connect to docker or podman. Is one of them running on your machine? Exiting.{os.linesep}"
                             f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
         elif 'FileNotFoundError' in str(err):
             logger.critical(f"Unable to connect to {self.get_container_runtime()}. Is it installed on your machine? Exiting.{os.linesep}"
@@ -108,7 +106,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical(f"{self.get_container_runtime().capitalize()} is installed on your host but you don't have permission to interact with it. Exiting.{os.linesep}"
                             f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/install.html#optional-run-exegol-with-appropriate-privileges")
         else:
-            logger.critical(f"Unable to connect to {self.get_container_runtime()}. Is it operational and accessible? Exiting.")
+            logger.critical(f"Unable to connect to docker or podman. Is one of them operational and accessible? Exiting.")
 
     def clearCache(self):
         """Remove class's images and containers data cache
@@ -571,7 +569,11 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return ""
         try:
-            image = self.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
+            if self.get_container_runtime() == "docker":
+                repository = ConstantConfig.IMAGE_NAME
+            elif self.get_container_runtime() == "podman":
+                repository = "docker.io/" + ConstantConfig.IMAGE_NAME
+            image = self.__client.images.pull(repository=repository,
                                               tag=image.getLatestVersionName(),
                                               platform="linux/" + image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)

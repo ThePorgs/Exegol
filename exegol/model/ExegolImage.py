@@ -166,9 +166,9 @@ class ExegolImage(SelectableInterface):
         self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
         # Check if local image is sync with remote digest id (check up-to-date status)
         if self.__profile_digest:
-            self.__is_update = self.__profile_digest == self.__parseDigest(docker_image)
+            self.__is_update = self.__profile_digest in self.__parseDigest(docker_image) # unlike docker, podman associates multiple digests to an image
         else:
-            self.__is_update = self.__digest == self.__parseDigest(docker_image)
+            self.__is_update = self.__digest in self.__parseDigest(docker_image) # unlike docker, podman associates multiple digests to an image
         # If this image is remote, set digest ID
         self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
@@ -204,7 +204,7 @@ class ExegolImage(SelectableInterface):
         if meta.meta_id:
             self.__setLatestRemoteId(meta.meta_id)
         # Check if local image is sync with remote digest id (check up-to-date status)
-        self.__is_update = self.__digest == self.__profile_digest
+        self.__is_update = self.__profile_digest in self.__digest # unlike docker, podman associates multiple digests to an image
         if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
             self.__setDigest(meta.meta_id)
@@ -295,7 +295,7 @@ class ExegolImage(SelectableInterface):
                 self.__setLatestRemoteId(remote_digest)
                 if self.__digest:
                     # Compare current and remote latest digest for up-to-date status
-                    self.__is_update = self.__digest == self.__profile_digest
+                    self.__is_update = self.__profile_digest in self.__digest # unlike docker, podman associates multiple digests to an image
             if version is not None:
                 # Set latest remote version
                 self.__setLatestVersion(version)
@@ -481,7 +481,7 @@ class ExegolImage(SelectableInterface):
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
         if type(other) is ExegolImage:
-            return self.__name == other.__name and self.__digest == other.__digest and self.__arch == other.__arch
+            return self.__name == other.__name and other.__digest in self.__digest and self.__arch == other.__arch
         # How to compare ExegolImage with str
         elif type(other) is str:
             return self.__name == other
@@ -533,19 +533,26 @@ class ExegolImage(SelectableInterface):
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
-    def __setDigest(self, digest: Optional[str]):
+    def __setDigest(self, digests: Optional[List[str]]):
         """Remote image digest setter"""
-        if digest is not None:
-            self.__digest = digest
+        if digests is not None and isinstance(digests, list):
+            self.__digest = digests  # Store the entire list
+        elif isinstance(digests, str):  # Handle backward compatibility
+            self.__digest = [digests]  # Convert single digest to a list
+        else:
+            self.__digest = None  # No digest
 
     @staticmethod
-    def __parseDigest(docker_image: Union[DockerImage, PodmanImage]) -> str:
-        """Parse the remote image digest ID.
-        Return digest id from the docker object."""
+    def __parseDigest(docker_image: Union[DockerImage, PodmanImage]) -> List[str]:
+        """Parse the remote image digest IDs.
+        Return a list of digest IDs from the docker object.
+        Note that a list is returned because Podman allows
+        multiple digests to be associated with an image. """
+        digests = []
         for digest_id in docker_image.attrs["RepoDigests"]:
-            if ConstantConfig.IMAGE_NAME in digest_id:  # Find digest id from the right repository
-                return digest_id.split('@')[1]
-        return ""
+            if ConstantConfig.IMAGE_NAME in digest_id:
+                digests.append(digest_id.split('@')[1])
+        return digests
 
     def getRemoteId(self) -> str:
         """Remote digest getter"""
