@@ -3,6 +3,7 @@ import logging
 
 try:
     import docker
+    import podman
     import git
     import requests
     import urllib3
@@ -85,5 +86,5 @@ def main():
         logger.critical(f"A critical error occurred while running this git command: {' '.join(git_error.command)}")
     except Exception:
         print_exception_banner()
-        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http])
+        console.print_exception(show_locals=True, suppress=[docker, podman, requests, git, urllib3, http])
         exit(1)

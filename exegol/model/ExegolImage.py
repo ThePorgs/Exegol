@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Union
 
-from docker.models.containers import Container
-from docker.models.images import Image
+from docker.models.containers import Container as DockerContainer
+from docker.models.images import Image as DockerImage
+from podman.domain.containers import Container as PodmanContainer
+from podman.domain.images import Image as PodmanImage
 from rich.status import Status
 
 from exegol.config.DataCache import DataCache
@@ -24,7 +26,7 @@ class ExegolImage(SelectableInterface):
                  dockerhub_data: Optional[Dict[str, Any]] = None,
                  meta_img: Optional[MetaImages] = None,
                  image_id: Optional[str] = None,
-                 docker_image: Optional[Image] = None,
+                 docker_image: Optional[Union[DockerImage, PodmanImage]] = None,
                  isUpToDate: bool = False):
         """Docker image default value"""
         # Prepare parameters
@@ -36,7 +38,7 @@ class ExegolImage(SelectableInterface):
             version_parsed = MetaImages.tagNameParsing(name)
             self.__version_specific = bool(version_parsed)
         # Init attributes
-        self.__image: Optional[Image] = docker_image
+        self.__image: Optional[Union[DockerImage, PodmanImage]] = docker_image
         self.__name: str = name
         self.__alt_name: str = ''
         self.__arch = ""
@@ -150,7 +152,7 @@ class ExegolImage(SelectableInterface):
         self.__build_date = "[bright_black]N/A[/bright_black]"
         self.__disk_size = "[bright_black]N/A[/bright_black]"
 
-    def setDockerObject(self, docker_image: Image):
+    def setDockerObject(self, docker_image: Union[DockerImage, PodmanImage]):
         """Docker object setter. Parse object to set up self configuration."""
         self.__image = docker_image
         # When a docker image exist, image is locally installed
@@ -164,9 +166,9 @@ class ExegolImage(SelectableInterface):
         self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
         # Check if local image is sync with remote digest id (check up-to-date status)
         if self.__profile_digest:
-            self.__is_update = self.__profile_digest == self.__parseDigest(docker_image)
+            self.__is_update = self.__profile_digest in self.__parseDigest(docker_image) # unlike docker, podman associates multiple digests to an image
         else:
-            self.__is_update = self.__digest == self.__parseDigest(docker_image)
+            self.__is_update = self.__digest in self.__parseDigest(docker_image) # unlike docker, podman associates multiple digests to an image
         # If this image is remote, set digest ID
         self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
@@ -202,7 +204,7 @@ class ExegolImage(SelectableInterface):
         if meta.meta_id:
             self.__setLatestRemoteId(meta.meta_id)
         # Check if local image is sync with remote digest id (check up-to-date status)
-        self.__is_update = self.__digest == self.__profile_digest
+        self.__is_update = self.__profile_digest in self.__digest # unlike docker, podman associates multiple digests to an image
         if not self.__digest and meta.is_latest and meta.meta_id:
             # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
             self.__setDigest(meta.meta_id)
@@ -230,7 +232,7 @@ class ExegolImage(SelectableInterface):
                     self.__profile_version = self.__image_version
 
     @classmethod
-    def parseAliasTagName(cls, image: Image) -> str:
+    def parseAliasTagName(cls, image: Union[DockerImage, PodmanImage]) -> str:
         """Create a tag name alias from labels when image's tag is lost"""
         return image.labels.get("org.exegol.tag", "<none>") + "-" + image.labels.get("org.exegol.version", "v?")
 
@@ -247,7 +249,7 @@ class ExegolImage(SelectableInterface):
         else:
             self.__custom_status = ""
 
-    def syncContainerData(self, container: Container):
+    def syncContainerData(self, container: Union[DockerImage, PodmanImage]):
         """Synchronization between the container and the image.
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
@@ -293,7 +295,7 @@ class ExegolImage(SelectableInterface):
                 self.__setLatestRemoteId(remote_digest)
                 if self.__digest:
                     # Compare current and remote latest digest for up-to-date status
-                    self.__is_update = self.__digest == self.__profile_digest
+                    self.__is_update = self.__profile_digest in self.__digest # unlike docker, podman associates multiple digests to an image
             if version is not None:
                 # Set latest remote version
                 self.__setLatestVersion(version)
@@ -352,7 +354,7 @@ class ExegolImage(SelectableInterface):
                         pass
 
     @classmethod
-    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Image], status: Status) -> List['ExegolImage']:
+    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Union[DockerImage, PodmanImage]], status: Status) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
             - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
@@ -479,7 +481,7 @@ class ExegolImage(SelectableInterface):
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
         if type(other) is ExegolImage:
-            return self.__name == other.__name and self.__digest == other.__digest and self.__arch == other.__arch
+            return self.__name == other.__name and other.__digest in self.__digest and self.__arch == other.__arch
         # How to compare ExegolImage with str
         elif type(other) is str:
             return self.__name == other
@@ -531,19 +533,26 @@ class ExegolImage(SelectableInterface):
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
-    def __setDigest(self, digest: Optional[str]):
+    def __setDigest(self, digests: Optional[List[str]]):
         """Remote image digest setter"""
-        if digest is not None:
-            self.__digest = digest
+        if digests is not None and isinstance(digests, list):
+            self.__digest = digests  # Store the entire list
+        elif isinstance(digests, str):  # Handle backward compatibility
+            self.__digest = [digests]  # Convert single digest to a list
+        else:
+            self.__digest = None  # No digest
 
     @staticmethod
-    def __parseDigest(docker_image: Image) -> str:
-        """Parse the remote image digest ID.
-        Return digest id from the docker object."""
+    def __parseDigest(docker_image: Union[DockerImage, PodmanImage]) -> List[str]:
+        """Parse the remote image digest IDs.
+        Return a list of digest IDs from the docker object.
+        Note that a list is returned because Podman allows
+        multiple digests to be associated with an image. """
+        digests = []
         for digest_id in docker_image.attrs["RepoDigests"]:
-            if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
-                return digest_id.split('@')[1]
-        return ""
+            if ConstantConfig.IMAGE_NAME in digest_id:
+                digests.append(digest_id.split('@')[1])
+        return digests
 
     def getRemoteId(self) -> str:
         """Remote digest getter"""
@@ -558,9 +567,14 @@ class ExegolImage(SelectableInterface):
         return self.__profile_digest
 
     def __setImageId(self, image_id: Optional[str]):
-        """Local image id setter"""
+        """Local image id setter for both Docker and Podman"""
         if image_id is not None:
-            self.__image_id = image_id.split(":")[1][:12]
+            # Check if the image_id contains a colon (as in Docker's format)
+            if ":" in image_id:
+                self.__image_id = image_id.split(":")[1][:12]
+            else:
+                # For Podman, where image_id does not contain the 'sha256:' prefix
+                self.__image_id = image_id[:12]
 
     def getLocalId(self) -> str:
         """Local id getter"""
