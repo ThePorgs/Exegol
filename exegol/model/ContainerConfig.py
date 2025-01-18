@@ -101,8 +101,8 @@ class ContainerConfig:
         self.__labels: Dict[str, str] = {}
         self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
         self.__extra_host: Dict[str, str] = {}
-        self.interactive: bool = True
-        self.tty: bool = True
+        self.interactive: bool = False
+        self.tty: bool = False
         self.shm_size: str = self.__default_shm_size
         self.__workspace_custom_path: Optional[str] = None
         self.__workspace_dedicated_path: Optional[str] = None

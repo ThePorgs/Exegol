@@ -34,7 +34,8 @@ function endless() {
   # Entrypoint for the container, in order to have a process hanging, to keep the container alive
   # Alternative to running bash/zsh/whatever as entrypoint, which is longer to start and to stop and to very clean
   # shellcheck disable=SC2162
-  read -u 2  # read from stderr => endlessly wait effortlessly
+  mkfifo -m 000 /tmp/.entrypoint # Create an empty fifo for sleep by read.
+  read <> /tmp/.entrypoint  # read from /tmp/.entrypoint => endlessly wait without sub-process or need for TTY option
 }
 
 function shutdown() {
