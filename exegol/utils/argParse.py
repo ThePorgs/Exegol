@@ -1,6 +1,6 @@
 import argparse
 from logging import CRITICAL
-from typing import IO, Optional, List, Union, Dict, cast
+from typing import Optional, List, Union, Dict, cast
 
 import argcomplete
 
@@ -12,7 +12,7 @@ class ExegolArgParse(argparse.ArgumentParser):
     """Overloading of the main parsing (argparse.ArgumentParser) class"""
 
     # Using Exelog to print built-in parser message
-    def _print_message(self, message: str, file: Optional[IO[str]] = None) -> None:
+    def _print_message(self, message: str, file=None) -> None:
         if message:
             logger.raw(message, level=CRITICAL, rich_parsing=True)
 
