@@ -392,7 +392,7 @@ class ExegolManager:
                             else:
                                 # If there is a multi select without must_exist flag, raise an error
                                 # because multi container creation is not supported
-                                raise NotImplemented
+                                raise NotImplementedError
                 else:
                     assert container_tag is not None
                     cls.__container = DockerUtils().getContainer(container_tag)
