@@ -6,7 +6,10 @@ from datetime import datetime
 from typing import Optional, Dict, Sequence, Tuple, Union
 
 from docker.errors import NotFound, ImageNotFound, APIError
-from docker.models.containers import Container
+from docker.models.containers import Container as DockerContainer
+
+from podman.errors import NotFound as PodmanNotFound, ImageNotFound as PodmanImageNotFound, APIError as PodmanAPIError
+from podman.domain.containers import Container as PodmanContainer
 
 from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import Confirm
@@ -24,36 +27,36 @@ from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     """Class of an exegol container already create in docker"""
 
-    def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
-        logger.debug(f"Loading container: {docker_container.name}")
-        self.__container: Container = docker_container
-        self.__id: str = docker_container.id
+    def __init__(self, container_obj: Union[DockerContainer, PodmanContainer], model: Optional[ExegolContainerTemplate] = None):
+        logger.debug(f"Loading container: {container_obj.name}")
+        self.__container: Container = container_obj
+        self.__id: str = container_obj.id
         self.__xhost_applied = False
         if model is None:
             image_name = ""
             try:
                 # Try to find the attached docker image
-                docker_image = docker_container.image
-            except ImageNotFound:
+                docker_image = container_obj.image
+            except (ImageNotFound, PodmanImageNotFound):
                 # If it is not found, the user has probably forcibly deleted it manually
                 logger.warning(f"Some images were forcibly removed by docker when they were used by existing containers!")
-                logger.error(f"The '{docker_container.name}' containers might not work properly anymore and should also be deleted and recreated with a new image.")
+                logger.error(f"The '{container_obj.name}' containers might not work properly anymore and should also be deleted and recreated with a new image.")
                 docker_image = None
                 image_name = "[red bold]BROKEN[/red bold]"
             # Create Exegol container from an existing docker container
-            super().__init__(docker_container.name,
-                             config=ContainerConfig(docker_container),
+            super().__init__(container_obj.name,
+                             config=ContainerConfig(container_obj),
                              image=ExegolImage(name=image_name, docker_image=docker_image),
-                             hostname=docker_container.attrs.get('Config', {}).get('Hostname'),
+                             hostname=container_obj.attrs.get('Config', {}).get('Hostname'),
                              new_container=False)
-            self.image.syncContainerData(docker_container)
+            self.image.syncContainerData(container_obj)
             # At this stage, the container image object has an unknown status because no synchronization with a registry has been done.
             # This could be done afterwards (with container.image.autoLoad()) if necessary because it takes time.
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.
-            super().__init__(docker_container.name,
-                             config=ContainerConfig(docker_container),
+            super().__init__(container_obj.name,
+                             config=ContainerConfig(container_obj),
                              # Rebuild config from docker object to update workspace path
                              image=model.image,
                              hostname=model.config.hostname,
@@ -121,7 +124,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             start_date = datetime.now()
             try:
                 self.__container.start()
-            except APIError as e:
+            except (APIError, PodmanAPIError) as e:
                 logger.debug(e)
                 logger.critical(f"Docker raise a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
@@ -151,7 +154,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
                 self.__container.stop(timeout=timeout)
 
-    def spawnShell(self):
+    def spawnShell(self, container_runtime: str = None):
         """Spawn a shell on the docker container"""
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
@@ -165,7 +168,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         options = ""
         if len(envs) > 0:
             options += f" -e {' -e '.join(envs)}"
-        cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
+        cmd = f"{container_runtime} exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
         os.system(cmd)
         # Docker SDK doesn't support (yet) stdin properly
@@ -230,7 +233,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         try:
             self.__container.remove()
             logger.success(f"Container {self.name} successfully removed.")
-        except NotFound:
+        except (NotFound, PodmanNotFound):
             logger.error(
                 f"The container {self.name} has already been removed (probably created as a temporary container).")
 
@@ -319,7 +322,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.__start_container()
             try:
                 self.__updatePasswd()
-            except APIError as e:
+            except (APIError, PodmanAPIError) as e:
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
 
