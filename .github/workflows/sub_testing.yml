@@ -84,6 +84,6 @@ jobs:
       - name: Create testing venv
         run: pdm venv create -n vtest-source --with-pip && pdm venv create -n vtest-wheel --with-pip
       - name: Install pip source package
-        run: ./vtest-source/bin/pip install ./dist/*.tar.gz
+        run: pdm run --venv vtest-source -v pip install ./dist/*.tar.gz
       - name: Install pip source package
-        run: ./vtest-wheel/bin/pip install ./dist/*.tar.gz
+        run: pdm run --venv vtest-wheel -v pip install ./dist/*.tar.gz

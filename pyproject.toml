@@ -36,6 +36,7 @@ dependencies = [
 ]
 
 [dependency-groups]
+dev = ["pre-commit"]
 testing = ["mypy", "types-PyYAML", "types-requests", "types-tzlocal", "pytest"]
 
 [project.scripts]
