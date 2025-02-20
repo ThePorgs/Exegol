@@ -40,4 +40,3 @@ jobs:
     name: Python tests and checks
     needs: preprod_test
     uses: ./.github/workflows/sub_testing.yml
-

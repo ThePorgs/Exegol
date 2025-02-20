@@ -1,0 +1,42 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+default_install_hook_types: [ pre-commit, pre-push ]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: 'exegol/config/UserConfig.py'
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-shebang-scripts-are-executable
+      - id: check-case-conflict
+      - id: name-tests-test
+      - id: check-illegal-windows-names
+      - id: mixed-line-ending
+        args:
+          - --fix=lf
+      - id: check-added-large-files
+        args:
+          - --maxkb=200  # Max 200kb file can be added
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-no-eval
+      - id: python-use-type-annotations
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.15.0'
+    hooks:
+      - id: mypy
+        stages: [pre-push]
+        additional_dependencies: ["types-PyYAML", "types-requests", "types-tzlocal"]
+        exclude: "exegol.py"
+        args:
+          - --ignore-missing-imports
+          - --check-untyped-defs
+          - --pretty

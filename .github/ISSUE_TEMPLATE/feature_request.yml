@@ -8,7 +8,7 @@ body:
       value: |
         Verification before publication:
 
-        - You are creating a feature request in the Exegol **WRAPPER** repository (the exegol command)! 
+        - You are creating a feature request in the Exegol **WRAPPER** repository (the exegol command)!
         > If your request concerns the exegol environment, tools or other elements specific to the Exegol **IMAGE**, please open your issue on the [Exegol-images](https://github.com/ThePorgs/Exegol-images) repository.
         - Check that there is not already your feature request on the Exegol **roadmap** (can be consulted in the **documentation** or on the Exegol **Discord**)
 

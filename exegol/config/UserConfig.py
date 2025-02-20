@@ -70,22 +70,22 @@ config:
     enable_exegol_resources: {self.enable_exegol_resources}
     
     # Change the configuration of the shell logging functionality
-    shell_logging: 
+    shell_logging:
         #Choice of the method used to record the sessions (script or asciinema)
         logging_method: {self.shell_logging_method}
         
         # Enable automatic compression of log files (with gzip)
         enable_log_compression: {self.shell_logging_compress}
-    
+        
     # Configure your Exegol Desktop
     desktop:
         # Enables or not the desktop mode by default
         # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the feature
         enabled_by_default: {self.desktop_default_enable}
-    
+        
         # Default desktop protocol,can be "http", or "vnc" (additional protocols to come in the future, check online documentation for updates).
         default_protocol: {self.desktop_default_proto}
-    
+        
         # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
         localhost_by_default: {self.desktop_default_localhost}
 

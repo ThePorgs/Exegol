@@ -18,7 +18,7 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
                 last_version: STR
             }
         }
-        images: 
+        images:
             metadata: {
                     last_check: DATE
             }

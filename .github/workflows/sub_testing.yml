@@ -23,6 +23,8 @@ jobs:
         run: pdm run -v mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Find spawn.sh script version
         run: egrep '^# Spawn Version:[0-9ab]+$' ./exegol/utils/imgsync/spawn.sh | cut -d ':' -f2
+      - name: Pre-commit checks
+        run: pdm run -v pre-commit run --all-files --hook-stage pre-commit
 
   compatibility:
     name: Compatibility checks

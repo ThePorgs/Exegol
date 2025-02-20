@@ -370,7 +370,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
 
             # If the left part of the display variable is "localhost", x11 socket is exposed only on loopback and remote access is used
-            # If the container is not in host mode, it won't be able to reach the loopback interface of the host 
+            # If the container is not in host mode, it won't be able to reach the loopback interface of the host
             if display_host == "localhost" and self.config.getNetworkMode() != "host":
                 logger.warning("X11 forwarding won't work on a bridged container unless you specify \"X11UseLocalhost no\" in your host sshd_config")
                 logger.warning("[red]Be aware[/red] changing \"X11UseLocalhost\" value can [red]expose your device[/red], correct firewalling is [red]required[/red]")

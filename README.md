@@ -58,4 +58,3 @@ Below are some bullet points to better understand how Exegol works
 </div>
 
 Dramelac and I work at [Capgemini](https://www.capgemini.com/) and we thank them for believing in the project since day 1, and for allowing us to have this personal initiative keep going.
-
