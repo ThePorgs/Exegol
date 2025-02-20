@@ -14,7 +14,7 @@ class MetadataCacheModel:
             last_check = datetime.date.today().strftime(self.__TIME_FORMAT)
         self.last_check: str = last_check
 
-    def update_last_check(self):
+    def update_last_check(self) -> None:
         self.last_check = datetime.date.today().strftime(self.__TIME_FORMAT)
 
     def get_last_check(self) -> datetime.datetime:
@@ -23,7 +23,7 @@ class MetadataCacheModel:
     def get_last_check_text(self) -> str:
         return self.last_check
 
-    def is_outdated(self, days: int = 15, hours: int = 0):
+    def is_outdated(self, days: int = 15, hours: int = 0) -> bool:
         """Check if the cache must be considered as expired."""
         now = datetime.datetime.now()
         last_check = self.get_last_check()
@@ -99,11 +99,11 @@ class WrapperCacheModel:
 class CacheDB:
     """Main object of the exegol cache"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.wrapper: WrapperCacheModel = WrapperCacheModel()
         self.images: ImagesCacheModel = ImagesCacheModel([])
 
-    def load(self, wrapper: Dict, images: Dict):
+    def load(self, wrapper: Dict, images: Dict) -> None:
         """Load the CacheDB data from a raw Dict object"""
         self.wrapper = WrapperCacheModel(**wrapper)
         self.images = ImagesCacheModel(**images)

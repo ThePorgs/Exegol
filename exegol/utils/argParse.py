@@ -105,6 +105,6 @@ class Parser:
         argcomplete.autocomplete(self.__root_parser)
         return self.__root_parser.parse_args()
 
-    def print_help(self):
+    def print_help(self) -> None:
         """Force argparse to display the help message"""
         self.__root_parser.print_help()

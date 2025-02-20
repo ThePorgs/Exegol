@@ -83,7 +83,7 @@ class ExegolImage(SelectableInterface):
         # Debug every Exegol image init
         # logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
-    def __initFromDockerImage(self):
+    def __initFromDockerImage(self) -> None:
         """Parse Docker object to set up self configuration on creation."""
         assert self.__image is not None
         # If docker object exists, image is already installed
@@ -140,7 +140,7 @@ class ExegolImage(SelectableInterface):
         # Default status, must be refreshed later if some parameters will be changed externally
         self.syncStatus()
 
-    def resetDockerImage(self):
+    def resetDockerImage(self) -> None:
         """During an image upgrade, the docker image and local parsed variable must be
         reset before parsing the new upgraded image"""
         self.__image = None
@@ -150,7 +150,7 @@ class ExegolImage(SelectableInterface):
         self.__build_date = "[bright_black]N/A[/bright_black]"
         self.__disk_size = "[bright_black]N/A[/bright_black]"
 
-    def setDockerObject(self, docker_image: Image):
+    def setDockerObject(self, docker_image: Image) -> None:
         """Docker object setter. Parse object to set up self configuration."""
         self.__image = docker_image
         # When a docker image exist, image is locally installed
@@ -180,7 +180,7 @@ class ExegolImage(SelectableInterface):
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
 
-    def setMetaImage(self, meta: MetaImages, status: Status):
+    def setMetaImage(self, meta: MetaImages, status: Status) -> None:
         dockerhub_data = meta.getDockerhubImageForArch(self.getArch())
         self.__is_remote = True
         if self.__version_specific:
@@ -209,7 +209,7 @@ class ExegolImage(SelectableInterface):
         # Refresh status after metadata update
         self.syncStatus()
 
-    def setAsDiscontinued(self):
+    def setAsDiscontinued(self) -> None:
         logger.debug(f"The image '{self.getName()}' (digest: {self.getRemoteId()}) has not been found remotely, "
                      f"considering it as discontinued.")
         # If there are still remote images but the image has not found any match it is because it has been deleted/discontinued
@@ -219,7 +219,7 @@ class ExegolImage(SelectableInterface):
         # Status must be updated after changing previous criteria
         self.syncStatus()
 
-    def __labelVersionParsing(self):
+    def __labelVersionParsing(self) -> None:
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
         if "N/A" in self.__image_version and self.__image is not None:
@@ -234,12 +234,12 @@ class ExegolImage(SelectableInterface):
         """Create a tag name alias from labels when image's tag is lost"""
         return image.labels.get("org.exegol.tag", "<none>") + "-" + image.labels.get("org.exegol.version", "v?")
 
-    def __checkLocalLabel(self):
+    def __checkLocalLabel(self) -> bool:
         """Check if the local label is set. Default to yes for old build"""
         assert self.__image is not None
         return self.__image.labels.get("org.exegol.version", "local").lower() == "local"
 
-    def syncStatus(self):
+    def syncStatus(self) -> None:
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
         if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__outdated:
@@ -247,7 +247,7 @@ class ExegolImage(SelectableInterface):
         else:
             self.__custom_status = ""
 
-    def syncContainerData(self, container: Container):
+    def syncContainerData(self, container: Container) -> None:
         """Synchronization between the container and the image.
         If the image has been updated, the tag is lost,
         but it is saved in the properties of the container that still uses it."""
@@ -328,7 +328,7 @@ class ExegolImage(SelectableInterface):
             return None
 
     @classmethod
-    def __mergeMetaImages(cls, images: List[MetaImages]):
+    def __mergeMetaImages(cls, images: List[MetaImages]) -> None:
         """Select latest (remote) images and merge them with their version's specific equivalent"""
         latest_images, version_images = [], []
         # Splitting images by type : latest or version specific
@@ -487,7 +487,7 @@ class ExegolImage(SelectableInterface):
             logger.error(f"Error, {type(other)} compare to ExegolImage is not implemented")
             raise NotImplementedError
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Default object text formatter, debug only"""
         return f"{self.__name} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
             (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
@@ -495,7 +495,7 @@ class ExegolImage(SelectableInterface):
     def __repr__(self):
         return str(self)
 
-    def setCustomStatus(self, status: str):
+    def setCustomStatus(self, status: str) -> None:
         """Manual image's status overwrite"""
         self.__custom_status = status
 
@@ -531,7 +531,7 @@ class ExegolImage(SelectableInterface):
         """Image type getter"""
         return "remote" if self.__is_remote else "local"
 
-    def __setDigest(self, digest: Optional[str]):
+    def __setDigest(self, digest: Optional[str]) -> None:
         """Remote image digest setter"""
         if digest is not None:
             self.__digest = digest
@@ -549,7 +549,7 @@ class ExegolImage(SelectableInterface):
         """Remote digest getter"""
         return self.__digest
 
-    def __setLatestRemoteId(self, digest: str):
+    def __setLatestRemoteId(self, digest: str) -> None:
         """Remote latest digest getter"""
         self.__profile_digest = digest
 
@@ -557,7 +557,7 @@ class ExegolImage(SelectableInterface):
         """Remote latest digest getter"""
         return self.__profile_digest
 
-    def __setImageId(self, image_id: Optional[str]):
+    def __setImageId(self, image_id: Optional[str]) -> None:
         """Local image id setter"""
         if image_id is not None:
             self.__image_id = image_id.split(":")[1][:12]
@@ -570,7 +570,7 @@ class ExegolImage(SelectableInterface):
         """Universal unique key getter (from SelectableInterface)"""
         return self.getName()
 
-    def __setRealSize(self, value: int):
+    def __setRealSize(self, value: int) -> None:
         """On-Disk image size setter"""
         self.__disk_size = self.__processSize(value)
 
@@ -593,7 +593,7 @@ class ExegolImage(SelectableInterface):
         Exegol images before 3.x.x don't have any entrypoint set (because /.exegol/entrypoint.sh don't exist yet. In this case, this getter will return None."""
         return self.__entrypoint
 
-    def getBuildDate(self):
+    def getBuildDate(self) -> str:
         """Build date getter"""
         if not self.__build_date:
             # Handle empty string
@@ -638,7 +638,7 @@ class ExegolImage(SelectableInterface):
         """Image's arch getter"""
         return self.__arch if self.__arch else "amd64"
 
-    def __setArch(self, arch: str):
+    def __setArch(self, arch: str) -> None:
         """Image's arch setter."""
         self.__arch = arch
 
@@ -650,14 +650,14 @@ class ExegolImage(SelectableInterface):
         """Image's tag name with installed version getter"""
         return self.__formatVersionName(self.__image_version)
 
-    def __formatVersionName(self, version):
+    def __formatVersionName(self, version) -> str:
         """From the selected version, format the image tag name"""
         result_name = self.__name
         if not (self.__version_specific or self.__version_label_mode or 'N/A' in version):
             result_name += "-" + version
         return result_name
 
-    def __setImageVersion(self, version: str, source_tag: bool = True):
+    def __setImageVersion(self, version: str, source_tag: bool = True) -> None:
         """Image's tag version setter.
         Set source_tag as true if the information is retrieve from the image's tag name.
         If the version is retrieve from the label, set source_tag as False."""
@@ -668,7 +668,7 @@ class ExegolImage(SelectableInterface):
         """Image's tag version getter"""
         return self.__image_version
 
-    def __setLatestVersion(self, version: str):
+    def __setLatestVersion(self, version: str) -> None:
         """Image's tag version setter"""
         self.__profile_version = version
 

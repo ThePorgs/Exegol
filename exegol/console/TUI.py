@@ -25,7 +25,7 @@ class ExegolTUI:
     """Class gathering different methods of Terminal User Interface (or TUI)"""
 
     @staticmethod
-    def downloadDockerLayer(stream: Generator, quick_exit: bool = False):
+    def downloadDockerLayer(stream: Generator, quick_exit: bool = False) -> None:
         """Rich interface for docker image layer download from SDK stream"""
         layers: Set[str] = set()
         layers_downloaded: Set[str] = set()
@@ -116,7 +116,7 @@ class ExegolTUI:
                     logger.debug(line)
 
     @staticmethod
-    def buildDockerImage(build_stream: Generator):
+    def buildDockerImage(build_stream: Generator) -> None:
         """Rich interface for docker image building from SDK stream"""
         # Prepare log file
         logfile = None
@@ -153,7 +153,7 @@ class ExegolTUI:
     @staticmethod
     def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]],
                    title: Optional[str] = None,
-                   safe_key: bool = False):
+                   safe_key: bool = False) -> None:
         """Printing Rich table for a list of object.
         Set safe_key to override the key selection"""
         logger.empty_line()
@@ -181,7 +181,7 @@ class ExegolTUI:
         logger.empty_line()
 
     @staticmethod
-    def __buildImageTable(table: Table, data: Sequence[ExegolImage], safe_key: bool = False):
+    def __buildImageTable(table: Table, data: Sequence[ExegolImage], safe_key: bool = False) -> None:
         """Building Rich table from a list of ExegolImage"""
         table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
@@ -218,7 +218,7 @@ class ExegolTUI:
                     table.add_row(image.getDisplayName(), image.getRealSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False):
+    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False) -> None:
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -249,7 +249,7 @@ class ExegolTUI:
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
-    def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key"):
+    def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key") -> None:
         """Building a simple Rich table from a list of string"""
         table.title = title
         table.min_width = richLen(title)
@@ -261,7 +261,7 @@ class ExegolTUI:
             table.add_row(string)
 
     @staticmethod
-    def __buildDictTable(table: Table, data_array: Sequence[Dict[str, str]]):
+    def __buildDictTable(table: Table, data_array: Sequence[Dict[str, str]]) -> None:
         """Building a simple Rich table from a list of string"""
         # Define columns from dict keys
         for column in data_array[0].keys():
@@ -395,7 +395,7 @@ class ExegolTUI:
             return choice
 
     @classmethod
-    def printContainerRecap(cls, container: ExegolContainerTemplate):
+    def printContainerRecap(cls, container: ExegolContainerTemplate) -> None:
         """
         Build and print a rich table with every configuration of the container
         :param container: Exegol container to print the table of
@@ -411,7 +411,7 @@ class ExegolTUI:
         logger.empty_line()
 
     @staticmethod
-    def __buildContainerRecapTable(container: ExegolContainerTemplate):
+    def __buildContainerRecapTable(container: ExegolContainerTemplate) -> Table:
         """
         Build a rich table to recap in detail the configuration of a specified ExegolContainerTemplate or ExegolContainer
         :param container: The container to fetch config from
@@ -495,7 +495,7 @@ class ExegolTUI:
         return recap
 
     @classmethod
-    def __isInteractionAllowed(cls):
+    def __isInteractionAllowed(cls) -> None:
         # if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
         #    logger.critical(f'A required information is missing. Exiting.')
         pass

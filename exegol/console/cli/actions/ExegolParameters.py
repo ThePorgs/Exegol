@@ -1,6 +1,6 @@
 from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
-from exegol.console.cli.actions.GenericParameters import *
+from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
 from exegol.manager.ExegolManager import ExegolManager
 from exegol.utils.ExeLog import logger
 
@@ -8,7 +8,7 @@ from exegol.utils.ExeLog import logger
 class Start(Command, ContainerCreation, ContainerSpawnShell):
     """Automatically create, start / resume and enter an Exegol container"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
         ContainerSpawnShell.__init__(self, self.groupArgs)
@@ -34,7 +34,7 @@ class Start(Command, ContainerCreation, ContainerSpawnShell):
 class Stop(Command, ContainerMultiSelector):
     """Stop an Exegol container"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerMultiSelector.__init__(self, self.groupArgs)
 
@@ -51,7 +51,7 @@ class Stop(Command, ContainerMultiSelector):
 class Restart(Command, ContainerSelector, ContainerSpawnShell):
     """Restart an Exegol container"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerSelector.__init__(self, self.groupArgs)
         ContainerSpawnShell.__init__(self, self.groupArgs)
@@ -69,7 +69,7 @@ class Restart(Command, ContainerSelector, ContainerSpawnShell):
 class Install(Command, ImageSelector):
     """Install or build Exegol image"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
@@ -112,7 +112,7 @@ class Install(Command, ImageSelector):
 class Update(Command, ImageSelector):
     """Update an Exegol image"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
@@ -143,7 +143,7 @@ class Update(Command, ImageSelector):
 class Uninstall(Command, ImageMultiSelector):
     """Remove Exegol [default not bold]image(s)[/default not bold]"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ImageMultiSelector.__init__(self, self.groupArgs)
 
@@ -169,7 +169,7 @@ class Uninstall(Command, ImageMultiSelector):
 class Remove(Command, ContainerMultiSelector):
     """Remove Exegol [default not bold]container(s)[/default not bold]"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerMultiSelector.__init__(self, self.groupArgs)
 
@@ -195,7 +195,7 @@ class Remove(Command, ContainerMultiSelector):
 class Exec(Command, ContainerCreation, ContainerStart):
     """Execute a command on an Exegol container"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerCreation.__init__(self, self.groupArgs)
         ContainerStart.__init__(self, self.groupArgs)
@@ -267,7 +267,7 @@ class Exec(Command, ContainerCreation, ContainerStart):
 class Info(Command, ContainerSelector):
     """Show info on containers and images (local & remote)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
         ContainerSelector.__init__(self, self.groupArgs)
 

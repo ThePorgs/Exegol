@@ -31,7 +31,7 @@ class ContainerLogStream:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> str:
         """Get the next line of the stream"""
         if self.__until_date is None:
             self.__until_date = datetime.now()

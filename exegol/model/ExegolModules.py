@@ -14,7 +14,7 @@ from exegol.utils.MetaSingleton import MetaSingleton
 class ExegolModules(metaclass=MetaSingleton):
     """Singleton class dedicated to the centralized management of the project modules"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Init project git modules to None until their first call"""
         # Git modules
         self.__git_wrapper: Optional[GitUtils] = None
@@ -57,7 +57,7 @@ class ExegolModules(metaclass=MetaSingleton):
             self.__init_resources_repo()
         return self.__git_resources
 
-    def __init_images_repo(self):
+    def __init_images_repo(self) -> None:
         """Initialization procedure of exegol images module.
         Raise CancelOperation if the initialization failed."""
         if ParametersManager().offline_mode:
@@ -79,7 +79,7 @@ class ExegolModules(metaclass=MetaSingleton):
                 # Error during install, raise error to avoid update process
                 raise CancelOperation
 
-    def __init_resources_repo(self):
+    def __init_resources_repo(self) -> None:
         """Initialization procedure of exegol resources module.
         Raise CancelOperation if the initialization failed."""
         if ParametersManager().offline_mode:
@@ -113,7 +113,7 @@ class ExegolModules(metaclass=MetaSingleton):
         return self.getResourcesGit(fast_load=True).isAvailable
 
     @staticmethod
-    def __warningExcludeFolderAV(directory: Union[str, Path]):
+    def __warningExcludeFolderAV(directory: Union[str, Path]) -> None:
         """Generic procedure to warn the user that not antivirus compatible files will be downloaded and that
         the destination folder should be excluded from the scans to avoid any problems"""
         logger.warning(f"If you are using an [orange3][g]Anti-Virus[/g][/orange3] on your host, you should exclude the folder {directory} before starting the download.")

@@ -229,7 +229,7 @@ class UpdateManager:
         return not isUpToDate
 
     @classmethod
-    def __updateLastCheckTimestamp(cls):
+    def __updateLastCheckTimestamp(cls) -> None:
         """Update the last_check metadata timestamp with the current date to avoid multiple update checks."""
         DataCache().get_wrapper_data().metadata.update_last_check()
         DataCache().save_updates()
@@ -250,7 +250,7 @@ class UpdateManager:
         return isUpToDate
 
     @classmethod
-    def __get_current_version(cls):
+    def __get_current_version(cls) -> str:
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         current_version = ConstantConfig.version
         if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE) and ConstantConfig.git_source_installation:
@@ -260,7 +260,7 @@ class UpdateManager:
         return current_version
 
     @staticmethod
-    def display_current_version():
+    def display_current_version() -> str:
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         version_details = ""
         if ConstantConfig.git_source_installation:
@@ -277,7 +277,7 @@ class UpdateManager:
         return f"[blue]v{ConstantConfig.version}[/blue]{version_details}"
 
     @classmethod
-    def __tagUpdateAvailable(cls, latest_version, current_version=None):
+    def __tagUpdateAvailable(cls, latest_version, current_version=None) -> None:
         """Update the 'update available' cache data."""
         DataCache().get_wrapper_data().last_version = latest_version
         DataCache().get_wrapper_data().current_version = cls.__get_current_version() if current_version is None else current_version
@@ -304,7 +304,7 @@ class UpdateManager:
         return f"[blue]v{last_version}[/blue]"
 
     @classmethod
-    def __untagUpdateAvailable(cls, current_version: Optional[str] = None):
+    def __untagUpdateAvailable(cls, current_version: Optional[str] = None) -> None:
         """Reset the latest version to the current version"""
         if current_version is None:
             current_version = cls.__get_current_version()
@@ -376,7 +376,7 @@ class UpdateManager:
         return build_name
 
     @classmethod
-    def buildAndLoad(cls, tag: str):
+    def buildAndLoad(cls, tag: str) -> ExegolImage:
         """Build an image and load it"""
         build_name = cls.__buildSource(tag)
         return DockerUtils().getInstalledImage(build_name)

@@ -15,7 +15,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
     shell_logging_method_options = {'script', 'asciinema'}
     desktop_available_proto = {'http', 'vnc'}
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Defaults User config
         self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
         self.my_resources_path: Path = ConstantConfig.exegol_config_path / "my-resources"
@@ -34,7 +34,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
 
         super().__init__("config.yml", "yml")
 
-    def _build_file_content(self):
+    def _build_file_content(self) -> str:
         config = f"""# Exegol configuration
 # Full documentation: https://exegol.readthedocs.io/en/latest/exegol-wrapper/advanced-uses.html#id1
 
@@ -102,7 +102,7 @@ config:
             # Default path for pip installation
             return ConstantConfig.exegol_config_path / folder_name
 
-    def _process_data(self):
+    def _process_data(self) -> None:
         # Volume section
         volumes_data = self._raw_data.get("volumes", {})
         # Catch existing but empty section

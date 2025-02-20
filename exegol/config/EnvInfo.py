@@ -74,7 +74,7 @@ class EnvInfo:
         arch = "amd64"
 
     @classmethod
-    def initData(cls, docker_info):
+    def initData(cls, docker_info) -> None:
         """Initialize information from Docker daemon data"""
         # Fetch data from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
@@ -178,14 +178,14 @@ class EnvInfo:
         return cls.__docker_engine
 
     @classmethod
-    def getShellType(cls):
+    def getShellType(cls) -> str:
         """Return the type of shell exegol is executed from"""
         if cls.is_linux_shell:
-            return cls.HostOs.LINUX
+            return cls.HostOs.LINUX.value
         elif cls.is_windows_shell:
-            return cls.HostOs.WINDOWS
+            return cls.HostOs.WINDOWS.value
         elif cls.is_mac_shell:
-            return cls.HostOs.MAC
+            return cls.HostOs.MAC.value
         else:
             return "Unknown"
 

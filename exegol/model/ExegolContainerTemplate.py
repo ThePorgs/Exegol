@@ -29,15 +29,15 @@ class ExegolContainerTemplate:
         else:
             self.config.hostname = self.container_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Default object text formatter, debug only"""
         return f"{self.name} - {self.image.getName()}{os.linesep}{self.config}"
 
-    def prepare(self):
+    def prepare(self) -> None:
         """Prepare the model before creating the docker container"""
         self.config.prepareShare(self.name)
 
-    def rollback(self):
+    def rollback(self) -> None:
         """Rollback change in case of container creation fail."""
         self.config.rollback_preparation(self.name)
 

@@ -11,7 +11,7 @@ class ParametersManager(metaclass=MetaSingleton):
     """This class is a singleton allowing to access from anywhere to any parameter
     filled by the user from the CLI arguments"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # List every action available on the project (from the root Class)
         actions: List[Command] = [cls() for cls in Command.__subclasses__()]
         # Load & execute argparse

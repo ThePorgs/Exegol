@@ -44,7 +44,7 @@ class GroupArg:
 class Command:
     """The Command class is the root of all CLI actions"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Root command usages (can be overwritten by subclasses to display different use cases)
         self._pre_usages = "[underline]To see specific examples run:[/underline][italic] exegol [cyan]command[/cyan] -h[/italic]"
         self._usages = {
@@ -122,7 +122,7 @@ class Command:
         Mainly used by developers to easily identify objects"""
         return self.name
 
-    def populate(self, args: Namespace):
+    def populate(self, args: Namespace) -> None:
         """This method replaces the parsing objects (Option) with the result of the parsing"""
         for arg in vars(args).keys():
             # Check if the argument exist in the current class
