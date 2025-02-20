@@ -12,7 +12,7 @@ class MetaImages:
     def __init__(self, dockerhub_data) -> None:
         """Create a MetaImage object to handle multi-arch docker registry images in a single point"""
         # Raw data
-        self.__dockerhub_images: List[Dict[str, Optional[str, int]]] = dockerhub_data.get('images', {})
+        self.__dockerhub_images: List[Dict[str, Optional[Union[str, int]]]] = dockerhub_data.get('images', {})
         # Attributes
         self.name: str = dockerhub_data.get('name', '')
         self.multi_arch: bool = len(self.__dockerhub_images) > 1
@@ -58,7 +58,7 @@ class MetaImages:
         return version
 
     @staticmethod
-    def parseArch(docker_image: Union[Dict[str, Any], Image]) -> str:
+    def parseArch(docker_image: Union[Dict[str, Optional[Union[str, int]]], Image]) -> str:
         """Parse and format arch in dockerhub style from registry dict struct.
         Return arch in format 'arch/variant'."""
         arch_key = "architecture"
@@ -68,7 +68,7 @@ class MetaImages:
             docker_image = docker_image.attrs
             arch_key = "Architecture"
             variant_key = "Variant"
-        arch = docker_image.get(arch_key, "amd64")
+        arch = str(docker_image.get(arch_key, "amd64"))
         variant = docker_image.get(variant_key)
         if variant:
             arch += f"/{variant}"
