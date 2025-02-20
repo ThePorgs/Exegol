@@ -1,5 +1,5 @@
-[submodule "sources"]
-	path = exegol-docker-build
+[submodule "exegol-images"]
+	path = exegol-images
 	url = https://github.com/ThePorgs/Exegol-images.git
 	branch = main
 [submodule "exegol-resources"]

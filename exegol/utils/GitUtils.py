@@ -290,7 +290,7 @@ class GitUtils:
             return
         logger.verbose(f"Git {self.getName()} init submodules")
         # These modules are init / updated manually
-        blacklist_heavy_modules = ["exegol-resources"]
+        blacklist_heavy_modules = ["exegol-resources", "exegol-images"]
         if self.__gitRepo is None:
             return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:

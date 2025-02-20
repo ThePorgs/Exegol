@@ -20,6 +20,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
         self.my_resources_path: Path = ConstantConfig.exegol_config_path / "my-resources"
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
+        self.exegol_images_path: Path = self.__default_resource_location('exegol-images')
         self.auto_check_updates: bool = True
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
@@ -45,6 +46,9 @@ volumes:
     
     # Exegol resources are data and static tools downloaded in addition to docker images. These tools are complementary and are accessible directly from the host.
     exegol_resources_path: {self.exegol_resources_path}
+    
+    # Exegol images are the source of the exegol environments. These sources are needed when locally building an exegol image.
+    exegol_images_path: {self.exegol_images_path}
     
     # When containers do not have an explicitly declared workspace, a dedicated folder will be created at this location to share the workspace with the host but also to save the data after deleting the container
     private_workspace_path: {self.private_volume_path}
@@ -92,7 +96,7 @@ config:
     def __default_resource_location(folder_name: str) -> Path:
         local_src = ConstantConfig.src_root_path_obj / folder_name
         if local_src.is_dir():
-            # If exegol is clone from github, exegol-resources submodule is accessible from root src
+            # If exegol is clone from github, exegol submodule is accessible from root src
             return local_src
         else:
             # Default path for pip installation
@@ -107,6 +111,7 @@ config:
         self.my_resources_path = self._load_config_path(volumes_data, 'my_resources_path', self.my_resources_path)
         self.private_volume_path = self._load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self._load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
+        self.exegol_images_path = self._load_config_path(volumes_data, 'exegol_images_path', self.exegol_images_path)
 
         # Config section
         config_data = self._raw_data.get("config", {})
@@ -138,6 +143,7 @@ config:
             "Exegol resources: " + (f"[magenta]{self.exegol_resources_path}[/magenta]"
                                     if self.enable_exegol_resources else
                                     boolFormatter(self.enable_exegol_resources)),
+            f"Exegol images: [magenta]{self.exegol_images_path}[/magenta]",
             f"My resources: [magenta]{self.my_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",

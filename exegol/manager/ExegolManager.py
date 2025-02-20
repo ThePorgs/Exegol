@@ -134,7 +134,6 @@ class ExegolManager:
             logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
-            UpdateManager.updateImageSource()
             UpdateManager.updateResources()
         if not ParametersManager().skip_images:
             UpdateManager.updateImage()

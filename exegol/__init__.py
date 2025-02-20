@@ -1,2 +1,2 @@
-__version__ = "4.3.5"
+__version__ = "4.3.10b2"
 __title__ = "exegol"
