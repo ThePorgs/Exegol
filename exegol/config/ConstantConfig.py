@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from exegol import __version__
+__version__ = "4.3.10b2"
 
 
 class ConstantConfig:

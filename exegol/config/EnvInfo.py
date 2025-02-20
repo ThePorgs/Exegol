@@ -37,14 +37,14 @@ class EnvInfo:
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
     is_linux_shell: bool = current_platform in ["WSL", "Linux"]
     is_windows_shell: bool = current_platform == "Windows"
-    is_mac_shell = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
+    is_mac_shell: bool = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
     __is_docker_desktop: bool = False
     __windows_release: Optional[str] = None
     # Host OS
     __docker_host_os: Optional[HostOs] = None
     __docker_engine: Optional[DockerEngine] = None
     # Docker desktop cache config
-    __docker_desktop_resource_config = None
+    __docker_desktop_resource_config: Optional[dict] = None
     # Architecture
     raw_arch = platform.machine().lower()
     arch = raw_arch
@@ -224,7 +224,9 @@ class EnvInfo:
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
-            return cls.__docker_desktop_resource_config
+                if cls.__docker_desktop_resource_config is None:
+                    logger.warning(f"Docker Desktop configuration couldn't be loaded from '{file_path}'")
+                return cls.__docker_desktop_resource_config
         return {}
 
     @classmethod

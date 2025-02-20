@@ -36,7 +36,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-test = ["mypy"]
+test = ["mypy", "types-PyYAML", "types-requests"]
 
 [project.scripts]
 exegol = "exegol.manager.ExegolController:main"
@@ -51,7 +51,7 @@ Funding = "https://patreon.com/nwodtuhs"
 [tool.pdm]
 [tool.pdm.version]
 source = "file"
-path = "exegol/__init__.py"
+path = "exegol/config/ConstantConfig.py"
 
 [tool.pdm.build]
 excludes = ["tests"]
