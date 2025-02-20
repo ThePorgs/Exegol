@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install requirements
-        run: pdm lock && pdm sync -d -G testing
+        run: pdm update && pdm sync -d -G testing
       - name: Run code analysis (package)
         run: pdm run -v mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Run code analysis (source)
@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install requirements
-        run: pdm lock && pdm sync -d -G testing
+        run: pdm update && pdm sync -d -G testing
       - name: Check python compatibility for ${{ matrix.os }}/${{ matrix.version }}
         run: pdm run -v mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --python-version ${{ matrix.version }} --platform ${{ matrix.os }}
 
@@ -63,7 +63,7 @@ jobs:
 #          python-version: ${{ matrix.python-version }}
 #
 #      - name: Install dependencies
-#        run: pdm lock && pdm sync -d -G testing
+#        run: pdm update && pdm sync -d -G testing
 #      - name: Run Tests
 #        run: pdm run -v pytest tests
 
