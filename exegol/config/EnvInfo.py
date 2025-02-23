@@ -224,8 +224,9 @@ class EnvInfo:
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
-                if cls.__docker_desktop_resource_config is None:
-                    logger.warning(f"Docker Desktop configuration couldn't be loaded from '{file_path}'")
+            if cls.__docker_desktop_resource_config is None:
+                logger.warning(f"Docker Desktop configuration couldn't be loaded.'")
+            else:
                 return cls.__docker_desktop_resource_config
         return {}
 
@@ -233,7 +234,9 @@ class EnvInfo:
     def getDockerDesktopResources(cls) -> List[str]:
         settings = cls.getDockerDesktopSettings()
         # Handle legacy settings key
-        return settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
+        docker_desktop_resources = settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
+        logger.debug(f"Docker Desktop resources whitelist: {docker_desktop_resources}")
+        return docker_desktop_resources
 
     @classmethod
     def isHostNetworkAvailable(cls) -> bool:
