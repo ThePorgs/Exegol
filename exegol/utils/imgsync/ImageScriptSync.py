@@ -1,5 +1,6 @@
 import io
 import tarfile
+from typing import Optional
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -8,16 +9,17 @@ from exegol.utils.ExeLog import logger
 class ImageScriptSync:
 
     @staticmethod
-    def getCurrentStartVersion():
+    def getCurrentStartVersion() -> str:
         """Find the current version of the spawn.sh script."""
         with open(ConstantConfig.spawn_context_path_obj, 'r') as file:
             for line in file.readlines():
                 if line.startswith('# Spawn Version:'):
                     return line.split(':')[-1].strip()
         logger.critical(f"The spawn.sh version cannot be found, check your exegol setup! {ConstantConfig.spawn_context_path_obj}")
+        raise RuntimeError
 
     @staticmethod
-    def getImageSyncTarData(include_entrypoint: bool = False, include_spawn: bool = False):
+    def getImageSyncTarData(include_entrypoint: bool = False, include_spawn: bool = False) -> Optional[bytes]:
         """The purpose of this class is to generate and overwrite scripts like the entrypoint or spawn.sh inside exegol containers
         to integrate the latest features, whatever the version of the image."""
 

@@ -61,8 +61,6 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
     if parsed_args is not None and parsed_args.imagetag is None:
         return ()
 
-    # Default build path
-    build_path = ConstantConfig.build_context_path_obj
     # Handle custom build path
     if parsed_args is not None and parsed_args.build_path is not None:
         custom_build_path = Path(parsed_args.build_path).expanduser().absolute()
@@ -70,6 +68,13 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
         if not custom_build_path.is_dir():
             custom_build_path = custom_build_path.parent
         build_path = custom_build_path
+    else:
+        # Default build path
+        build_path = Path(UserConfig().exegol_images_path)
+
+    # Check if directory path exist
+    if not build_path.is_dir():
+        return tuple()
 
     # Find profile list
     data = list(UpdateManager.listBuildProfiles(profiles_path=build_path).keys())

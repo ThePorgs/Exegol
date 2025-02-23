@@ -35,7 +35,7 @@ class ExegolController:
     __action: Command = ParametersManager().getCurrentAction()
 
     @classmethod
-    def call_action(cls):
+    def call_action(cls) -> None:
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
         ExegolManager.print_version()
@@ -53,7 +53,7 @@ class ExegolController:
             logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")
 
 
-def print_exception_banner():
+def print_exception_banner() -> None:
     logger.error("It seems that something unexpected happened ...")
     logger.error("To draw our attention to the problem and allow us to fix it, you can share your error with us "
                  "(by [orange3]copying and pasting[/orange3] it with this syntax: ``` <error> ```) "
@@ -61,7 +61,7 @@ def print_exception_banner():
     logger.success("Thank you for your collaboration!")
 
 
-def main():
+def main() -> None:
     """Exegol main console entrypoint"""
     try:
         # Set logger verbosity depending on user input

@@ -1,4 +1,4 @@
-from typing import Optional, Set, Union
+from typing import Optional, Set, Union, List, Dict, Any
 
 from docker.models.images import Image
 
@@ -9,10 +9,10 @@ from exegol.utils.WebUtils import WebUtils
 class MetaImages:
     """Meta model to store and organise multi-arch images"""
 
-    def __init__(self, dockerhub_data):
+    def __init__(self, dockerhub_data) -> None:
         """Create a MetaImage object to handle multi-arch docker registry images in a single point"""
         # Raw data
-        self.__dockerhub_images: dict = dockerhub_data.get('images')
+        self.__dockerhub_images: List[Dict[str, Optional[Union[str, int]]]] = dockerhub_data.get('images', {})
         # Attributes
         self.name: str = dockerhub_data.get('name', '')
         self.multi_arch: bool = len(self.__dockerhub_images) > 1
@@ -29,7 +29,7 @@ class MetaImages:
         self.version: str = self.tagNameParsing(self.name)
         self.is_latest: bool = not bool(self.version)  # Current image is latest if no version have been found from tag name
         # Post-process data
-        self.__image_match = set()
+        self.__image_arch_match: Set[str] = set()
 
     @staticmethod
     def tagNameParsing(tag_name: str) -> str:
@@ -58,7 +58,7 @@ class MetaImages:
         return version
 
     @staticmethod
-    def parseArch(docker_image: Union[dict, Image]) -> str:
+    def parseArch(docker_image: Union[Dict[str, Optional[Union[str, int]]], Image]) -> str:
         """Parse and format arch in dockerhub style from registry dict struct.
         Return arch in format 'arch/variant'."""
         arch_key = "architecture"
@@ -68,7 +68,7 @@ class MetaImages:
             docker_image = docker_image.attrs
             arch_key = "Architecture"
             variant_key = "Variant"
-        arch = docker_image.get(arch_key, "amd64")
+        arch = str(docker_image.get(arch_key, "amd64"))
         variant = docker_image.get(variant_key)
         if variant:
             arch += f"/{variant}"
@@ -78,22 +78,22 @@ class MetaImages:
         """Find a docker image corresponding to a specific arch"""
         for img in self.__dockerhub_images:
             if self.parseArch(img) == arch:
-                self.__image_match.add(arch)
+                self.__image_arch_match.add(arch)
                 return img
         return None
 
-    def getImagesLeft(self):
+    def getImagesLeft(self) -> List[dict]:
         """Return every image not previously selected."""
         result = []
         for img in self.__dockerhub_images:
-            if self.parseArch(img) not in self.__image_match:
+            if self.parseArch(img) not in self.__image_arch_match:
                 result.append(img)
         return result
 
-    def setVersionSpecific(self, meta_version: 'MetaImages'):
+    def setVersionSpecific(self, meta_version: 'MetaImages') -> None:
         self.version = meta_version.version
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.version}) [{self.meta_id}] {self.list_arch}"
 
     def __repr__(self):

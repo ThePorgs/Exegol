@@ -61,7 +61,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             self.__new_container = True
         self.image.syncStatus()
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Default object text formatter, debug only"""
         return f"{self.getRawStatus()} - {super().__str__()}"
 
@@ -105,14 +105,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Universal unique key getter (from SelectableInterface)"""
         return self.name
 
-    def start(self):
+    def start(self) -> None:
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
             self.__start_container()
             self.__postStartSetup()
 
-    def __start_container(self):
+    def __start_container(self) -> None:
         """
         This method start the container and display startup status update to the user.
         :return:
@@ -144,14 +144,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     # User can cancel startup logging with ctrl+C
                     logger.warning("User skip startup status updates. Spawning a shell now.")
 
-    def stop(self, timeout: int = 10):
+    def stop(self, timeout: int = 10) -> None:
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
             with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
                 self.__container.stop(timeout=timeout)
 
-    def spawnShell(self):
+    def spawnShell(self) -> None:
         """Spawn a shell on the docker container"""
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
@@ -173,7 +173,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False):
+    def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> None:
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
@@ -222,7 +222,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             cmd = f"zsh -c '{cmd}'"
         return cmd, str_cmd
 
-    def remove(self):
+    def remove(self) -> None:
         """Stop and remove the docker container"""
         self.__removeVolume()
         self.stop(timeout=2)
@@ -234,7 +234,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.error(
                 f"The container {self.name} has already been removed (probably created as a temporary container).")
 
-    def __removeVolume(self):
+    def __removeVolume(self) -> None:
         """Remove private workspace volume directory if exist"""
         volume_path = self.config.getPrivateVolumePath()
         # TODO add backup
@@ -281,14 +281,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
             logger.success("Private workspace volume removed successfully")
 
-    def __postStartSetup(self):
+    def __postStartSetup(self) -> None:
         """
         Operation to be performed after starting a container
         :return:
         """
         self.__applyX11ACLs()
 
-    def __check_start_version(self):
+    def __check_start_version(self) -> None:
         """
         Check spawn.sh up-to-date status and update the script if needed
         :return:
@@ -305,7 +305,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(f"Updating spawn.sh script from version {container_version} to version {current_start}")
                 self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_spawn=True))
 
-    def postCreateSetup(self, is_temporary: bool = False):
+    def postCreateSetup(self, is_temporary: bool = False) -> None:
         """
         Operation to be performed after creating a container
         :return:
@@ -323,7 +323,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
 
-    def __applyX11ACLs(self):
+    def __applyX11ACLs(self) -> None:
         """
         If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
         If the host is accessed by SSH, propagate xauth cookie authentication if applicable.
@@ -370,7 +370,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 return
 
             # If the left part of the display variable is "localhost", x11 socket is exposed only on loopback and remote access is used
-            # If the container is not in host mode, it won't be able to reach the loopback interface of the host 
+            # If the container is not in host mode, it won't be able to reach the loopback interface of the host
             if display_host == "localhost" and self.config.getNetworkMode() != "host":
                 logger.warning("X11 forwarding won't work on a bridged container unless you specify \"X11UseLocalhost no\" in your host sshd_config")
                 logger.warning("[red]Be aware[/red] changing \"X11UseLocalhost\" value can [red]expose your device[/red], correct firewalling is [red]required[/red]")
@@ -402,7 +402,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             else:
                 logger.warning(f"No xauth cookie corresponding to the current display was found.")
 
-    def __updatePasswd(self):
+    def __updatePasswd(self) -> None:
         """
         If configured, update the password of the user inside the container.
         :return:

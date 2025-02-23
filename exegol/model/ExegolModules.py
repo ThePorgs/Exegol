@@ -14,7 +14,7 @@ from exegol.utils.MetaSingleton import MetaSingleton
 class ExegolModules(metaclass=MetaSingleton):
     """Singleton class dedicated to the centralized management of the project modules"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Init project git modules to None until their first call"""
         # Git modules
         self.__git_wrapper: Optional[GitUtils] = None
@@ -33,14 +33,16 @@ class ExegolModules(metaclass=MetaSingleton):
             self.__git_wrapper = GitUtils(skip_submodule_update=fast_load)
         return self.__git_wrapper
 
-    def getSourceGit(self, fast_load: bool = False) -> GitUtils:
+    def getSourceGit(self, fast_load: bool = False, skip_install: bool = False) -> GitUtils:
         """GitUtils source submodule singleton getter.
-        Set fast_load to True to disable submodule init/update."""
-        # Be sure that submodules are init first
-        self.getWrapperGit()
+        Set fast_load to True to disable submodule init/update.
+        Set skip_install to skip to installation process of the modules if not available.
+        if skip_install is NOT set, the CancelOperation exception is raised if the installation failed."""
         if self.__git_source is None:
-            self.__git_source = GitUtils(ConstantConfig.src_root_path_obj / "exegol-docker-build", "images",
+            self.__git_source = GitUtils(UserConfig().exegol_images_path, "images",
                                          skip_submodule_update=fast_load)
+        if not self.__git_source.isAvailable and not skip_install:
+            self.__init_images_repo()
         return self.__git_source
 
     def getResourcesGit(self, fast_load: bool = False, skip_install: bool = False) -> GitUtils:
@@ -55,7 +57,29 @@ class ExegolModules(metaclass=MetaSingleton):
             self.__init_resources_repo()
         return self.__git_resources
 
-    def __init_resources_repo(self):
+    def __init_images_repo(self) -> None:
+        """Initialization procedure of exegol images module.
+        Raise CancelOperation if the initialization failed."""
+        if ParametersManager().offline_mode:
+            logger.error("It's not possible to install 'Exegol Images' in offline mode. Skipping the operation.")
+            raise CancelOperation
+        # If git wrapper is ready and exegol images location is the corresponding submodule, running submodule update
+        # if not, git clone resources
+        if ConstantConfig.git_source_installation and self.getWrapperGit(fast_load=True).isAvailable:
+            # When resources are load from git submodule, git objects are stored in the root .git directory
+            if self.getWrapperGit(fast_load=True).submoduleSourceUpdate("exegol-images"):
+                self.__git_source = None
+                self.getSourceGit()
+            else:
+                # Error during install, raise error to avoid update process
+                raise CancelOperation
+        else:
+            assert self.__git_source is not None
+            if not self.__git_source.clone(ConstantConfig.EXEGOL_IMAGES_REPO):
+                # Error during install, raise error to avoid update process
+                raise CancelOperation
+
+    def __init_resources_repo(self) -> None:
         """Initialization procedure of exegol resources module.
         Raise CancelOperation if the initialization failed."""
         if ParametersManager().offline_mode:
@@ -89,7 +113,7 @@ class ExegolModules(metaclass=MetaSingleton):
         return self.getResourcesGit(fast_load=True).isAvailable
 
     @staticmethod
-    def __warningExcludeFolderAV(directory: Union[str, Path]):
+    def __warningExcludeFolderAV(directory: Union[str, Path]) -> None:
         """Generic procedure to warn the user that not antivirus compatible files will be downloaded and that
         the destination folder should be excluded from the scans to avoid any problems"""
         logger.warning(f"If you are using an [orange3][g]Anti-Virus[/g][/orange3] on your host, you should exclude the folder {directory} before starting the download.")

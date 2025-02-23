@@ -229,7 +229,7 @@ class UpdateManager:
         return not isUpToDate
 
     @classmethod
-    def __updateLastCheckTimestamp(cls):
+    def __updateLastCheckTimestamp(cls) -> None:
         """Update the last_check metadata timestamp with the current date to avoid multiple update checks."""
         DataCache().get_wrapper_data().metadata.update_last_check()
         DataCache().save_updates()
@@ -250,7 +250,7 @@ class UpdateManager:
         return isUpToDate
 
     @classmethod
-    def __get_current_version(cls):
+    def __get_current_version(cls) -> str:
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         current_version = ConstantConfig.version
         if re.search(r'[a-z]', ConstantConfig.version, re.IGNORECASE) and ConstantConfig.git_source_installation:
@@ -260,7 +260,7 @@ class UpdateManager:
         return current_version
 
     @staticmethod
-    def display_current_version():
+    def display_current_version() -> str:
         """Get the current version of the exegol wrapper. Handle dev version and release stable version depending on the current version."""
         version_details = ""
         if ConstantConfig.git_source_installation:
@@ -277,7 +277,7 @@ class UpdateManager:
         return f"[blue]v{ConstantConfig.version}[/blue]{version_details}"
 
     @classmethod
-    def __tagUpdateAvailable(cls, latest_version, current_version=None):
+    def __tagUpdateAvailable(cls, latest_version, current_version=None) -> None:
         """Update the 'update available' cache data."""
         DataCache().get_wrapper_data().last_version = latest_version
         DataCache().get_wrapper_data().current_version = cls.__get_current_version() if current_version is None else current_version
@@ -304,7 +304,7 @@ class UpdateManager:
         return f"[blue]v{last_version}[/blue]"
 
     @classmethod
-    def __untagUpdateAvailable(cls, current_version: Optional[str] = None):
+    def __untagUpdateAvailable(cls, current_version: Optional[str] = None) -> None:
         """Reset the latest version to the current version"""
         if current_version is None:
             current_version = cls.__get_current_version()
@@ -321,16 +321,30 @@ class UpdateManager:
         User select a build profile
         Start docker image building
         Return the name of the built image"""
+        # Selecting the default path
         # Don't force update source if using a custom build_path
         if ParametersManager().build_path is None:
+            build_path = Path(UserConfig().exegol_images_path)
             # Ask to update git
             try:
+                # Install sources and check for update available
                 if ExegolModules().getSourceGit().isAvailable and not ExegolModules().getSourceGit().isUpToDate() and \
                         Confirm("Do you want to update image sources (in order to update local build profiles)?", default=True):
                     cls.updateImageSource()
+            except CancelOperation:
+                logger.critical("An error prevented exegol from downloading the sources for building a local image.")
             except AssertionError:
-                # Catch None git object assertions
+                # Catch None git object assertions (from isUpToDate method)
                 logger.warning("Git update is [orange3]not available[/orange3]. Skipping.")
+        else:
+            build_path = Path(ParametersManager().build_path).expanduser().absolute()
+            # Check if we have a directory or a file to select the project directory
+            if not build_path.is_dir():
+                build_path = build_path.parent
+            # Check if there is Dockerfile profiles
+            if not ((build_path / "Dockerfile").is_file() or len(list(build_path.glob("*.dockerfile"))) > 0):
+                logger.critical(f"The directory {build_path} doesn't contain any Dockerfile profile.")
+
         # Choose tag name
         blacklisted_build_name = ["stable", "full"]
         while build_name is None or build_name in blacklisted_build_name:
@@ -340,19 +354,6 @@ class UpdateManager:
                                     default="local")
 
         # Choose dockerfiles path
-        # Selecting the default path
-        build_path = ConstantConfig.build_context_path_obj
-        if ParametersManager().build_path is not None:
-            custom_build_path = Path(ParametersManager().build_path).expanduser().absolute()
-            # Check if we have a directory or a file to select the project directory
-            if not custom_build_path.is_dir():
-                custom_build_path = custom_build_path.parent
-            # Check if there is Dockerfile profiles
-            if (custom_build_path / "Dockerfile").is_file() or len(list(custom_build_path.glob("*.dockerfile"))) > 0:
-                # There is at least one Dockerfile
-                build_path = custom_build_path
-            else:
-                logger.critical(f"The directory {custom_build_path.absolute()} doesn't contain any Dockerfile profile.")
         logger.debug(f"Using {build_path} as path for dockerfiles")
 
         # Choose dockerfile
@@ -375,13 +376,13 @@ class UpdateManager:
         return build_name
 
     @classmethod
-    def buildAndLoad(cls, tag: str):
+    def buildAndLoad(cls, tag: str) -> ExegolImage:
         """Build an image and load it"""
         build_name = cls.__buildSource(tag)
         return DockerUtils().getInstalledImage(build_name)
 
     @classmethod
-    def listBuildProfiles(cls, profiles_path: Path = ConstantConfig.build_context_path_obj) -> Dict:
+    def listBuildProfiles(cls, profiles_path: Path) -> Dict:
         """List every build profiles available locally
         Return a dict of options {"key = profile name": "value = dockerfile full name"}"""
         # Default stable profile
@@ -404,7 +405,7 @@ class UpdateManager:
         """Get status of every git modules"""
         result = []
         gits = [ExegolModules().getWrapperGit(fast_load=True),
-                ExegolModules().getSourceGit(fast_load=True),
+                ExegolModules().getSourceGit(fast_load=True, skip_install=True),
                 ExegolModules().getResourcesGit(fast_load=True, skip_install=True)]
 
         with console.status(f"Loading module information", spinner_style="blue") as s:
@@ -413,7 +414,7 @@ class UpdateManager:
                 status = "[bright_black]Unknown[/bright_black]" if ParametersManager().offline_mode else git.getTextStatus()
                 branch = git.getCurrentBranch()
                 if branch is None:
-                    if "not supported" in status:
+                    if "not supported" in status or "Not installed" in status:
                         branch = "[bright_black]N/A[/bright_black]"
                     else:
                         branch = "[bright_black][g]? :person_shrugging:[/g][/bright_black]"

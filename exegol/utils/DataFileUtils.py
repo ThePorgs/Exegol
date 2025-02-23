@@ -43,7 +43,7 @@ class DataFileUtils:
         # Process
         self.__load_file()
 
-    def __load_file(self):
+    def __load_file(self) -> None:
         """
         Function to load the file and the corresponding parameters
         :return:
@@ -67,7 +67,7 @@ class DataFileUtils:
         """
         raise NotImplementedError(f"The '_build_default_file' method hasn't been implemented in the '{self.__class__}' class.")
 
-    def _create_config_file(self):
+    def _create_config_file(self) -> None:
         """
         Create or overwrite the file content to the default / current value depending on the '_build_default_file' that must be redefined in child class.
         :return:
@@ -83,7 +83,7 @@ class DataFileUtils:
         except OSError as e:
             logger.critical(f"A critical error occurred while interacting with filesystem: [{type(e)}] {e}")
 
-    def _parse_config(self):
+    def _parse_config(self) -> None:
         data: Dict = {}
         with open(self._file_path, 'r') as file:
             try:
@@ -174,7 +174,7 @@ class DataFileUtils:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default
 
-    def _process_data(self):
+    def _process_data(self) -> None:
         raise NotImplementedError(f"The '_process_data' method hasn't been implemented in the '{self.__class__}' class.")
 
     def _config_upgrade(self):

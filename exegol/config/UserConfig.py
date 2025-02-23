@@ -15,11 +15,12 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
     shell_logging_method_options = {'script', 'asciinema'}
     desktop_available_proto = {'http', 'vnc'}
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Defaults User config
         self.private_volume_path: Path = ConstantConfig.exegol_config_path / "workspaces"
         self.my_resources_path: Path = ConstantConfig.exegol_config_path / "my-resources"
         self.exegol_resources_path: Path = self.__default_resource_location('exegol-resources')
+        self.exegol_images_path: Path = self.__default_resource_location('exegol-images')
         self.auto_check_updates: bool = True
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
@@ -33,7 +34,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
 
         super().__init__("config.yml", "yml")
 
-    def _build_file_content(self):
+    def _build_file_content(self) -> str:
         config = f"""# Exegol configuration
 # Full documentation: https://exegol.readthedocs.io/en/latest/exegol-wrapper/advanced-uses.html#id1
 
@@ -45,6 +46,9 @@ volumes:
     
     # Exegol resources are data and static tools downloaded in addition to docker images. These tools are complementary and are accessible directly from the host.
     exegol_resources_path: {self.exegol_resources_path}
+    
+    # Exegol images are the source of the exegol environments. These sources are needed when locally building an exegol image.
+    exegol_images_path: {self.exegol_images_path}
     
     # When containers do not have an explicitly declared workspace, a dedicated folder will be created at this location to share the workspace with the host but also to save the data after deleting the container
     private_workspace_path: {self.private_volume_path}
@@ -66,22 +70,22 @@ config:
     enable_exegol_resources: {self.enable_exegol_resources}
     
     # Change the configuration of the shell logging functionality
-    shell_logging: 
+    shell_logging:
         #Choice of the method used to record the sessions (script or asciinema)
         logging_method: {self.shell_logging_method}
         
         # Enable automatic compression of log files (with gzip)
         enable_log_compression: {self.shell_logging_compress}
-    
+        
     # Configure your Exegol Desktop
     desktop:
         # Enables or not the desktop mode by default
         # If this attribute is set to True, then using the CLI --desktop option will be inverted and will DISABLE the feature
         enabled_by_default: {self.desktop_default_enable}
-    
+        
         # Default desktop protocol,can be "http", or "vnc" (additional protocols to come in the future, check online documentation for updates).
         default_protocol: {self.desktop_default_proto}
-    
+        
         # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
         localhost_by_default: {self.desktop_default_localhost}
 
@@ -92,13 +96,13 @@ config:
     def __default_resource_location(folder_name: str) -> Path:
         local_src = ConstantConfig.src_root_path_obj / folder_name
         if local_src.is_dir():
-            # If exegol is clone from github, exegol-resources submodule is accessible from root src
+            # If exegol is clone from github, exegol submodule is accessible from root src
             return local_src
         else:
             # Default path for pip installation
             return ConstantConfig.exegol_config_path / folder_name
 
-    def _process_data(self):
+    def _process_data(self) -> None:
         # Volume section
         volumes_data = self._raw_data.get("volumes", {})
         # Catch existing but empty section
@@ -107,6 +111,7 @@ config:
         self.my_resources_path = self._load_config_path(volumes_data, 'my_resources_path', self.my_resources_path)
         self.private_volume_path = self._load_config_path(volumes_data, 'private_workspace_path', self.private_volume_path)
         self.exegol_resources_path = self._load_config_path(volumes_data, 'exegol_resources_path', self.exegol_resources_path)
+        self.exegol_images_path = self._load_config_path(volumes_data, 'exegol_images_path', self.exegol_images_path)
 
         # Config section
         config_data = self._raw_data.get("config", {})
@@ -138,6 +143,7 @@ config:
             "Exegol resources: " + (f"[magenta]{self.exegol_resources_path}[/magenta]"
                                     if self.enable_exegol_resources else
                                     boolFormatter(self.enable_exegol_resources)),
+            f"Exegol images: [magenta]{self.exegol_images_path}[/magenta]",
             f"My resources: [magenta]{self.my_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",

@@ -22,24 +22,13 @@ jobs:
       - uses: actions/checkout@main
         with:
           submodules: true
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.12"
-      - name: Install requirements
-        run: python -m pip install --user build virtualenv setuptools
-      - name: Run package unitest
-        run : python setup.py clean
-      - name: Build Exegol release
-        run: python -m build --sdist --outdir dist/ .
-      - name: Create testing venv
-        run: python -m venv vtest
-      - name: Install pip package locally
-        run: ./vtest/bin/pip install ./dist/*
-      #- name: Publish distribution 📦 to Test PyPI
-      #  uses: pypa/gh-action-pypi-publish@release/v1
-      #  with:
-      #    repository-url: https://test.pypi.org/legacy/
-      #    skip-existing: true
+      - name: Build Exegol
+        run: pdm build
+      - name: Publish distribution 📦 to Test PyPI
+        run: pdm publish --no-build --repository https://test.pypi.org/legacy/ --skip-existing
       - name: Publish distribution 📦 to PyPI (prod)
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: pdm publish --no-build

@@ -11,18 +11,20 @@ jobs:
       - uses: actions/checkout@main
         with:
           submodules: false
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.12"
       - name: Install requirements
-        run: python -m pip install --user mypy types-requests types-PyYAML types-tzlocal
+        run: pdm update && pdm sync -d -G testing
       - name: Run code analysis (package)
-        run: mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
+        run: pdm run -v mypy ./exegol/ --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Run code analysis (source)
-        run: mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
+        run: pdm run -v mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --pretty # TODO add --disallow-untyped-defs
       - name: Find spawn.sh script version
         run: egrep '^# Spawn Version:[0-9ab]+$' ./exegol/utils/imgsync/spawn.sh | cut -d ':' -f2
+      - name: Pre-commit checks
+        run: pdm run -v pre-commit run --all-files --hook-stage pre-commit
 
   compatibility:
     name: Compatibility checks
@@ -37,11 +39,53 @@ jobs:
       - uses: actions/checkout@main
         with:
           submodules: false
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.12"
       - name: Install requirements
-        run: python -m pip install --user mypy types-requests types-PyYAML types-tzlocal
+        run: pdm update && pdm sync -d -G testing
       - name: Check python compatibility for ${{ matrix.os }}/${{ matrix.version }}
-        run: mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --python-version ${{ matrix.version }} --platform ${{ matrix.os }}
+        run: pdm run -v mypy ./exegol.py --ignore-missing-imports --check-untyped-defs --python-version ${{ matrix.version }} --platform ${{ matrix.os }}
+
+#  wrapper-testing:
+#    name: Wrapper tests
+#    needs: testing
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      matrix:
+#        python-version: [ '3.9', '3.10', '3.11', '3.12', '3.13' ]
+#        os: [ ubuntu-latest, macOS-latest, windows-latest ]
+#
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Set up PDM
+#        uses: pdm-project/setup-pdm@v4
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#
+#      - name: Install dependencies
+#        run: pdm update && pdm sync -d -G testing
+#      - name: Run Tests
+#        run: pdm run -v pytest tests
+
+  build-n-install:
+    name: Build and install Python 🐍 package 📦
+    runs-on: ubuntu-latest
+    needs: testing
+    steps:
+      - uses: actions/checkout@main
+        with:
+          submodules: true
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.12"
+      - name: Build Exegol
+        run: pdm build
+      - name: Create testing venv
+        run: pdm venv create -n vtest-source --with-pip && pdm venv create -n vtest-wheel --with-pip
+      - name: Install pip source package
+        run: pdm run --venv vtest-source -v pip install ./dist/*.tar.gz
+      - name: Install pip source package
+        run: pdm run --venv vtest-wheel -v pip install ./dist/*.tar.gz

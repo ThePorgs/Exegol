@@ -32,26 +32,3 @@ jobs:
   test:
     name: Python tests and checks
     uses: ./.github/workflows/sub_testing.yml
-
-  build:
-    name: Build Python 🐍 distributions
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@main
-        with:
-          submodules: true
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install requirements
-        run: python -m pip install --user build virtualenv setuptools
-      - name: Cleaning
-        run : python setup.py clean
-      - name: Build Exegol
-        run: python -m build --sdist --outdir dist/ .
-      - name: Create testing venv
-        run: python -m venv vtest
-      - name: Install pip package locally
-        run: ./vtest/bin/pip install ./dist/*

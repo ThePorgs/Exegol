@@ -55,7 +55,7 @@ def resolvStrPath(path: Optional[str]) -> str:
     return resolvPath(Path(path))
 
 
-def setGidPermission(root_folder: Path):
+def setGidPermission(root_folder: Path) -> None:
     """Set the setgid permission bit to every recursive directory"""
     logger.verbose(f"Updating the permissions of {root_folder} (and sub-folders) to allow file sharing between the container and the host user")
     logger.debug(f"Adding setgid permission recursively on directories from {root_folder}")
@@ -126,7 +126,7 @@ def get_user_id() -> Tuple[int, int]:
     return user_uid, user_gid
 
 
-def mkdir(path):
+def mkdir(path) -> None:
     """Function to recursively create a directory and setting the right user and group id to allow host user access."""
     try:
         path.mkdir(parents=False, exist_ok=False)

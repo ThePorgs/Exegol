@@ -7,8 +7,8 @@ Check the full contributors (up-to-date) documentation here: https://exegol.read
 - the `Exegol` repository includes the exegol.py wrapper code base, and features a `exegol-docker-build` submodule tracking [Exegol-images](https://github.com/ThePorgs/Exegol-images).
 - changes to the images/dockerfiles/tools/installs must be done on the [Exegol-images](https://github.com/ThePorgs/Exegol-images) repo.
 - by default, the wrapper pulls the latest DockerHub pre-built image for the install and updates
-- DockerHub automatic builds are configured as follows 
-  - `nightly` image is built using the base Dockerfile whenever a commit is made on [Exegol-images](https://github.com/ThePorgs/Exegol-images) `dev` branch. 
+- DockerHub automatic builds are configured as follows
+  - `nightly` image is built using the base Dockerfile whenever a commit is made on [Exegol-images](https://github.com/ThePorgs/Exegol-images) `dev` branch.
   - `full` image is built using the base Dockerfile whenever a new tag is pushed on [Exegol-images](https://github.com/ThePorgs/Exegol-images).
   - `ad`, `osint`, `web` and `light` images are built using specific Dockerfiles whenever a new tag is pushed on [Exegol-images](https://github.com/ThePorgs/Exegol-images).
 - if you want to locally build your image with your changes, run `exegol install local`. If you have local changes to the dockerfiles, they won't be overwritten.

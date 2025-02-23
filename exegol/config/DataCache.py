@@ -18,7 +18,7 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
                 last_version: STR
             }
         }
-        images: 
+        images:
             metadata: {
                     last_check: DATE
             }
@@ -32,21 +32,21 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
     }
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Cache data
         self.__cache_data = CacheDB()
 
         # Config file options
         super().__init__(".datacache", "json")
 
-    def _process_data(self):
+    def _process_data(self) -> None:
         if len(self._raw_data) >= 2:
             self.__cache_data.load(**self._raw_data)
 
     def _build_file_content(self) -> str:
         return json.dumps(self.__cache_data, cls=self.ObjectJSONEncoder)
 
-    def save_updates(self):
+    def save_updates(self) -> None:
         self._create_config_file()
 
     def get_wrapper_data(self) -> WrapperCacheModel:
@@ -57,7 +57,7 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
         """Get Images information from cache"""
         return self.__cache_data.images
 
-    def update_image_cache(self, images: List):
+    def update_image_cache(self, images: List) -> None:
         """Refresh image cache data"""
         logger.debug("Updating image cache data")
         cache_images = []

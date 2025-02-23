@@ -35,7 +35,7 @@ class ExegolManager:
     __interactive_mode = False
 
     @classmethod
-    def info(cls):
+    def info(cls) -> None:
         """Print a list of available images and containers on the current host"""
         if logger.isEnabledFor(ExeLog.VERBOSE):
             logger.verbose("Listing user configurations")
@@ -65,7 +65,7 @@ class ExegolManager:
             ExegolTUI.printTable(containers)
 
     @classmethod
-    def start(cls):
+    def start(cls) -> None:
         """Create and/or start an exegol container to finally spawn an interactive shell"""
         logger.info("Starting exegol")
         # Check if the first positional parameter have been supplied
@@ -81,7 +81,7 @@ class ExegolManager:
         container.spawnShell()
 
     @classmethod
-    def exec(cls):
+    def exec(cls) -> None:
         """Create and/or start an exegol container to execute a specific command.
         The execution can be seen in console output or be relayed in the background as a daemon."""
         logger.info("Starting exegol")
@@ -98,7 +98,7 @@ class ExegolManager:
             container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
 
     @classmethod
-    def stop(cls):
+    def stop(cls) -> None:
         """Stop an exegol container"""
         logger.info("Stopping exegol")
         container = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
@@ -107,7 +107,7 @@ class ExegolManager:
             c.stop(timeout=5)
 
     @classmethod
-    def restart(cls):
+    def restart(cls) -> None:
         """Stop and start an exegol container"""
         container = cast(ExegolContainer, cls.__loadOrCreateContainer(must_exist=True))
         if container:
@@ -117,7 +117,7 @@ class ExegolManager:
             container.spawnShell()
 
     @classmethod
-    def install(cls):
+    def install(cls) -> None:
         """Pull or build a docker exegol image"""
         try:
             if not ExegolModules().isExegolResourcesReady():
@@ -128,19 +128,18 @@ class ExegolManager:
         UpdateManager.updateImage(install_mode=True)
 
     @classmethod
-    def update(cls):
+    def update(cls) -> None:
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
         if not ParametersManager().skip_git:
             UpdateManager.updateWrapper()
-            UpdateManager.updateImageSource()
             UpdateManager.updateResources()
         if not ParametersManager().skip_images:
             UpdateManager.updateImage()
 
     @classmethod
-    def uninstall(cls):
+    def uninstall(cls) -> None:
         """Remove an exegol image"""
         logger.info("Uninstalling an exegol image")
         # Set log level to verbose in order to show every image installed including the outdated.
@@ -160,7 +159,7 @@ class ExegolManager:
             DockerUtils().removeImage(img)
 
     @classmethod
-    def remove(cls):
+    def remove(cls) -> None:
         """Remove an exegol container"""
         logger.info("Removing an exegol container")
         containers = cls.__loadOrCreateContainer(multiple=True, must_exist=True)
@@ -181,7 +180,7 @@ class ExegolManager:
                 DockerUtils().removeImage(c.image, upgrade_mode=True)
 
     @classmethod
-    def print_version(cls):
+    def print_version(cls) -> None:
         """Show exegol version (and context configuration on debug mode)"""
 
         logger.raw(f"[bold blue][*][/bold blue] Exegol is currently in version {UpdateManager.display_current_version()}{os.linesep}",
@@ -203,7 +202,7 @@ class ExegolManager:
             logger.warning("You are currently using a [orange3]Beta[/orange3] version of Exegol, which may be unstable.")
 
     @classmethod
-    def print_debug_banner(cls):
+    def print_debug_banner(cls) -> None:
         """Print header debug info"""
         logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}"
                      f"{'[bright_black](pipx)[/bright_black]' if ConstantConfig.pipx_installed else ''}")
@@ -217,7 +216,7 @@ class ExegolManager:
             logger.debug(f"Python environment: {EnvInfo.current_platform}")
             logger.debug(f"Docker engine: {EnvInfo.getDockerEngine().value}")
         logger.debug(f"Docker desktop: {boolFormatter(EnvInfo.isDockerDesktop())}")
-        logger.debug(f"Shell type: {EnvInfo.getShellType().value}")
+        logger.debug(f"Shell type: {EnvInfo.getShellType()}")
         if UserConfig().auto_check_updates:
             UpdateManager.checkForWrapperUpdate()
         if UpdateManager.isUpdateAvailable():
@@ -228,7 +227,7 @@ class ExegolManager:
             logger.empty_line(log_level=logging.DEBUG)
 
     @classmethod
-    def print_sponsors(cls):
+    def print_sponsors(cls) -> None:
         """Show exegol sponsors"""
         #logger.success("""We thank [link=https://www.capgemini.com/fr-fr/carrieres/offres-emploi/][blue]Capgemini[/blue][/link] for supporting the project [bright_black](helping with dev)[/bright_black] :pray:""")
         #logger.success("""We thank [link=https://www.hackthebox.com/][green]HackTheBox[/green][/link] for sponsoring the [bright_black]multi-arch[/bright_black] support :green_heart:""")
@@ -392,7 +391,7 @@ class ExegolManager:
                             else:
                                 # If there is a multi select without must_exist flag, raise an error
                                 # because multi container creation is not supported
-                                raise NotImplemented
+                                raise NotImplementedError
                 else:
                     assert container_tag is not None
                     cls.__container = DockerUtils().getContainer(container_tag)
@@ -443,7 +442,7 @@ class ExegolManager:
         return cast(Union[ExegolImage, ExegolContainer, List[ExegolImage], List[ExegolContainer]], user_selection)
 
     @classmethod
-    def __prepareContainerConfig(cls):
+    def __prepareContainerConfig(cls) -> ContainerConfig:
         """Create Exegol configuration with user input"""
         try:
             # Create default exegol config
@@ -554,7 +553,7 @@ class ExegolManager:
         return container
 
     @classmethod
-    def __checkUselessParameters(cls):
+    def __checkUselessParameters(cls) -> None:
         """Checks if the container creation parameters have not been filled in when the container already existed"""
         # Get defaults parameters
         creation_parameters = ContainerCreation([]).__dict__

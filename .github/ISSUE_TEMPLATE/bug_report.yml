@@ -8,8 +8,8 @@ body:
     attributes:
       value: |
         Verification before publication:
-        
-        - You are creating a bug report in the Exegol **WRAPPER** repository (the exegol command)! 
+
+        - You are creating a bug report in the Exegol **WRAPPER** repository (the exegol command)!
         > If your problem concerns the environment, tools or other elements specific to the Exegol **IMAGE**, please open your issue on the [Exegol-images](https://github.com/ThePorgs/Exegol-images) repository.
         - Check that there is not already a issue for the **same** problem.
         - Some problems are already well known and can be found in the **documentation** or on the Exegol **Discord**.

@@ -31,7 +31,7 @@ class ContainerLogStream:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> str:
         """Get the next line of the stream"""
         if self.__until_date is None:
             self.__until_date = datetime.now()
@@ -43,14 +43,15 @@ class ContainerLogStream:
             assert self.__data_stream is not None
             # Parsed the data stream to extract characters and merge them into a line.
             for streamed_char in self.__data_stream:
+                self.__enable_timeout = False  # disable timeout if the container is up-to-date and support console logging
+                # Add new char to the buffer + Unify \r\n to \n
+                self.__line_buffer += streamed_char.replace(b'\r\n', b'\n')
                 # When detecting an end of line, the buffer is returned as a single line.
-                if (streamed_char == b'\r' or streamed_char == b'\n') and len(self.__line_buffer) > 0:
-                    line = self.__line_buffer.decode('utf-8').strip()
-                    self.__line_buffer = b""
-                    return line
-                else:
-                    self.__enable_timeout = False  # disable timeout if the container is up-to-date and support console logging
-                    self.__line_buffer += streamed_char  # add characters to the line buffer
+                if b'\n' in self.__line_buffer:
+                    lines = self.__line_buffer.split(b'\n')
+                    self.__line_buffer = b'\n'.join(lines[1:]) if len(lines) > 1 else b''
+                    if len(lines[0]) > 0:
+                        return lines[0].decode('utf-8').strip()
             # When the data stream is empty, check if a timeout condition apply
             if self.__enable_timeout and self.__until_date >= self.__timeout_date:
                 logger.debug("Container log stream timed-out")
@@ -64,5 +65,5 @@ class ContainerLogStream:
             # Prepare the next iteration to fetch next logs
             self.__data_stream = None
             self.__since_date = self.__until_date
-            time.sleep(0.5)  # Wait for more logs
+            time.sleep(1)  # Wait for more logs
             self.__until_date = datetime.now()

@@ -33,7 +33,7 @@ from exegol.utils.WebUtils import WebUtils
 
 class DockerUtils(metaclass=MetaSingleton):
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Utility class between exegol and the Docker SDK"""
         try:
             # Connect Docker SDK to the local docker instance.
@@ -65,7 +65,7 @@ class DockerUtils(metaclass=MetaSingleton):
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
 
-    def clearCache(self):
+    def clearCache(self) -> None:
         """Remove class's images and containers data cache
         Only needed if the list has to be updated in the same runtime at a later moment"""
         self.__containers = None
@@ -241,16 +241,16 @@ class DockerUtils(metaclass=MetaSingleton):
                 logger.error(f"Error while creating docker volume '{volume_name}'.")
                 logger.debug(err)
                 logger.critical(err.explanation)
-                return None  # type: ignore
+                raise RuntimeError
             except ReadTimeout:
                 logger.critical(f"Received a timeout error, Docker is busy... Volume {volume_name} cannot be created.")
-                return  # type: ignore
+                raise RuntimeError
         except APIError as err:
             logger.critical(f"Unexpected error by Docker SDK : {err}")
-            return None  # type: ignore
+            raise RuntimeError
         except ReadTimeout:
             logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
-            return None  # type: ignore
+            raise RuntimeError
         return volume
 
     # # # Image Section # # #
@@ -445,7 +445,7 @@ class DockerUtils(metaclass=MetaSingleton):
         # Remove duplication (version specific / latest release)
         return remote_results
 
-    def __findImageMatch(self, remote_image: ExegolImage):
+    def __findImageMatch(self, remote_image: ExegolImage) -> None:
         """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
         remote_id = remote_image.getLatestRemoteId()
@@ -458,7 +458,7 @@ class DockerUtils(metaclass=MetaSingleton):
             raise ObjectNotFound
         except ReadTimeout:
             logger.critical("Received a timeout error, Docker is busy... Unable to find a specific image, retry later.")
-            return  # type: ignore
+            raise RuntimeError
         remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
@@ -585,11 +585,11 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.error(f"The deletion of the image '{image_name}' has timeout, the deletion may be incomplete.")
         return False
 
-    def buildImage(self, tag: str, build_profile: Optional[str] = None, build_dockerfile: Optional[str] = None, dockerfile_path: str = ConstantConfig.build_context_path):
+    def buildImage(self, tag: str, build_profile: Optional[str], build_dockerfile: Optional[str], dockerfile_path: str) -> None:
         """Build a docker image from source"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
-            return False
+            raise RuntimeError
         logger.info(f"Building exegol image : {tag}")
         if build_profile is None or build_dockerfile is None:
             build_profile = "full"
@@ -626,4 +626,4 @@ class DockerUtils(metaclass=MetaSingleton):
                 logger.critical(f"An error occurred while building this image : {err}")
         except ReadTimeout:
             logger.critical("Received a timeout error, Docker is busy... Unable to build the local image, retry later.")
-            return  # type: ignore
+            raise RuntimeError

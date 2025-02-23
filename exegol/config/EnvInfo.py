@@ -37,14 +37,14 @@ class EnvInfo:
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
     is_linux_shell: bool = current_platform in ["WSL", "Linux"]
     is_windows_shell: bool = current_platform == "Windows"
-    is_mac_shell = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
+    is_mac_shell: bool = not is_windows_shell and not is_linux_shell  # If not Linux nor Windows, its (probably) a mac
     __is_docker_desktop: bool = False
     __windows_release: Optional[str] = None
     # Host OS
     __docker_host_os: Optional[HostOs] = None
     __docker_engine: Optional[DockerEngine] = None
     # Docker desktop cache config
-    __docker_desktop_resource_config = None
+    __docker_desktop_resource_config: Optional[dict] = None
     # Architecture
     raw_arch = platform.machine().lower()
     arch = raw_arch
@@ -74,7 +74,7 @@ class EnvInfo:
         arch = "amd64"
 
     @classmethod
-    def initData(cls, docker_info):
+    def initData(cls, docker_info) -> None:
         """Initialize information from Docker daemon data"""
         # Fetch data from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
@@ -178,14 +178,14 @@ class EnvInfo:
         return cls.__docker_engine
 
     @classmethod
-    def getShellType(cls):
+    def getShellType(cls) -> str:
         """Return the type of shell exegol is executed from"""
         if cls.is_linux_shell:
-            return cls.HostOs.LINUX
+            return cls.HostOs.LINUX.value
         elif cls.is_windows_shell:
-            return cls.HostOs.WINDOWS
+            return cls.HostOs.WINDOWS.value
         elif cls.is_mac_shell:
-            return cls.HostOs.MAC
+            return cls.HostOs.MAC.value
         else:
             return "Unknown"
 
@@ -224,14 +224,19 @@ class EnvInfo:
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
-            return cls.__docker_desktop_resource_config
+            if cls.__docker_desktop_resource_config is None:
+                logger.warning(f"Docker Desktop configuration couldn't be loaded.'")
+            else:
+                return cls.__docker_desktop_resource_config
         return {}
 
     @classmethod
     def getDockerDesktopResources(cls) -> List[str]:
         settings = cls.getDockerDesktopSettings()
         # Handle legacy settings key
-        return settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
+        docker_desktop_resources = settings.get('FilesharingDirectories', settings.get('filesharingDirectories', []))
+        logger.debug(f"Docker Desktop resources whitelist: {docker_desktop_resources}")
+        return docker_desktop_resources
 
     @classmethod
     def isHostNetworkAvailable(cls) -> bool:

@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from typing import Optional, List
 
+from git import Commit
 from git.exc import GitCommandError, RepositoryDirtyError
 from rich.progress import TextColumn, BarColumn
 
@@ -87,7 +88,7 @@ class GitUtils:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
 
-    def __init_repo(self, skip_submodule_update: bool = False):
+    def __init_repo(self, skip_submodule_update: bool = False) -> None:
         self.isAvailable = True
         assert self.__gitRepo is not None
         logger.debug("Git repository successfully loaded")
@@ -242,7 +243,7 @@ class GitUtils:
             return False
         return True
 
-    def get_current_commit(self):
+    def get_current_commit(self) -> Commit:
         """Fetch current commit id on the current branch."""
         assert self.isAvailable
         assert self.__gitRepo is not None
@@ -252,7 +253,7 @@ class GitUtils:
         # Get last local commit
         return self.__gitRepo.heads[branch].commit
 
-    def get_latest_commit(self):
+    def get_latest_commit(self) -> Optional[Commit]:
         """Fetch latest remote commit id on the current branch."""
         assert self.isAvailable
         assert not ParametersManager().offline_mode
@@ -283,14 +284,14 @@ class GitUtils:
             return True
         return False
 
-    def __initSubmodules(self):
+    def __initSubmodules(self) -> None:
         """Init (and update git object not source code) git sub repositories (only depth=1)"""
         if ParametersManager().offline_mode:
             logger.error("It's not possible to update any submodule in offline mode ...")
             return
         logger.verbose(f"Git {self.getName()} init submodules")
         # These modules are init / updated manually
-        blacklist_heavy_modules = ["exegol-resources"]
+        blacklist_heavy_modules = ["exegol-resources", "exegol-images"]
         if self.__gitRepo is None:
             return
         with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
@@ -424,7 +425,7 @@ class GitUtils:
         return self.__is_submodule
 
     @classmethod
-    def formatStderr(cls, stderr):
+    def formatStderr(cls, stderr) -> str:
         return stderr.replace('\n', '').replace('stderr:', '').strip().strip("'")
 
     def __repr__(self) -> str:

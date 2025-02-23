@@ -28,7 +28,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
       - name: Find spawn.sh script version
         run: egrep '^# Spawn Version:[0-9ab]+$' ./exegol/utils/imgsync/spawn.sh | cut -d ':' -f2
       - name: Check for prod readiness of spawn.sh script version
@@ -40,27 +40,3 @@ jobs:
     name: Python tests and checks
     needs: preprod_test
     uses: ./.github/workflows/sub_testing.yml
-
-  build:
-    name: Build Python 🐍 distributions
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
-    needs: code_test
-    steps:
-      - uses: actions/checkout@main
-        with:
-          submodules: true
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install requirements
-        run: python -m pip install --user build virtualenv setuptools
-      - name: Cleaning
-        run : python setup.py clean
-      - name: Build Exegol
-        run: python -m build --sdist --outdir dist/ .
-      - name: Create testing venv
-        run: python -m venv vtest
-      - name: Install pip package
-        run: ./vtest/bin/pip install ./dist/*

@@ -17,7 +17,7 @@ class WebUtils:
     __registry_token: Optional[str] = None
 
     @classmethod
-    def __getGuestToken(cls, action: str = "pull", service: str = "registry.docker.io"):
+    def __getGuestToken(cls, action: str = "pull", service: str = "registry.docker.io") -> Optional[str]:
         """Generate a guest token for Registry service"""
         url = f"https://auth.docker.io/token?scope=repository:{ConstantConfig.IMAGE_NAME}:{action}&service={service}"
         response = cls.runJsonRequest(url, service_name="Docker Auth")
@@ -29,7 +29,7 @@ class WebUtils:
         raise CancelOperation
 
     @classmethod
-    def __generateLoginToken(cls):
+    def __generateLoginToken(cls) -> None:
         """Generate an auth token that will be used on future API request"""
         # Currently, only support for guest token
         cls.__registry_token = cls.__getGuestToken()
