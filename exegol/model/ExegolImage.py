@@ -98,7 +98,7 @@ class ExegolImage(SelectableInterface):
             self.__name = ""
             for repo_tag in self.__image.attrs["RepoTags"]:
                 repo, name = repo_tag.split(':')
-                if not repo.startswith(ConstantConfig.IMAGE_NAME):
+                if not repo.startswith(ConstantConfig.IMAGE_NAME) and not repo.startswith(ConstantConfig.IMAGE_FULL_NAME):
                     # Ignoring external images (set container using external image as outdated)
                     continue
                 version_parsed = MetaImages.tagNameParsing(name)
@@ -540,10 +540,13 @@ class ExegolImage(SelectableInterface):
     def __parseDigest(docker_image: Image) -> str:
         """Parse the remote image digest ID.
         Return digest id from the docker object."""
+
+        """Unlike Docker, podman often fill RepoDigests with multiple values, we keep the last one which seems to match the digest attr"""
+        last_digest = ""
         for digest_id in docker_image.attrs["RepoDigests"]:
-            if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
-                return digest_id.split('@')[1]
-        return ""
+            if digest_id.startswith(ConstantConfig.IMAGE_NAME) or digest_id.startswith(ConstantConfig.IMAGE_FULL_NAME) :  # Find digest id from the right repository
+                last_digest = digest_id.split('@')[1]
+        return last_digest
 
     def getRemoteId(self) -> str:
         """Remote digest getter"""
