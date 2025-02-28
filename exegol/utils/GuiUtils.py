@@ -216,7 +216,7 @@ class GuiUtils:
             return False
         logger.debug("WSL is [green]available[/green] on the local system")
         # Only WSL2 support WSLg
-        if EnvInfo.getDockerEngine() != EnvInfo.DockerEngine.WLS2:
+        if EnvInfo.getDockerEngine() != EnvInfo.DockerEngine.WSL2:
             logger.debug(f"Docker current engine: {EnvInfo.getDockerEngine().value}")
             logger.error("Docker must be run with [orange3]WSL2[/orange3] engine in order to support X11 sharing (i.e. GUI apps).")
             return False
