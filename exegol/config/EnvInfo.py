@@ -26,7 +26,7 @@ class EnvInfo:
 
     class DockerEngine(Enum):
         """Dictionary class for static Docker engine name"""
-        WLS2 = "WSL2"
+        WSL2 = "WSL2"
         HYPERV = "Hyper-V"
         DOCKER_DESKTOP = "Docker desktop"
         ORBSTACK = "Orbstack"
@@ -86,7 +86,7 @@ class EnvInfo:
         if is_host_windows:
             # Check docker engine with Windows host
             if "wsl2" in docker_kernel:
-                cls.__docker_engine = cls.DockerEngine.WLS2
+                cls.__docker_engine = cls.DockerEngine.WSL2
             else:
                 cls.__docker_engine = cls.DockerEngine.HYPERV
             cls.__docker_host_os = cls.HostOs.WINDOWS
