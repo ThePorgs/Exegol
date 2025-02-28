@@ -1,3 +1,4 @@
+from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
 from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
@@ -96,6 +97,16 @@ class Install(Command, ImageSelector):
                                        {"arg": self.build_log, "required": False},
                                        {"arg": self.build_path, "required": False},
                                        title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
+
+        # Create image selection arguments
+        self.image_name = Option("--image-name",
+                                 dest="image_name",
+                                 metavar="IMAGE_NAME",
+                                 action="store",
+                                 default=UserConfig().image_name,
+                                 help="Image where exegol is stored.")
+        self.groupArgs.append(GroupArg({"arg": self.image_name, "reuired": False},
+                                       title="[bold cyan]Image[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
             "Install or build interactively an exegol image": "exegol install",

@@ -31,6 +31,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         self.desktop_default_enable: bool = False
         self.desktop_default_localhost: bool = True
         self.desktop_default_proto: str = "http"
+        self.image_name: str = ConstantConfig.IMAGE_NAME
 
         super().__init__("config.yml", "yml")
 
@@ -89,6 +90,8 @@ config:
         # Desktop service is exposed on localhost by default. If set to true, services will be exposed on localhost (127.0.0.1) otherwise it will be exposed on 0.0.0.0. This setting can be overwritten with --desktop-config
         localhost_by_default: {self.desktop_default_localhost}
 
+    # Image location on Docker Hub
+    image_name: {self.image_name}
 """
         return config
 
@@ -154,6 +157,7 @@ config:
             f"Desktop enabled by default: {boolFormatter(self.desktop_default_enable)}",
             f"Desktop default protocol: [blue]{self.desktop_default_proto}[/blue]",
             f"Desktop default host: [blue]{'localhost' if self.desktop_default_localhost else '0.0.0.0'}[/blue]",
+            f"Image default name: [blue]{self.image_name}[/blue]"
         ]
         # TUI can't be called from here to avoid circular importation
         return configs

@@ -311,7 +311,7 @@ class DockerUtils(metaclass=MetaSingleton):
         try:
             if self.__images is None:
                 try:
-                    docker_local_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
+                    docker_local_image = self.__client.images.get(f"{ParametersManager().image_name}:{tag}")
                     # DockerSDK image get is an exact matching, no need to add more check
                 except APIError as err:
                     if err.status_code == 404:
@@ -342,7 +342,7 @@ class DockerUtils(metaclass=MetaSingleton):
                             self.__findImageMatch(img)
                         return img
         except ObjectNotFound:
-            logger.critical(f"The desired image is not installed or do not exist ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting.")
+            logger.critical(f"The desired image is not installed or do not exist ({ParametersManager().image_name}:{tag}). Exiting.")
         return  # type: ignore
 
     def __listLocalImages(self, tag: Optional[str] = None) -> List[Image]:
@@ -350,7 +350,7 @@ class DockerUtils(metaclass=MetaSingleton):
         Return a list of docker images objects"""
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
-            image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
+            image_name = ParametersManager().image_name + ("" if tag is None else f":{tag}")
             images = self.__client.images.list(image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(err)
@@ -366,7 +366,7 @@ class DockerUtils(metaclass=MetaSingleton):
         for img in images:
             # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
             if len(img.attrs.get('RepoTags', [])) == 0 or \
-                    ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
+                    ParametersManager().image_name in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
                 ids.add(img.id)
 
@@ -390,7 +390,7 @@ class DockerUtils(metaclass=MetaSingleton):
             # Try to find lost Exegol images
             recovery_images = self.__client.images.list(filters={"dangling": True})
             if include_untag:
-                recovery_images += self.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
+                recovery_images += self.__client.images.list(ParametersManager().image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
@@ -421,7 +421,7 @@ class DockerUtils(metaclass=MetaSingleton):
         page_size = 20
         page_max = 3
         current_page = 1
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page=1&page_size={page_size}"
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ParametersManager().image_name}/tags?page=1&page_size={page_size}"
         # Handle multi-page tags from registry
         while url is not None:
             if current_page > page_max:
@@ -453,7 +453,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug("Latest remote id is not available... Falling back to the current remote id.")
             remote_id = remote_image.getRemoteId()
         try:
-            docker_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
+            docker_image = self.__client.images.get(f"{ParametersManager().image_name}@{remote_id}")
         except ImageNotFound:
             raise ObjectNotFound
         except ReadTimeout:
@@ -474,10 +474,10 @@ class DockerUtils(metaclass=MetaSingleton):
         if name is not None:
             logger.info(f"Pulling compressed image, starting a [cyan1]~{image.getDownloadSize()}[/cyan1] download :satellite:")
             logger.info(f"Once downloaded and uncompressed, the image will take [cyan1]~{image.getRealSizeRaw()}[/cyan1] on disk :floppy_disk:")
-            logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
+            logger.debug(f"Downloading {ParametersManager().image_name}:{name} ({image.getArch()})")
             try:
                 ExegolTUI.downloadDockerLayer(
-                    self.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
+                    self.__client.api.pull(repository=ParametersManager().image_name,
                                            tag=name,
                                            stream=True,
                                            decode=True,
@@ -506,7 +506,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return ""
         try:
-            image = self.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
+            image = self.__client.images.pull(repository=ParametersManager().image_name,
                                               tag=image.getLatestVersionName(),
                                               platform="linux/" + image.getArch())
             return ExegolImage(docker_image=image, isUpToDate=True)
@@ -520,7 +520,7 @@ class DockerUtils(metaclass=MetaSingleton):
                 return f"en unknown error occurred while downloading this image : {err.explanation}"
         except ReadTimeout:
             logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
-                            f"    [orange3]docker pull --platform linux/{image.getArch()} {ConstantConfig.IMAGE_NAME}:{image.getLatestVersionName()}[/orange3].")
+                            f"    [orange3]docker pull --platform linux/{image.getArch()} {ParametersManager().image_name}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
 
     def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
@@ -606,7 +606,7 @@ class DockerUtils(metaclass=MetaSingleton):
             ExegolTUI.buildDockerImage(
                 self.__client.api.build(path=dockerfile_path,
                                         dockerfile=build_dockerfile,
-                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
+                                        tag=f"{ParametersManager().image_name}:{tag}",
                                         buildargs={"TAG": f"{build_profile}",
                                                    "VERSION": "local",
                                                    "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
