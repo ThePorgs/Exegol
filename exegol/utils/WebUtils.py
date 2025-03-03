@@ -19,7 +19,7 @@ class WebUtils:
     @classmethod
     def __getGuestToken(cls, action: str = "pull", service: str = "registry.docker.io") -> Optional[str]:
         """Generate a guest token for Registry service"""
-        url = f"https://auth.docker.io/token?scope=repository:{ConstantConfig.IMAGE_NAME}:{action}&service={service}"
+        url = f"https://auth.docker.io/token?scope=repository:{ParametersManager().image_name}:{action}&service={service}"
         response = cls.runJsonRequest(url, service_name="Docker Auth")
         if response is not None:
             return response.get("access_token")
@@ -68,7 +68,7 @@ class WebUtils:
             return None
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.list.v2+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
-        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ParametersManager().image_name}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="HEAD")
         digest_id: Optional[str] = None
         if response is not None:
@@ -89,7 +89,7 @@ class WebUtils:
         # In order to access the metadata of the image, the v1 manifest must be use
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
-        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ParametersManager().image_name}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
         version: Optional[str] = None
         if response is not None and response.status_code == 200:
@@ -114,7 +114,7 @@ class WebUtils:
                     first_digest = manifest[0].get("digest")
                     # Retrieve specific image detail from first image digest (architecture not sensitive)
                     manifest_headers["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
-                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{first_digest}"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ParametersManager().image_name}/manifests/{first_digest}"
                     response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
                     if response is not None and response.status_code == 200:
                         data = json.loads(response.content.decode("utf-8"))
@@ -127,7 +127,7 @@ class WebUtils:
                 config_digest: Optional[str] = data.get("config", {}).get('digest')
                 if config_digest is not None:
                     manifest_headers["Accept"] = "application/json"
-                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/blobs/{config_digest}"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ParametersManager().image_name}/blobs/{config_digest}"
                     response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
                     if response is not None and response.status_code == 200:
                         data = json.loads(response.content.decode("utf-8"))
