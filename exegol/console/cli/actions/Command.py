@@ -2,8 +2,9 @@ import os
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
-from exegol.console.ConsoleFormat import richLen
 from exegol.config.EnvInfo import EnvInfo
+from exegol.config.UserConfig import UserConfig
+from exegol.console.ConsoleFormat import richLen
 from exegol.utils.ExeLog import logger
 
 
@@ -90,6 +91,12 @@ class Command:
                                    dest="offline_mode",
                                    action="store_true",
                                    help=f"Run exegol in offline mode, no request will be made on internet (default: [red]Disable[/red])")
+        self.image_name = Option("--image-name",
+                                 dest="image_name",
+                                 metavar="IMAGE_NAME",
+                                 action="store",
+                                 default=UserConfig().image_name,
+                                 help="Image where exegol is stored.")
         # TODO review non-interactive mode
         # self.interactive_mode = Option("--non-interactive",
         #                               dest="interactive_mode",
@@ -105,6 +112,7 @@ class Command:
                      {"arg": self.verify, "required": False},
                      {"arg": self.offline_mode, "required": False},
                      {"arg": self.arch, "required": False},
+                     {"arg": self.image_name, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)
         ]
