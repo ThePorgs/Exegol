@@ -5,3 +5,5 @@ GitPython~=3.1.43
 PyYAML>=6.0.2
 argcomplete~=3.5.0
 tzlocal~=5.2; platform_system != 'Linux'
+torch~=2.6.0
+numpy~=2.2.3

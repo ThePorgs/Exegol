@@ -134,6 +134,11 @@ class DockerUtils(metaclass=MetaSingleton):
                        "tty": model.config.tty,
                        "mounts": model.config.getVolumes(),
                        "working_dir": model.config.getWorkingDir()}
+        gpu_flag = self.isGPUAvailable()
+        if gpu_flag:
+            docker_args["device_requests"] = [
+                docker.types.DeviceRequest(count=-1 if gpu_flag == "all" else 1,capabilities=[["gpu"]])
+            ]
         if temporary:
             # Only the 'run' function support the "remove" parameter
             docker_create_function = self.__client.containers.run
@@ -197,6 +202,21 @@ class DockerUtils(metaclass=MetaSingleton):
         # docker may return some results but none of them correspond to the request.
         # In this case, ObjectNotFound is raised
         raise ObjectNotFound
+
+    def isGPUAvailable(self) -> Optional[str]:
+        """Check if the GPU is available and return the appropriate device ('cuda', 'mps', or 'cpu').
+        Return the appropriate value for Docker's --gpus flag."""
+        try:
+            import torch, numpy
+            if os.name == "nt" or os.name == "posix":
+                if torch.cuda.is_available():
+                    num_gpus = torch.cuda.device_count()
+                    return f'"device=0"' if num_gpus == 1 else '"all"'
+                if "darwin" in os.uname().sysname.lower() and torch.backends.mps.is_available():
+                    return None
+        except ImportError:
+            pass
+        return None
 
     # # # Volumes Section # # #
 
