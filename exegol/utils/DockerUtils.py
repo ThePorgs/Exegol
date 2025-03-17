@@ -161,7 +161,7 @@ class DockerUtils(metaclass=MetaSingleton):
             # Not reachable, critical logging will exit
             return  # type: ignore
         if container is not None:
-            logger.success("Exegol container successfully created !")
+            logger.success("Exegol container successfully created!")
         else:
             logger.critical("Unknown error while creating exegol container. Exiting.")
             # Not reachable, critical logging will exit

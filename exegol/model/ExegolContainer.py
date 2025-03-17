@@ -114,7 +114,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __start_container(self) -> None:
         """
-        This method start the container and display startup status update to the user.
+        This method starts the container and displays startup status updates to the user.
         :return:
         """
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
@@ -123,7 +123,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.__container.start()
             except APIError as e:
                 logger.debug(e)
-                logger.critical(f"Docker raise a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+                logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -131,18 +131,33 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                         # Once the last log "READY" is received, the startup sequence is over and the execution can continue
                         if line == "READY":
                             break
-                        elif line.startswith('[W]'):
-                            line = line.replace('[W]', '')
-                            logger.warning(line)
-                        elif line.startswith('[E]'):
-                            line = line.replace('[E]', '')
-                            logger.error(line)
-                        else:
+                        elif line.startswith('[INFO]'):
+                            line = line.replace('[INFO]', '')
+                            logger.info(line)
+                        elif line.startswith('[VERBOSE]'):
+                            line = line.replace('[VERBOSE]', '')
                             logger.verbose(line)
+                        elif line.startswith('[ADVANCED]'):
+                            line = line.replace('[ADVANCED]', '')
+                            logger.advanced(line)
+                        elif line.startswith('[DEBUG]'):
+                            line = line.replace('[DEBUG]', '')
+                            logger.debug(line)
+                        elif line.startswith('[WARNING]'):
+                            line = line.replace('[WARNING]', '')
+                            logger.warning(line)
+                        elif line.startswith('[ERROR]'):
+                            line = line.replace('[ERROR]', '')
+                            logger.error(line)
+                        elif line.startswith('[SUCCESS]'):
+                            line = line.replace('[SUCCESS]', '')
+                            logger.success(line)
+                        else:
+                            logger.debug(line)
                         progress.update(status=f"[blue][Startup][/blue] {line}")
                 except KeyboardInterrupt:
                     # User can cancel startup logging with ctrl+C
-                    logger.warning("User skip startup status updates. Spawning a shell now.")
+                    logger.warning("Skipping startup status updates (user interruption). Spawning shell now.")
 
     def stop(self, timeout: int = 10) -> None:
         """Stop the docker container"""

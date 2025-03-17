@@ -8,18 +8,19 @@ function exegol_init() {
 
 # Function specific
 function load_setups() {
+  # Logs are using [INFO], [VERBOSE], [WARNING], [ERROR], [SUCCESS] tags so that the wrapper can catch them and forward them to the user with the corresponding logger level
   # Load custom setups (supported setups, and user setup)
   [[ -d "/var/log/exegol" ]] || mkdir -p /var/log/exegol
   if [[ ! -f "/.exegol/.setup.lock" ]]; then
     # Execute initial setup if lock file doesn't exist
     echo >/.exegol/.setup.lock
-    # Run my-resources script. Logs starting with '[exegol]' will be print to the console and report back to the user through the wrapper.
+    # Run my-resources script. Logs starting with '[EXEGOL]' will be printed to the console and reported back to the user through the wrapper.
     if [ -f /.exegol/load_supported_setups.sh ]; then
-      echo "Installing [green]my-resources[/green] custom setup ..."
-      /.exegol/load_supported_setups.sh |& tee /var/log/exegol/load_setups.log | grep -i '^\[exegol]' | sed "s/^\[exegol\]\s*//gi"
-      [ -f /var/log/exegol/load_setups.log ] && echo "Compressing [green]my-resources[/green] logs" && gzip /var/log/exegol/load_setups.log && echo "My-resources loaded"
+      echo "[VERBOSE]Starting my-resources setup"
+      /.exegol/load_supported_setups.sh |& tee /var/log/exegol/load_setups.log | grep '^\[EXEGOL]' | sed "s/^\[EXEGOL\]\s*//g"
     else
-      echo "[W]Your exegol image doesn't support my-resources custom setup!"
+      echo "[VERBOSE]My-resources setup not found in /.exegol/load_supported_setups.sh"
+      echo "[WARNING]Your exegol image doesn't support my-resources custom setup!"
     fi
   fi
 }
