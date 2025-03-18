@@ -158,6 +158,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                             progress.update(status=f"[blue][Startup][/blue] {line}")
                         else:
                             logger.debug(line)
+                    logger.verbose(f"Container started in {(datetime.now() - start_date).seconds} seconds")
 
                 except KeyboardInterrupt:
                     # User can cancel startup logging with ctrl+C
