@@ -80,7 +80,8 @@ function ovpn() {
   else
     # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
     echo "[PROGRESS]Starting [green]VPN[/green]"
-    openvpn --log-append /var/log/exegol/vpn.log "$@" &
+    # shellcheck disable=SC2164
+    ([[ -d /.exegol/vpn/config ]] && cd /.exegol/vpn/config; openvpn --log-append /var/log/exegol/vpn.log "$@" &)
     sleep 2  # Waiting 2 seconds for the VPN to start before continuing
   fi
 
