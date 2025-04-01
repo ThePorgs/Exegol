@@ -187,6 +187,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             options += f" -e {' -e '.join(envs)}"
         cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
+        if EnvInfo.is_windows_shell:
+            # Disable "What's next?" Docker Desktop spam exit message
+            os.environ['DOCKER_CLI_HINTS'] = "false"
         os.system(cmd)
         # Docker SDK doesn't support (yet) stdin properly
         # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True,
