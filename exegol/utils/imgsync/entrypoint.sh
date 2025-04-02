@@ -68,7 +68,7 @@ function _resolv_docker_host() {
     # Add docker internal host resolution to the hosts file to preserve access to the X server
     echo "$DOCKER_IP        host.docker.internal" >>/etc/hosts
     # If the container share the host networks, no need to add a static mapping
-    ip route list match "$DOCKER_IP" table all | grep -v default || ip route add "$DOCKER_IP/32" "$(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+')" || echo '[W]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
+    ip route list match "$DOCKER_IP" table all | grep -v default || ip route add "$DOCKER_IP/32" "$(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+')" || echo '[WARNING]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
   fi
 }
 

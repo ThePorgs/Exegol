@@ -121,7 +121,7 @@ class EnvInfo:
         session_type = os.getenv("XDG_SESSION_TYPE", "x11")
         if session_type == "wayland":
             return cls.DisplayServer.WAYLAND
-        elif session_type == "x11":
+        elif session_type in ["x11", "tty"]:  # When using SSH X11 forwarding, the session type is "tty" instead of the classic "x11"
             return cls.DisplayServer.X11
         else:
             # Should return an error

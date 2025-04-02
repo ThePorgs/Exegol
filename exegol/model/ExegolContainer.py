@@ -333,7 +333,6 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Operation to be performed after creating a container
         :return:
         """
-        self.__applyX11ACLs()
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
@@ -345,15 +344,17 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except APIError as e:
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
+        # Run post start container actions
+        self.__postStartSetup()
 
     def __applyX11ACLs(self) -> None:
         """
         If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
         If the host is accessed by SSH, propagate xauth cookie authentication if applicable.
-        On Windows host, WSLg X11 don't have xhost ACL. #TODO xauth remote x11 forwarding
+        On Windows host, WSLg X11 don't have xhost ACL.
         :return:
         """
-        # TODO check if the xauth propagation should be performed on Windows, if so remove the "and not EnvInfo.isWindowsHost()"
+        # On Windows host with WSLg no need to run xhost +local or xauth
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             if shutil.which("xhost") is None:
@@ -409,12 +410,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
             # Replacing the hostname with localhost to support loopback exposed x11 socket and container in host mode (loopback is the same)
             if display_host == "localhost":
-                logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connections can be received only on loopback");
+                logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connections can be received only on loopback")
                 # Modifing the entry to convert <hostname>/unix:<display_number> to localhost:<display_number>
                 xauthEntry = f"localhost:{xauthEntry.split(':')[1]}"
             else:
                 # TODO latter implement a check to see if the x11 socket is correctly firewalled and warn the user if it is not
-                logger.debug("X11UseLocalhost directive is set to \"no\", X11 connections can be received from anywere");
+                logger.debug("X11UseLocalhost directive is set to \"no\", X11 connections can be received from anywhere")
 
             # Check if the host has a xauth entry corresponding to the current display.
             if xauthEntry:
