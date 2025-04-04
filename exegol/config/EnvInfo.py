@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from enum import Enum
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -224,6 +225,8 @@ class EnvInfo:
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
+                except JSONDecodeError:
+                    logger.critical(f"The Docker Desktop configuration file '{file_path}' is not a valid JSON. Please fix your configuration file first.")
             if cls.__docker_desktop_resource_config is None:
                 logger.warning(f"Docker Desktop configuration couldn't be loaded.'")
             else:
