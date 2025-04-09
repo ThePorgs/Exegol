@@ -19,7 +19,6 @@ function load_setups() {
       echo "[PROGRESS]Starting [green]my-resources[/green] setup"
       /.exegol/load_supported_setups.sh | grep --line-buffered '^\[EXEGOL]' | sed -u "s/^\[EXEGOL\]\s*//g"
     else
-      echo "[VERBOSE]My-resources setup not found in /.exegol/load_supported_setups.sh"
       echo "[WARNING]Your exegol image doesn't support my-resources custom setup!"
     fi
   fi
