@@ -8,18 +8,18 @@ function exegol_init() {
 
 # Function specific
 function load_setups() {
+  # Logs are using [INFO], [VERBOSE], [WARNING], [ERROR], [SUCCESS] tags so that the wrapper can catch them and forward them to the user with the corresponding logger level
   # Load custom setups (supported setups, and user setup)
   [[ -d "/var/log/exegol" ]] || mkdir -p /var/log/exegol
   if [[ ! -f "/.exegol/.setup.lock" ]]; then
     # Execute initial setup if lock file doesn't exist
     echo >/.exegol/.setup.lock
-    # Run my-resources script. Logs starting with '[exegol]' will be print to the console and report back to the user through the wrapper.
+    # Run my-resources script. Logs starting with '[EXEGOL]' will be printed to the console and reported back to the user through the wrapper.
     if [ -f /.exegol/load_supported_setups.sh ]; then
-      echo "Installing [green]my-resources[/green] custom setup ..."
-      /.exegol/load_supported_setups.sh |& tee /var/log/exegol/load_setups.log | grep -i '^\[exegol]' | sed "s/^\[exegol\]\s*//gi"
-      [ -f /var/log/exegol/load_setups.log ] && echo "Compressing [green]my-resources[/green] logs" && gzip /var/log/exegol/load_setups.log && echo "My-resources loaded"
+      echo "[PROGRESS]Starting [green]my-resources[/green] setup"
+      /.exegol/load_supported_setups.sh | grep --line-buffered '^\[EXEGOL]' | sed -u "s/^\[EXEGOL\]\s*//g"
     else
-      echo "[W]Your exegol image doesn't support my-resources custom setup!"
+      echo "[WARNING]Your exegol image doesn't support my-resources custom setup!"
     fi
   fi
 }
@@ -33,7 +33,7 @@ function endless() {
   finish
   # Entrypoint for the container, in order to have a process hanging, to keep the container alive
   # Alternative to running bash/zsh/whatever as entrypoint, which is longer to start and to stop and to very clean
-  mkfifo -m 000 /tmp/.entrypoint # Create an empty fifo for sleep by read.
+  [[ ! -p /tmp/.entrypoint ]] && mkfifo -m 000 /tmp/.entrypoint # Create an empty fifo for sleep by read.
   read -r <> /tmp/.entrypoint  # read from /tmp/.entrypoint => endlessly wait without sub-process or need for TTY option
 }
 
@@ -67,7 +67,7 @@ function _resolv_docker_host() {
     # Add docker internal host resolution to the hosts file to preserve access to the X server
     echo "$DOCKER_IP        host.docker.internal" >>/etc/hosts
     # If the container share the host networks, no need to add a static mapping
-    ip route list match "$DOCKER_IP" table all | grep -v default || ip route add "$DOCKER_IP/32" "$(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+')" || echo '[W]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
+    ip route list match "$DOCKER_IP" table all | grep -v default || ip route add "$DOCKER_IP/32" "$(ip route list | grep default | head -n1 | grep -Eo '(via [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ )?dev [a-zA-Z0-9]+')" || echo '[WARNING]Exegol cannot add a static route to resolv your host X11 server. GUI applications may not work.'
   fi
 }
 
@@ -75,11 +75,12 @@ function ovpn() {
   [[ "$DISPLAY" == *"host.docker.internal"* ]] && _resolv_docker_host
   if ! command -v openvpn &> /dev/null
   then
-      echo '[E]Your exegol image does not support the VPN feature'
+      echo '[ERROR]Your exegol image does not support the VPN feature'
   else
     # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
-    echo "Starting [green]VPN[/green]"
-    openvpn --log-append /var/log/exegol/vpn.log "$@" &
+    echo "[PROGRESS]Starting [green]VPN[/green]"
+    # shellcheck disable=SC2164
+    ([[ -d /.exegol/vpn/config ]] && cd /.exegol/vpn/config; openvpn --log-append /var/log/exegol/vpn.log "$@" &)
     sleep 2  # Waiting 2 seconds for the VPN to start before continuing
   fi
 
@@ -92,12 +93,12 @@ function run_cmd() {
 function desktop() {
   if command -v desktop-start &> /dev/null
   then
-      echo "Starting Exegol [green]desktop[/green] with [blue]${EXEGOL_DESKTOP_PROTO}[/blue]"
+      echo "[PROGRESS]Starting Exegol [green]desktop[/green] with [blue]${EXEGOL_DESKTOP_PROTO}[/blue]"
       ln -sf /root/.vnc /var/log/exegol/desktop
       desktop-start &>> ~/.vnc/startup.log  # Disable logging
       sleep 2  # Waiting 2 seconds for the Desktop to start before continuing
   else
-      echo '[E]Your exegol image does not support the Desktop features'
+      echo '[ERROR]Your exegol image does not support the Desktop features'
   fi
 }
 

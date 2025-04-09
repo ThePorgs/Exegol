@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from enum import Enum
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -26,7 +27,7 @@ class EnvInfo:
 
     class DockerEngine(Enum):
         """Dictionary class for static Docker engine name"""
-        WLS2 = "WSL2"
+        WSL2 = "WSL2"
         HYPERV = "Hyper-V"
         DOCKER_DESKTOP = "Docker desktop"
         ORBSTACK = "Orbstack"
@@ -86,7 +87,7 @@ class EnvInfo:
         if is_host_windows:
             # Check docker engine with Windows host
             if "wsl2" in docker_kernel:
-                cls.__docker_engine = cls.DockerEngine.WLS2
+                cls.__docker_engine = cls.DockerEngine.WSL2
             else:
                 cls.__docker_engine = cls.DockerEngine.HYPERV
             cls.__docker_host_os = cls.HostOs.WINDOWS
@@ -121,7 +122,7 @@ class EnvInfo:
         session_type = os.getenv("XDG_SESSION_TYPE", "x11")
         if session_type == "wayland":
             return cls.DisplayServer.WAYLAND
-        elif session_type == "x11":
+        elif session_type in ["x11", "tty"]:  # When using SSH X11 forwarding, the session type is "tty" instead of the classic "x11"
             return cls.DisplayServer.X11
         else:
             # Should return an error
@@ -224,6 +225,8 @@ class EnvInfo:
                 except FileNotFoundError:
                     logger.warning(f"Docker Desktop configuration file not found: '{file_path}'")
                     return {}
+                except JSONDecodeError:
+                    logger.critical(f"The Docker Desktop configuration file '{file_path}' is not a valid JSON. Please fix your configuration file first.")
             if cls.__docker_desktop_resource_config is None:
                 logger.warning(f"Docker Desktop configuration couldn't be loaded.'")
             else:

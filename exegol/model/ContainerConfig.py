@@ -1130,9 +1130,11 @@ class ContainerConfig:
 
     def getShellEnvs(self) -> List[str]:
         """Overriding envs when opening a shell"""
-        result = []
+        result = [f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}"]
         # Select default shell to use
-        result.append(f"{self.ExegolEnv.user_shell.value}={ParametersManager().shell}")
+        if ParametersManager().shell in ["zsh", "bash", "sh"]:
+            # tmux dynamically set SHELL variable and should be excluded here
+            result.append(f"SHELL=/bin/{ParametersManager().shell}")
         # Update X11 DISPLAY socket if needed
         if self.__enable_gui:
             current_display = GuiUtils.getDisplayEnv()

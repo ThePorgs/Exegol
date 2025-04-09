@@ -114,7 +114,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     def __start_container(self) -> None:
         """
-        This method start the container and display startup status update to the user.
+        This method starts the container and displays startup status updates to the user.
         :return:
         """
         with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
@@ -123,7 +123,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.__container.start()
             except APIError as e:
                 logger.debug(e)
-                logger.critical(f"Docker raise a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+                logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -131,18 +131,38 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                         # Once the last log "READY" is received, the startup sequence is over and the execution can continue
                         if line == "READY":
                             break
-                        elif line.startswith('[W]'):
-                            line = line.replace('[W]', '')
-                            logger.warning(line)
-                        elif line.startswith('[E]'):
-                            line = line.replace('[E]', '')
-                            logger.error(line)
-                        else:
+                        elif line.startswith('[INFO]'):
+                            line = line.replace('[INFO]', '')
+                            logger.info(line)
+                        elif line.startswith('[VERBOSE]'):
+                            line = line.replace('[VERBOSE]', '')
                             logger.verbose(line)
-                        progress.update(status=f"[blue][Startup][/blue] {line}")
+                        elif line.startswith('[ADVANCED]'):
+                            line = line.replace('[ADVANCED]', '')
+                            logger.advanced(line)
+                        elif line.startswith('[DEBUG]'):
+                            line = line.replace('[DEBUG]', '')
+                            logger.debug(line)
+                        elif line.startswith('[WARNING]'):
+                            line = line.replace('[WARNING]', '')
+                            logger.warning(line)
+                        elif line.startswith('[ERROR]'):
+                            line = line.replace('[ERROR]', '')
+                            logger.error(line)
+                        elif line.startswith('[SUCCESS]'):
+                            line = line.replace('[SUCCESS]', '')
+                            logger.success(line)
+                        elif line.startswith('[PROGRESS]'):
+                            line = line.replace('[PROGRESS]', '')
+                            logger.verbose(line)
+                            progress.update(status=f"[blue][Startup][/blue] {line}")
+                        else:
+                            logger.debug(line)
+                    logger.verbose(f"Container started in {(datetime.now() - start_date).seconds} seconds")
+
                 except KeyboardInterrupt:
                     # User can cancel startup logging with ctrl+C
-                    logger.warning("User skip startup status updates. Spawning a shell now.")
+                    logger.warning("Skipping startup status updates (user interruption). Spawning shell now.")
 
     def stop(self, timeout: int = 10) -> None:
         """Stop the docker container"""
@@ -167,6 +187,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             options += f" -e {' -e '.join(envs)}"
         cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
+        if EnvInfo.isDockerDesktop() and (EnvInfo.is_windows_shell or EnvInfo.is_mac_shell):
+            # Disable "What's next?" Docker Desktop spam exit message
+            os.environ['DOCKER_CLI_HINTS'] = "false"
         os.system(cmd)
         # Docker SDK doesn't support (yet) stdin properly
         # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True,
@@ -310,7 +333,6 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Operation to be performed after creating a container
         :return:
         """
-        self.__applyX11ACLs()
         # if not a temporary container, apply custom config
         if not is_temporary:
             # Update entrypoint script in the container
@@ -322,15 +344,17 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except APIError as e:
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
+        # Run post start container actions
+        self.__postStartSetup()
 
     def __applyX11ACLs(self) -> None:
         """
         If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
         If the host is accessed by SSH, propagate xauth cookie authentication if applicable.
-        On Windows host, WSLg X11 don't have xhost ACL. #TODO xauth remote x11 forwarding
+        On Windows host, WSLg X11 don't have xhost ACL.
         :return:
         """
-        # TODO check if the xauth propagation should be performed on Windows, if so remove the "and not EnvInfo.isWindowsHost()"
+        # On Windows host with WSLg no need to run xhost +local or xauth
         if self.config.isGUIEnable() and not self.__xhost_applied and not EnvInfo.isWindowsHost():
             self.__xhost_applied = True  # Can be applied only once per execution
             if shutil.which("xhost") is None:
@@ -386,12 +410,12 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
             # Replacing the hostname with localhost to support loopback exposed x11 socket and container in host mode (loopback is the same)
             if display_host == "localhost":
-                logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connections can be received only on loopback");
+                logger.debug("X11UseLocalhost directive is set to \"yes\" or unspecified, X11 connections can be received only on loopback")
                 # Modifing the entry to convert <hostname>/unix:<display_number> to localhost:<display_number>
                 xauthEntry = f"localhost:{xauthEntry.split(':')[1]}"
             else:
                 # TODO latter implement a check to see if the x11 socket is correctly firewalled and warn the user if it is not
-                logger.debug("X11UseLocalhost directive is set to \"no\", X11 connections can be received from anywere");
+                logger.debug("X11UseLocalhost directive is set to \"no\", X11 connections can be received from anywhere")
 
             # Check if the host has a xauth entry corresponding to the current display.
             if xauthEntry:

@@ -64,15 +64,17 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
         for img in images:
             name = img.getName()
             version = img.getLatestVersion()
-            remoteid = img.getLatestRemoteId()
-            type = "local" if img.isLocal() else "remote"
-            logger.debug(f"└── {name} (version: {version})\t→ ({type}) {remoteid}")
+            if "N/A" in version:
+                continue
+            remote_id = img.getLatestRemoteId()
+            image_type = "local" if img.isLocal() else "remote"
+            logger.debug(f"└── {name} (version: {version})\t→ ({image_type}) {remote_id}")
             cache_images.append(
                 ImageCacheModel(
                     name,
                     version,
-                    remoteid,
-                    type
+                    remote_id,
+                    image_type
                 )
             )
         self.__cache_data.images = ImagesCacheModel(cache_images)

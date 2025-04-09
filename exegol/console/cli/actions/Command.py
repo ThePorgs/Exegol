@@ -48,7 +48,7 @@ class Command:
         # Root command usages (can be overwritten by subclasses to display different use cases)
         self._pre_usages = "[underline]To see specific examples run:[/underline][italic] exegol [cyan]command[/cyan] -h[/italic]"
         self._usages = {
-            "Install (or build) (↓ ~25GB max)": "exegol install",
+            "Install (or build) an exegol image": "exegol install",
             "Open an exegol shell": "exegol start",
             "Show exegol images & containers": "exegol info",
             "Update an image": "exegol update",
