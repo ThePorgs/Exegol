@@ -133,7 +133,9 @@ class DockerUtils(metaclass=MetaSingleton):
                        "stdin_open": model.config.interactive,
                        "tty": model.config.tty,
                        "mounts": model.config.getVolumes(),
-                       "working_dir": model.config.getWorkingDir()}
+                       "working_dir": model.config.getWorkingDir(),
+                       "security_opt" : ["label=disable"]
+                       }
         if temporary:
             # Only the 'run' function support the "remove" parameter
             docker_create_function = self.__client.containers.run
@@ -364,9 +366,12 @@ class DockerUtils(metaclass=MetaSingleton):
         result = []
         ids = set()
         for img in images:
+            repoTaglist = [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]
             # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
-            if len(img.attrs.get('RepoTags', [])) == 0 or \
-                    ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
+            if len(img.attrs.get('RepoTags', [])) == 0 \
+                    or ConstantConfig.IMAGE_NAME in repoTaglist \
+                    or ConstantConfig.IMAGE_FULL_NAME in repoTaglist:
+
                 result.append(img)
                 ids.add(img.id)
 
