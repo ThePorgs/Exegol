@@ -133,6 +133,7 @@ class DockerUtils(metaclass=MetaSingleton):
                        "stdin_open": model.config.interactive,
                        "tty": model.config.tty,
                        "mounts": model.config.getVolumes(),
+                       "userns_mode": "host",
                        "working_dir": model.config.getWorkingDir()}
         if temporary:
             # Only the 'run' function support the "remove" parameter
