@@ -98,7 +98,7 @@ class ExegolImage(SelectableInterface):
             self.__name = ""
             for repo_tag in self.__image.attrs["RepoTags"]:
                 repo, name = repo_tag.split(':')
-                if not repo.startswith(ConstantConfig.IMAGE_NAME):
+                if not repo.startswith(ParametersManager().image_name):
                     # Ignoring external images (set container using external image as outdated)
                     continue
                 version_parsed = MetaImages.tagNameParsing(name)
@@ -175,7 +175,7 @@ class ExegolImage(SelectableInterface):
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
             version_parsed = MetaImages.tagNameParsing(tmp_tag)
-            if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
+            if tmp_name == ParametersManager().image_name and version_parsed:
                 self.__setImageVersion(version_parsed)
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
@@ -541,7 +541,7 @@ class ExegolImage(SelectableInterface):
         """Parse the remote image digest ID.
         Return digest id from the docker object."""
         for digest_id in docker_image.attrs["RepoDigests"]:
-            if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
+            if digest_id.startswith(ParametersManager().image_name):  # Find digest id from the right repository
                 return digest_id.split('@')[1]
         return ""
 
@@ -678,11 +678,11 @@ class ExegolImage(SelectableInterface):
 
     def getFullName(self) -> str:
         """Dockerhub image's full name getter"""
-        return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
+        return f"{ParametersManager().image_name}:{self.__name}"
 
     def getFullVersionName(self) -> str:
         """Dockerhub image's full (installed) version name getter"""
-        return f"{ConstantConfig.IMAGE_NAME}:{self.getInstalledVersionName()}"
+        return f"{ParametersManager().image_name}:{self.getInstalledVersionName()}"
 
     def getDockerRef(self) -> str:
         """Find and return the right id to target the current image for docker.
