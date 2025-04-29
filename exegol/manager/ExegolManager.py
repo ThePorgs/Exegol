@@ -204,8 +204,13 @@ class ExegolManager:
     @classmethod
     def print_debug_banner(cls) -> None:
         """Print header debug info"""
-        logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}"
-                     f"{'[bright_black](pipx)[/bright_black]' if ConstantConfig.pipx_installed else ''}")
+        if ConstantConfig.pipx_installed:
+            suffix = '[bright_black](pipx)[/bright_black]'
+        elif ConstantConfig.uv_installed:
+            suffix = '[bright_black](uv)[/bright_black]'
+        else:
+            suffix = ''
+        logger.debug(f"Pip installation: {boolFormatter(ConstantConfig.pip_installed)}{suffix}")
         logger.debug(f"Git source installation: {boolFormatter(ConstantConfig.git_source_installation)}")
         logger.debug(f"Host OS: {EnvInfo.getHostOs().value} [bright_black]({EnvInfo.getDockerEngine().value})[/bright_black]")
         logger.debug(f"Arch: {EnvInfo.arch}")
