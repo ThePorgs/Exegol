@@ -53,6 +53,9 @@ class GitUtils:
                 if ConstantConfig.pipx_installed:
                     logger.info("If you have installed Exegol with pipx, check for an update with the command "
                                 "[green]pipx upgrade exegol[/green]")
+                elif ConstantConfig.uv_installed:
+                    logger.info("If you have installed Exegol with uv, check for an update with the command "
+                                "[green]uv tool upgrade exegol[/green]")
                 elif ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")

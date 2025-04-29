@@ -27,6 +27,7 @@ class ConstantConfig:
     git_source_installation: bool = (src_root_path_obj / '.git').is_dir()
     pip_installed: bool = src_root_path_obj.name == "site-packages"
     pipx_installed: bool = "/pipx/venvs/" in src_root_path_obj.as_posix()
+    uv_installed: bool = "/uv/tools/" in src_root_path_obj.as_posix()
     # Dockerhub Exegol images repository
     DOCKER_HUB: str = "hub.docker.com"  # Don't handle docker login operations
     DOCKER_REGISTRY: str = "registry-1.docker.io"  # Don't handle docker login operations
