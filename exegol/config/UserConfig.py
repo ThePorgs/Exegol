@@ -11,7 +11,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
     """This class allows loading user defined configurations"""
 
     # Static choices
-    start_shell_options = {'zsh', 'bash', 'tmux'}
+    start_shell_options = {'zsh', 'bash', 'tmux', 'zellij'}
     shell_logging_method_options = {'script', 'asciinema'}
     desktop_available_proto = {'http', 'vnc'}
 
