@@ -101,7 +101,7 @@ owIDAQAB
             if creation_time is None:
                 # Fallback to file creation time
                 try:
-                    creation_time = lock_path.stat().st_birthtime
+                    creation_time = lock_path.stat().st_birthtime  # type: ignore[attr-defined]
                 except AttributeError:
                     creation_time = lock_path.lstat().st_ctime
             if creation_time is not None and creation_time > 0 and (datetime.now() - datetime.fromtimestamp(creation_time)).seconds >= 3600:
