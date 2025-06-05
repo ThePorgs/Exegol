@@ -1,17 +1,21 @@
+import asyncio
 from argparse import Namespace
 from pathlib import Path
 from typing import Tuple
 
-from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
 from exegol.config.UserConfig import UserConfig
 from exegol.manager.UpdateManager import UpdateManager
 from exegol.utils.DockerUtils import DockerUtils
+from exegol.utils.NetworkUtils import NetworkUtils
 
+
+# Debug : argcomplete.warn('debug message')
 
 def ContainerCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, ...]:
     """Function to dynamically load a container list for CLI autocompletion purpose"""
-    data = [c.name for c in DockerUtils().listContainers()]
+    container_list = asyncio.run(DockerUtils().listContainers())
+    data = [c.name for c in container_list]
     for obj in data:
         # filter data if needed
         if prefix and not obj.lower().startswith(prefix.lower()):
@@ -33,7 +37,7 @@ def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, 
         data = []
     if len(data) == 0:
         # Fallback with default data if the cache is not initialized yet
-        data = ["full", "nightly", "ad", "web", "light", "osint"]
+        data = ["full", "nightly", "ad", "web", "light", "osint", "free"]
     for obj in data:
         # filter data if needed
         if prefix and not obj.lower().startswith(prefix.lower()):
@@ -85,12 +89,22 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
 
 
 def DesktopConfigCompleter(prefix: str, **kwargs) -> Tuple[str, ...]:
-    options = list(UserConfig.desktop_available_proto)
-    for obj in options:
-        if prefix and not obj.lower().startswith(prefix.lower()):
-            options.remove(obj)
-    # TODO add interface enum
-    return tuple(options)
+    result = []
+    parts = prefix.split(':')
+    if len(parts) <= 1:
+        # First part, suggest available protocol
+        proto_options = list(UserConfig.desktop_available_proto)
+        for obj in proto_options:
+            if prefix is not None and obj.lower().startswith(prefix.lower()):
+                result.append(obj)
+    elif len(parts) == 2:
+        # Second part, autocomplet host interfaces
+        addr_options = NetworkUtils.get_host_addresses()
+        for obj in addr_options:
+            if obj.startswith(parts[-1]):
+                result.append(parts[0] + ':' + obj)
+
+    return tuple(result)
 
 
 def VoidCompleter(**kwargs) -> Tuple:

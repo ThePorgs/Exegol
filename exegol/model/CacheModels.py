@@ -8,7 +8,7 @@ from exegol.utils.ExeLog import logger
 class MetadataCacheModel:
     """MetadataCacheModel store a timestamp to compare with the last update"""
 
-    def __init__(self, last_check=None, time_format: str = "%d/%m/%Y"):
+    def __init__(self, last_check=None, time_format: str = "%d/%m/%Y") -> None:
         self.__TIME_FORMAT = time_format
         if last_check is None:
             last_check = datetime.date.today().strftime(self.__TIME_FORMAT)

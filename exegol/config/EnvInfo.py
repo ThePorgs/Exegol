@@ -75,7 +75,7 @@ class EnvInfo:
         arch = "amd64"
 
     @classmethod
-    def initData(cls, docker_info) -> None:
+    def initData(cls, docker_info: Dict[str, str]) -> None:
         """Initialize information from Docker daemon data"""
         # Fetch data from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
@@ -112,8 +112,9 @@ class EnvInfo:
         """Return Host OS
         Can be 'Windows', 'Mac' or 'Linux'"""
         # initData must be called from DockerUtils on client initialisation
-        assert cls.__docker_host_os is not None
-        return cls.__docker_host_os
+        if cls.__docker_host_os is not None:
+            return cls.__docker_host_os
+        raise RuntimeError("Docker host OS is not initialized. Please call EnvInfo.initData() before using this method.")
 
     @classmethod
     def getDisplayServer(cls) -> DisplayServer:
@@ -250,7 +251,15 @@ class EnvInfo:
         elif cls.isDockerDesktop():
             settings = cls.getDockerDesktopSettings()
             # Handle legacy settings key
-            res = settings.get('HostNetworkingEnabled', settings.get('hostNetworkingEnabled', False))
+            res = settings.get('HostNetworkingEnabled', settings.get('hostNetworkingEnabled'))
+            if res is None:
+                logger.warning("Host network mode for Docker Desktop is not available, you need to upgrade Docker Desktop to enable it!")
+            elif not res:
+                logger.warning(
+                    "Docker desktop now supports host network mode. However, this mode is currently [red]disabled[/red]. You need to manually change the configuration in your Docker Desktop settings to support host network sharing with Exegol.")
+            if not res:
+                logger.info("To share network ports (without host network) between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
+                logger.verbose("Official doc: https://docs.docker.com/network/drivers/host/#docker-desktop")
             return res if res is not None else False
         logger.warning("Unknown or not supported environment for host network mode.")
         return False

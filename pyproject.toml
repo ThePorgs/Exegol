@@ -10,7 +10,7 @@ authors = [
     { name = "Dramelac", email = "dramelac@pm.me" },
     { name = "Shutdown", email = "nwodtuhs@pm.me" },
 ]
-license = { file = "LICENSE" }
+license = { file = "LICENSE.md" }
 readme = { file = "README.md", content-type = "text/markdown" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -32,12 +32,19 @@ dependencies = [
     "GitPython~=3.1.43",
     "PyYAML>=6.0.2",
     "argcomplete~=3.5.0",
-    "tzlocal~=5.2; platform_system != 'Linux'"
+    "tzlocal~=5.2; platform_system != 'Linux'",
+    "ifaddr~=0.2.0",
+    "supabase~=2.13.0",
+    "pydantic~=2.11.1",
+    "pyjwt>=2.10.1",
+    "pyjwt[crypto]>=2.10.1",
+    "cryptography>=43.0.3",
+    "python-dateutil>=2.9.0; python_version < '3.11'"
 ]
 
 [dependency-groups]
 dev = ["pre-commit"]
-testing = ["mypy", "types-PyYAML", "types-requests", "types-tzlocal", "pytest"]
+testing = ["mypy", "types-PyYAML", "types-requests", "types-tzlocal", "types-python-dateutil", "pytest"]
 
 [project.scripts]
 exegol = "exegol.manager.ExegolController:main"

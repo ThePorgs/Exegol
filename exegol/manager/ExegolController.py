@@ -1,3 +1,4 @@
+import asyncio
 import http
 import logging
 
@@ -6,12 +7,18 @@ try:
     import git
     import requests
     import urllib3
+    import supabase
+    import httpx
+    import postgrest
+    import contextlib
 
     from exegol.utils.ExeLog import logger, ExeLog, console
     from exegol.utils.DockerUtils import DockerUtils
     from exegol.console.cli.ParametersManager import ParametersManager
     from exegol.console.cli.actions.ExegolParameters import Command
     from exegol.manager.ExegolManager import ExegolManager
+    from exegol.manager.TaskManager import TaskManager
+    from exegol.utils.SessionHandler import SessionHandler
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
     print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
@@ -25,6 +32,8 @@ except ImportError as e:
     print("Details:")
     print(e)
     exit(1)
+except KeyboardInterrupt:
+    exit(1)
 
 
 class ExegolController:
@@ -35,22 +44,41 @@ class ExegolController:
     __action: Command = ParametersManager().getCurrentAction()
 
     @classmethod
-    def call_action(cls) -> None:
+    async def call_action(cls) -> int:
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
-        ExegolManager.print_version()
-        DockerUtils()  # Init dockerutils
-        ExegolManager.print_debug_banner()
-        # Check for missing parameters
-        missing_params = cls.__action.check_parameters()
-        if len(missing_params) == 0:
-            # Fetch main operation function
-            main_action = cls.__action()
-            # Execute main function
-            main_action()
-        else:
-            # TODO review required parameters
-            logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")
+        try:
+            await ExegolManager.print_version()
+            DockerUtils()  # Init dockerutils
+            await ExegolManager.print_debug_banner()
+            # Check for missing parameters
+            missing_params = cls.__action.check_parameters()
+            if len(missing_params) == 0:
+                # Fetch main operation function
+                main_action = cls.__action()
+                return_code = 0
+                if main_action is not None:
+                    TaskManager.add_task(
+                        SessionHandler().reload_session(),
+                        TaskManager.TaskId.LoadLicense)
+                    # Execute main function
+                    await main_action()
+                await TaskManager.wait_for_all()
+                return return_code
+            else:
+                # TODO review required parameters
+                logger.error(f"These parameters are mandatory but missing: {','.join(missing_params)}")
+                return 1
+        except SystemExit as err:
+            logger.empty_line()
+            logger.info("Exiting...")
+            await TaskManager.wait_for_all(exit_mode=True)
+            return 1 if err.code is None else int(err.code)
+        except (KeyboardInterrupt, asyncio.CancelledError, EOFError):
+            logger.empty_line()
+            logger.info("Exiting...")
+            await TaskManager.wait_for_all(exit_mode=True)
+            return 1
 
 
 def print_exception_banner() -> None:
@@ -61,16 +89,15 @@ def print_exception_banner() -> None:
     logger.success("Thank you for your collaboration!")
 
 
-def main() -> None:
+def main() -> int:
     """Exegol main console entrypoint"""
     try:
         # Set logger verbosity depending on user input
         ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)
         # Start Main controller & Executing action selected by user CLI
-        ExegolController.call_action()
-    except KeyboardInterrupt:
-        logger.empty_line()
-        logger.info("Exiting")
+        return asyncio.run(ExegolController.call_action())
+    except (KeyboardInterrupt, asyncio.CancelledError, EOFError):
+        return 2
     except git.exc.GitCommandError as git_error:
         print_exception_banner()
         # Printing git stderr as raw to avoid any Rich parsing error
@@ -82,8 +109,11 @@ def main() -> None:
         # Printing git error as raw to avoid any Rich parsing error
         logger.raw(error, level=logging.ERROR)
         logger.empty_line()
-        logger.critical(f"A critical error occurred while running this git command: {' '.join(git_error.command)}")
+        logger.error(f"A critical error occurred while running this git command: {' '.join(git_error.command)}")
     except Exception:
         print_exception_banner()
-        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http])
-        exit(1)
+        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http, httpx, postgrest, contextlib, supabase, asyncio])
+    except SystemExit as e:
+        if e.code is not None:
+            return int(e.code)
+    return 1

@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Optional
 
 from exegol.config.EnvInfo import EnvInfo
-from exegol.console.ExegolPrompt import Confirm
+from exegol.console.ExegolPrompt import ExegolRich
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger
 
 
 class GuiUtils:
@@ -21,16 +22,16 @@ class GuiUtils:
     default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
-    def isX11GuiAvailable(cls) -> bool:
+    async def isX11GuiAvailable(cls) -> bool:
         """
         Check if the host OS can support GUI application with X11 sharing
         :return: bool
         """
         # GUI (X11 sharing) was not supported on Windows before WSLg
         if EnvInfo.isWindowsHost():
-            return cls.__windowsGuiChecks()
+            return await cls.__windowsGuiChecks()
         elif EnvInfo.isMacHost():
-            return cls.__macGuiChecks()
+            return await cls.__macGuiChecks()
         # Linux default is True
         return True
 
@@ -112,7 +113,7 @@ class GuiUtils:
     # # # # # # Mac specific methods # # # # # #
 
     @classmethod
-    def __macGuiChecks(cls) -> bool:
+    async def __macGuiChecks(cls) -> bool:
         """
         Procedure to check if the Mac host supports GUI (X11 sharing) with docker through XQuartz
         :return: bool
@@ -133,13 +134,13 @@ class GuiUtils:
 
         # Check if XQuartz is started, check is dir exist and if there is at least one socket
         if not cls.__isXQuartzRunning():
-            if not cls.__startXQuartz():
+            if not await cls.__startXQuartz():
                 logger.warning("Unable to start XQuartz service.")
                 return False
 
         # The /tmp config is not necessary until you can use the unix socket with docker-desktop volume
         # Check if Docker Desktop is configured with /tmp in Docker Desktop > Preferences > Resources > File Sharing
-        #if EnvInfo.isDockerDesktop() and not cls.__checkDockerDesktopResourcesConfig():
+        # if EnvInfo.isDockerDesktop() and not cls.__checkDockerDesktopResourcesConfig():
         #    logger.warning("Display sharing not possible, Docker Desktop configuration is incorrect. Please add /tmp in "
         #                   "[magenta]Docker Desktop > Preferences > Resources > File Sharing[/magenta]")
         #    return False
@@ -186,14 +187,14 @@ class GuiUtils:
         return socket_x11_found
 
     @staticmethod
-    def __startXQuartz() -> bool:
+    async def __startXQuartz() -> bool:
         xhost_path = shutil.which("xhost")
         if not xhost_path:
             logger.error("xhost command not found, check your XQuartz installation")
             return False
         # Starting xquartz
         logger.debug("Starting XQuartz using xhost command")
-        with console.status(f"Starting [green]XQuartz[/green]...", spinner_style="blue"):
+        async with ExegolStatus(f"Starting [green]XQuartz[/green]...", spinner_style="blue"):
             run_xhost = subprocess.run([xhost_path], shell=True,
                                        stdout=subprocess.DEVNULL,
                                        stderr=subprocess.DEVNULL)
@@ -202,7 +203,7 @@ class GuiUtils:
     # # # # # # Windows specific methods # # # # # #
 
     @classmethod
-    def __windowsGuiChecks(cls) -> bool:
+    async def __windowsGuiChecks(cls) -> bool:
         """
         Procedure to check if the Windows host supports GUI (X11 sharing) with docker through WSLg
         :return: bool
@@ -224,10 +225,10 @@ class GuiUtils:
         # X11 socket can only be shared from a WSL (to find WSLg mount point)
         if EnvInfo.current_platform != "WSL":
             logger.debug("Exegol is running from a Windows context (e.g. Powershell), a WSL instance must be found to share the WSLg X11 socket")
-            cls.__distro_name = cls.__find_wsl_distro()
+            cls.__distro_name = await cls.__find_wsl_distro()
             logger.debug(f"Set WSL Distro as: '{cls.__distro_name}'")
             # If no WSL is found, propose to continue without GUI (X11 sharing)
-            if not cls.__distro_name and not Confirm(
+            if not cls.__distro_name and not await ExegolRich.Confirm(
                     "Do you want to continue [orange3]without[/orange3] X11 sharing (i.e. GUI support)?", default=True):
                 raise KeyboardInterrupt
         else:
@@ -246,7 +247,7 @@ class GuiUtils:
         return False
 
     @staticmethod
-    def __wsl_test(path, name: Optional[str] = "docker-desktop") -> bool:
+    def __wsl_test(path: str, name: Optional[str] = "docker-desktop") -> bool:
         """
         Check presence of a file in the WSL docker-desktop image.
         the targeted WSL image can be changed with 'name' parameter.
@@ -268,7 +269,7 @@ class GuiUtils:
         return False
 
     @classmethod
-    def __check_wsl_docker_integration(cls, distrib_name) -> bool:
+    def __check_wsl_docker_integration(cls, distrib_name: str) -> bool:
         """
         Check the presence of the docker binary in the supplied WSL distribution.
         This test allows checking if docker integration is enabled.
@@ -345,7 +346,7 @@ class GuiUtils:
         return False
 
     @classmethod
-    def __find_wsl_distro(cls) -> str:
+    async def __find_wsl_distro(cls) -> str:
         distro_name = ""
         # these distros cannot be used to load WSLg socket
         blacklisted_distro = ["docker-desktop", "docker-desktop-data"]
@@ -379,7 +380,7 @@ class GuiUtils:
                         eligible = False
                         logger.warning(
                             f"The '{name}' WSL distribution can be used to [green]enable X11 sharing[/green] (i.e. GUI apps) on exegol but the docker integration is [orange3]not enabled[/orange3].")
-                        if not Confirm(
+                        if not await ExegolRich.Confirm(
                                 f"Do you want to [red]manually[/red] enable docker integration for WSL '{name}'?",
                                 default=True):
                             break
@@ -392,8 +393,8 @@ class GuiUtils:
             else:
                 logger.warning(
                     "No WSL distribution was found on your machine. At least one distribution must be available to allow Exegol to use WSLg.")
-                if Confirm("Do you want Exegol to install one automatically (Ubuntu)?", default=True):
-                    if cls.__create_default_wsl():
+                if await ExegolRich.Confirm("Do you want Exegol to install one automatically (Ubuntu)?", default=True):
+                    if await cls.__create_default_wsl():
                         distro_name = "Ubuntu"
         else:
             assert ret.stderr is not None
@@ -402,7 +403,7 @@ class GuiUtils:
         return distro_name
 
     @classmethod
-    def __create_default_wsl(cls) -> bool:
+    async def __create_default_wsl(cls) -> bool:
         logger.info("Creating Ubuntu WSL distribution. Please wait.")
         logger.debug("Running: C:\\Windows\\system32\\wsl.exe --install -d Ubuntu")
         ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "--install", "-d", "Ubuntu"], stderr=subprocess.PIPE)
@@ -414,7 +415,7 @@ class GuiUtils:
                 f"Error while install WSL Ubuntu: {ret.stderr.read().decode('utf-16le')} (code: {ret.returncode})")
             return False
         else:
-            while not Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
+            while not await ExegolRich.Confirm("Is the installation of Ubuntu [green]finished[/green]?", default=True):
                 pass
             # Check if docker have default docker integration
             docker_settings = EnvInfo.getDockerDesktopSettings()
@@ -425,7 +426,7 @@ class GuiUtils:
                 ret = subprocess.Popen(["C:\\Windows\\system32\\wsl.exe", "-s", "Ubuntu"], stderr=subprocess.PIPE)
                 ret.wait()
                 # Wait for the docker integration (10 try, 1 sec apart)
-                with console.status("Waiting for the activation of the docker integration", spinner_style="blue"):
+                async with ExegolStatus("Waiting for the activation of the docker integration", spinner_style="blue"):
                     for _ in range(10):
                         if cls.__check_wsl_docker_integration("Ubuntu"):
                             break
@@ -434,8 +435,8 @@ class GuiUtils:
                 logger.error("The newly created WSL could not get the docker integration automatically. "
                              "It has to be activated [red]manually[/red]")
                 logger.info("Enable WSL Docker integration for the newly created WSL in: [magenta]Docker Desktop > Settings > Resources > WSL Integration[/magenta]")
-                if not Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
-                               default=True):
+                if not await ExegolRich.Confirm("Has the WSL Ubuntu docker integration been [red]manually[/red] activated?",
+                                                default=True):
                     return False
             logger.success("WSL 'Ubuntu' successfully created with docker integration")
             return True
