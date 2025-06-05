@@ -1,19 +1,23 @@
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Union, Tuple, Dict, Set
 
 from docker.models.containers import Container
 from docker.models.images import Image
-from rich.status import Status
 
-from exegol.config.DataCache import DataCache
-from exegol.console import ConsoleFormat
-from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.model.MetaImages import MetaImages
-from exegol.model.SelectableInterface import SelectableInterface
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
-from exegol.utils.ExeLog import logger, ExeLog, console
-from exegol.utils.WebUtils import WebUtils
+from exegol.config.DataCache import DataCache
+from exegol.config.UserConfig import UserConfig
+from exegol.console import ConsoleFormat
+from exegol.console.ConsoleFormat import get_display_date
+from exegol.console.ExegolStatus import ExegolStatus
+from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.manager.TaskManager import TaskManager
+from exegol.model.SelectableInterface import SelectableInterface
+from exegol.model.SupabaseModels import SupabaseImage
+from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.SessionHandler import SessionHandler
+from exegol.utils.SupabaseUtils import SupabaseUtils
+from exegol.utils.WebRegistryUtils import WebRegistryUtils
 
 
 class ExegolImage(SelectableInterface):
@@ -21,8 +25,7 @@ class ExegolImage(SelectableInterface):
 
     def __init__(self,
                  name: str = "NONAME",
-                 dockerhub_data: Optional[Dict[str, Any]] = None,
-                 meta_img: Optional[MetaImages] = None,
+                 meta_img: Optional[SupabaseImage] = None,
                  image_id: Optional[str] = None,
                  docker_image: Optional[Image] = None,
                  isUpToDate: bool = False):
@@ -30,17 +33,19 @@ class ExegolImage(SelectableInterface):
         # Prepare parameters
         if meta_img:
             version_parsed = meta_img.version
-            name = meta_img.name
-            self.__version_specific: bool = not meta_img.is_latest
+            name = meta_img.tag
+            self.__version_specific: bool = False
         else:
-            version_parsed = MetaImages.tagNameParsing(name)
+            version_parsed = self.tagNameParsing(name)
             self.__version_specific = bool(version_parsed)
         # Init attributes
         self.__image: Optional[Image] = docker_image
         self.__name: str = name
-        self.__alt_name: str = ''
+        self.__display_name: str = ''
         self.__arch = ""
         self.__entrypoint: Optional[Union[str, List[str]]] = None
+        self.__repository: str = ''
+        self.__license: Optional[str] = None
         # Latest version available of the current image (or current version if version specific)
         self.__profile_version: str = version_parsed if version_parsed else "[bright_black]N/A[/bright_black]"
         self.__profile_digest: str = ""
@@ -49,10 +54,9 @@ class ExegolImage(SelectableInterface):
         # This mode allows to know if the version has been retrieved from the tag and is part of the image name or
         # if it is retrieved from the tags (ex: nightly)
         self.__version_label_mode: bool = False
-        self.__build_date = "[bright_black]N/A[/bright_black]"
+        self.__build_date: Union[datetime, str] = ""
         # Remote image size
         self.__dl_size: str = "[bright_black]N/A[/bright_black]"
-        self.__remote_est_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # Remote image ID
@@ -60,6 +64,7 @@ class ExegolImage(SelectableInterface):
         # Local docker image ID
         self.__image_id: str = "[bright_black]Not installed[/bright_black]"
         # Status
+        self.__is_official: bool = False
         self.__is_remote: bool = False
         self.__is_install: bool = False
         self.__is_update: bool = isUpToDate  # Default is false except if the image has been updated in the current runtime context
@@ -72,14 +77,17 @@ class ExegolImage(SelectableInterface):
             self.__initFromDockerImage()
         else:
             self.__setImageId(image_id)
-            if dockerhub_data:
+            if meta_img:
                 self.__is_remote = True
-                self.__setArch(MetaImages.parseArch(dockerhub_data))
-                self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
-                self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.6)
-            if meta_img and meta_img.meta_id is not None:
-                self.__setDigest(meta_img.meta_id)
-                self.__setLatestRemoteId(meta_img.meta_id)  # Meta id is always the latest one
+                self.__setRepository(meta_img.repository)
+                self.__license = meta_img.license
+                self.__build_date = meta_img.build_date
+                self.__setArch(meta_img.arch)
+                if meta_img.download_size is not None:
+                    self.__dl_size = self.__processSize(meta_img.download_size)
+                self.__disk_size = self.__processSize(meta_img.disk_size)
+                self.__setDigest(meta_img.repo_digest)
+                self.__setLatestRemoteId(meta_img.repo_digest)  # Meta id is always the latest one
         # Debug every Exegol image init
         # logger.debug(f"└── {self.__name}\t→ ({self.getType()}) {self.__digest}")
 
@@ -94,25 +102,33 @@ class ExegolImage(SelectableInterface):
             self.__outdated = True
             # Tag as a version specific until the latest tag is found
             self.__version_specific = True
-            name = self.__name  # Init with old name
+            custom_image = True
+            tag_name = self.__name  # Init with old name
             self.__name = ""
             for repo_tag in self.__image.attrs["RepoTags"]:
-                repo, name = repo_tag.split(':')
-                if not repo.startswith(ConstantConfig.IMAGE_NAME):
+                tag_name = repo_tag.split(':')[-1]
+                if not self.isOfficialImage(repo_tag, suffix=":"):
                     # Ignoring external images (set container using external image as outdated)
                     continue
-                version_parsed = MetaImages.tagNameParsing(name)
+                custom_image = False
+                version_parsed = self.tagNameParsing(tag_name)
                 # Check if a non-version tag (the latest tag) is supplied, if so, this image must NOT be removed
                 if not version_parsed:
                     self.__outdated = False
                     self.__version_specific = False
-                    self.__name = name
+                    self.__name = tag_name
                 else:
                     self.__setImageVersion(version_parsed)
 
-            # if no version has been found, restoring previous name
+            # if no version has been found, restoring latest name found
             if not self.__name:
-                self.__name = name
+                self.__name = tag_name
+
+            # Tag image as custom if needed
+            if custom_image:
+                self.__outdated = False
+                self.__version_specific = False
+                self.__custom_status = "[bright_black]Unmanaged[/bright_black]"  # Block auto-load function
 
             if self.isVersionSpecific():
                 if "N/A" in self.__image_version:
@@ -122,21 +138,23 @@ class ExegolImage(SelectableInterface):
         else:
             # If tag is <none>, try to find labels value, if not set fallback to default value
             self.__name = self.parseAliasTagName(self.__image)
-            self.__alt_name = f"{self.__name} [orange3](untag)[/orange3]"
+            self.__display_name = f"{self.getName()} [orange3](untag)[/orange3]"
             self.__outdated = True
             self.__version_specific = True
         self.__setRealSize(self.__image.attrs["Size"])
         self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
-        self.__setArch(MetaImages.parseArch(self.__image))
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '')
+        self.__setArch(WebRegistryUtils.parseArch(self.__image))
         self.__labelVersionParsing()
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
         self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
-            self.__setDigest(self.__parseDigest(self.__image))
+            repo, digest = self.__parseRepoDigests()
+            self.__setDigest(digest)
+            self.__setRepository(repo)
         # Default status, must be refreshed later if some parameters will be changed externally
         self.syncStatus()
 
@@ -146,8 +164,8 @@ class ExegolImage(SelectableInterface):
         self.__image = None
         self.__image_version = "[bright_black]N/A[/bright_black]"
         self.__digest = "[bright_black]N/A[/bright_black]"
-        self.__image_id = "Reseted"
-        self.__build_date = "[bright_black]N/A[/bright_black]"
+        self.__image_id = "Reset"
+        self.__build_date = ""
         self.__disk_size = "[bright_black]N/A[/bright_black]"
 
     def setDockerObject(self, docker_image: Image) -> None:
@@ -161,51 +179,47 @@ class ExegolImage(SelectableInterface):
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '[bright_black]N/A[/bright_black]')
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '')
         # Check if local image is sync with remote digest id (check up-to-date status)
-        if self.__profile_digest:
-            self.__is_update = self.__profile_digest == self.__parseDigest(docker_image)
-        else:
-            self.__is_update = self.__digest == self.__parseDigest(docker_image)
+        image_repo, image_digest = self.__parseRepoDigests()
+        self.__is_update = (self.__profile_digest if self.__profile_digest else self.__digest) == image_digest
         # If this image is remote, set digest ID
         self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
-            self.__setDigest(self.__parseDigest(self.__image))
+            self.__setDigest(image_digest)
+            self.__setRepository(image_repo)
         # Add version tag (if available)
         for repo_tag in docker_image.attrs["RepoTags"]:
             tmp_name, tmp_tag = repo_tag.split(':')
-            version_parsed = MetaImages.tagNameParsing(tmp_tag)
-            if tmp_name == ConstantConfig.IMAGE_NAME and version_parsed:
+            version_parsed = self.tagNameParsing(tmp_tag)
+            if tmp_name in ConstantConfig.OFFICIAL_REPOSITORIES and version_parsed:
                 self.__setImageVersion(version_parsed)
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
 
-    def setMetaImage(self, meta: MetaImages, status: Status) -> None:
-        dockerhub_data = meta.getDockerhubImageForArch(self.getArch())
+    def setMetaImage(self, meta: SupabaseImage) -> None:
         self.__is_remote = True
+        self.__setRepository(meta.repository)
+        self.__license = meta.license
         if self.__version_specific:
             # Solve conflict for same name / tag but multiple arch
-            self.__version_specific = not meta.is_latest
-            self.__name = meta.name
+            self.__version_specific = False
+            self.__name = meta.tag
             self.__outdated = self.__version_specific
-        elif not meta.version:
-            # nightly image don't have a version in their tag. The latest version must be fetch from label on the registry directly
-            logger.verbose(f"Fetch latest [green]{self.getName()}[/green] image version")
-            status.update(status=f"Retrieving latest [green]{self.getName()}[/green] image version")
-            fetch_version = WebUtils.getRemoteVersion(self.__name)
-            if fetch_version:
-                meta.version = fetch_version
-        if dockerhub_data is not None:
-            self.__dl_size = self.__processSize(size=dockerhub_data.get("size", 0))
-            self.__remote_est_size = self.__processSize(size=dockerhub_data.get("size", 0), compression_factor=2.5)
+        if meta.download_size is not None:
+            self.__dl_size = self.__processSize(meta.download_size)
+        if not self.__dl_size:
+            self.__disk_size = self.__processSize(meta.disk_size)
+        if not self.__build_date:
+            self.__build_date = meta.build_date
         self.__setLatestVersion(meta.version)
-        if meta.meta_id:
-            self.__setLatestRemoteId(meta.meta_id)
+        self.__setLatestRemoteId(meta.repo_digest)
         # Check if local image is sync with remote digest id (check up-to-date status)
         self.__is_update = self.__digest == self.__profile_digest
-        if not self.__digest and meta.is_latest and meta.meta_id:
-            # If the digest is lost (multiple same image installed locally) fallback to meta id (only if latest)
-            self.__setDigest(meta.meta_id)
+        if not self.__digest:
+            # If the digest is lost (multiple-arch but same tag installed locally) fallback to meta id (only if latest)
+            self.__setDigest(meta.repo_digest)
+            self.__is_update = self.__image_version == self.__profile_version
         # Refresh status after metadata update
         self.syncStatus()
 
@@ -218,6 +232,11 @@ class ExegolImage(SelectableInterface):
         self.__is_update = True
         # Status must be updated after changing previous criteria
         self.syncStatus()
+
+    def setupAsLegacy(self, legacy_tag: str) -> None:
+        """Used to pull legacy version specific image"""
+        self.__name = legacy_tag
+        self.__version_specific = True
 
     def __labelVersionParsing(self) -> None:
         """Fallback version parsing using image's label (if exist).
@@ -242,7 +261,13 @@ class ExegolImage(SelectableInterface):
     def syncStatus(self) -> None:
         """When the image is loaded from a docker object, docker repository metadata are not present.
         It's not (yet) possible to know if the current image is up-to-date."""
-        if "N/A" in self.__profile_version and not self.isLocal() and not self.isUpToDate() and not self.__is_discontinued and not self.__outdated:
+        if "Unmanaged" in self.__custom_status:
+            return
+        if ("N/A" in self.__profile_version and
+                not self.isLocal() and
+                not self.isUpToDate() and
+                not self.__is_discontinued and
+                not self.__outdated):
             self.__custom_status = "[bright_black]Unknown[/bright_black]"
         else:
             self.__custom_status = ""
@@ -257,13 +282,13 @@ class ExegolImage(SelectableInterface):
                 original_name = original_name.split(":")[1]
             if self.__name == 'NONAME':
                 self.__name = original_name
-                version_parsed = MetaImages.tagNameParsing(self.__name)
+                version_parsed = self.tagNameParsing(self.__name)
                 self.__version_specific = bool(version_parsed)
                 self.__setImageVersion(version_parsed)
-            self.__alt_name = f'{original_name} [orange3](outdated' \
-                              f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/orange3]'
+            self.__display_name = f'{original_name} [orange3](outdated' \
+                                  f'{f" v.{self.getImageVersion()}" if "N/A" not in self.getImageVersion() else ""})[/orange3]'
 
-    def autoLoad(self, from_cache: bool = True) -> 'ExegolImage':
+    async def autoLoad(self, from_cache: bool = True) -> 'ExegolImage':
         """If the current image is in an unknown state, it's possible to load remote data specifically."""
         if "Unknown" in self.__custom_status and \
                 not self.isVersionSpecific() and \
@@ -271,8 +296,8 @@ class ExegolImage(SelectableInterface):
                 not ParametersManager().offline_mode:
             logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
             # Find remote metadata for the specific current image
-            with console.status(f"Synchronization of the [green]{self.__name}[/green] image status...",
-                                spinner_style="blue") as s:
+            async with ExegolStatus(f"Synchronization of the [green]{self.__name}[/green] image status...",
+                                    spinner_style="blue"):
                 remote_digest = None
                 version = None
                 if from_cache:
@@ -284,11 +309,9 @@ class ExegolImage(SelectableInterface):
                                 version = img.last_version
                                 remote_digest = img.digest
                                 break
-                if not from_cache or version is None:
-                    remote_digest = WebUtils.getMetaDigestId(self.__name)
-                    logger.verbose(f"Fetch latest [green]{self.getName()}[/green] image version")
-                    s.update(status=f"Retrieving latest [green]{self.getName()}[/green] image version")
-                    version = WebUtils.getRemoteVersion(self.__name)
+                if self.__is_remote and (version is None or remote_digest is None):
+                    if self.isOfficialImage(self.__repository):
+                        remote_digest, version = await SupabaseUtils.get_tag_version(self.__name, self.__arch)
             if remote_digest is not None:
                 self.__setLatestRemoteId(remote_digest)
                 if self.__digest:
@@ -300,24 +323,48 @@ class ExegolImage(SelectableInterface):
                 if remote_digest is None:
                     # Fallback to version matching
                     self.__is_update = self.__is_update or self.__image_version == version
-            self.__custom_status = ""
+            if version or remote_digest:
+                self.__custom_status = ""
         return self
 
     def updateCheck(self) -> Optional[str]:
         """If this image can be updated, return its name, otherwise return None"""
         if self.__is_remote:
-            if self.__is_update:
+            if not self.__is_official:
+                logger.warning("Custom images cannot be updated. Skipping.")
+            elif self.__is_update:
                 logger.warning("This image is already up to date. Skipping.")
-                return None
-            return self.__name
+            else:
+                return self.__name
         else:
             logger.error("Local images cannot be updated.")
-            return None
+        return None
 
     def isUpToDate(self) -> bool:
         if not self.__is_remote:
             return True  # Local image cannot be updated
         return self.__is_update
+
+    def canBePulled(self) -> bool:
+        """Check if this image can be pulled. True if this image is remote, official and the licence match the current exegol activation"""
+        if self.__is_remote:
+            return (self.__license is None or self.__license == "") or \
+                (self.__license == "Professional" and SessionHandler().pro_feature_access()) or \
+                (self.__license == "Enterprise" and SessionHandler().enterprise_feature_access())
+        return False
+
+    async def pullAuthNeeded(self) -> bool:
+        """Check if pulling this image need an authentication to the registry"""
+        await TaskManager.wait_for(TaskManager.TaskId.LoadLicense, clean_task=False)
+        if not self.canBePulled():
+            if self.__license not in ["Professional", "Enterprise"]:
+                logger.critical("You wrapper is not up-to-date. You need to update it first before downloading this image.")
+            msg = "You need to activate Exegol with a license to download a pre-built Exegol image."
+            if SessionHandler().is_enrolled():
+                msg = "Your license does not allow you to download this image."
+            msg += f" ({self.getDisplayRepository()} access needed)"
+            logger.critical(msg)
+        return self.__license is not None and self.__license != "" and self.__repository != ConstantConfig.COMMUNITY_IMAGE_NAME
 
     def removeCheck(self) -> Optional[str]:
         """If this image can be removed, return its name, otherwise return None"""
@@ -328,31 +375,7 @@ class ExegolImage(SelectableInterface):
             return None
 
     @classmethod
-    def __mergeMetaImages(cls, images: List[MetaImages]) -> None:
-        """Select latest (remote) images and merge them with their version's specific equivalent"""
-        latest_images, version_images = [], []
-        # Splitting images by type : latest or version specific
-        for img in images:
-            if img.is_latest:
-                latest_images.append(img)
-            else:
-                version_images.append(img)
-
-        # Test each combination
-        for main_image in latest_images:
-            for version_specific in version_images:
-                if main_image.meta_id == version_specific.meta_id:
-                    # Set exact profile version to the remaining latest image
-                    main_image.setVersionSpecific(version_specific)
-                    try:
-                        # Remove duplicates image from the result array (don't need to be returned, same object)
-                        images.remove(version_specific)
-                    except ValueError:
-                        # already been removed
-                        pass
-
-    @classmethod
-    def mergeImages(cls, remote_images: List[MetaImages], local_images: List[Image], status: Status) -> List['ExegolImage']:
+    def mergeImages(cls, remote_images: List[SupabaseImage], local_images: List[Image]) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
             - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
@@ -365,11 +388,11 @@ class ExegolImage(SelectableInterface):
         logger.debug("Comparing and merging local and remote images data")
         results = []
         latest_installed: List[str] = []
-        cls.__mergeMetaImages(remote_images)
         # Convert array to dict
-        remote_img_dict = {}
+        remote_img_dict: Dict[str, SupabaseImage] = {}
         for r_img in remote_images:
-            remote_img_dict[r_img.name] = r_img
+            remote_img_dict[r_img.tag] = r_img
+        remote_tag_matched: Set[str] = set()
 
         # Searching a match for each local image
         logger.debug("Searching a match for each image installed")
@@ -379,33 +402,39 @@ class ExegolImage(SelectableInterface):
             if current_local_img.isLocal():
                 results.append(current_local_img)
                 continue
-            current_arch = current_local_img.getArch()
-            selected = None
-            default = None
-            for sub_image in img.attrs.get('RepoTags'):
-                # parse multi-tag images (latest tag / version specific tag)
-                current_tag = sub_image.split(':')[1]
-                tag_match = remote_img_dict.get(current_tag)
-                if tag_match and current_arch in tag_match.list_arch:
-                    default = tag_match
-                    # if the selected remote image have a meta_id, it's a latest tag
-                    if default.is_latest:
-                        selected = default
+            selected: Optional[SupabaseImage] = None
 
+            skip_image = False
             if len(img.attrs.get('RepoTags', [])) == 0:
-                # If RepoTags is lost, fallback to RepoDigests (happen when there is multiple arch install on the same tag name)
+                # If RepoTags is lost, fallback to label and RepoDigests (happen when there is multiple arch install on the same tag name)
                 for sub_image in img.attrs.get('RepoDigests'):
-                    current_id = sub_image.split('@')[-1]
+                    current_image, current_id = sub_image.split('@')
                     for remote in remote_images:
-                        if remote.meta_id == current_id:
+                        if remote.repo_digest == current_id:
                             selected = remote
                             break
-            if selected is None:
-                # if no latest tag have been found, use version specific metadata
-                selected = default
+                current_tag = img.attrs.get('Config', {}).get('Labels', {}).get('org.exegol.tag')
+                if selected is None and current_tag is not None:
+                    selected = remote_img_dict.get(current_tag)
+            else:
+                for sub_image in img.attrs.get('RepoTags'):
+                    # parse multi-tag images (latest tag / version specific tag)
+                    current_image, current_tag = sub_image.split(':')
+                    tag_match = remote_img_dict.get(current_tag)
+                    if tag_match:
+                        if tag_match.tag not in remote_tag_matched or current_image == tag_match.repository:
+                            selected = tag_match
+                            break
+                        else:
+                            # Handle duplicate legacy image
+                            skip_image = True
+                            break
+            if skip_image:
+                continue
             if selected:
                 # Remote match found
-                current_local_img.setMetaImage(selected, status)
+                remote_tag_matched.add(selected.tag)
+                current_local_img.setMetaImage(selected)
             else:
                 if len(remote_images) > 0:
                     # If there is some result from internet but no match and this is not a local image, this image is probably discontinued or the remote image is too old (relative to other images)
@@ -416,22 +445,9 @@ class ExegolImage(SelectableInterface):
 
         # Add remote image left
         for current_remote in remote_images:
-            img_selected = None
-            img_default = None
-            for img in current_remote.getImagesLeft():
-                # the remaining uninstalled images are filtered with the currently selected architecture
-                if MetaImages.parseArch(img) == ParametersManager().arch:
-                    img_selected = ExegolImage(meta_img=current_remote, dockerhub_data=img)
-                    break
-                # OR if no exact arch match is found, try to default to another available arch
-                elif current_remote.name not in latest_installed:
-                    # fallback to the first option or one corresponding to the host's arch (may happen if the arch parameter has been overwritten by user)
-                    if img_default is None or MetaImages.parseArch(img) == EnvInfo.arch:
-                        img_default = ExegolImage(meta_img=current_remote, dockerhub_data=img)
-            if img_selected is None:
-                img_selected = img_default
-            if img_selected:
-                results.append(img_selected)
+            if current_remote.tag in remote_tag_matched:
+                continue
+            results.append(ExegolImage(meta_img=current_remote))
 
         # the merged images are finally reorganized for greater readability
         return cls.__reorderImages(results)
@@ -439,10 +455,10 @@ class ExegolImage(SelectableInterface):
     @classmethod
     def __reorderImages(cls, images: List['ExegolImage']) -> List['ExegolImage']:
         """Reorder ExegolImages depending on their status"""
-        uptodate, outdated, local_build, deprecated = [], [], [], []
+        uptodate, outdated, local_build, deprecated, pullable = [], [], [], [], []
         for img in images.copy():
             # First up-to-date
-            if img.isUpToDate():
+            if img.isUpToDate() and not img.isLegacy():
                 uptodate.append(img)  # The current image if added to the corresponding groups
                 images.remove(img)  # and is removed from the pool (last image without any match will be last)
             # Second need upgrade
@@ -457,15 +473,22 @@ class ExegolImage(SelectableInterface):
             elif img.isLocked() and img.isInstall():
                 deprecated.append(img)
                 images.remove(img)
+            # Five Can be pulled (check license level)
+            elif img.canBePulled():
+                pullable.append(img)
+                images.remove(img)
         # apply images order
-        result = uptodate + outdated + local_build + deprecated
+        result = uptodate + outdated + local_build + deprecated + pullable
         # then not installed & other
         result.extend(images)  # Adding left images
         return result
 
     @staticmethod
-    def __processSize(size: int, precision: int = 1, compression_factor: float = 1) -> str:
+    def __processSize(size: Union[int, float], precision: int = 1, compression_factor: float = 1) -> str:
         """Text formatter from size number to human-readable size."""
+        if size < 1000:
+            # Size is supplied in GB
+            return f"{size} GB"
         # https://stackoverflow.com/a/32009595
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0
@@ -473,26 +496,26 @@ class ExegolImage(SelectableInterface):
         while calc > 1024 and suffix_index < 4:
             suffix_index += 1  # increment the index of the suffix
             calc = calc / 1024  # apply the division
-        return "%.*f%s" % (precision, calc, suffixes[suffix_index])
+        return "%.*f %s" % (precision, calc, suffixes[suffix_index])
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
         if type(other) is ExegolImage:
-            return self.__name == other.__name and self.__digest == other.__digest and self.__arch == other.__arch
+            return self.getName() == other.getName() and self.__digest == other.__digest and self.__arch == other.__arch
         # How to compare ExegolImage with str
         elif type(other) is str:
-            return self.__name == other
+            return self.getName() == other
         else:
             logger.error(f"Error, {type(other)} compare to ExegolImage is not implemented")
             raise NotImplementedError
 
     def __str__(self) -> str:
         """Default object text formatter, debug only"""
-        return f"{self.__name} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
+        return f"{self.getName()} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
             (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
     def setCustomStatus(self, status: str) -> None:
@@ -525,7 +548,10 @@ class ExegolImage(SelectableInterface):
             status += "[/orange3]"
             return status
         else:
-            return "[bright_black]Not installed[/bright_black]"
+            if self.canBePulled():
+                return "[bright_black]Not installed[/bright_black]"
+            else:
+                return f"[bright_black]{self.getDisplayLicense()} only[/bright_black]"
 
     def getType(self) -> str:
         """Image type getter"""
@@ -536,14 +562,31 @@ class ExegolImage(SelectableInterface):
         if digest is not None:
             self.__digest = digest
 
-    @staticmethod
-    def __parseDigest(docker_image: Image) -> str:
-        """Parse the remote image digest ID.
-        Return digest id from the docker object."""
-        for digest_id in docker_image.attrs["RepoDigests"]:
-            if digest_id.startswith(ConstantConfig.IMAGE_NAME):  # Find digest id from the right repository
-                return digest_id.split('@')[1]
-        return ""
+    def __setRepository(self, repo: str) -> None:
+        """Remote repository setter"""
+        self.__repository = repo
+        self.__is_official = self.isOfficialImage(repo)
+
+    def __parseRepoDigests(self) -> Tuple[str, str]:
+        """Parse the repository of a local image.
+        Return repository path and digest id from the current docker object."""
+        assert self.__image is not None
+        default_repo = ""
+        default_digest = ""
+        for digest_id in self.__image.attrs["RepoDigests"]:
+            default_repo, default_digest = digest_id.split('@')
+            # Find digest id from the right repository
+            if self.isOfficialImage(default_repo):
+                break
+        return default_repo, default_digest
+
+    def setRepository(self, repository: str) -> None:
+        """Set the current image repository. For legacy compatibility of community images."""
+        self.__repository = repository
+
+    def getRepository(self) -> str:
+        """Image repository getter"""
+        return self.__repository
 
     def getRemoteId(self) -> str:
         """Remote digest getter"""
@@ -576,11 +619,11 @@ class ExegolImage(SelectableInterface):
 
     def getRealSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        return self.__disk_size if self.__is_install else f"[bright_black]~{self.__remote_est_size}[/bright_black]"
+        return self.__disk_size if self.__is_install else f"[bright_black]{self.__disk_size}[/bright_black]"
 
     def getRealSizeRaw(self) -> str:
         """Image size getter without color. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        return self.__disk_size if self.__is_install else self.__remote_est_size
+        return self.__disk_size if self.__is_install else self.__disk_size
 
     def getDownloadSize(self) -> str:
         """Remote size getter"""
@@ -598,8 +641,10 @@ class ExegolImage(SelectableInterface):
         if not self.__build_date:
             # Handle empty string
             return "[bright_black]N/A[/bright_black]"
-        elif "N/A" not in self.__build_date.upper():
-            return datetime.strptime(self.__build_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d/%m/%Y %H:%M")
+        elif isinstance(self.__build_date, datetime):
+            return self.__build_date.astimezone().strftime("%d/%m/%Y %H:%M")
+        elif isinstance(self.__build_date, str) and "N/A" not in self.__build_date.upper():
+            return get_display_date(self.__build_date)
         else:
             return self.__build_date
 
@@ -616,6 +661,11 @@ class ExegolImage(SelectableInterface):
         If current image is locked, it must be removed"""
         return self.__outdated
 
+    def isLegacy(self) -> bool:
+        """Getter legacy status.
+        If current image is legacy and no longer supported"""
+        return self.__is_discontinued
+
     def isVersionSpecific(self) -> bool:
         """Is the current image a version specific version?
         Image version specific container a '-' in the name,
@@ -624,11 +674,34 @@ class ExegolImage(SelectableInterface):
 
     def getName(self) -> str:
         """Image's tag name getter"""
-        return self.__name
+        if self.__is_official or self.__repository == "":
+            return self.__name
+        else:
+            return self.__repository + ":" + self.__name
+
+    def getDisplayLicense(self) -> str:
+        """Image's license getter"""
+        if self.__license is None or self.__license == "":
+            return "Community"
+        if self.__license == "Professional":
+            return "Pro / Enterprise"
+        return self.__license.capitalize()
+
+    def getDisplayRepository(self) -> str:
+        """Image's repository name getter"""
+        if self.__repository == ConstantConfig.IMAGE_NAME:
+            return self.getDisplayLicense() if self.__license else "Official"
+        elif self.__repository == ConstantConfig.COMMUNITY_IMAGE_NAME:
+            return "Community"
+        elif self.__repository in UserConfig().custom_images:
+            return "Custom"
+        elif self.isLocal():
+            return "Local"
+        return "[bright_black]Unknown[/bright_black]"
 
     def getDisplayName(self) -> str:
         """Image's display name getter"""
-        result = self.__alt_name if self.__alt_name else self.__name
+        result = self.__display_name if self.__display_name else self.getName()
         if self.getArch().split('/')[0] != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
             color = ConsoleFormat.getArchColor(self.getArch())
             result += f" [{color}]({self.getArch()})[/{color}]"
@@ -650,7 +723,7 @@ class ExegolImage(SelectableInterface):
         """Image's tag name with installed version getter"""
         return self.__formatVersionName(self.__image_version)
 
-    def __formatVersionName(self, version) -> str:
+    def __formatVersionName(self, version: str) -> str:
         """From the selected version, format the image tag name"""
         result_name = self.__name
         if not (self.__version_specific or self.__version_label_mode or 'N/A' in version):
@@ -678,11 +751,11 @@ class ExegolImage(SelectableInterface):
 
     def getFullName(self) -> str:
         """Dockerhub image's full name getter"""
-        return f"{ConstantConfig.IMAGE_NAME}:{self.__name}"
+        return f"{self.__repository}:{self.__name}"
 
     def getFullVersionName(self) -> str:
         """Dockerhub image's full (installed) version name getter"""
-        return f"{ConstantConfig.IMAGE_NAME}:{self.getInstalledVersionName()}"
+        return f"{self.__repository}:{self.getInstalledVersionName()}"
 
     def getDockerRef(self) -> str:
         """Find and return the right id to target the current image for docker.
@@ -693,3 +766,36 @@ class ExegolImage(SelectableInterface):
         elif self.getFullVersionName() in self.__image.attrs.get('RepoTags', []):
             return self.getFullVersionName()
         return self.getLocalId()
+
+    @staticmethod
+    def isOfficialImage(image_name: str, suffix: str = "") -> bool:
+        for repository in ConstantConfig.OFFICIAL_REPOSITORIES:
+            if image_name.startswith(repository + suffix):
+                return True
+        return False
+
+    @staticmethod
+    def tagNameParsing(tag_name: str) -> str:
+        parts = tag_name.split('-')
+        version = '-'.join(parts[1:])
+        # Code for future multi parameter from tag name (e.g. ad-debian-1.2.3)
+        """
+        first_parameter = ""
+        # Try to detect legacy tag name or new latest name
+        if len(parts) == 2:
+            # If there is any '.' in the second part, it's a version format
+            if "." in parts[1]:
+                # Legacy version format
+                version = parts[1]
+            else:
+                # Latest arch specific image
+                first_parameter = parts[1]
+        elif len(parts) >= 3:
+            # Arch + version format
+            first_parameter = parts[1]
+            # Additional - stored in version
+            version = '-'.join(parts[2:])
+
+        return version, first_parameter
+        """
+        return version

@@ -12,3 +12,12 @@ class ProtocolNotSupported(Exception):
 class CancelOperation(Exception):
     """Custom exception when an error occurred and the operation must be canceled ou skipped"""
     pass
+
+
+class LicenseRevocation(Exception):
+    """Custom exception when the license has been revoked"""
+    pass
+
+
+class LicenseToleration(Exception):
+    pass

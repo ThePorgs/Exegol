@@ -9,12 +9,12 @@ from exegol.utils.ExeLog import logger
 
 class ContainerLogStream:
 
-    def __init__(self, container: Container, start_date: Optional[datetime] = None, timeout: int = 5):
+    def __init__(self, container: Container, start_date: Optional[datetime] = None, timeout: int = 5) -> None:
         # Container to extract logs from
-        self.__container = container
+        self.__container: Container = container
         # Fetch more logs from this datetime
         self.__start_date: datetime = datetime.now() if start_date is None else start_date
-        self.__since_date = self.__start_date
+        self.__since_date: datetime = self.__start_date
         self.__until_date: Optional[datetime] = None
         # The data stream is returned from the docker SDK. It can contain multiple line at the same.
         self.__data_stream = None
@@ -28,7 +28,7 @@ class ContainerLogStream:
         self.__tips_sent = False
         self.__tips_timedelta = self.__start_date + timedelta(seconds=30)
 
-    def __iter__(self):
+    def __iter__(self) -> "ContainerLogStream":
         return self
 
     def __next__(self) -> str:

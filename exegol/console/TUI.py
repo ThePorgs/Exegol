@@ -1,22 +1,22 @@
 import os
 import re
-from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple
+from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple, Any
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
-from rich.prompt import Prompt
 from rich.table import Table
 
 from exegol.config.EnvInfo import EnvInfo
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter, getColor, richLen
 from exegol.console.ExegolProgress import ExegolProgress
-from exegol.console.ExegolPrompt import Confirm
+from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.LayerTextColumn import LayerTextColumn
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
+from exegol.model.LicensesTypes import LicensesEnumeration
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ExeLog import logger, console, ExeLog
 
@@ -25,7 +25,7 @@ class ExegolTUI:
     """Class gathering different methods of Terminal User Interface (or TUI)"""
 
     @staticmethod
-    def downloadDockerLayer(stream: Generator, quick_exit: bool = False) -> None:
+    async def downloadDockerLayer(stream: Generator, quick_exit: bool = False) -> None:
         """Rich interface for docker image layer download from SDK stream"""
         layers: Set[str] = set()
         layers_downloaded: Set[str] = set()
@@ -33,19 +33,18 @@ class ExegolTUI:
         downloading: Dict[str, TaskID] = {}
         extracting: Dict[str, TaskID] = {}
         # Create progress bar with columns
-        with ExegolProgress(TextColumn("{task.description}", justify="left"),
-                            BarColumn(bar_width=None),
-                            "[progress.percentage]{task.percentage:>3.1f}%",
-                            "•",
-                            LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
-                            "•",
-                            TransferSpeedColumn(),
-                            "•",
-                            TimeElapsedColumn(),
-                            "•",
-                            TimeRemainingColumn(),
-                            transient=True,
-                            console=console) as progress:
+        async with ExegolProgress(TextColumn("{task.description}", justify="left"),
+                                  BarColumn(bar_width=None),
+                                  "[progress.percentage]{task.percentage:>3.1f}%",
+                                  "•",
+                                  LayerTextColumn("[bold]{task.completed}/{task.total}", "layer"),
+                                  "•",
+                                  TransferSpeedColumn(),
+                                  "•",
+                                  TimeElapsedColumn(),
+                                  "•",
+                                  TimeRemainingColumn(),
+                                  transient=True) as progress:
             task_layers_download = progress.add_task("[bold red]Downloading layers...", total=0)
             task_layers_extract = progress.add_task("[bold gold1]Extracting layers...", total=0, start=False)
             for line in stream:  # Receiving stream from docker API
@@ -116,7 +115,7 @@ class ExegolTUI:
                     logger.debug(line)
 
     @staticmethod
-    def buildDockerImage(build_stream: Generator) -> None:
+    async def buildDockerImage(build_stream: Generator) -> None:
         """Rich interface for docker image building from SDK stream"""
         # Prepare log file
         logfile = None
@@ -146,7 +145,7 @@ class ExegolTUI:
                     logger.raw(stream_text, level=ExeLog.ADVANCED)
             if ': FROM ' in stream_text:
                 logger.info("Downloading base image")
-                ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
+                await ExegolTUI.downloadDockerLayer(build_stream, quick_exit=True)
         if logfile is not None:
             logfile.close()
 
@@ -166,7 +165,7 @@ class ExegolTUI:
             if type(data[0]) is ExegolImage:
                 ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data), safe_key=safe_key)
             elif type(data[0]) is ExegolContainer:
-                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data), safe_key=safe_key)
+                ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data))
             elif type(data[0]) is str:
                 if title is not None:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
@@ -182,7 +181,8 @@ class ExegolTUI:
 
     @staticmethod
     def __buildImageTable(table: Table, data: Sequence[ExegolImage], safe_key: bool = False) -> None:
-        """Building Rich table from a list of ExegolImage"""
+        """Building Rich table from a list of ExegolImage
+        :param safe_key Use a number to enumerate options and safely select an item"""
         table.title = "[not italic]:flying_saucer: [/not italic][gold3][g]Available images[/g][/gold3]"
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
@@ -191,11 +191,12 @@ class ExegolTUI:
             table.add_column("Option")
         if verbose_mode:
             table.add_column("Id")
-        table.add_column("Image tag")
+            table.add_column("Source")
+        table.add_column("Image")
         if verbose_mode:
             table.add_column("Download size")
             table.add_column("Size on disk")
-            table.add_column("Build date (UTC)")
+            table.add_column("Build date")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk
@@ -205,11 +206,14 @@ class ExegolTUI:
         for i in range(len(data)):
             image = data[i]
             if verbose_mode:
+                source_field = image.getRepository() if debug_mode else image.getDisplayRepository()
+                if source_field == "":
+                    source_field = "[bright_black]Local[/bright_black]"
                 if safe_key:
-                    table.add_row(str(i + 1), image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                    table.add_row(str(i + 1), image.getLocalId(), source_field, image.getDisplayName(), image.getDownloadSize(),
                                   image.getRealSize(), image.getBuildDate(), image.getStatus())
                 else:
-                    table.add_row(image.getLocalId(), image.getDisplayName(), image.getDownloadSize(),
+                    table.add_row(image.getLocalId(), source_field, image.getDisplayName(), image.getDownloadSize(),
                                   image.getRealSize(), image.getBuildDate(), image.getStatus())
             else:
                 if safe_key:
@@ -218,7 +222,7 @@ class ExegolTUI:
                     table.add_row(image.getDisplayName(), image.getRealSize(), image.getStatus())
 
     @staticmethod
-    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer], safe_key: bool = False) -> None:
+    def __buildContainerTable(table: Table, data: Sequence[ExegolContainer]) -> None:
         """Building Rich table from a list of ExegolContainer"""
         table.title = "[not italic]:alien: [/not italic][gold3][g]Available containers[/g][/gold3]"
         # Define columns
@@ -242,7 +246,7 @@ class ExegolTUI:
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
-                              container.config.getTextPorts(),
+                              container.config.getTextPorts(is_running=container.isRunning()),
                               container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
@@ -265,19 +269,19 @@ class ExegolTUI:
         """Building a simple Rich table from a list of string"""
         # Define columns from dict keys
         for column in data_array[0].keys():
-            table.add_column(column.capitalize())
+            table.add_column(column.replace('_', ' ').capitalize())
         # Load data into the table
         for data in data_array:
             # Array is directly pass as *args to handle dynamic columns number
             table.add_row(*data.values())
 
     @classmethod
-    def selectFromTable(cls,
-                        data: Sequence[SelectableInterface],
-                        object_type: Optional[Type] = None,
-                        default: Optional[str] = None,
-                        allow_None: bool = False,
-                        conflict_mode: bool = False) -> Union[SelectableInterface, str]:
+    async def selectFromTable(cls,
+                              data: Sequence[SelectableInterface],
+                              object_type: Optional[Type] = None,
+                              default: Optional[str] = None,
+                              allow_None: bool = False,
+                              conflict_mode: bool = False) -> Union[SelectableInterface, str]:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
         Raise IndexError of the data list is empty.
@@ -291,7 +295,7 @@ class ExegolTUI:
                 logger.warning("No containers have been created yet")
             else:
                 # Using container syntax by default
-                logger.warning("No containers have been created yet")
+                logger.warning("No object available")
             raise IndexError
         object_type = type(data[0])
         object_name = "container" if object_type is ExegolContainer else "image"
@@ -316,13 +320,13 @@ class ExegolTUI:
             choices_select = choices
         while True:
             match = []
-            choice = Prompt.ask(
+            choice = await ExegolRich.Ask(
                 f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
                 default=default, choices=choices_select,
                 show_choices=False)
             if conflict_mode:
                 # In conflict mode, choice are only index number offset by 1
-                return data[int(choice)-1]
+                return data[int(choice) - 1]
             for option in data:
                 if choice == option:
                     match.append(option)
@@ -330,9 +334,9 @@ class ExegolTUI:
                 return match[0]
             elif len(match) > 1:
                 logger.error(f"Conflict detected ! Multiple {object_name} have the same name, please select the intended one.")
-                return cls.selectFromTable(match, object_type, default=None, allow_None=False, conflict_mode=True)
+                return await cls.selectFromTable(match, object_type, default=None, allow_None=False, conflict_mode=True)
             if allow_None:
-                if Confirm(
+                if await ExegolRich.Confirm(
                         f"No {object_name} is available under this name, do you want to {action} it?",
                         default=True):
                     return choice
@@ -341,10 +345,10 @@ class ExegolTUI:
                 logger.critical(f"Unknown error, cannot fetch selected object.")
 
     @classmethod
-    def multipleSelectFromTable(cls,
-                                data: Sequence[SelectableInterface],
-                                object_type: Optional[Type] = None,
-                                default: Optional[str] = None) -> Sequence[SelectableInterface]:
+    async def multipleSelectFromTable(cls,
+                                      data: Sequence[SelectableInterface],
+                                      object_type: Optional[Type] = None,
+                                      default: Optional[str] = None) -> Sequence[SelectableInterface]:
         """Return a list of object (implementing SelectableInterface) selected by the user
         Raise IndexError of the data list is empty."""
         cls.__isInteractionAllowed()
@@ -359,20 +363,20 @@ class ExegolTUI:
         else:
             object_subject = "object"
         while True:
-            selected = cast(SelectableInterface, cls.selectFromTable(pool, object_type, default))
+            selected = cast(SelectableInterface, await cls.selectFromTable(pool, object_type, default))
             result.append(selected)
             pool.remove(selected)
             if len(pool) == 0:
                 return result
-            elif not Confirm(f"Do you want to select another {object_subject}?", default=False):
+            elif not await ExegolRich.Confirm(f"Do you want to select another {object_subject}?", default=False):
                 return result
 
     @classmethod
-    def selectFromList(cls,
-                       data: Union[Dict[str, str], List[str]],
-                       subject: str = "an option",
-                       title: str = "Options",
-                       default: Optional[str] = None) -> Union[str, Tuple[str, str]]:
+    async def selectFromList(cls,
+                             data: Union[Dict[str, str], List[str], Dict[str, LicensesEnumeration]],
+                             subject: str = "an option",
+                             title: str = "Options",
+                             default: Optional[str] = None) -> Union[str, Tuple[str, Union[str, LicensesEnumeration]]]:
         """if data is list(str): Return a string selected by the user
         if data is dict: list keys and return a tuple of the selected key corresponding value
         Raise IndexError of the data list is empty."""
@@ -381,28 +385,38 @@ class ExegolTUI:
             logger.warning("No options were found")
             raise IndexError
         if type(data) is dict:
-            submit_data = list(data.keys())
+            choices = list(data.keys())
+            if type(list(data.values())[0]) is str:
+                submit_data: List = list(data.keys())
+            else:
+                submit_data = []
+                for k, v in data.items():
+                    current_data: Dict = {"ID": k}
+                    if isinstance(v, dict):
+                        current_data.update(v)
+                    submit_data.append(current_data)
         else:
-            submit_data = cast(List[str], data)
+            choices = cast(List[str], data)
+            submit_data = choices
         cls.printTable(submit_data, title=title)
         if default is None:
-            default = submit_data[0]
-        choice = Prompt.ask(f"[bold blue][?][/bold blue] Select {subject}", default=default, choices=submit_data,
-                            show_choices=False)
+            default = choices[0]
+        choice = await ExegolRich.Ask(f"[bold blue][?][/bold blue] Select {subject}", default=default, choices=choices,
+                                      show_choices=False)
         if type(data) is dict:
             return choice, data[choice]
         else:
             return choice
 
     @classmethod
-    def printContainerRecap(cls, container: ExegolContainerTemplate) -> None:
+    async def printContainerRecap(cls, container: ExegolContainerTemplate) -> None:
         """
         Build and print a rich table with every configuration of the container
         :param container: Exegol container to print the table of
         :return:
         """
         # Load the image status if it is not already set.
-        container.image.autoLoad()
+        await container.image.autoLoad()
 
         recap = cls.__buildContainerRecapTable(container)
 
@@ -420,7 +434,7 @@ class ExegolTUI:
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         envs = container.config.getTextEnvs(logger.isEnabledFor(ExeLog.VERBOSE))
-        ports = container.config.getTextPorts()
+        ports = container.config.getTextPorts(is_running=container.isRunning() if type(container) is ExegolContainer else True)
         sysctls = container.config.getSysctls()
         capabilities = container.config.getCapabilities()
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))

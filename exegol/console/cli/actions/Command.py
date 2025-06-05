@@ -10,7 +10,7 @@ from exegol.utils.ExeLog import logger
 class Option:
     """This object allows to define and configure an argparse parameter"""
 
-    def __init__(self, *args, dest: Optional[str] = None, **kwargs):
+    def __init__(self, *args, dest: Optional[str] = None, **kwargs) -> None:
         """Generic class to handle Key:Value object directly from the constructor"""
         # Set arguments to the object to save every setting, these values will be sent to the argparser
         self.args = args
@@ -29,7 +29,7 @@ class GroupArg:
     """This object allows you to group a set of options within the same group"""
 
     def __init__(self, *options, title: Optional[str] = None, description: Optional[str] = None,
-                 is_global: bool = False):
+                 is_global: bool = False) -> None:
         self.title = title
         self.description = description
         self.options: Tuple[Dict[str, Union[Option, bool]]] = cast(Tuple[Dict[str, Union[Option, bool]]], options)
@@ -48,13 +48,14 @@ class Command:
         # Root command usages (can be overwritten by subclasses to display different use cases)
         self._pre_usages = "[underline]To see specific examples run:[/underline][italic] exegol [cyan]command[/cyan] -h[/italic]"
         self._usages = {
-            "Install (or build) an exegol image": "exegol install",
+            "Install an exegol image": "exegol install",
             "Open an exegol shell": "exegol start",
             "Show exegol images & containers": "exegol info",
             "Update an image": "exegol update",
             "See commands examples to execute": "exegol exec -h",
             "Remove a container": "exegol remove",
             "Uninstall an image": "exegol uninstall",
+            "Build a local exegol image": "exegol build",
             "Stop a container": "exegol stop"
         }
         self._post_usages = ""
@@ -62,14 +63,15 @@ class Command:
         # Name of the object
         self.name = type(self).__name__.lower()
         # Global parameters
-        self.verify = Option("-k", "--insecure",
-                             dest="verify",
-                             action="store_false",
-                             default=True,
-                             required=False,
-                             help="Allow insecure server connections for web requests, "
-                                  "e.g. when fetching info from DockerHub "
-                                  "(default: [green]Secure[/green])")
+        # Only used by dockerhub registry
+        #self.verify = Option("-k", "--insecure",
+        #                     dest="verify",
+        #                     action="store_false",
+        #                     default=True,
+        #                     required=False,
+        #                     help="Allow insecure server connections for web requests, "
+        #                          "e.g. when fetching info from DockerHub "
+        #                          "(default: [green]Secure[/green])")
         self.quiet = Option("-q", "--quiet",
                             dest="quiet",
                             action="store_true",
@@ -90,6 +92,10 @@ class Command:
                                    dest="offline_mode",
                                    action="store_true",
                                    help=f"Run exegol in offline mode, no request will be made on internet (default: [red]Disable[/red])")
+        self.accept_eula = Option("--accept-eula",
+                                  action="store_true",
+                                  dest="accept_eula",
+                                  help="Accept the End-User License Agreement of Exegol")
         # TODO review non-interactive mode
         # self.interactive_mode = Option("--non-interactive",
         #                               dest="interactive_mode",
@@ -102,8 +108,9 @@ class Command:
             GroupArg({"arg": self.verbosity, "required": False},
                      # {"arg": self.interactive_mode, "required": False},
                      {"arg": self.quiet, "required": False},
-                     {"arg": self.verify, "required": False},
+                     #{"arg": self.verify, "required": False},
                      {"arg": self.offline_mode, "required": False},
+                     {"arg": self.accept_eula, "required": False},
                      {"arg": self.arch, "required": False},
                      title="[blue]Optional arguments[/blue]",
                      is_global=True)

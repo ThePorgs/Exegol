@@ -4,6 +4,7 @@ from typing import Optional, List, Union, Dict, cast
 
 import argcomplete
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.cli.actions.Command import Command, Option
 from exegol.utils.ExeLog import logger
 
@@ -20,9 +21,9 @@ class ExegolArgParse(argparse.ArgumentParser):
 class Parser:
     """Custom Exegol CLI Parser. Main controller of argument building and parsing."""
 
-    __description = """This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.
+    __description = f"""This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.
 
-[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io[/underline magenta]"""
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]{ConstantConfig.documentation}[/underline magenta]"""
     __formatter_class = argparse.RawTextHelpFormatter
 
     def __init__(self, actions: List[Command]):
@@ -59,7 +60,7 @@ class Parser:
                 action.__doc__ = "Unknown action"
             sub_parser = self.subParser.add_parser(action.name, help=action.__doc__,
                                                    description=action.__doc__ + f"""\n
-[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]https://exegol.rtfd.io/en/latest/exegol-wrapper/{action.name}.html[/underline magenta]""",
+[bold magenta]Exegol documentation:[/bold magenta] [underline magenta]{ConstantConfig.documentation}/wrapper/cli/{action.name}[/underline magenta]""",
                                                    epilog=action.formatEpilog(),
                                                    formatter_class=self.__formatter_class)
             sub_parser.set_defaults(action=action)

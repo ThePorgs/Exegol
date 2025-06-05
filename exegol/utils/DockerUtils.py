@@ -1,31 +1,37 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Union, cast, Tuple, Set
 
 import docker
 import requests.exceptions
 from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
 from docker.models.images import Image
+from docker.models.networks import Network
 from docker.models.volumes import Volume
+from docker.types import IPAMPool, IPAMConfig
 from requests import ReadTimeout
-from rich.status import Status
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.UserConfig import UserConfig
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
+from exegol.manager.TaskManager import TaskManager
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
-from exegol.model.MetaImages import MetaImages
-from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.model.ExegolNetwork import ExegolNetwork
+from exegol.model.SupabaseModels import SupabaseImage
+from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.MetaSingleton import MetaSingleton
-from exegol.utils.WebUtils import WebUtils
+from exegol.utils.NetworkUtils import NetworkUtils
+from exegol.utils.SessionHandler import SessionHandler
+from exegol.utils.SupabaseUtils import SupabaseUtils
 
 
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
@@ -48,13 +54,13 @@ class DockerUtils(metaclass=MetaSingleton):
         except DockerException as err:
             if 'ConnectionRefusedError' in str(err):
                 logger.critical(f"Unable to connect to docker (from env config). Is docker running on your machine? Exiting.{os.linesep}"
-                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
+                                f"    Check documentation for help: https://docs.exegol.com/troubleshooting#unable-to-connect-to-docker")
             elif 'FileNotFoundError' in str(err):
                 logger.critical(f"Unable to connect to docker. Is docker installed on your machine? Exiting.{os.linesep}"
-                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/faq.html#unable-to-connect-to-docker")
+                                f"    Check documentation for help: https://docs.exegol.com/troubleshooting#unable-to-connect-to-docker")
             elif 'PermissionError' in str(err):
                 logger.critical(f"Docker is installed on your host but you don't have the permission to interact with it. Exiting.{os.linesep}"
-                                f"    Check documentation for help: https://exegol.readthedocs.io/en/latest/getting-started/install.html#optional-run-exegol-with-appropriate-privileges")
+                                f"    Check documentation for help: https://docs.dev.exegol.com/first-install#_2-wrapper-install")
             else:
                 logger.error(err)
                 logger.critical(
@@ -77,13 +83,14 @@ class DockerUtils(metaclass=MetaSingleton):
 
     # # # Container Section # # #
 
-    def listContainers(self) -> List[ExegolContainer]:
+    async def listContainers(self) -> List[ExegolContainer]:
         """List available docker containers.
         Return a list of ExegolContainer"""
         if self.__containers is None:
+            logger.verbose("Loading Exegol containers")
             self.__containers = []
             try:
-                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-"})
+                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": "org.exegol.app=Exegol"})
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -118,13 +125,12 @@ class DockerUtils(metaclass=MetaSingleton):
                        "entrypoint": entrypoint,
                        "command": command,
                        "detach": True,
-                       "name": model.container_name,
+                       "name": model.getContainerName(),
                        "hostname": model.config.hostname,
                        "extra_hosts": model.config.getExtraHost(),
                        "devices": model.config.getDevices(),
                        "environment": model.config.getEnvs(),
                        "labels": model.config.getLabels(),
-                       "network_mode": model.config.getNetworkMode(),
                        "ports": model.config.getPorts(),
                        "privileged": model.config.getPrivileged(),
                        "cap_add": model.config.getCapabilities(),
@@ -135,29 +141,52 @@ class DockerUtils(metaclass=MetaSingleton):
                        "mounts": model.config.getVolumes(),
                        "userns_mode": "host",
                        "working_dir": model.config.getWorkingDir()}
+        # Add networking args
+        if model.config.isNetworkDisabled():
+            docker_args["network_disabled"] = True
+        else:
+            docker_args["network"], network_driver = model.config.getNetwork()
+            if (docker_args["network"] is not None and
+                    network_driver is not None and
+                    not self.networkExist(cast(str, docker_args["network"]))):
+                if not self.createNetwork(network_name=cast(str, docker_args["network"]), driver=network_driver):
+                    logger.critical("Unable to create the dedicated network for the new container. Aborting.")
+
+        # Handle temporary arguments
         if temporary:
             # Only the 'run' function support the "remove" parameter
             docker_create_function = self.__client.containers.run
             docker_args["remove"] = temporary
             docker_args["auto_remove"] = temporary
+
+        # Create container
         try:
             container = docker_create_function(**docker_args)
         except APIError as err:
-            message = err.explanation.decode('utf-8').replace('[', '\\[') if type(err.explanation) is bytes else err.explanation
+            if err.explanation is None:
+                err.explanation = ''
+            elif type(err.explanation) is bytes:
+                err.explanation = cast(bytes, err.explanation).decode('utf-8')
+            message = err.explanation.replace('[', '\\[')
             if message is not None:
                 message = message.replace('[', '\\[')
                 logger.error(f"Docker error received: {message}")
             logger.debug(err)
             model.rollback()
             try:
-                container = self.__client.containers.list(all=True, filters={"name": model.container_name})
+                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": "org.exegol.app=Exegol"})
                 if container is not None and len(container) > 0:
                     for c in container:
-                        if c.name == model.container_name:  # Search for exact match
+                        if c.name == model.getContainerName():  # Search for exact match
                             container[0].remove()
                             logger.debug("Container removed")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error while removing dcontainer: {e}")
+            try:
+                if docker_args.get("network") is not None and self.removeNetwork(cast(str, docker_args["network"])):
+                    logger.debug("Network removed")
+            except Exception as e:
+                logger.debug(f"Error while removing dedicated network: {e}")
             logger.critical("Error while creating exegol container. Exiting.")
             # Not reachable, critical logging will exit
             return  # type: ignore
@@ -173,7 +202,7 @@ class DockerUtils(metaclass=MetaSingleton):
         """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}"})
+            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": "org.exegol.app=Exegol"})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -254,24 +283,150 @@ class DockerUtils(metaclass=MetaSingleton):
             raise RuntimeError
         return volume
 
+    # # # Network Section # # #
+
+    def listAttachableNetworks(self) -> List[Network]:
+        """List every non-default networks"""
+        networks = []
+        try:
+            networks = self.__client.networks.list()
+        except APIError as e:
+            raise e
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
+        for net in networks.copy():
+            if net.name in ExegolNetwork.DEFAULT_DOCKER_NETWORK:
+                networks.remove(net)
+        return networks
+
+    def listExegolNetworks(self) -> List[Network]:
+        """List every exegol networks"""
+        networks = []
+        try:
+            networks = self.__client.networks.list(filters={"label": "source=exegol"})
+        except APIError as e:
+            raise e
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
+        return networks
+
+    def getNetwork(self, network_name: str, exegol_only: bool = False) -> Optional[Network]:
+        """Find a specific network"""
+        networks: List[Network] = []
+        filter = {}
+        if exegol_only:
+            filter["label"] = "source=exegol"
+        try:
+            networks = self.__client.networks.list(names=network_name, filters=filter)
+        except APIError as e:
+            raise e
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
+        for net in networks:
+            # Search for an exact match
+            if net.name == network_name:
+                return net
+        return None
+
+    def networkExist(self, network_name: str) -> bool:
+        """Return True is the supplied network name exist"""
+        return self.getNetwork(network_name) is not None
+
+    def __listDockerNetworks(self) -> List[str]:
+        """List every docker network"""
+        networks = []
+        try:
+            networks = self.__client.networks.list()
+        except APIError as e:
+            raise e
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
+        networks_range = []
+        for net in networks:
+            net_config = net.attrs.get('IPAM', {}).get('Config', [])
+            if net_config is not None and len(net_config) > 0:
+                net_range = net_config[0].get('Subnet')
+                if net_range:
+                    networks_range.append(net_range)
+
+        return networks_range
+
+    def createNetwork(self, network_name: str, driver: str) -> bool:
+        """Create a new exegol network"""
+        docker_networks = self.__listDockerNetworks()
+        ip_pool = IPAMPool(subnet=str(NetworkUtils.get_next_available_range(
+            UserConfig().network_dedicated_range,
+            UserConfig().network_default_netmask,
+            docker_networks)))
+        config = IPAMConfig(pool_configs=[ip_pool])
+        try:
+            network: Network = self.__client.networks.create(name=network_name, driver=driver, labels={"source": "exegol"}, check_duplicate=True, ipam=config)
+            return True
+        except APIError as e:
+            if e.status_code == 409:
+                logger.error("This network already exist.")
+                return False
+            raise e
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to enumerate volume, retry later.")
+        return False
+
+    def removeNetwork(self, network_name: Optional[str] = None, network: Optional[Network] = None) -> bool:
+        """Remove exegol network"""
+        if network is None:
+            if network_name is None:
+                raise ValueError("One of the parameter must be supplied.")
+            elif network_name in ExegolNetwork.DEFAULT_DOCKER_NETWORK:
+                # Default docker driver cannot be deleted
+                return False
+            network = self.getNetwork(network_name, exegol_only=True)
+
+        if network is not None:
+            if network.name in ExegolNetwork.DEFAULT_DOCKER_NETWORK:
+                # Default docker driver cannot be deleted
+                return False
+            try:
+                network.remove()
+                logger.success(f"Dedicated network successfully removed.")
+                return True
+            except NotFound:
+                logger.verbose(f"The dedicated network {network.name} was already removed.")
+            except APIError as e:
+                logger.error(f"The associated dedicated network cannot be automatically removed. "
+                             f"You have to delete it manually ({network.name}). Error: {e.explanation}")
+        else:
+            logger.info(f"The network {network_name} will not be deleted. Only exegol network can be automatically deleted.")
+        return False
+
     # # # Image Section # # #
 
-    def listImages(self, include_version_tag: bool = False, include_locked: bool = False) -> List[ExegolImage]:
+    async def listImages(self, include_version_tag: bool = False, include_locked: bool = False, include_custom: bool = False) -> List[ExegolImage]:
         """List available docker images.
         Return a list of ExegolImage"""
         if self.__images is None:
-            logger.verbose("Loading every Exegol images")
-            with console.status(f"Loading Exegol images from registry", spinner_style="blue") as s:
-                remote_images = self.__listRemoteImages(s)
-                logger.verbose("Retrieve [green]local[/green] Exegol images")
-                s.update(status=f"Retrieving [green]local[/green] Exegol images")
-                local_images = self.__listLocalImages()
-                self.__images = ExegolImage.mergeImages(remote_images, local_images, s)
-            logger.verbose("Images fetched")
+            logger.verbose("Loading Exegol images")
+            async with ExegolStatus(f"Loading Exegol images", spinner_style="blue") as s:
+                TaskManager.add_task(
+                    SupabaseUtils.list_all_images(ParametersManager().arch),
+                    TaskManager.TaskId.RemoteImageList)
+                TaskManager.add_task(
+                    self.__listOfficialLocalImages(),
+                    TaskManager.TaskId.LocalImageList)
+                remote_images: List[SupabaseImage]
+                local_images: List[Image]
+                remote_images, local_images = await TaskManager.gather(TaskManager.TaskId.RemoteImageList, TaskManager.TaskId.LocalImageList)
+                if include_custom and len(UserConfig().custom_images) > 0:
+                    s.update(status=f"Retrieving [green]custom[/green] images")
+                    for custom in UserConfig().custom_images:
+                        local_images.extend(await self.__listCustomLocalImages(custom))
+                    logger.verbose("Retrieved [green]custom[/green] images")
+                self.__images = ExegolImage.mergeImages(remote_images, local_images)
         result = self.__images
         assert result is not None
         # Caching latest images
-        DataCache().update_image_cache([img for img in result if not img.isVersionSpecific()])
+        TaskManager.add_task(
+            DataCache().update_image_cache([img for img in result if not img.isVersionSpecific()])
+        )
         if not (logger.isEnabledFor(ExeLog.VERBOSE) or include_locked):
             # ToBeRemoved images are only shown in verbose mode
             result = [i for i in result if not i.isLocked()]
@@ -280,18 +435,21 @@ class DockerUtils(metaclass=MetaSingleton):
             result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
         return result
 
-    def listInstalledImages(self) -> List[ExegolImage]:
+    async def listInstalledImages(self) -> List[ExegolImage]:
         """List installed docker images.
         Return a list of ExegolImage"""
-        images = self.listImages()
+        images = await self.listImages()
         # Selecting only installed image
         return [img for img in images if img.isInstall()]
 
-    def getImage(self, tag: str) -> ExegolImage:
+    async def getOfficialImageFromList(self, tag: str) -> Union[ExegolImage, str]:
         """Get an ExegolImage from tag name."""
-        # Fetch every images available
-        images = self.listImages(include_version_tag=True, include_locked=True)
+        # Fetch every official images available
+        images = await self.listImages(include_version_tag=True, include_locked=True)
         match: Optional[ExegolImage] = None
+        # image tag without version
+        tag_only = tag.split('-')[0] if '-' in tag else None
+        tag_only_match = None
         # Find a match
         for i in images:
             if i.getName() == tag:
@@ -301,58 +459,76 @@ class DockerUtils(metaclass=MetaSingleton):
                 else:
                     # Return the first non-outdated image
                     return i
+            elif tag_only is not None and i.getName() == tag_only:
+                tag_only_match = i
         # If there is any match without lock (outdated) status, return the last outdated image found.
         if match is not None:
             return match
+        # If the version specific image is not found, return the latest version
+        if tag_only_match is not None:
+            tag_only_match.setupAsLegacy(tag)
+            return tag_only_match
         # If there is no match at all, raise ObjectNotFound to handle the error
         raise ObjectNotFound
 
-    def getInstalledImage(self, tag: str) -> ExegolImage:
+    def __getImage(self, image_name: str) -> Optional[Image]:
+        """Get a specific local image from docker"""
+        logger.debug(f"Trying to get {image_name} from docker")
+        try:
+            return self.__client.images.get(image_name)
+            # DockerSDK image get is an exact matching, no need to add more check
+        except APIError as err:
+            if err.status_code == 404:
+                pass
+            else:
+                logger.critical(f"Error on image loading: {err}")
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
+        return None
+
+    async def getInstalledImage(self, tag: str, repository: Optional[str] = None) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
         try:
-            if self.__images is None:
-                try:
-                    docker_local_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}:{tag}")
-                    # DockerSDK image get is an exact matching, no need to add more check
-                except APIError as err:
-                    if err.status_code == 404:
-                        # try to find it in recovery mode
-                        logger.verbose("Unable to find your image. Trying to find in recovery mode.")
-                        recovery_images = self.__findLocalRecoveryImages(include_untag=True)
-                        match = []
-                        for img in recovery_images:
-                            if ExegolImage.parseAliasTagName(img) == tag:
-                                match.append(ExegolImage(docker_image=img))
-                        if len(match) == 1:
-                            return match[0]
-                        elif len(match) > 1:
-                            return cast(ExegolImage, ExegolTUI.selectFromTable(match))
-                        raise ObjectNotFound
-                    else:
-                        logger.critical(f"Error on image loading: {err}")
-                        return  # type: ignore
-                except ReadTimeout:
-                    logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
-                    return  # type: ignore
-                return ExegolImage(docker_image=docker_local_image).autoLoad()
-            else:
+            if self.__images is not None:
+                # Try to find image from cache
                 for img in self.__images:
                     if img.getName() == tag:
                         if not img.isInstall() or not img.isUpToDate():
                             # Refresh local image status in case of installation/upgrade operations
                             self.__findImageMatch(img)
                         return img
+            # Load image
+            docker_local_image = None
+            search = [f"{i}:{tag}" for i in ConstantConfig.OFFICIAL_REPOSITORIES] if repository is None else [f"{repository}:{tag}"]
+            if "/" in tag and SessionHandler().enterprise_feature_access():
+                search.insert(0, tag)
+            for image_name in search:
+                docker_local_image = self.__getImage(image_name)
+                if docker_local_image is not None:
+                    break
+            if docker_local_image is None:
+                # try to find it in recovery mode
+                logger.verbose("Unable to find your image. Trying to find in recovery mode.")
+                recovery_images = self.__findLocalRecoveryImages(include_untag=True)
+                match = []
+                for img in recovery_images:
+                    if ExegolImage.parseAliasTagName(img) == tag:
+                        match.append(ExegolImage(docker_image=img))
+                if len(match) == 1:
+                    return match[0]
+                elif len(match) > 1:
+                    return cast(ExegolImage, await ExegolTUI.selectFromTable(match, object_type=ExegolImage))
+                raise ObjectNotFound
+            return await ExegolImage(docker_image=docker_local_image).autoLoad()
         except ObjectNotFound:
-            logger.critical(f"The desired image is not installed or do not exist ({ConstantConfig.IMAGE_NAME}:{tag}). Exiting.")
+            logger.critical(f"The desired image is not installed or do not exist ({repository + ':' if repository else ''}{tag}). Exiting.")
         return  # type: ignore
 
-    def __listLocalImages(self, tag: Optional[str] = None) -> List[Image]:
-        """List local docker images already installed.
-        Return a list of docker images objects"""
+    async def __listLocalImages(self, image_name: str, tag: Optional[str] = None) -> Tuple[List[Image], Set[str]]:
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
-            image_name = ConstantConfig.IMAGE_NAME + ("" if tag is None else f":{tag}")
-            images = self.__client.images.list(image_name, filters={"dangling": False})
+            image_full_name = image_name + ("" if tag is None else f":{tag}")
+            images = self.__client.images.list(image_full_name, filters={"dangling": False, "label": ["org.exegol.app=Exegol"]})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -367,9 +543,20 @@ class DockerUtils(metaclass=MetaSingleton):
         for img in images:
             # len tags = 0 handle exegol <none> images (nightly image lost their tag after update)
             if len(img.attrs.get('RepoTags', [])) == 0 or \
-                    ConstantConfig.IMAGE_NAME in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
+                    image_name in [repo_tag.split(':')[0] for repo_tag in img.attrs.get("RepoTags", [])]:
                 result.append(img)
                 ids.add(img.id)
+        return result, ids
+
+    async def __listOfficialLocalImages(self, tag: Optional[str] = None) -> List[Image]:
+        """List local docker images already installed.
+        Return a list of docker images objects"""
+        result = []
+        ids = set()
+        for repository in ConstantConfig.OFFICIAL_REPOSITORIES:
+            sub_result, sub_ids = await self.__listLocalImages(repository, tag)
+            result.extend(sub_result)
+            ids.update(sub_ids)
 
         # Try to find lost Exegol images
         recovery_images = self.__findLocalRecoveryImages()
@@ -384,6 +571,12 @@ class DockerUtils(metaclass=MetaSingleton):
                 ids.add(img.id)
         return result
 
+    async def __listCustomLocalImages(self, image_name: str, tag: Optional[str] = None) -> List[Image]:
+        """List local docker images already installed.
+        Return a list of docker images objects"""
+        result, _ = await self.__listLocalImages(image_name, tag)
+        return result
+
     def __findLocalRecoveryImages(self, include_untag: bool = False) -> List[Image]:
         """This method try to recovery untagged docker images.
         Set include_untag option to recover images with a valid RepoDigest (no not dangling) but without tag."""
@@ -391,7 +584,8 @@ class DockerUtils(metaclass=MetaSingleton):
             # Try to find lost Exegol images
             recovery_images = self.__client.images.list(filters={"dangling": True})
             if include_untag:
-                recovery_images += self.__client.images.list(ConstantConfig.IMAGE_NAME, filters={"dangling": False})
+                for image_name in ConstantConfig.OFFICIAL_REPOSITORIES:
+                    recovery_images += self.__client.images.list(image_name, filters={"dangling": False})
         except APIError as err:
             logger.debug(f"Error occurred in recovery mode: {err}")
             return []
@@ -412,40 +606,6 @@ class DockerUtils(metaclass=MetaSingleton):
                 id_list.add(img.id)
         return result
 
-    @staticmethod
-    def __listRemoteImages(status: Status) -> List[MetaImages]:
-        """List remote dockerhub images available.
-        Return a list of ExegolImage"""
-        logger.debug("Fetching remote image tags, digests and sizes")
-        remote_results = []
-        # Define max number of tags to download from dockerhub (in order to limit download time and discard historical versions)
-        page_size = 20
-        page_max = 3
-        current_page = 1
-        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{ConstantConfig.IMAGE_NAME}/tags?page=1&page_size={page_size}"
-        # Handle multi-page tags from registry
-        while url is not None:
-            if current_page > page_max:
-                logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
-                if not logger.isEnabledFor(ExeLog.VERBOSE):
-                    break
-            current_page += 1
-            if logger.isEnabledFor(ExeLog.VERBOSE):
-                status.update(status=f"Fetching registry information from [green]{url}[/green]")
-            docker_repo_response = WebUtils.runJsonRequest(url, "Dockerhub")
-            if docker_repo_response is None:
-                logger.warning("Skipping online queries.")
-                return []
-            error_message = docker_repo_response.get("message")
-            if error_message:
-                logger.error(f"Dockerhub send an error message: {error_message}")
-            for docker_images in docker_repo_response.get("results", []):
-                meta_image = MetaImages(docker_images)
-                remote_results.append(meta_image)
-            url = docker_repo_response.get("next")  # handle multiple page tags
-        # Remove duplication (version specific / latest release)
-        return remote_results
-
     def __findImageMatch(self, remote_image: ExegolImage) -> None:
         """From a Remote ExegolImage, try to find a local match (using Remote DigestID).
         This method is useful if the image repository name is also lost"""
@@ -454,45 +614,61 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug("Latest remote id is not available... Falling back to the current remote id.")
             remote_id = remote_image.getRemoteId()
         try:
-            docker_image = self.__client.images.get(f"{ConstantConfig.IMAGE_NAME}@{remote_id}")
+            logger.debug(f"Search image match for {remote_image.getRepository()}@{remote_id}")
+            docker_image = self.__client.images.get(f"{remote_image.getRepository()}@{remote_id}")
         except ImageNotFound:
-            raise ObjectNotFound
+            # Fallback to get from tag for legacy image
+            docker_image = self.__getImage(remote_image.getFullName())
+            if docker_image is None:
+                raise ObjectNotFound
         except ReadTimeout:
             logger.critical("Received a timeout error, Docker is busy... Unable to find a specific image, retry later.")
             raise RuntimeError
         remote_image.resetDockerImage()
         remote_image.setDockerObject(docker_image)
 
-    def downloadImage(self, image: ExegolImage, install_mode: bool = False) -> bool:
+    async def downloadImage(self, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return False
+        auth_config: Optional[dict] = None
+        if await image.pullAuthNeeded():
+            auth_config = await SessionHandler().get_registry_auth(image.getRepository(), image.getName())
         # Switch to install mode if the selected image is not already installed
         install_mode = install_mode or not image.isInstall()
         logger.info(f"{'Installing' if install_mode else 'Updating'} exegol image : {image.getName()}")
         name = image.updateCheck()
         if name is not None:
-            logger.info(f"Pulling compressed image, starting a [cyan1]~{image.getDownloadSize()}[/cyan1] download :satellite:")
+            download_size = '' if 'N/A' in image.getDownloadSize() else f" a [cyan1]~{image.getDownloadSize()}[/cyan1]"
+            logger.info(f"Pulling compressed image, starting{download_size} download :satellite:")
             logger.info(f"Once downloaded and uncompressed, the image will take [cyan1]~{image.getRealSizeRaw()}[/cyan1] on disk :floppy_disk:")
-            logger.debug(f"Downloading {ConstantConfig.IMAGE_NAME}:{name} ({image.getArch()})")
+            logger.debug(f"Downloading {image.getRepository()}:{name} ({image.getArch()})")
             try:
-                ExegolTUI.downloadDockerLayer(
-                    self.__client.api.pull(repository=ConstantConfig.IMAGE_NAME,
+                await ExegolTUI.downloadDockerLayer(
+                    self.__client.api.pull(repository=image.getRepository(),
                                            tag=name,
                                            stream=True,
                                            decode=True,
-                                           platform="linux/" + image.getArch()))
+                                           platform="linux/" + image.getArch(),
+                                           auth_config=auth_config))
                 logger.success(f"Image successfully {'installed' if install_mode else 'updated'}")
                 # Remove old image
                 if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
-                    self.removeImage(image, upgrade_mode=not install_mode)
+                    await self.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:
                 if err.status_code == 500:
-                    logger.error(f"Error: {err.explanation}")
-                    logger.error(f"Error while contacting docker registry. Aborting.")
+                    if err.explanation == "unauthorized":
+                        logger.error("Permission denied! You cannot download this image, you need a valid Exegol license.")
+                    else:
+                        logger.error(f"Error: {err.explanation}")
+                        logger.error(f"Error while contacting docker registry. Aborting.")
                 elif err.status_code == 404:
+                    if image.getRepository() == ConstantConfig.IMAGE_NAME and image.getName() != 'nightly':
+                        logger.warning("This image version was not found, retrying on legacy registry.")
+                        image.setRepository(ConstantConfig.COMMUNITY_IMAGE_NAME)
+                        return await self.downloadImage(image, install_mode=install_mode)
                     logger.critical(f"The image has not been found on the docker registry: {err.explanation}")
                 else:
                     logger.debug(f"Error: {err}")
@@ -501,15 +677,19 @@ class DockerUtils(metaclass=MetaSingleton):
                 logger.critical(f"Received a timeout error, Docker is busy... Unable to download {name} image, retry later.")
         return False
 
-    def downloadVersionTag(self, image: ExegolImage) -> Union[ExegolImage, str]:
+    async def downloadVersionTag(self, image: ExegolImage) -> Union[ExegolImage, str]:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return ""
+        auth_config: Optional[dict] = None
+        if await image.pullAuthNeeded():
+            auth_config = await SessionHandler().get_registry_auth(image.getRepository(), image.getLatestVersionName())
         try:
-            image = self.__client.images.pull(repository=ConstantConfig.IMAGE_NAME,
+            image = self.__client.images.pull(repository=image.getRepository(),
                                               tag=image.getLatestVersionName(),
-                                              platform="linux/" + image.getArch())
+                                              platform="linux/" + image.getArch(),
+                                              auth_config=auth_config)
             return ExegolImage(docker_image=image, isUpToDate=True)
         except APIError as err:
             if err.status_code == 500:
@@ -521,15 +701,15 @@ class DockerUtils(metaclass=MetaSingleton):
                 return f"en unknown error occurred while downloading this image : {err.explanation}"
         except ReadTimeout:
             logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
-                            f"    [orange3]docker pull --platform linux/{image.getArch()} {ConstantConfig.IMAGE_NAME}:{image.getLatestVersionName()}[/orange3].")
+                            f"    [orange3]docker pull --platform linux/{image.getArch()} {image.getRepository()}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
 
-    def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
+    async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
             return False
-        with console.status(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
+        async with ExegolStatus(f"Removing {'previous ' if upgrade_mode else ''}image [green]{image.getName()}[/green]...", spinner_style="blue"):
             try:
                 if not image.isVersionSpecific() and image.getInstalledVersionName() != image.getName() and not upgrade_mode:
                     # Docker can't remove multiple images at the same tag, version specific tag must be remove first
@@ -586,7 +766,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.error(f"The deletion of the image '{image_name}' has timeout, the deletion may be incomplete.")
         return False
 
-    def buildImage(self, tag: str, build_profile: Optional[str], build_dockerfile: Optional[str], dockerfile_path: str) -> None:
+    async def buildImage(self, tag: str, build_profile: Optional[str], build_dockerfile: Optional[str], dockerfile_path: str) -> None:
         """Build a docker image from source"""
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
@@ -604,11 +784,11 @@ class DockerUtils(metaclass=MetaSingleton):
             # path is the directory full path where Dockerfile is.
             # tag is the name of the final build
             # dockerfile is the Dockerfile filename
-            ExegolTUI.buildDockerImage(
+            await ExegolTUI.buildDockerImage(
                 self.__client.api.build(path=dockerfile_path,
                                         dockerfile=build_dockerfile,
-                                        tag=f"{ConstantConfig.IMAGE_NAME}:{tag}",
-                                        buildargs={"TAG": f"{build_profile}",
+                                        tag=f"{ConstantConfig.COMMUNITY_IMAGE_NAME}:{tag}",
+                                        buildargs={"TAG": f"{tag}-{build_profile}",
                                                    "VERSION": "local",
                                                    "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                         platform="linux/" + ParametersManager().arch,

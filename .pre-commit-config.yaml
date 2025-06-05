@@ -34,7 +34,7 @@ repos:
     hooks:
       - id: mypy
         stages: [pre-push]
-        additional_dependencies: ["types-PyYAML", "types-requests", "types-tzlocal"]
+        additional_dependencies: ["types-PyYAML", "types-requests", "types-tzlocal", "types-python-dateutil"]
         exclude: "exegol.py"
         args:
           - --ignore-missing-imports

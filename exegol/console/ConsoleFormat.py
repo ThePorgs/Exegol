@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 from typing import Tuple, Union
 
 
@@ -36,3 +37,22 @@ def getArchColor(arch: str) -> str:
     else:
         color = "yellow3"
     return color
+
+
+def get_display_date(date: Union[str, datetime]) -> str:
+    if type(date) is str:
+        if date == '':
+            return ''
+        date = parse_date(date)
+    assert type(date) is datetime
+    return date.astimezone().strftime("%d %B %Y %H:%M")
+
+
+def parse_date(date: str) -> datetime:
+    """Parse an ISO date string to a datetime object"""
+    try:
+        return datetime.fromisoformat(date)
+    except ValueError:
+        # Handle date parsing for python before 3.11
+        from dateutil.parser import isoparse
+        return isoparse(date)
