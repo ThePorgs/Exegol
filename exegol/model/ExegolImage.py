@@ -672,6 +672,12 @@ class ExegolImage(SelectableInterface):
         latest image don't."""
         return self.__version_specific
 
+    def hasVersionTag(self) -> bool:
+        """If the current image has version specific tags in the registry"""
+        if self.__license is None or self.__license == "" or self.__name == "nightly":
+            return False
+        return self.__is_official
+
     def getName(self) -> str:
         """Image's tag name getter"""
         if self.__is_official or self.__repository == "":
