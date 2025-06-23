@@ -58,10 +58,18 @@ class ContainerConfig:
         shell_logging = "org.exegol.feature.shell_logging"
         desktop = "org.exegol.feature.desktop"
 
+        @classmethod
+        def values(cls):
+            return list(map(lambda c: c.value, cls))
+
     class ExegolMetadata(Enum):
         creation_date = "org.exegol.metadata.creation_date"
         comment = "org.exegol.metadata.comment"
         password = "org.exegol.metadata.passwd"
+
+        @classmethod
+        def values(cls):
+            return list(map(lambda c: c.value, cls))
 
     class ExegolEnv(Enum):
         # feature
@@ -209,14 +217,15 @@ class ContainerConfig:
             if not key.startswith("org.exegol."):
                 continue
             logger.debug(f"└── Parsing label : {key}")
-            if key.startswith("org.exegol.metadata."):
+            if key in self.ExegolMetadata.values():
                 # Find corresponding feature and attributes
                 refs = self.__label_metadata.get(key)  # Setter
                 if refs is not None:
                     # reflective execution of setter method (set metadata value to the corresponding attribute)
                     getattr(self, refs[0])(value)
-            elif key.startswith("org.exegol.feature."):
-                # Find corresponding feature and attributes
+            elif key in self.ExegolFeatures.values():
+                self.addLabel(key, value)
+                # Find corresponding feature and function
                 enable_function = self.__label_features.get(key)
                 if enable_function is not None:
                     # reflective execution of the feature enable method (add label & set attributes)
@@ -229,6 +238,7 @@ class ContainerConfig:
         if mounts is None:
             mounts = []
         self.__disable_workspace = True
+        ovpn_parameters = []
         for share in mounts:
             logger.debug(f"└── Parsing mount : {share}")
             src_path: Optional[PurePath] = None
@@ -248,14 +258,16 @@ class ContainerConfig:
                                        type=share.get('Type', 'volume'),
                                        read_only=(not share.get("RW", True)),
                                        propagation=share.get('Propagation', '')))
-            if share.get('Destination', '') in ["/etc/timezone", "/etc/localtime"]:
+
+            destination = share.get('Destination', '')
+            if destination in ["/etc/timezone", "/etc/localtime"]:
                 self.__share_timezone = True
-            elif "/opt/resources" in share.get('Destination', ''):
+            elif "/opt/resources" in destination:
                 self.__exegol_resources = True
-            elif "/opt/my-resources" in share.get('Destination', ''):
+            elif "/opt/my-resources" in destination:
                 self.__my_resources = True
-                self.__my_resources_path = share.get('Destination', '')
-            elif "/workspace" in share.get('Destination', ''):
+                self.__my_resources_path = destination
+            elif "/workspace" in destination:
                 # Workspace are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -269,14 +281,19 @@ class ContainerConfig:
                 else:
                     logger.debug("└── Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            elif "/.exegol/vpn" in share.get('Destination', ''):
+            elif "/.exegol/vpn/config" in destination:
                 # VPN are always bind mount
                 assert src_path is not None
-                obj_path = cast(PurePath, src_path)
-                self.__vpn_path = obj_path
+                self.__vpn_path = Path(src_path)
+                if self.__vpn_path.suffix == ".ovpn":
+                    ovpn_parameters.append(f"--config {destination}")
                 logger.debug(f"└── Loading VPN config: {self.__vpn_path.name}")
-            elif "/.exegol/spawn.sh" in share.get('Destination', ''):
+            elif destination == "/.exegol/vpn/auth/creds.txt":
+                ovpn_parameters.append(f"--auth-user-pass /.exegol/vpn/auth/creds.txt")
+            elif destination == "/.exegol/spawn.sh":
                 self.__wrapper_start_enabled = True
+        if len(ovpn_parameters) > 0:
+            self.__vpn_parameters = ' '.join(ovpn_parameters)
 
     # ===== Config init section =====
 
@@ -610,6 +627,9 @@ class ContainerConfig:
     def enableDesktop(self, desktop_config: str = "") -> None:
         """Procedure to enable exegol desktop feature"""
         if not self.isDesktopEnabled():
+            if self.isNetworkDisabled():
+                logger.error(f"The current network mode doesn't support the desktop feature.")
+                return
             logger.verbose("Config: Enabling exegol desktop")
             self.configureDesktop(desktop_config, create_mode=True)
             assert self.__desktop_proto is not None
@@ -623,9 +643,6 @@ class ContainerConfig:
             if self.isNetworkHost():
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
-            elif self.isNetworkDisabled():
-                logger.error(f"The current network mode doesn't support the desktop feature.")
-                self.__disableDesktop()
             else:
                 # Container in bridge mode
                 # If we do not specify the host to the container it will automatically choose eth0 interface
@@ -638,9 +655,11 @@ class ContainerConfig:
         """Configure the exegol desktop feature from user parameters.
         Accepted format: 'proto:host:port'
         """
-        self.__desktop_proto = UserConfig().desktop_default_proto
-        self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
+        # Apply default config
+        self.__desktop_proto: str = UserConfig().desktop_default_proto
+        self.__desktop_host: str = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
 
+        # Set config from user input
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
                 continue
@@ -750,8 +769,7 @@ class ContainerConfig:
         """Procedure to add comment to a container"""
         if not self.__comment:
             logger.verbose("Config: Adding comment to container info")
-            self.__comment = comment
-            self.addLabel(self.ExegolMetadata.comment.value, comment)
+            self.setComment(comment)
 
     # ===== Functional / technical methods section =====
 

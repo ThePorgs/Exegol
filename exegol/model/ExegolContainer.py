@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 import subprocess
@@ -12,6 +13,7 @@ from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
@@ -19,11 +21,14 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger
 from exegol.utils.GuiUtils import GuiUtils
+from exegol.utils.SessionHandler import SessionHandler
 from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     """Class of an exegol container already create in docker"""
+
+    __BACKUP_DIRECTORY = "/workspace/.ExegolUpgradeBackupAuto"
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
         logger.debug(f"Loading container: {docker_container.name}")
@@ -193,7 +198,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> None:
+    async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> int:
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
@@ -205,19 +210,30 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
                 logger.info("Hint: use verbose mode to see command output (-v).")
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet)
-        stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon)
+        stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon and not quiet)
         if as_daemon and not quiet:
             logger.success("Command successfully executed in background")
+            return 0
         else:
             try:
                 # stream[0] : exit code
                 # stream[1] : text stream
-                for log in stream[1]:
-                    if type(log) is bytes:
-                        log = log.decode("utf-8")
-                    logger.raw(log)
+                if type(stream.output) is bytes:
+                    if stream.exit_code is not None and stream.exit_code != 0:
+                        logger.debug(f"An error occurred while executing the command: [error {stream.exit_code}] {command}")
+                    if len(stream.output) > 0:
+                        if stream.exit_code is None or stream.exit_code == 0:
+                            logger.raw(stream.output.decode("utf-8"))
+                        else:
+                            logger.error(stream.output.decode("utf-8"))
+                else:
+                    for log in stream[1]:
+                        if type(log) is bytes:
+                            log = log.decode("utf-8")
+                        logger.raw(log)
                 if not quiet:
                     logger.success("End of the command")
+                return 0 if stream.exit_code is None else stream.exit_code
             except KeyboardInterrupt:
                 if not quiet and not is_tmp:
                     logger.info("Detaching process logging")
@@ -242,9 +258,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             cmd = f"zsh -c '{cmd}'"
         return cmd, str_cmd
 
-    async def remove(self) -> None:
-        """Stop and remove the docker container"""
-        await self.__removeVolume()
+    async def remove(self, container_only: bool = False) -> None:
+        """Stop and remove the docker container.
+        :param container_only: If True, only the container will be removed, not the workspace volume or the network."""
+        if not container_only:
+            await self.__removeVolume()
         await self.stop(timeout=2)
         logger.info(f"Removing container {self.name}")
         try:
@@ -252,13 +270,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Container {self.name} successfully removed.")
         except NotFound:
             logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
-        nets = self.config.getNetworks()
-        # Must be imported locally to avoid circular importation
-        from exegol.utils.DockerUtils import DockerUtils
-        for net in nets:
-            if net.shouldBeRemoved():
-                logger.debug(f"Network {net.getNetworkName()} will be removed.")
-                DockerUtils().removeNetwork(net.getNetworkName())
+        if not container_only:
+            nets = self.config.getNetworks()
+            # Must be imported locally to avoid circular importation
+            from exegol.utils.DockerUtils import DockerUtils
+            for net in nets:
+                if net.shouldBeRemoved():
+                    logger.debug(f"Network {net.getNetworkName()} will be removed.")
+                    DockerUtils().removeNetwork(net.getNetworkName())
 
     async def __removeVolume(self) -> None:
         """Remove private workspace volume directory if exist"""
@@ -437,3 +456,59 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if self.config.getPasswd() is not None:
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
             await self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
+
+    async def backup(self) -> None:
+        """
+        This function automatically backup the exegol workspace and history to the workspace directory.
+        :return:
+        """
+        if not SessionHandler().pro_feature_access():
+            logger.critical("Exegol backup is only available for Pro or Enterprise users.")
+
+        async with ExegolStatus(f"Ongoing backup of container [green]{self.name}[/green]", spinner_style="blue"):
+            result = await self.exec(f"mkdir {self.__BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
+            if result != 0:
+                logger.error(
+                    f"The directory {self.__BACKUP_DIRECTORY} already exist in the container [green]{self.name}[/green]. It needs to be removed manually before trying to backup this container again.")
+                raise CancelOperation
+
+            results = await asyncio.gather(
+                # Backup bash/zsh history
+                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.zsh_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.zsh_history > {self.__BACKUP_DIRECTORY}/zsh_history", quiet=True, as_daemon=False),
+                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.bash_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.bash_history > {self.__BACKUP_DIRECTORY}/bash_history", quiet=True, as_daemon=False),
+                # Backup exegol-history
+                #self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --csv > {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
+                # Backup files
+                self.exec(f"cp -a /etc/hosts {self.__BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
+                self.exec(f"cp -a /etc/resolv.conf {self.__BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
+                self.exec(f"cp -a /etc/proxychains.conf {self.__BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
+            )
+            for r in results:
+                if r != 0:
+                    logger.error(f"An error occurred during backup creation of [green]{self.name}[/green] container. Please check the logs above for more information.")
+                    raise CancelOperation
+
+    async def restore(self) -> None:
+        """
+        This function automatically restores a backup from the exegol workspace.
+        :return:
+        """
+        if not SessionHandler().pro_feature_access():
+            logger.critical("Exegol restore is only available for Pro or Enterprise users.")
+
+        async with ExegolStatus(f"Restoring backup of container [green]{self.name}[/green]", spinner_style="blue"):
+            results = await asyncio.gather(
+                self.exec(f"cat {self.__BACKUP_DIRECTORY}/zsh_history >> ~/.zsh_history", quiet=True, as_daemon=False),
+                self.exec(f"cat {self.__BACKUP_DIRECTORY}/bash_history >> ~/.bash_history ", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/hosts /etc/hosts ", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf ", quiet=True, as_daemon=False),
+                self.exec(f"mv {self.__BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf ", quiet=True, as_daemon=False),
+            )
+
+            for r in results:
+                if r != 0:
+                    logger.error(f"An error occurred during backup restoration, aborting. Please check the logs above for more information.")
+                    logger.error(f"{self.__BACKUP_DIRECTORY} backup directory will not be removed automatically, you will have to remove it manually inside the container. ")
+                    raise CancelOperation
+
+            await self.exec(f"rm -rf {self.__BACKUP_DIRECTORY}", quiet=True, as_daemon=False)

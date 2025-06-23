@@ -156,6 +156,32 @@ class Update(Command, ImageSelector):
         return ExegolManager.update
 
 
+class Upgrade(Command, ContainerMultiSelector):
+    """Upgrade an Exegol container"""
+
+    def __init__(self) -> None:
+        Command.__init__(self)
+        ContainerMultiSelector.__init__(self, self.groupArgs)
+
+        self.force_mode = Option("-F", "--force",
+                                 dest="force_mode",
+                                 action="store_true",
+                                 help="Upgrade container without interactive user confirmation.")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.force_mode, "required": False},
+                                       title="[bold cyan]Upgrade[/bold cyan] [blue]specific options[/blue]"))
+
+        self._usages = {
+            "Upgrade an exegol container": "exegol upgrade",
+            "Upgrade the [bright_blue]ctf[/bright_blue] container": "exegol upgrade [bright_blue]ctf[/bright_blue]"
+        }
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running upgrade module")
+        return ExegolManager.upgrade
+
+
 class Uninstall(Command, ImageMultiSelector):
     """Remove Exegol [default not bold]image(s)[/default not bold]"""
 

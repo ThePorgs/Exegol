@@ -91,6 +91,19 @@ class ExegolManager:
         await container.spawnShell()
 
     @classmethod
+    async def upgrade(cls) -> None:
+        """Upgrade exegol to the latest version"""
+        if not SessionHandler().pro_feature_access():
+            logger.critical("Exegol upgrade is only available for Pro or Enterprise users.")
+        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        assert container is not None and type(container) is list
+        for c in container:
+            try:
+                await cls.__backupAndUpgrade(c)
+            except CancelOperation:
+                logger.error(f"Something unexpected happened during the [green]{c.name}[/green] container upgrade process.")
+
+    @classmethod
     async def exec(cls) -> None:
         """Create and/or start an exegol container to execute a specific command.
         The execution can be seen in console output or be relayed in the background as a daemon."""
@@ -561,3 +574,64 @@ class ExegolManager:
         if len(detected) > 0:
             logger.warning(f"These parameters ({', '.join(detected)}) have been entered although the container already "
                            f"exists, they will not be taken into account.")
+
+    @classmethod
+    async def __backupAndUpgrade(cls, c: ExegolContainer) -> None:
+        if not c.image.isLocked():
+            if c.image.isUpToDate():
+                logger.error(f"Cannot upgrade [orange3]{c.image.getName()}[/orange3] because it is already at the latest version.")
+                return
+            else:
+                # TODO handle image update here
+                logger.warning(f"You dont have the latest version of [orange3]{c.image.getName()}[/orange3], you need to update the image first.")
+                logger.error(f"Cannot upgrade [orange3]{c.image.getName()}[/orange3], you need to update the image first.")
+                return
+
+        new_image: ExegolImage = await DockerUtils().getInstalledImage(c.image.getName().split('-')[0])
+        if not new_image.isUpToDate():
+            logger.warning(f"You are going to upgrade your container [green]{c.name}[/green] to an outdated image:")
+            logger.warning(f"Your installed image [green]{new_image.getName()}[/green] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
+            if not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
+                logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. Run [green]exegol upgrade {new_image.getName()}[/green] to update your image first.")
+                return
+
+        details = """You are about to upgrade your container to a new image, ALL your container data will be [red]deleted[/red], EXCEPT the following data:
+    - Your [green]my-resources[/green] customization
+    - The container [green]/workspace[/green] directory
+    - Your [green]bash/zsh[/green] commands history
+    - Following files: /etc/hosts /etc/resolv.conf
+    - Following configurations: [green]Proxychains[/green]
+"""
+        # TODO
+        #  - Your [green]exegol-history[/green] database
+        #   > exegol-history backup need version 2.1 (with version action)
+        #  Config of: Responder?
+        #  DB of Responder, neo4j, postgres, nxc?, Trillium?
+
+        logger.empty_line()
+        logger.warning(details)
+        if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Do you want to continue, removing your [green]{c.name}[/green] container and [red]delete every data[/red] not mentioned above?", default=False):
+            logger.critical("Aborting operation.")
+
+        # Start container and Backup data
+        if not c.isRunning():
+            await c.start()
+        await c.backup()
+        logger.success(f"Container [green]{c.name}[/green] data has been backed up.")
+
+        # Remove container without removing the workspace
+        #c.remove(container_only=True)  # TODO to remove before PROD
+        c.config.container_name = "exegol-upgraded"  # TODO to remove before PROD
+
+        # Update exegol image to the latest version
+        c.image = new_image
+
+        # Create a new container from template
+        container = DockerUtils().createContainer(c)
+        await container.postCreateSetup()
+
+        # Restore data on new container
+        await container.restore()
+
+        logger.success(f"Container [green]{c.name}[/green] successfully upgraded to the latest [green]{c.image.getLatestVersionName()}[/green] image!")
+        logger.info(f"You can now open a shell in your new container with [green]exegol start {c.name}[/green]")
