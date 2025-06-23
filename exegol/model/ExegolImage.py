@@ -421,10 +421,12 @@ class ExegolImage(SelectableInterface):
                     # parse multi-tag images (latest tag / version specific tag)
                     current_image, current_tag = sub_image.split(':')
                     tag_match = remote_img_dict.get(current_tag)
+                    # filter only lastest tag and skip version specific tags
                     if tag_match:
-                        if tag_match.tag not in remote_tag_matched or current_image == tag_match.repository:
+                        if tag_match.tag not in remote_tag_matched:
                             selected = tag_match
-                            break
+                            if tag_match.tag == "free":  # Solve full / free conflict
+                                break
                         else:
                             # Handle duplicate legacy image
                             skip_image = True
