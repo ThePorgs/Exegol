@@ -421,10 +421,12 @@ class ExegolImage(SelectableInterface):
                     # parse multi-tag images (latest tag / version specific tag)
                     current_image, current_tag = sub_image.split(':')
                     tag_match = remote_img_dict.get(current_tag)
+                    # filter only lastest tag and skip version specific tags
                     if tag_match:
-                        if tag_match.tag not in remote_tag_matched or current_image == tag_match.repository:
+                        if tag_match.tag not in remote_tag_matched:
                             selected = tag_match
-                            break
+                            if tag_match.tag == "free":  # Solve full / free conflict
+                                break
                         else:
                             # Handle duplicate legacy image
                             skip_image = True
@@ -671,6 +673,12 @@ class ExegolImage(SelectableInterface):
         Image version specific container a '-' in the name,
         latest image don't."""
         return self.__version_specific
+
+    def hasVersionTag(self) -> bool:
+        """If the current image has version specific tags in the registry"""
+        if self.__license is None or self.__license == "" or self.__name == "nightly":
+            return False
+        return self.__is_official
 
     def getName(self) -> str:
         """Image's tag name getter"""

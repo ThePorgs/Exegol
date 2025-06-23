@@ -65,7 +65,7 @@ class UpdateManager:
             if await DockerUtils().downloadImage(selected_image, install_mode):
                 sync_result = None
                 # Name comparison allow detecting images without version tag
-                if not selected_image.isVersionSpecific() and selected_image.getName() != selected_image.getLatestVersionName():
+                if not selected_image.isVersionSpecific() and selected_image.hasVersionTag():
                     async with ExegolStatus(f"Synchronizing version tag information. Please wait.", spinner_style="blue"):
                         # Download associated version tag.
                         sync_result = await DockerUtils().downloadVersionTag(selected_image)

@@ -138,7 +138,8 @@ class SupabaseUtils:
                 logger.warning("The Exegol servers are currently unavailable, image status cannot be retrieved.")
             else:
                 logger.debug(e.details)
-                logger.error(e.message)
+                logger.error(f"[{e.code}] An error occurred while contacting Exegol servers: {e.message}")
+                logger.warning("Some information might be missing.")
         return None
 
     ### License calls ###

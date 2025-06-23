@@ -5,6 +5,7 @@ from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.model.ExegolNetwork import ExegolNetworkMode
 from exegol.utils.DataFileUtils import DataFileUtils
+from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 from exegol.utils.NetworkUtils import NetworkUtils
 from exegol.utils.SessionHandler import SessionHandler
@@ -162,7 +163,15 @@ config:
         self.auto_check_updates = self._load_config_bool(config_data, 'auto_check_update', self.auto_check_updates)
         self.auto_remove_images = self._load_config_bool(config_data, 'auto_remove_image', self.auto_remove_images)
         self.auto_update_workspace_fs = self._load_config_bool(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
-        self.default_start_shell = self._load_config_str(config_data, 'default_start_shell', self.default_start_shell, choices=self.start_shell_options)
+        user_shell = self._load_config_str(config_data, 'default_start_shell', self.default_start_shell)
+        # Manually check shell
+        if len(user_shell.split(' ')) > 1:
+            logger.warning(f"The configuration is incorrect! "
+                           f"The user has configured the 'default_start_shell' parameter with the value '{user_shell}' "
+                           f"which cannot be more than one word. The default value will be used instead: '{self.default_start_shell}'.")
+        else:
+            self.default_start_shell = user_shell
+
         self.enable_exegol_resources = self._load_config_bool(config_data, 'enable_exegol_resources', self.enable_exegol_resources)
 
         # Shell_logging section
