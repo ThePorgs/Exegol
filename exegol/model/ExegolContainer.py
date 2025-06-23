@@ -32,6 +32,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
         self.__xhost_applied = False
+        self.__post_start_applied = False
         if model is None:
             image_name = ""
             try:
@@ -336,7 +337,10 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Operation to be performed after starting a container
         :return:
         """
-        await self.__applyX11ACLs()
+        if not self.__post_start_applied:
+            self.__post_start_applied = True
+            await self.__applyX11ACLs()
+            # TODO exec VPN start
 
     def __check_start_version(self) -> None:
         """

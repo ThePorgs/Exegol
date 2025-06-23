@@ -120,6 +120,7 @@ class ContainerConfig:
         self.__shell_logging: bool = False
         # Entrypoint features
         self.legacy_entrypoint: bool = True
+        self.__vpn_mode: Optional[str] = None
         self.__vpn_parameters: Optional[str] = None
         self.__run_cmd: bool = False
         self.__endless_container: bool = True
@@ -269,7 +270,7 @@ class ContainerConfig:
                 else:
                     logger.debug("└── Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            elif "/.exegol/vpn" in share.get('Destination', ''):
+            elif "/.exegol/vpn" in share.get('Destination', '') or share.get('Destination', '').startswith("/etc/wireguard/"):
                 # VPN are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -708,7 +709,7 @@ class ContainerConfig:
             if EnvInfo.isLinuxHost():
                 logger.info(f"Defaulting to [magenta]{self.__fallback_network_mode.value}[/magenta] to protect host from VPN. Use [blue]--network host[/blue] if you need to access VPN from your host.")
             self.setNetworkMode(self.__fallback_network_mode)
-        # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
+        # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels interfaces
         self.addCapability("NET_ADMIN")
         # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
         # TODO test with ipv6 disable with kernel modules
@@ -719,24 +720,51 @@ class ContainerConfig:
                 skip_sysctl = True
         if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
-        # Add tun device, this device is needed to create VPN tunnels
-        self.__addDevice("/dev/net/tun", mknod=True)
-        # Sharing VPN configuration with the container
-        self.__vpn_parameters = self.__prepareVpnVolumes(config_path)
+
+        if config_path is not None or ParametersManager().vpn != '':
+            # VPN config path
+            vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
+
+            logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+            # Sharing VPN configuration with the container
+            if vpn_path.is_dir() or (vpn_path.is_file() and vpn_path.suffix == ".ovpn"):
+                # Add tun device, this device is needed to create OpenVPN tunnels
+                self.__addDevice("/dev/net/tun", mknod=True)
+                # OpenVPN config
+                self.__vpn_mode = "ovpn"
+                self.__vpn_parameters = self.__prepareOpenVpnVolumes(vpn_path)
+            elif vpn_path.is_file() and vpn_path.suffix == ".conf":
+                # Wireguard config
+                self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
+                self.__vpn_mode = "wgconf"
+                # TODO run wg as exec for priv not entrypoint https://www.linuxserver.io/blog/routing-docker-host-and-container-traffic-through-wireguard
+                self.__vpn_parameters = self.__prepareWireguardVolumes(vpn_path)
+            else:
+                logger.critical(f"Your VPN configuration {vpn_path} is not an OpenVPN directory / [green].ovpn[/green] file or a WireGuard [green].conf[/green] file.")
+        else:
+            # Add tun device, this device is needed to create OpenVPN tunnels
+            self.__addDevice("/dev/net/tun", mknod=True)
+            # Add sysctl for wireguard default gateway
+            self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
+            logger.success("Enabling VPN capabilities without managing a VPN connection")
+
 
     def __disableVPN(self) -> bool:
         """Remove a VPN profile for container startup (Only for interactive config)"""
         if self.__vpn_path:
             logger.verbose('Removing VPN configuration')
             self.__vpn_path = None
+            self.__vpn_mode = None
             self.__vpn_parameters = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
+            self.__removeSysctl("net.ipv4.conf.all.src_valid_mark")
             self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
             self.removeVolume(container_path="/.exegol/vpn/config")
+            self.removeVolume(container_path="/etc/wireguard/wg0.conf")
             return True
         return False
 
@@ -755,7 +783,7 @@ class ContainerConfig:
 
     # ===== Functional / technical methods section =====
 
-    def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
+    def __prepareOpenVpnVolumes(self, vpn_path: Path) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
         Depending on the user's settings, different configurations can be applied.
         With or without username / password authentication via auth-user-pass.
@@ -763,10 +791,7 @@ class ContainerConfig:
         the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
 
-        # VPN config path
-        vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
-
-        logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+        logger.debug(f"Configuring OpenVPN")
         self.__vpn_path = vpn_path
         if vpn_path.is_file():
             self.__checkVPNConfigDNS(vpn_path)
@@ -810,6 +835,21 @@ class ContainerConfig:
 
         return ' '.join(ovpn_parameters)
 
+    def __prepareWireguardVolumes(self, wireguard_path: Path) -> Optional[str]:
+        """Volumes must be prepared to share WireGuard configuration files with the container.
+        WireGuard config fil is .conf and include evry needed configuration like private key, public key, etc."""
+        wg_parameters = []
+        logger.debug(f"Configuring WireGuard")
+        self.__vpn_path = wireguard_path
+        if ParametersManager().vpn_auth is not None:
+            logger.warning("WireGuard setup doesn't support --vpn-auth parameter. It will be ignored.")
+
+        self.addVolume(wireguard_path, "/etc/wireguard/wg0.conf", read_only=True)
+        wg_parameters.append("wg0")
+
+        return ' '.join(wg_parameters)
+
+
     @staticmethod
     def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
         logger.verbose("Checking OpenVPN config file")
@@ -826,6 +866,8 @@ class ContainerConfig:
             logger.raw(os.linesep.join(configs), level=logging.WARNING)
             logger.empty_line()
             logger.empty_line()
+            #await ExegolRich.Acknowledge("Your VPN configuration doesn't support dynamic DNS servers.")
+            # TODO review config tips
             logger.info("Press enter to continue or Ctrl+C to cancel the operation")
             input()
 
@@ -871,7 +913,7 @@ class ContainerConfig:
         if self.isDesktopEnabled():
             entrypoint_actions.append("desktop")
         if self.__vpn_path is not None:
-            entrypoint_actions.append(f"ovpn {self.__vpn_parameters}")
+            entrypoint_actions.append(f"{self.__vpn_mode} {self.__vpn_parameters}")
         if self.__run_cmd:
             entrypoint_actions.append("run_cmd")
         if self.__endless_container:
