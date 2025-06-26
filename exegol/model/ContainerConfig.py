@@ -656,8 +656,8 @@ class ContainerConfig:
         Accepted format: 'proto:host:port'
         """
         # Apply default config
-        self.__desktop_proto: str = UserConfig().desktop_default_proto
-        self.__desktop_host: str = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
+        self.__desktop_proto = UserConfig().desktop_default_proto
+        self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
 
         # Set config from user input
         for i, data in enumerate(desktop_config.split(":")):

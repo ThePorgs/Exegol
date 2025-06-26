@@ -238,6 +238,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if not quiet and not is_tmp:
                     logger.info("Detaching process logging")
                     logger.warning("Exiting this command does [red]NOT[/red] stop the process in the container")
+        return 0
 
     @staticmethod
     def formatShellCommand(command: Union[str, Sequence[str]], quiet: bool = False, entrypoint_mode: bool = False) -> Tuple[str, str]:

@@ -577,34 +577,44 @@ class ExegolManager:
 
     @classmethod
     async def __backupAndUpgrade(cls, c: ExegolContainer) -> None:
-        if not c.image.isLocked():
-            if c.image.isUpToDate():
-                logger.error(f"Cannot upgrade [orange3]{c.image.getName()}[/orange3] because it is already at the latest version.")
-                return
-            else:
-                # TODO handle image update here
-                logger.warning(f"You dont have the latest version of [orange3]{c.image.getName()}[/orange3], you need to update the image first.")
-                logger.error(f"Cannot upgrade [orange3]{c.image.getName()}[/orange3], you need to update the image first.")
-                return
-
         logger.empty_line()
 
         current_image_tag = c.image.getName().split('-')[0]
-        if ParametersManager().image_tag is None:
+        if ParametersManager().image_tag is None or ParametersManager().image_tag == current_image_tag:
+
+            # Check update conditions
+            if not c.image.isLocked():
+                if "Unknown" in c.image.getStatus():
+                    await c.image.autoLoad()
+                if c.image.isUpToDate():
+                    logger.error(f"Cannot upgrade [green]{c.name}[/green] because it's' already using the latest [blue]{current_image_tag}[/blue] image version.")
+                    return
+
+            # Tips to upgrade from free image
             if current_image_tag == "free":
                 logger.info(f"[orange3][Tips][/orange3] you can use the [green]--image full[/green] option to upgrade your container to the latest {SessionHandler().get_license_type_display()} image.")
                 logger.empty_line()
+
             new_image: ExegolImage = await DockerUtils().getInstalledImage(current_image_tag)
         else:
+            # Upgrade to a different image tag
             new_image = await DockerUtils().getInstalledImage(ParametersManager().image_tag)
-            logger.info(f"Your current container use the image [orange3]{current_image_tag}[/orange3], after upgrade the new one will use the image [orange3]{new_image.getName()}[/orange3].")
+            logger.info(f"Your current container use the image [blue]{current_image_tag}[/blue], after upgrade the new one will use the image [blue]{new_image.getName()}[/blue].")
 
         if not new_image.isUpToDate():
+            # TODO test image update here
             logger.warning(f"You are going to upgrade your container [green]{c.name}[/green] to an outdated image:")
             logger.warning(f"Your installed image [green]{new_image.getName()}[/green] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
             if not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
-                logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. Run [green]exegol upgrade {new_image.getName()}[/green] to update your image first.")
-                return
+                if await ExegolRich.Confirm(f"Do you want to update your [green]{new_image.getName()}[/green] image now?", default=False):
+                    image_update = await UpdateManager.updateImage(new_image.getName())
+                    if image_update is None:
+                        logger.error(f"An error occured during image update. Skipping upgrade of container [green]{c.name}[/green].")
+                        return
+                    new_image = image_update
+                else:
+                    logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. Run [green]exegol upgrade {new_image.getName()}[/green] to update your image first.")
+                    return
 
         details = """You are about to upgrade your container to a new image, ALL your container data will be [red]deleted[/red], EXCEPT the following data:
     - Your [green]my-resources[/green] customization
