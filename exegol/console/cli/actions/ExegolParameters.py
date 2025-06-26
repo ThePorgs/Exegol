@@ -1,4 +1,6 @@
-from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
+from typing import Optional
+
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
 from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
 from exegol.manager.ExegolManager import ExegolManager
@@ -168,8 +170,15 @@ class Upgrade(Command, ContainerMultiSelector):
                                  action="store_true",
                                  help="Upgrade container without interactive user confirmation.")
 
+        self.image_tag: Optional[Option] = Option("--image",
+                                                  dest="image_tag",
+                                                  action="store",
+                                                  help="Upgrade the container to another Exegol image using its tag",
+                                                  completer=ImageCompleter)
+
         # Create group parameter for container selection
-        self.groupArgs.append(GroupArg({"arg": self.force_mode, "required": False},
+        self.groupArgs.append(GroupArg({"arg": self.image_tag, "required": False},
+                                       {"arg": self.force_mode, "required": False},
                                        title="[bold cyan]Upgrade[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {

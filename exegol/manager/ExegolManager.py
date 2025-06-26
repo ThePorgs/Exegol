@@ -587,7 +587,18 @@ class ExegolManager:
                 logger.error(f"Cannot upgrade [orange3]{c.image.getName()}[/orange3], you need to update the image first.")
                 return
 
-        new_image: ExegolImage = await DockerUtils().getInstalledImage(c.image.getName().split('-')[0])
+        logger.empty_line()
+
+        current_image_tag = c.image.getName().split('-')[0]
+        if ParametersManager().image_tag is None:
+            if current_image_tag == "free":
+                logger.info(f"[orange3][Tips][/orange3] you can use the [green]--image full[/green] option to upgrade your container to the latest {SessionHandler().get_license_type_display()} image.")
+                logger.empty_line()
+            new_image: ExegolImage = await DockerUtils().getInstalledImage(current_image_tag)
+        else:
+            new_image = await DockerUtils().getInstalledImage(ParametersManager().image_tag)
+            logger.info(f"Your current container use the image [orange3]{current_image_tag}[/orange3], after upgrade the new one will use the image [orange3]{new_image.getName()}[/orange3].")
+
         if not new_image.isUpToDate():
             logger.warning(f"You are going to upgrade your container [green]{c.name}[/green] to an outdated image:")
             logger.warning(f"Your installed image [green]{new_image.getName()}[/green] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
@@ -608,7 +619,6 @@ class ExegolManager:
         #  Config of: Responder?
         #  DB of Responder, neo4j, postgres, nxc?, Trillium?
 
-        logger.empty_line()
         logger.warning(details)
         if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Do you want to continue, removing your [green]{c.name}[/green] container and [red]delete every data[/red] not mentioned above?", default=False):
             logger.critical("Aborting operation.")
@@ -633,5 +643,5 @@ class ExegolManager:
         # Restore data on new container
         await container.restore()
 
-        logger.success(f"Container [green]{c.name}[/green] successfully upgraded to the latest [green]{c.image.getLatestVersionName()}[/green] image!")
+        logger.success(f"Container [green]{c.name}[/green] successfully upgraded to the [green]{c.image.getLatestVersionName().replace('-', ' ')}[/green] image!")
         logger.info(f"You can now open a shell in your new container with [green]exegol start {c.name}[/green]")
