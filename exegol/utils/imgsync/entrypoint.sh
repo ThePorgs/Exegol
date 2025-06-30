@@ -97,6 +97,8 @@ function wgconf() {
     if ! wg-quick up "$@" &>> /var/log/exegol/vpn.log
     then
       echo '[ERROR]An error has occurred during WireGuard VPN startup. Check logs in container at path /var/log/exegol/vpn.log'
+    else
+      ip --brief address | cut -f1 -d ' ' | grep "$@" > /dev/null && echo '[SUCCESS]WireGuard [green]VPN[/green] successfully started!' || echo '[WARNING]WireGuard VPN did not start as expected. Check logs in container at path /var/log/exegol/vpn.log'
     fi
   fi
 }

@@ -734,6 +734,10 @@ class ContainerConfig:
                 self.__vpn_mode = "ovpn"
                 self.__vpn_parameters = self.__prepareOpenVpnVolumes(vpn_path)
             elif vpn_path.is_file() and vpn_path.suffix == ".conf":
+                if not SessionHandler().pro_feature_access():
+                    logger.error("WireGuard VPN feature is not yet available for Exegol Community edition.")
+                    self.__disableVPN()
+                    return
                 # Wireguard config
                 self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
                 self.__vpn_mode = "wgconf"
@@ -747,7 +751,6 @@ class ContainerConfig:
             # Add sysctl for wireguard default gateway
             self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
             logger.success("Enabling VPN capabilities without managing a VPN connection")
-
 
     def __disableVPN(self) -> bool:
         """Remove a VPN profile for container startup (Only for interactive config)"""
