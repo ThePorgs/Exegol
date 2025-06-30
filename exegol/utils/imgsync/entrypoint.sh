@@ -41,6 +41,8 @@ function shutdown() {
   # Shutting down the container.
   # Sending SIGTERM to all interactive process for proper closing
   pgrep vnc && desktop-stop  # Stop webui desktop if started TODO improve desktop shutdown
+  # Stop wireguard if any
+  command -v wg-quick &> /dev/null && [ "$(find "/etc/wireguard/" -type f -name '*.conf' | wc -l)" -gt 0 ] && wg-quick down /etc/wireguard/* 2>/dev/null
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
