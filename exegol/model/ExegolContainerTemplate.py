@@ -14,8 +14,9 @@ class ExegolContainerTemplate:
         if (EnvInfo.isWindowsHost() or EnvInfo.isMacHost()) and not name.startswith("exegol-"):
             # Force container as lowercase because the filesystem of windows / mac are case-insensitive => https://github.com/ThePorgs/Exegol/issues/167
             name = name.lower()
-        container_name: str = name if name.startswith("exegol-") else f'exegol-{name}'
-        self.name: str = name.replace('exegol-', '')
+        while name.startswith("exegol-"):
+            name = name[7:]
+        self.name: str = name
         self.image: ExegolImage = image
         self.config: ContainerConfig = config
 
