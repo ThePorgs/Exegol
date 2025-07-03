@@ -10,6 +10,7 @@ from exegol.config.UserConfig import UserConfig
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import ExegolRich
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.console.cli.actions.GenericParameters import ContainerCreation
@@ -601,42 +602,57 @@ class ExegolManager:
             new_image = await DockerUtils().getInstalledImage(ParametersManager().image_tag)
             logger.info(f"Your current container use the image [blue]{current_image_tag}[/blue], after upgrade the new one will use the image [blue]{new_image.getName()}[/blue].")
 
+        skipping_msg = ""
         if not new_image.isUpToDate():
-            # TODO test image update here
+            skipping_msg = f"Run [green]exegol update {new_image.getName()}[/green] to install the new version [green]{new_image.getLatestVersion()}[/green] of your image first."
             logger.warning(f"You are going to upgrade your container [green]{c.name}[/green] to an outdated image:")
-            logger.warning(f"Your installed image [green]{new_image.getName()}[/green] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
+            logger.warning(f"Your installed image [blue]{new_image.getName()}[/blue] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
             if not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
                 if await ExegolRich.Confirm(f"Do you want to update your [green]{new_image.getName()}[/green] image now?", default=False):
                     image_update = await UpdateManager.updateImage(new_image.getName())
                     if image_update is None:
-                        logger.error(f"An error occured during image update. Skipping upgrade of container [green]{c.name}[/green].")
+                        logger.error(f"An error occurred during image update. Skipping upgrade of container [green]{c.name}[/green].")
                         return
                     new_image = image_update
                 else:
-                    logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. Run [green]exegol upgrade {new_image.getName()}[/green] to update your image first.")
+                    logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. {skipping_msg}")
                     return
 
-        details = """You are about to upgrade your container to a new image, ALL your container data will be [red]deleted[/red], EXCEPT the following data:
+        # Check if the new image is the same as the container's current image
+        if c.image.getLocalId() == new_image.getLocalId():
+            logger.error(f"Cannot upgrade [green]{c.name}[/green] because it's already using the latest local [blue]{new_image.getName()}[/blue] image (version [orange3]{new_image.getImageVersion()}[/orange3]), skipping.")
+            if not new_image.isUpToDate():
+                logger.info(skipping_msg)
+            return
+
+        # Start container and run pre-backup checks
+        if not c.isRunning():
+            await c.start()
+        async with ExegolStatus(f"Running pre-backup checks", spinner_style="blue"):
+            # Test if exh can be backup
+            exh_backup_supported = await c.exec("exegol-history version", as_daemon=False, quiet=True, show_output=False) == 0
+
+        exh_line = '' if not exh_backup_supported else "\n    - Your [green]exegol-history[/green] database"
+        details = f"""You are about to upgrade your container to a new image, ALL your container data will be [red]deleted[/red], EXCEPT the following data:
     - Your [green]my-resources[/green] customization
     - The container [green]/workspace[/green] directory
-    - Your [green]bash/zsh[/green] commands history
-    - Following files: /etc/hosts /etc/resolv.conf
+    - Your [green]bash/zsh[/green] commands history{exh_line}
+    - Your [green]Trilium[/green] notes
+    - Following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh
     - Following configurations: [green]Proxychains[/green]
 """
         # TODO
-        #  - Your [green]exegol-history[/green] database
-        #   > exegol-history backup need version 2.1 (with version action)
         #  Config of: Responder?
-        #  DB of Responder, neo4j, postgres, nxc?, Trillium?
+        #  DB of Responder, neo4j, postgres, nxc?, firefox
 
         logger.warning(details)
         if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Do you want to continue, removing your [green]{c.name}[/green] container and [red]delete every data[/red] not mentioned above?", default=False):
             logger.critical("Aborting operation.")
 
-        # Start container and Backup data
-        if not c.isRunning():
-            await c.start()
-        await c.backup()
+        logger.warning("Please dont cancel this operation during its execution! You might loose some data!")
+
+        # Start container data Backup
+        await c.backup(backup_exh=exh_backup_supported)
         logger.success(f"Container [green]{c.name}[/green] data has been backed up.")
 
         # Remove container without removing the workspace

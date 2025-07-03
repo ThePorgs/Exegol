@@ -198,7 +198,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> int:
+    async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False, show_output: bool = True) -> int:
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
@@ -211,22 +211,25 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.info("Hint: use verbose mode to see command output (-v).")
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet)
         stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon and not quiet)
-        if as_daemon and not quiet:
-            logger.success("Command successfully executed in background")
+        if as_daemon:
+            if not quiet:
+                logger.success("Command successfully executed in background")
             return 0
         else:
             try:
                 # stream[0] : exit code
                 # stream[1] : text stream
                 if type(stream.output) is bytes:
+                    # When quiet is True, stream is False, so we receive all the logs at the end of the command execution
                     if stream.exit_code is not None and stream.exit_code != 0:
                         logger.debug(f"An error occurred while executing the command: [error {stream.exit_code}] {command}")
-                    if len(stream.output) > 0:
+                    if len(stream.output) > 0 and show_output:
                         if stream.exit_code is None or stream.exit_code == 0:
                             logger.raw(stream.output.decode("utf-8"))
                         else:
                             logger.error(stream.output.decode("utf-8"))
                 else:
+                    # When quiet is False, stream is True, so we directly receive a log stream
                     for log in stream[1]:
                         if type(log) is bytes:
                             log = log.decode("utf-8")
@@ -458,14 +461,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
             await self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
 
-    async def backup(self) -> None:
+    async def backup(self, backup_exh: bool) -> None:
         """
         This function automatically backup the exegol workspace and history to the workspace directory.
         :return:
         """
         if not SessionHandler().pro_feature_access():
             logger.critical("Exegol backup is only available for Pro or Enterprise users.")
-
+        # TODO test all this
         async with ExegolStatus(f"Ongoing backup of container [green]{self.name}[/green]", spinner_style="blue"):
             result = await self.exec(f"mkdir {self.__BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
             if result != 0:
@@ -473,17 +476,28 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     f"The directory {self.__BACKUP_DIRECTORY} already exist in the container [green]{self.name}[/green]. It needs to be removed manually before trying to backup this container again.")
                 raise CancelOperation
 
-            results = await asyncio.gather(
+            backup_tasks = [
                 # Backup bash/zsh history
                 self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.zsh_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.zsh_history > {self.__BACKUP_DIRECTORY}/zsh_history", quiet=True, as_daemon=False),
                 self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.bash_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.bash_history > {self.__BACKUP_DIRECTORY}/bash_history", quiet=True, as_daemon=False),
-                # Backup exegol-history
-                #self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --csv > {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
                 # Backup files
                 self.exec(f"cp -a /etc/hosts {self.__BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/resolv.conf {self.__BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/proxychains.conf {self.__BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
-            )
+                self.exec(f"triliumnext-stop && "
+                          f"mkdir {self.__BACKUP_DIRECTORY}/triliumnext_data && "
+                          f"cp -a /opt/tools/triliumnext/data/document.db* {self.__BACKUP_DIRECTORY}/triliumnext_data/ && "
+                          f"cp -a /opt/tools/triliumnext/data/session_secret.txt {self.__BACKUP_DIRECTORY}/triliumnext_data/ && "
+                          f"cp -a /opt/tools/triliumnext/data/sessions {self.__BACKUP_DIRECTORY}/triliumnext_data/", quiet=True, as_daemon=False),
+                self.exec(f"[ $(sed-comment-line /opt/tools/Exegol-history/profile.sh | sed-empty-line | wc -l) -gt 0 ] || return 0 && cp -a /opt/tools/Exegol-history/profile.sh {self.__BACKUP_DIRECTORY}/exh_profile.sh", quiet=True, as_daemon=False),
+            ]
+            if backup_exh:
+                # Backup exegol-history
+                backup_tasks.append(
+                    self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv && exh export hosts --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
+                )
+
+            results = await asyncio.gather(*backup_tasks)
             for r in results:
                 if r != 0:
                     logger.error(f"An error occurred during backup creation of [green]{self.name}[/green] container. Please check the logs above for more information.")
@@ -500,10 +514,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         async with ExegolStatus(f"Restoring backup of container [green]{self.name}[/green]", spinner_style="blue"):
             results = await asyncio.gather(
                 self.exec(f"cat {self.__BACKUP_DIRECTORY}/zsh_history >> ~/.zsh_history", quiet=True, as_daemon=False),
-                self.exec(f"cat {self.__BACKUP_DIRECTORY}/bash_history >> ~/.bash_history ", quiet=True, as_daemon=False),
-                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/hosts /etc/hosts ", quiet=True, as_daemon=False),
-                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf ", quiet=True, as_daemon=False),
+                self.exec(f"cat {self.__BACKUP_DIRECTORY}/bash_history >> ~/.bash_history", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/hosts /etc/hosts", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf", quiet=True, as_daemon=False),
                 self.exec(f"mv {self.__BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf ", quiet=True, as_daemon=False),
+                self.exec(f"rm /opt/tools/triliumnext/data/document.db* && "
+                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/document.db* /opt/tools/triliumnext/data/ && "
+                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/session_secret.txt /opt/tools/triliumnext/data/session_secret.txt && "
+                          f"rm -r /opt/tools/triliumnext/data/sessions && "
+                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/sessions /opt/tools/triliumnext/data/sessions", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exh_profile.sh ] || return 0 && mv {self.__BACKUP_DIRECTORY}/exh_profile.sh /opt/tools/Exegol-history/profile.sh", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv ] || return 0 && exh version && exh import creds --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv ] || return 0 && exh version && exh import hosts --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
             )
 
             for r in results:
