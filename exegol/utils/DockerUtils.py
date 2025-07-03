@@ -601,7 +601,7 @@ class DockerUtils(metaclass=MetaSingleton):
             if repo_tags is not None and len(repo_tags) > 0 or (not include_untag and repo_digest is not None and len(repo_digest) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
-            if img.labels.get('org.exegol.app', '') == "Exegol":
+            if img.labels is not None and img.labels.get('org.exegol.app', '') == "Exegol":
                 result.append(img)
                 id_list.add(img.id)
         return result
