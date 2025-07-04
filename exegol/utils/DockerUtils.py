@@ -435,13 +435,6 @@ class DockerUtils(metaclass=MetaSingleton):
             result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
         return result
 
-    async def listInstalledImages(self) -> List[ExegolImage]:
-        """List installed docker images.
-        Return a list of ExegolImage"""
-        images = await self.listImages()
-        # Selecting only installed image
-        return [img for img in images if img.isInstall()]
-
     async def getOfficialImageFromList(self, tag: str) -> Union[ExegolImage, str]:
         """Get an ExegolImage from tag name."""
         # Fetch every official images available

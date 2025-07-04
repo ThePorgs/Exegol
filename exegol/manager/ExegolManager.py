@@ -2,7 +2,7 @@ import binascii
 import logging
 import os
 from asyncio import gather
-from typing import Union, List, Tuple, Optional, cast, Sequence
+from typing import Union, List, Tuple, Optional, cast, Sequence, Type
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
@@ -111,7 +111,7 @@ class ExegolManager:
     async def stop(cls) -> None:
         """Stop an exegol container"""
         logger.info("Stopping exegol")
-        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True, filters=[ExegolContainer.Filters.STARTED])
         assert container is not None and type(container) is list
         for c in container:
             await c.stop(timeout=5)
@@ -160,7 +160,7 @@ class ExegolManager:
         # Set log level to verbose in order to show every image installed including the outdated.
         if not logger.isEnabledFor(ExeLog.VERBOSE):
             logger.setLevel(ExeLog.VERBOSE)
-        images = await cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        images = await cls.__loadOrInstallImage(multiple=True, filters=[ExegolImage.Filters.INSTALLED])
         assert type(images) is list
         if len(images) == 0:
             return
@@ -272,15 +272,17 @@ class ExegolManager:
     async def __loadOrInstallImage(cls,
                                    override_image: Optional[str] = None,
                                    multiple: bool = False,
-                                   must_exist: bool = False,
-                                   show_custom: bool = False) -> Union[Optional[ExegolImage], List[ExegolImage]]:
+                                   show_custom: bool = False,
+                                   filters: Optional[List[ExegolImage.Filters]] = None) -> Union[Optional[ExegolImage], List[ExegolImage]]:
         """Select / Load (and install) an ExegolImage
-        When must_exist is set to True, return None if no image are installed
         When multiple is set to True, return a list of ExegolImage
+        When the action supports multi selection, the parameter filters must be supplied
+        When filters include ExegolImage.Filters.INSTALLED, return None if no image are installed
         Otherwise, always return an ExegolImage"""
         if cls.__image is not None:
             # Return cache
             return cls.__image
+        must_exist = filters is not None and ExegolImage.Filters.INSTALLED in filters
         image_tag = override_image if override_image is not None else ParametersManager().imagetag
         image_tags = ParametersManager().multiimagetag
         image_selection: Union[Optional[ExegolImage], List[ExegolImage]] = None
@@ -288,9 +290,17 @@ class ExegolManager:
         while image_selection is None:
             try:
                 if image_tag is None and (image_tags is None or len(image_tags) == 0):
-                    # Interactive (TUI) image selection
-                    image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
-                                           await cls.__interactiveSelection(ExegolImage, multiple, must_exist, show_custom))
+                    image_list: List[ExegolImage] = await DockerUtils().listImages(include_custom=show_custom)
+                    if filters is not None:
+                        filters_sum = sum(filters)
+                        image_list = [i for i in image_list if i.filter(filters_sum)]
+
+                    if ParametersManager().select_all:
+                        image_selection = image_list
+                    else:
+                        # Interactive (TUI) image selection
+                        image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
+                                               await cls.__interactiveSelection(ExegolImage, image_list, multiple, must_exist))
                 else:
                     # Select image by tag name (non-interactive)
                     if multiple:
@@ -389,7 +399,8 @@ class ExegolManager:
     async def __loadOrCreateContainer(cls,
                                       override_container: Optional[str] = None,
                                       multiple: bool = False,
-                                      must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
+                                      must_exist: bool = False,
+                                      filters: Optional[List[ExegolContainer.Filters]] = None) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
         """Select one or more ExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
@@ -407,9 +418,17 @@ class ExegolManager:
                     container_tags.append(tag)
         try:
             if container_tag is None and (container_tags is None or len(container_tags) == 0):
-                # Interactive container selection
-                cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
-                                       await cls.__interactiveSelection(ExegolContainer, multiple, must_exist))
+                container_list: List[ExegolContainer] = await DockerUtils().listContainers()
+                if filters is not None:
+                    filters_sum = sum(filters)
+                    container_list = [c for c in container_list if c.filter(filters_sum)]
+                if ParametersManager().select_all:
+                    # Select all container
+                    cls.__container = container_list
+                else:
+                    # Interactive container selection
+                    cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
+                                           await cls.__interactiveSelection(ExegolContainer, container_list, multiple, must_exist))
             else:
                 # Try to find the corresponding container
                 if multiple:
@@ -444,24 +463,16 @@ class ExegolManager:
 
     @classmethod
     async def __interactiveSelection(cls,
-                                     object_type: type,
+                                     object_type: Type[Union[ExegolImage, ExegolContainer]],
+                                     object_list: Sequence[SelectableInterface],
                                      multiple: bool = False,
-                                     must_exist: bool = False,
-                                     show_custom: bool = False) -> \
-            Union[ExegolImage, ExegolContainer, Sequence[ExegolImage], Sequence[ExegolContainer]]:
+                                     must_exist: bool = False) -> \
+            Union[Optional[ExegolImage], Optional[ExegolContainer], Sequence[ExegolImage], Sequence[ExegolContainer]]:
         """Interactive object selection process, depending on object_type.
         object_type can be ExegolImage or ExegolContainer."""
-        object_list: Sequence[SelectableInterface]
-        # Object listing depending on the type
-        if object_type is ExegolContainer:
-            # List all images available
-            object_list = await DockerUtils().listContainers()
-        elif object_type is ExegolImage:
-            # List all images available
-            object_list = await DockerUtils().listInstalledImages() if must_exist else await DockerUtils().listImages(include_custom=show_custom)
-        else:
-            logger.critical("Unknown object type during interactive selection. Exiting.")
-            raise Exception
+        if must_exist and len(object_list) == 0:
+            logger.info(f"There is no {'container' if object_type is ExegolContainer else 'image'} to select. ")
+            return [] if multiple else None
         # Interactive choice with TUI
         user_selection: Union[SelectableInterface, Sequence[SelectableInterface], str]
         if multiple:

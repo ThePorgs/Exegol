@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 from datetime import datetime
+from enum import IntFlag, auto as enum_auto
 from pathlib import Path
 from typing import Optional, Dict, Sequence, Tuple, Union
 
@@ -26,6 +27,10 @@ from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     """Class of an exegol container already create in docker"""
+
+    class Filters(IntFlag):
+        STARTED = enum_auto()
+        OUTDATED = enum_auto()
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
         logger.debug(f"Loading container: {docker_container.name}")
@@ -63,6 +68,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def __str__(self) -> str:
         """Default object text formatter, debug only"""
         return f"{self.getRawStatus()} - {super().__str__()}"
+
+    def filter(self, filters: int) -> bool:
+        """
+        Apply bitwise filter
+        :param filters:
+        :return:
+        """
+        match = True
+        if match and filters & self.Filters.STARTED:
+            match = self.isRunning()
+        if match and filters & self.Filters.OUTDATED:
+            match = self.image.isLocked()
+        return match
 
     def __getState(self) -> Dict:
         """Technical getter of the container status dict"""

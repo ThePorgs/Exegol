@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import IntFlag, auto as enum_auto
 from typing import Optional, List, Union, Tuple, Dict, Set
 
 from docker.models.containers import Container
@@ -22,6 +23,9 @@ from exegol.utils.WebRegistryUtils import WebRegistryUtils
 
 class ExegolImage(SelectableInterface):
     """Class of an exegol image. Container every information about the docker image."""
+
+    class Filters(IntFlag):
+        INSTALLED = enum_auto()
 
     def __init__(self,
                  name: str = "NONAME",
@@ -157,6 +161,17 @@ class ExegolImage(SelectableInterface):
             self.__setRepository(repo)
         # Default status, must be refreshed later if some parameters will be changed externally
         self.syncStatus()
+
+    def filter(self, filters: int) -> bool:
+        """
+        Apply bitwise filter
+        :param filters:
+        :return:
+        """
+        match = True
+        if match and filters & self.Filters.INSTALLED:
+            match = self.isInstall()
+        return match
 
     def resetDockerImage(self) -> None:
         """During an image upgrade, the docker image and local parsed variable must be
