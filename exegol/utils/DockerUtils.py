@@ -435,13 +435,6 @@ class DockerUtils(metaclass=MetaSingleton):
             result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
         return result
 
-    async def listInstalledImages(self) -> List[ExegolImage]:
-        """List installed docker images.
-        Return a list of ExegolImage"""
-        images = await self.listImages()
-        # Selecting only installed image
-        return [img for img in images if img.isInstall()]
-
     async def getOfficialImageFromList(self, tag: str) -> Union[ExegolImage, str]:
         """Get an ExegolImage from tag name."""
         # Fetch every official images available
@@ -601,7 +594,7 @@ class DockerUtils(metaclass=MetaSingleton):
             if repo_tags is not None and len(repo_tags) > 0 or (not include_untag and repo_digest is not None and len(repo_digest) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
-            if img.labels.get('org.exegol.app', '') == "Exegol":
+            if img.labels is not None and img.labels.get('org.exegol.app', '') == "Exegol":
                 result.append(img)
                 id_list.add(img.id)
         return result

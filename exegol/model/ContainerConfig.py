@@ -180,7 +180,8 @@ class ContainerConfig:
         logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
-        self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
+        container_name = container.name[7:] if container.name.startswith("exegol-") else container.name
+        self.__parseMounts(container.attrs.get("Mounts", []), container_name)
 
         # Network section
         network_settings = container.attrs.get("NetworkSettings", {})

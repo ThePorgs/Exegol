@@ -37,9 +37,15 @@ class ContainerMultiSelector:
                                         action="store",
                                         help="Tag used to target one or more Exegol containers",
                                         completer=ContainerCompleter)
+        self.select_all = Option("--all",
+                                 dest="select_all",
+                                 action="store_true",
+                                 default=False,
+                                 help="Select every Exegol containers available")
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
+                                  {"arg": self.select_all, "required": False},
                                   title="[blue]Containers selection options[/blue]"))
 
 
@@ -134,9 +140,15 @@ class ImageMultiSelector:
                                     action="store",
                                     help="Tag used to target one or more Exegol images",
                                     completer=ImageCompleter)
+        self.select_all = Option("--all",
+                                 dest="select_all",
+                                 action="store_true",
+                                 default=False,
+                                 help="Select every Exegol images available")
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},
+                                  {"arg": self.select_all, "required": False},
                                   title="[blue]Images selection options[/blue]"))
 
 
