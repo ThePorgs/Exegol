@@ -3,15 +3,17 @@ import sys
 from pathlib import Path
 from typing import Optional, List
 
-from git import Commit
+from git import Commit, NoSuchPathError
 from git.exc import GitCommandError, RepositoryDirtyError
 from rich.progress import TextColumn, BarColumn
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.MetaGitProgress import MetaGitProgress, clone_update_progress, SubmoduleUpdateProgress
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger
+from exegol.utils.FsUtils import mkdir
 
 
 # SDK Documentation : https://gitpython.readthedocs.io/en/stable/index.html
@@ -22,8 +24,7 @@ class GitUtils:
     def __init__(self,
                  path: Optional[Path] = None,
                  name: str = "wrapper",
-                 subject: str = "source code",
-                 skip_submodule_update: bool = False):
+                 subject: str = "source code"):
         """Init git local repository object / SDK"""
         if path is None:
             path = ConstantConfig.src_root_path_obj
@@ -53,6 +54,9 @@ class GitUtils:
                 if ConstantConfig.pipx_installed:
                     logger.info("If you have installed Exegol with pipx, check for an update with the command "
                                 "[green]pipx upgrade exegol[/green]")
+                elif ConstantConfig.uv_installed:
+                    logger.info("If you have installed Exegol with uv, check for an update with the command "
+                                "[green]uv tool upgrade exegol[/green]")
                 elif ConstantConfig.pip_installed:
                     logger.info("If you have installed Exegol with pip, check for an update with the command "
                                 "[green]pip3 install exegol --upgrade[/green]")
@@ -64,7 +68,7 @@ class GitUtils:
             abort_loading = True
         # locally import git in case git is not installed of the system
         try:
-            from git import Repo, Remote, InvalidGitRepositoryError, FetchInfo
+            from git import Repo, Remote, FetchInfo
         except ModuleNotFoundError:
             self.__git_disable = True
             logger.warning("Git module is not installed. Python module 'GitPython' is missing, please install it with pip.")
@@ -80,15 +84,24 @@ class GitUtils:
         if abort_loading:
             return
         logger.debug(f"Loading git at {self.__repo_path}")
+
+    async def initialize(self, skip_submodule_update: bool = False) -> "GitUtils":
+        from git import Repo, InvalidGitRepositoryError
+        if not self.__repo_path.is_dir():
+            mkdir(self.__repo_path)
         try:
             self.__gitRepo = Repo(self.__repo_path)
             logger.debug(f"Repo path: {self.__gitRepo.git_dir}")
-            self.__init_repo(skip_submodule_update)
+            await self.__init_repo(skip_submodule_update)
+        except NoSuchPathError as err:
+            logger.debug(err)
+            logger.warning(f"The {self.__repo_path} path does not exist. Skipping git operation.")
         except InvalidGitRepositoryError as err:
             logger.verbose(err)
             logger.warning("Error while loading local git repository. Skipping all git operation.")
+        return self
 
-    def __init_repo(self, skip_submodule_update: bool = False) -> None:
+    async def __init_repo(self, skip_submodule_update: bool = False) -> None:
         self.isAvailable = True
         assert self.__gitRepo is not None
         logger.debug("Git repository successfully loaded")
@@ -98,9 +111,9 @@ class GitUtils:
             logger.warning("No remote git origin found on repository")
             logger.debug(self.__gitRepo.remotes)
         if not skip_submodule_update:
-            self.__initSubmodules()
+            await self.__initSubmodules()
 
-    def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
+    async def clone(self, repo_url: str, optimize_disk_space: bool = True) -> bool:
         if ParametersManager().offline_mode:
             logger.error("It's not possible to clone a repository in offline mode ...")
             return False
@@ -136,7 +149,7 @@ class GitUtils:
             error = GitUtils.formatStderr(e.stderr)
             logger.error(f"Unable to clone the git repository. {error}")
             return False
-        self.__init_repo()
+        await self.__init_repo()
         return True
 
     def getCurrentBranch(self) -> Optional[str]:
@@ -147,7 +160,7 @@ class GitUtils:
         try:
             return str(self.__gitRepo.active_branch)
         except TypeError:
-            logger.debug("Git HEAD is detached, cant find the current branch.")
+            logger.debug("Git HEAD is detached, can't find the current branch.")
             return None
         except ValueError:
             logger.error(f"Unable to find current git branch in the {self.__git_name} repository. Check the path in the .git file from {self.__repo_path / '.git'}")
@@ -264,7 +277,7 @@ class GitUtils:
         assert self.__fetchBranchInfo is not None
         return self.__fetchBranchInfo.commit
 
-    def update(self) -> bool:
+    async def update(self) -> bool:
         """Update local git repository within current branch"""
         assert self.isAvailable
         assert not ParametersManager().offline_mode
@@ -278,13 +291,13 @@ class GitUtils:
             return False
         if self.__gitRemote is not None:
             logger.info(f"Using branch [green]{self.getCurrentBranch()}[/green] on {self.getName()} repository")
-            with console.status(f"Updating git [green]{self.getName()}[/green]", spinner_style="blue"):
+            async with ExegolStatus(f"Updating git [green]{self.getName()}[/green]", spinner_style="blue"):
                 self.__gitRemote.pull(refspec=self.getCurrentBranch())
             logger.success("Git successfully updated")
             return True
         return False
 
-    def __initSubmodules(self) -> None:
+    async def __initSubmodules(self) -> None:
         """Init (and update git object not source code) git sub repositories (only depth=1)"""
         if ParametersManager().offline_mode:
             logger.error("It's not possible to update any submodule in offline mode ...")
@@ -294,7 +307,7 @@ class GitUtils:
         blacklist_heavy_modules = ["exegol-resources", "exegol-images"]
         if self.__gitRepo is None:
             return
-        with console.status(f"Initialization of git submodules", spinner_style="blue") as s:
+        async with ExegolStatus(f"Initialization of git submodules", spinner_style="blue") as s:
             try:
                 submodules = self.__gitRepo.iter_submodules()
             except ValueError:
@@ -425,7 +438,7 @@ class GitUtils:
         return self.__is_submodule
 
     @classmethod
-    def formatStderr(cls, stderr) -> str:
+    def formatStderr(cls, stderr: str) -> str:
         return stderr.replace('\n', '').replace('stderr:', '').strip().strip("'")
 
     def __repr__(self) -> str:

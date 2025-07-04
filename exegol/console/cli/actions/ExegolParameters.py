@@ -67,7 +67,24 @@ class Restart(Command, ContainerSelector, ContainerSpawnShell):
 
 
 class Install(Command, ImageSelector):
-    """Install or build Exegol image"""
+    """Install Exegol image"""
+
+    def __init__(self) -> None:
+        Command.__init__(self)
+        ImageSelector.__init__(self, self.groupArgs)
+
+        self._usages = {
+            "Install interactively an exegol image": "exegol install",
+            "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]"
+        }
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running install module")
+        return ExegolManager.install
+
+
+class Build(Command, ImageSelector):
+    """Build a local Exegol image"""
 
     def __init__(self) -> None:
         Command.__init__(self)
@@ -98,15 +115,14 @@ class Install(Command, ImageSelector):
                                        title="[bold cyan]Build[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
-            "Install or build interactively an exegol image": "exegol install",
-            "Install or update the [bright_blue]full[/bright_blue] image": "exegol install [bright_blue]full[/bright_blue]",
-            "Build interactively a local image named [blue]myimage[/blue]": "exegol install [blue]myimage[/blue]",
-            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol install [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
+            "Build interactively an exegol image": "exegol build",
+            "Build interactively a local image named [blue]myimage[/blue]": "exegol build [blue]myimage[/blue]",
+            "Build the [blue]myimage[/blue] image based on the [bright_blue]full[/bright_blue] profile and log the operation": "exegol build [blue]myimage[/blue] [bright_blue]full[/bright_blue] --build-log /tmp/build.log",
         }
 
     def __call__(self, *args, **kwargs):
-        logger.debug("Running install module")
-        return ExegolManager.install
+        logger.debug("Running build module")
+        return ExegolManager.build
 
 
 class Update(Command, ImageSelector):
@@ -283,8 +299,33 @@ class Info(Command, ContainerSelector):
         return ExegolManager.info
 
 
+class Activate(Command):
+    """Activate an exegol license"""
+
+    def __init__(self) -> None:
+        Command.__init__(self)
+
+        self._usages = {
+            "Activate Exegol with a new license": "exegol activate",
+            "[blue]Revoke[/blue] an existing license": "exegol activate [blue]--revoke[/blue]"
+        }
+
+        self.revoke = Option("--revoke",
+                             action="store_true",
+                             dest="revoke",
+                             help="Revoke your local Exegol license "
+                                  "(default: [red not italic]False[/red not italic])")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.revoke, "required": False},
+                                       title="[bold cyan]Activate[/bold cyan] [blue]specific options[/blue]"))
+
+    def __call__(self, *args, **kwargs):
+        return ExegolManager.activate
+
+
 class Version(Command):
     """Print current Exegol version"""
 
     def __call__(self, *args, **kwargs):
-        return lambda: None
+        return None

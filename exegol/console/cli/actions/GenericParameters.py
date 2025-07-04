@@ -4,7 +4,9 @@ from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, Files
 
 from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter, DesktopConfigCompleter
+from exegol.console.cli.SyntaxFormat import SyntaxFormat
 from exegol.console.cli.actions.Command import Option, GroupArg
+from exegol.utils.NetworkUtils import NetworkUtils
 
 
 class ContainerSelector:
@@ -161,11 +163,12 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                        default=True,
                                        dest="exegol_resources",
                                        help=f"Disable the mount of the exegol resources (/opt/resources) from the host ({UserConfig().exegol_resources_path}) (default: [green]Enabled[/green])")
-        self.host_network = Option("--disable-shared-network",
-                                   action="store_false",
-                                   default=True,
-                                   dest="host_network",
-                                   help="Disable the sharing of the host's network interfaces with exegol (default: [green]Enabled[/green])")
+        self.network = Option("--network",
+                              dest="network",
+                              action="store",
+                              default=None,
+                              choices=NetworkUtils.get_options(),
+                              help=f"Select the type of network to which the container will be attached (default: [blue]{UserConfig().network_default_mode}[/blue])")
         self.share_timezone = Option("--disable-shared-timezones",
                                      action="store_false",
                                      default=True,
@@ -191,12 +194,12 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               default=[],
                               dest="volumes",
-                              help="Share a new volume between host and exegol (format: --volume /path/on/host/:/path/in/container/[blue][:ro|rw][/blue])")
+                              help=f"Share a new volume between host and exegol (format: --volume {SyntaxFormat.volume})")
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],
                             dest="ports",
-                            help="Share a network port between host and exegol (format: --port [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]. This configuration will disable the shared network with the host.",
+                            help=f"Share a network port between host and exegol (format: --port {SyntaxFormat.port_sharing}). This configuration will disable the default host network.",
                             completer=VoidCompleter)
         self.hostname = Option("--hostname",
                                dest="hostname",
@@ -243,7 +246,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.X11, "required": False},
                                   {"arg": self.my_resources, "required": False},
                                   {"arg": self.exegol_resources, "required": False},
-                                  {"arg": self.host_network, "required": False},
+                                  {"arg": self.network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.comment, "required": False},
                                   title="[blue]Container creation options[/blue]"))
@@ -274,7 +277,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      default="",
                                      action="store",
                                      help=f"Configure your exegol desktop ([blue]{'[/blue] or [blue]'.join(UserConfig.desktop_available_proto)}[/blue]) and its exposure "
-                                          f"(format: [blue]proto[:ip[:port]][/blue]) "
+                                          f"(format: {SyntaxFormat.desktop_config}) "
                                           f"(default: [blue]{UserConfig().desktop_default_proto}[/blue]:[blue]{'127.0.0.1' if UserConfig().desktop_default_localhost else '0.0.0.0'}[/blue]:[blue]<random>[/blue])",
                                      completer=DesktopConfigCompleter)
         groupArgs.append(GroupArg({"arg": self.desktop, "required": False},

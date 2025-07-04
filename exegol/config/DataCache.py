@@ -1,7 +1,9 @@
 import json
+from typing import List
 
-from exegol.model.CacheModels import *
+from exegol.model.CacheModels import ImageCacheModel, WrapperCacheModel, CacheDB, ImagesCacheModel
 from exegol.utils.DataFileUtils import DataFileUtils
+from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
 
@@ -57,7 +59,7 @@ class DataCache(DataFileUtils, metaclass=MetaSingleton):
         """Get Images information from cache"""
         return self.__cache_data.images
 
-    def update_image_cache(self, images: List) -> None:
+    async def update_image_cache(self, images: List) -> None:
         """Refresh image cache data"""
         logger.debug("Updating image cache data")
         cache_images = []

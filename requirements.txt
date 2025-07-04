@@ -5,3 +5,10 @@ GitPython~=3.1.43
 PyYAML>=6.0.2
 argcomplete~=3.5.0
 tzlocal~=5.2; platform_system != 'Linux'
+ifaddr~=0.2.0
+supabase~=2.13.0
+pydantic~=2.11.1
+pyjwt>=2.10.1
+pyjwt[crypto]>=2.10.1
+cryptography>=43.0.3
+python-dateutil>=2.9.0; python_version < '3.11'

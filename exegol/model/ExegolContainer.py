@@ -1,22 +1,25 @@
+import errno
 import os
 import shutil
 import subprocess
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, Dict, Sequence, Tuple, Union
 
 from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
 
 from exegol.config.EnvInfo import EnvInfo
-from exegol.console.ExegolPrompt import Confirm
+from exegol.console.ExegolPrompt import ExegolRich
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger
 from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
@@ -41,23 +44,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 docker_image = None
                 image_name = "[red bold]BROKEN[/red bold]"
             # Create Exegol container from an existing docker container
-            super().__init__(docker_container.name,
-                             config=ContainerConfig(docker_container),
-                             image=ExegolImage(name=image_name, docker_image=docker_image),
-                             hostname=docker_container.attrs.get('Config', {}).get('Hostname'),
-                             new_container=False)
+            super().__init__(str(docker_container.name),
+                             config=ContainerConfig(container=docker_container),
+                             image=ExegolImage(name=image_name, docker_image=docker_image))
             self.image.syncContainerData(docker_container)
             # At this stage, the container image object has an unknown status because no synchronization with a registry has been done.
             # This could be done afterwards (with container.image.autoLoad()) if necessary because it takes time.
             self.__new_container = False
         else:
             # Create Exegol container from a newly created docker container with its object template.
-            super().__init__(docker_container.name,
-                             config=ContainerConfig(docker_container),
+            super().__init__(str(docker_container.name),
+                             config=ContainerConfig(container=docker_container),
                              # Rebuild config from docker object to update workspace path
-                             image=model.image,
-                             hostname=model.config.hostname,
-                             new_container=False)
+                             image=model.image)
             self.__new_container = True
         self.image.syncStatus()
 
@@ -105,19 +104,19 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Universal unique key getter (from SelectableInterface)"""
         return self.name
 
-    def start(self) -> None:
+    async def start(self) -> None:
         """Start the docker container"""
         if not self.isRunning():
             logger.info(f"Starting container {self.name}")
-            self.__start_container()
-            self.__postStartSetup()
+            await self.__start_container()
+            await self.__postStartSetup()
 
-    def __start_container(self) -> None:
+    async def __start_container(self) -> None:
         """
         This method starts the container and displays startup status updates to the user.
         :return:
         """
-        with console.status(f"Waiting to start {self.name}", spinner_style="blue") as progress:
+        async with ExegolStatus(f"Waiting to start {self.name}", spinner_style="blue") as progress:
             start_date = datetime.now()
             try:
                 self.__container.start()
@@ -164,14 +163,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     # User can cancel startup logging with ctrl+C
                     logger.warning("Skipping startup status updates (user interruption). Spawning shell now.")
 
-    def stop(self, timeout: int = 10) -> None:
+    async def stop(self, timeout: int = 10) -> None:
         """Stop the docker container"""
         if self.isRunning():
             logger.info(f"Stopping container {self.name}")
-            with console.status(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
+            async with ExegolStatus(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
                 self.__container.stop(timeout=timeout)
 
-    def spawnShell(self) -> None:
+    async def spawnShell(self) -> None:
         """Spawn a shell on the docker container"""
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
@@ -179,7 +178,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info(f"Shared host device: {device.split(':')[0]}")
         logger.success(f"Opening shell in Exegol '{self.name}'")
         # In case of multi-user environment, xhost must be set before opening each session to be sure
-        self.__applyX11ACLs()
+        await self.__applyX11ACLs()
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
         envs = self.config.getShellEnvs()
         options = ""
@@ -196,13 +195,13 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
-    def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> None:
+    async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False) -> None:
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
         Set quiet to disable logs message
         Set is_tmp if the container will automatically be removed after execution"""
         if not self.isRunning():
-            self.start()
+            await self.start()
         if not quiet:
             logger.info("Executing command on Exegol")
             if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
@@ -245,19 +244,25 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             cmd = f"zsh -c '{cmd}'"
         return cmd, str_cmd
 
-    def remove(self) -> None:
+    async def remove(self) -> None:
         """Stop and remove the docker container"""
-        self.__removeVolume()
-        self.stop(timeout=2)
+        await self.__removeVolume()
+        await self.stop(timeout=2)
         logger.info(f"Removing container {self.name}")
         try:
             self.__container.remove()
             logger.success(f"Container {self.name} successfully removed.")
         except NotFound:
-            logger.error(
-                f"The container {self.name} has already been removed (probably created as a temporary container).")
+            logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
+        nets = self.config.getNetworks()
+        # Must be imported locally to avoid circular importation
+        from exegol.utils.DockerUtils import DockerUtils
+        for net in nets:
+            if net.shouldBeRemoved():
+                logger.debug(f"Network {net.getNetworkName()} will be removed.")
+                DockerUtils().removeNetwork(net.getNetworkName())
 
-    def __removeVolume(self) -> None:
+    async def __removeVolume(self) -> None:
         """Remove private workspace volume directory if exist"""
         volume_path = self.config.getPrivateVolumePath()
         # TODO add backup
@@ -267,33 +272,53 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 # TODO review WSL workspace volume
                 logger.warning("Warning: WSL workspace directory cannot be removed automatically.")
                 return
-            logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
+            force_remove = False
             try:
-                list_files = os.listdir(volume_path)
-            except PermissionError:
-                if Confirm(f"Insufficient permission to view workspace files {volume_path}, "
-                           f"do you still want to delete them?", default=False):
-                    # Set list_files as empty to skip user prompt again
-                    list_files = []
+                have_files = False
+                for _ in Path(volume_path).iterdir():
+                    have_files = True
+                    break
+            except (PermissionError, OSError) as e:
+                if type(e) is OSError:
+                    logger.warning(f"Error during workspace files access: {e}")
+                    message = f"Exegol cannot access the workspace files [magenta]{volume_path}[/magenta], do you want to delete your container's workspace?"
+                else:
+                    message = f"Insufficient permission to view workspace files [magenta]{volume_path}[/magenta], do you want to delete your container's workspace?"
+                if await ExegolRich.Confirm(message, default=False):
+                    # Set have_files to skip directly to rmtree
+                    have_files = True
+                    # Set force_remove to skip user prompt confirmation again
+                    force_remove = True
                 else:
                     return
             except FileNotFoundError:
                 logger.debug("This workspace has already been removed.")
                 return
             try:
-                if len(list_files) > 0:
+                try:
+                    if have_files:
+                        raise OSError
+                    logger.info(f"Removing empty workspace volume")
+                    os.rmdir(volume_path)  # This function can only remove an empty directory as failsafe
+                except OSError as e:
+                    if e.errno is not None and e.errno != errno.ENOTEMPTY:
+                        logger.error(f"Receive an error during workspace removal: {e}")
                     # Directory is not empty
-                    if not Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
-                                   default=False):
+                    if (not force_remove and
+                            not await ExegolRich.Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
+                                                         default=False)):
                         # User can choose not to delete the workspace on the host
                         return
-                # Try to remove files from the host with user permission (work only without sub-directory)
-                shutil.rmtree(volume_path)
+                    logger.verbose(f"Removing workspace volume")
+                    # Try to remove files from the host with user permission (work only without sub-directory)
+                    shutil.rmtree(volume_path)
             except PermissionError:
                 logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
+                if not self.isRunning():
+                    await self.__start_container()
                 # If the host can't remove the container's file and folders, the rm command is exec from the container itself as root
-                self.exec("rm -rf /workspace", as_daemon=False, quiet=True)
+                await self.exec("rm -rf /workspace", as_daemon=False, quiet=True)
                 try:
                     shutil.rmtree(volume_path)
                 except PermissionError:
@@ -303,13 +328,15 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.error(err)
                 return
             logger.success("Private workspace volume removed successfully")
+        else:
+            logger.warning(f"Externally managed workspaces are [red]NOT[/red] automatically removed by exegol. You can manually remove the directory if it's no longer needed: [magenta]{self.config.getHostWorkspacePath()}[/magenta]")
 
-    def __postStartSetup(self) -> None:
+    async def __postStartSetup(self) -> None:
         """
         Operation to be performed after starting a container
         :return:
         """
-        self.__applyX11ACLs()
+        await self.__applyX11ACLs()
 
     def __check_start_version(self) -> None:
         """
@@ -328,7 +355,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(f"Updating spawn.sh script from version {container_version} to version {current_start}")
                 self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_spawn=True))
 
-    def postCreateSetup(self, is_temporary: bool = False) -> None:
+    async def postCreateSetup(self, is_temporary: bool = False) -> None:
         """
         Operation to be performed after creating a container
         :return:
@@ -338,16 +365,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             # Update entrypoint script in the container
             self.__container.put_archive("/", ImageScriptSync.getImageSyncTarData(include_entrypoint=True))
             if self.__container.status.lower() == "created":
-                self.__start_container()
+                await self.__start_container()
             try:
-                self.__updatePasswd()
+                await self.__updatePasswd()
             except APIError as e:
                 if "is not running" in e.explanation:
                     logger.critical("An unexpected error occurred. Exegol cannot start the container after its creation...")
         # Run post start container actions
-        self.__postStartSetup()
+        await self.__postStartSetup()
 
-    def __applyX11ACLs(self) -> None:
+    async def __applyX11ACLs(self) -> None:
         """
         If X11 (GUI) is enabled, allow X11 access on host ACL (if not already allowed) for linux and mac.
         If the host is accessed by SSH, propagate xauth cookie authentication if applicable.
@@ -376,7 +403,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 if EnvInfo.isMacHost():
                     logger.debug(f"Adding xhost ACL to localhost")
                     # add xquartz inet ACL
-                    with console.status(f"Starting XQuartz...", spinner_style="blue"):
+                    async with ExegolStatus(f"Starting XQuartz...", spinner_style="blue"):
                         os.system(f"xhost + localhost > /dev/null")
                 elif not EnvInfo.isWindowsHost():
                     logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
@@ -395,7 +422,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
             # If the left part of the display variable is "localhost", x11 socket is exposed only on loopback and remote access is used
             # If the container is not in host mode, it won't be able to reach the loopback interface of the host
-            if display_host == "localhost" and self.config.getNetworkMode() != "host":
+            if display_host == "localhost" and not self.config.isNetworkHost():
                 logger.warning("X11 forwarding won't work on a bridged container unless you specify \"X11UseLocalhost no\" in your host sshd_config")
                 logger.warning("[red]Be aware[/red] changing \"X11UseLocalhost\" value can [red]expose your device[/red], correct firewalling is [red]required[/red]")
                 # TODO Add documentation to restrict the exposure of the x11 socket to the docker subnet
@@ -420,17 +447,17 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             # Check if the host has a xauth entry corresponding to the current display.
             if xauthEntry:
                 logger.debug(f"Adding xauth cookie to container: {xauthEntry}")
-                self.exec(f"xauth add {xauthEntry}", as_daemon=False, quiet=True)
+                await self.exec(f"xauth add {xauthEntry}", as_daemon=False, quiet=True)
                 logger.debug(f"Removing {tmpXauthority}")
                 os.remove(tmpXauthority)
             else:
                 logger.warning(f"No xauth cookie corresponding to the current display was found.")
 
-    def __updatePasswd(self) -> None:
+    async def __updatePasswd(self) -> None:
         """
         If configured, update the password of the user inside the container.
         :return:
         """
         if self.config.getPasswd() is not None:
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
-            self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
+            await self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)

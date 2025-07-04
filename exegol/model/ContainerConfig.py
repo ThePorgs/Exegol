@@ -12,20 +12,22 @@ from typing import Optional, List, Dict, Union, Tuple, cast
 
 from docker.models.containers import Container
 from docker.types import Mount
-from rich.prompt import Prompt
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.UserConfig import UserConfig
 from exegol.console.ConsoleFormat import boolFormatter, getColor
-from exegol.console.ExegolPrompt import Confirm
+from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.console.cli.SyntaxFormat import SyntaxFormat
 from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation
 from exegol.model.ExegolModules import ExegolModules
+from exegol.model.ExegolNetwork import ExegolNetwork, ExegolNetworkMode, DockerDrivers
 from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.FsUtils import check_sysctl_value, mkdir
 from exegol.utils.GuiUtils import GuiUtils
+from exegol.utils.SessionHandler import SessionHandler
 
 if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
     from tzlocal import get_localzone_name
@@ -37,6 +39,7 @@ class ContainerConfig:
     # Default hardcoded value
     __default_entrypoint = ["/bin/bash", "/.exegol/entrypoint.sh"]
     __default_shm_size = "64M"
+    __fallback_network_mode = ExegolNetworkMode[UserConfig().network_fallback_mode.lower()]
 
     # Reference static config data
     __static_gui_envs = {"_JAVA_AWT_WM_NONREPARENTING": "1", "QT_X11_NO_MITSHM": "1"}
@@ -81,16 +84,21 @@ class ContainerConfig:
                         ExegolMetadata.comment.value: ["setComment", "getComment"],
                         ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
 
-    def __init__(self, container: Optional[Container] = None):
+    def __init__(self, container: Optional[Container] = None, container_name: Optional[str] = None, hostname: Optional[str] = None):
         """Container config default value"""
-        self.hostname = ""
+        if container_name is None:
+            self.container_name: str = ""
+        elif container_name.startswith("exegol-"):
+            self.container_name = container_name
+        else:
+            self.container_name = f'exegol-{container_name}'
         self.__enable_gui: bool = False
         self.__gui_engine: List[str] = []
         self.__share_timezone: bool = False
         self.__my_resources: bool = False
         self.__my_resources_path: str = "/opt/my-resources"
         self.__exegol_resources: bool = False
-        self.__network_host: bool = True
+        self.__networks: List[ExegolNetwork] = []
         self.__privileged: bool = False
         self.__wrapper_start_enabled: bool = False
         self.__mounts: List[Mount] = []
@@ -99,7 +107,7 @@ class ContainerConfig:
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
         self.__labels: Dict[str, str] = {}
-        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]] = {}
+        self.__ports: Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]]]]] = {}
         self.__extra_host: Dict[str, str] = {}
         self.interactive: bool = False
         self.tty: bool = False
@@ -123,12 +131,19 @@ class ContainerConfig:
         self.__comment: Optional[str] = None
         self.__username: str = "root"
         self.__passwd: Optional[str] = self.generateRandomPassword()
+        if hostname is not None:
+            self.hostname = hostname
+            if container is None:  # if this is a new container
+                self.addEnv(ContainerConfig.ExegolEnv.exegol_name.value, self.container_name)
+        else:
+            self.hostname = self.container_name
 
         if container is not None:
             self.__parseContainerConfig(container)
         else:
             self.__wrapper_start_enabled = True
             self.addVolume(str(ConstantConfig.spawn_context_path_obj), "/.exegol/spawn.sh", read_only=True, must_exist=True)
+            # After __init__, await self.configFromUser() should be called
 
     # ===== Config parsing section =====
 
@@ -140,7 +155,9 @@ class ContainerConfig:
         self.__my_resources = False
         self.__enable_gui = False
         # Container Config section
+        self.container_name = container.name
         container_config = container.attrs.get("Config", {})
+        self.hostname = container_config.get('Hostname', self.container_name)
         self.tty = container_config.get("Tty", True)
         self.__parseEnvs(container_config.get("Env", []))
         self.__parseLabels(container_config.get("Labels", {}))
@@ -163,11 +180,12 @@ class ContainerConfig:
         logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
-        self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
+        container_name = container.name[7:] if container.name.startswith("exegol-") else container.name
+        self.__parseMounts(container.attrs.get("Mounts", []), container_name)
 
         # Network section
         network_settings = container.attrs.get("NetworkSettings", {})
-        self.__network_host = "host" in network_settings["Networks"]
+        self.__networks = ExegolNetwork.parse_networks(network_settings["Networks"], container_name=self.container_name)
         self.__ports = network_settings.get("Ports", {})
 
     def __parseEnvs(self, envs: List[str]) -> None:
@@ -235,8 +253,7 @@ class ContainerConfig:
                 self.__share_timezone = True
             elif "/opt/resources" in share.get('Destination', ''):
                 self.__exegol_resources = True
-            # TODO remove support for previous container
-            elif "/my-resources" in share.get('Destination', '') or "/opt/my-resources" in share.get('Destination', ''):
+            elif "/opt/my-resources" in share.get('Destination', ''):
                 self.__my_resources = True
                 self.__my_resources_path = share.get('Destination', '')
             elif "/workspace" in share.get('Destination', ''):
@@ -253,8 +270,7 @@ class ContainerConfig:
                 else:
                     logger.debug("└── Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            # TODO remove support for previous container
-            elif "/vpn" in share.get('Destination', '') or "/.exegol/vpn" in share.get('Destination', ''):
+            elif "/.exegol/vpn" in share.get('Destination', ''):
                 # VPN are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -263,25 +279,78 @@ class ContainerConfig:
             elif "/.exegol/spawn.sh" in share.get('Destination', ''):
                 self.__wrapper_start_enabled = True
 
+    # ===== Config init section =====
+
+    async def configFromUser(self) -> "ContainerConfig":
+        """Create Exegol configuration from user input"""
+        # Container configuration from user CLI options
+        try:
+            # Container configuration from user CLI options
+            if ParametersManager().X11:
+                await self.enableGUI()
+            if ParametersManager().share_timezone:
+                self.enableSharedTimezone()
+            self.setNetworkMode(ParametersManager().network)
+            if ParametersManager().ports is not None:
+                for port in ParametersManager().ports:
+                    self.addRawPort(port)
+            if ParametersManager().my_resources:
+                self.enableMyResources()
+            if ParametersManager().exegol_resources:
+                await self.enableExegolResources()
+            if ParametersManager().log:
+                self.enableShellLogging(ParametersManager().log_method,
+                                        UserConfig().shell_logging_compress ^ ParametersManager().log_compress)
+            if ParametersManager().workspace_path:
+                if ParametersManager().mount_current_dir:
+                    logger.warning(f'Workspace conflict detected (-cwd cannot be use with -w). Using: {ParametersManager().workspace_path}')
+                self.setWorkspaceShare(ParametersManager().workspace_path)
+            elif ParametersManager().mount_current_dir:
+                self.enableCwdShare()
+            if ParametersManager().privileged:
+                self.setPrivileged()
+            elif ParametersManager().capabilities is not None:
+                for cap in ParametersManager().capabilities:
+                    self.addCapability(cap)
+            if ParametersManager().volumes is not None:
+                for volume in ParametersManager().volumes:
+                    await self.addRawVolume(volume)
+            if ParametersManager().devices is not None:
+                for device in ParametersManager().devices:
+                    self.addUserDevice(device)
+            if ParametersManager().vpn is not None:
+                await self.enableVPN()
+            if ParametersManager().envs is not None:
+                for env in ParametersManager().envs:
+                    self.addRawEnv(env)
+            if UserConfig().desktop_default_enable ^ ParametersManager().desktop:
+                self.enableDesktop(ParametersManager().desktop_config)
+            if ParametersManager().comment:
+                self.addComment(ParametersManager().comment)
+        except CancelOperation as e:
+            logger.critical(f"Unable to create a new container: {e}")
+            raise e
+        return self
+
     # ===== Feature section =====
 
-    def interactiveConfig(self, container_name: str) -> List[str]:
+    async def interactiveConfig(self, container_name: str) -> List[str]:
         """Interactive procedure allowing the user to configure its new container"""
         logger.info("Starting interactive configuration")
 
         command_options = []
 
         # Workspace config
-        if Confirm(
+        if await ExegolRich.Confirm(
                 "Do you want to [green]share[/green] your [blue]current host working directory[/blue] in the new container's worskpace?",
                 default=False):
             self.enableCwdShare()
             command_options.append("-cwd")
-        elif Confirm(
+        elif await ExegolRich.Confirm(
                 f"Do you want to [green]share[/green] [blue]a host directory[/blue] in the new container's workspace [blue]different than the default one[/blue] ([magenta]{UserConfig().private_volume_path / container_name}[/magenta])?",
                 default=False):
             while True:
-                workspace_path = Prompt.ask("Enter the path of your workspace")
+                workspace_path = await ExegolRich.Ask("Enter the path of your workspace")
                 if Path(workspace_path).expanduser().is_dir():
                     break
                 else:
@@ -291,19 +360,19 @@ class ContainerConfig:
 
         # X11 sharing (GUI) config
         if self.__enable_gui:
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]X11[/blue] (i.e. GUI apps)?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] [blue]X11[/blue] (i.e. GUI apps)?", False):
                 self.__disableGUI()
-        elif Confirm("Do you want to [green]enable[/green] [blue]X11[/blue] (i.e. GUI apps)?", False):
-            self.enableGUI()
+        elif await ExegolRich.Confirm("Do you want to [green]enable[/green] [blue]X11[/blue] (i.e. GUI apps)?", False):
+            await self.enableGUI()
         # Command builder info
         if not self.__enable_gui:
             command_options.append("--disable-X11")
 
         # Desktop Config
         if self.isDesktopEnabled():
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]Desktop[/blue]?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] [blue]Desktop[/blue]?", False):
                 self.__disableDesktop()
-        elif Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
+        elif await ExegolRich.Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
             self.enableDesktop()
         # Command builder info
         if self.isDesktopEnabled():
@@ -311,9 +380,9 @@ class ContainerConfig:
 
         # Timezone config
         if self.__share_timezone:
-            if Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]remove[/orange3] your [blue]shared timezone[/blue] config?", False):
                 self.__disableSharedTimezone()
-        elif Confirm("Do you want to [green]share[/green] your [blue]host's timezone[/blue]?", False):
+        elif await ExegolRich.Confirm("Do you want to [green]share[/green] your [blue]host's timezone[/blue]?", False):
             self.enableSharedTimezone()
         # Command builder info
         if not self.__share_timezone:
@@ -321,9 +390,9 @@ class ContainerConfig:
 
         # my-resources config
         if self.__my_resources:
-            if Confirm("Do you want to [orange3]disable[/orange3] [blue]my-resources[/blue]?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] [blue]my-resources[/blue]?", False):
                 self.__disableMyResources()
-        elif Confirm("Do you want to [green]activate[/green] [blue]my-resources[/blue]?", False):
+        elif await ExegolRich.Confirm("Do you want to [green]activate[/green] [blue]my-resources[/blue]?", False):
             self.enableMyResources()
         # Command builder info
         if not self.__my_resources:
@@ -331,45 +400,45 @@ class ContainerConfig:
 
         # Exegol resources config
         if self.__exegol_resources:
-            if Confirm("Do you want to [orange3]disable[/orange3] the [blue]exegol resources[/blue]?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] the [blue]exegol resources[/blue]?", False):
                 self.disableExegolResources()
-        elif Confirm("Do you want to [green]activate[/green] the [blue]exegol resources[/blue]?", False):
-            self.enableExegolResources()
+        elif await ExegolRich.Confirm("Do you want to [green]activate[/green] the [blue]exegol resources[/blue]?", False):
+            await self.enableExegolResources()
         # Command builder info
         if not self.__exegol_resources:
             command_options.append("--disable-exegol-resources")
 
         # Network config
-        if self.__network_host:
-            if Confirm("Do you want to use a [blue]dedicated private network[/blue]?", False):
-                self.setNetworkMode(False)
-        elif Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False):
-            self.setNetworkMode(True)
+        if self.__networks[0].getNetworkMode() == ExegolNetworkMode.host:
+            if await ExegolRich.Confirm("Do you want to use a [blue]dedicated private network[/blue]?", False):
+                self.setNetworkMode(self.__fallback_network_mode)
+        elif await ExegolRich.Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False):
+            self.setNetworkMode(ExegolNetworkMode.host)
         # Command builder info
-        if not self.__network_host:
-            command_options.append("--disable-shared-network")
+        if self.__networks[0] != ExegolNetworkMode.host:
+            command_options.append(f"--network nat")
 
         # Shell logging config
         if self.__shell_logging:
-            if Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
+            if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] automatic [blue]shell logging[/blue]?", False):
                 self.__disableShellLogging()
-        elif Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
+        elif await ExegolRich.Confirm("Do you want to [green]enable[/green] automatic [blue]shell logging[/blue]?", False):
             self.enableShellLogging(UserConfig().shell_logging_method, UserConfig().shell_logging_compress)
         # Command builder info
         if self.__shell_logging:
             command_options.append("--log")
 
         # VPN config
-        if self.__vpn_path is None and Confirm(
+        if self.__vpn_path is None and await ExegolRich.Confirm(
                 "Do you want to [green]enable[/green] a [blue]VPN[/blue] for this container", False):
             while True:
-                vpn_path = Prompt.ask('Enter the path to the OpenVPN config file')
+                vpn_path = await ExegolRich.Ask('Enter the path to the OpenVPN config file')
                 if Path(vpn_path).expanduser().is_file():
-                    self.enableVPN(vpn_path)
+                    await self.enableVPN(vpn_path)
                     break
                 else:
                     logger.error("No config files were found.")
-        elif self.__vpn_path and Confirm(
+        elif self.__vpn_path and await ExegolRich.Confirm(
                 "Do you want to [orange3]remove[/orange3] your [blue]VPN configuration[/blue] in this container", False):
             self.__disableVPN()
         if self.__vpn_path:
@@ -377,9 +446,9 @@ class ContainerConfig:
 
         return command_options
 
-    def enableGUI(self) -> None:
+    async def enableGUI(self) -> None:
         """Procedure to enable GUI feature"""
-        x11_available = GuiUtils.isX11GuiAvailable()
+        x11_available = await GuiUtils.isX11GuiAvailable()
         wayland_available = GuiUtils.isWaylandGuiAvailable()
         if not x11_available and not wayland_available:
             logger.error("Console GUI feature (i.e. GUI apps) is [red]not available[/red] on your environment. [orange3]Skipping[/orange3].")
@@ -492,12 +561,12 @@ class ContainerConfig:
             self.__my_resources = False
             self.removeVolume(container_path='/opt/my-resources')
 
-    def enableExegolResources(self) -> bool:
+    async def enableExegolResources(self) -> bool:
         """Procedure to enable exegol resources volume feature"""
         if not self.__exegol_resources:
             # Check if resources are installed / up-to-date
             try:
-                if not ExegolModules().isExegolResourcesReady():
+                if not await ExegolModules().isExegolResourcesReady():
                     raise CancelOperation
             except CancelOperation:
                 # Error during installation, skipping operation
@@ -552,10 +621,14 @@ class ContainerConfig:
             self.addEnv(self.ExegolEnv.desktop_protocol.value, self.__desktop_proto)
             self.addEnv(self.ExegolEnv.exegol_user.value, self.getUsername())
 
-            if self.__network_host:
+            if self.isNetworkHost():
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
+            elif self.isNetworkDisabled():
+                logger.error(f"The current network mode doesn't support the desktop feature.")
+                self.__disableDesktop()
             else:
+                # Container in bridge mode
                 # If we do not specify the host to the container it will automatically choose eth0 interface
                 # Using default port for the service
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__default_desktop_port.get(self.__desktop_proto)))
@@ -564,7 +637,7 @@ class ContainerConfig:
 
     def configureDesktop(self, desktop_config: str, create_mode: bool = False) -> None:
         """Configure the exegol desktop feature from user parameters.
-        Accepted format: 'mode:host:port'
+        Accepted format: 'proto:host:port'
         """
         self.__desktop_proto = UserConfig().desktop_default_proto
         self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
@@ -589,7 +662,7 @@ class ContainerConfig:
                 except ValueError:
                     logger.critical(f"Invalid desktop port: '{data}' is not a valid port.")
             else:
-                logger.critical(f"Your configuration is invalid, please use the following format:[green]mode:host:port[/green]")
+                logger.critical(f"Your configuration is invalid, please use the following format: {SyntaxFormat.desktop_config}")
 
         if self.__desktop_port is None:
             logger.debug(f"Desktop port will be set automatically")
@@ -613,7 +686,7 @@ class ContainerConfig:
         if self.isDesktopEnabled():
             logger.verbose("Config: Disabling exegol desktop")
             assert self.__desktop_proto is not None
-            if not self.__network_host:
+            if self.isNetworkHost():
                 self.__removePort(self.__default_desktop_port[self.__desktop_proto])
             self.__desktop_proto = None
             self.__desktop_host = None
@@ -629,21 +702,19 @@ class ContainerConfig:
         self.__workspace_custom_path = os.getcwd()
         logger.verbose(f"Config: Sharing current workspace directory {self.__workspace_custom_path}")
 
-    def enableVPN(self, config_path: Optional[str] = None) -> None:
+    async def enableVPN(self, config_path: Optional[str] = None) -> None:
         """Configure a VPN profile for container startup"""
         # Check host mode : custom (allows you to isolate the VPN connection from the host's network)
-        if self.__network_host:
-            logger.warning("Using the host network mode with a VPN profile is not recommended.")
-            if not Confirm(f"Are you sure you want to configure a VPN container based on the host's network?",
-                           default=False):
-                logger.info("Changing network mode to custom")
-                self.setNetworkMode(False)
+        if self.isNetworkHost() and ParametersManager().network is None:
+            if EnvInfo.isLinuxHost():
+                logger.info(f"Defaulting to [magenta]{self.__fallback_network_mode.value}[/magenta] to protect host from VPN. Use [blue]--network host[/blue] if you need to access VPN from your host.")
+            self.setNetworkMode(self.__fallback_network_mode)
         # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
         self.addCapability("NET_ADMIN")
         # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
         # TODO test with ipv6 disable with kernel modules
         skip_sysctl = False
-        if self.__network_host and EnvInfo.is_linux_shell:
+        if self.isNetworkHost() and EnvInfo.is_linux_shell:
             # Check if IPv6 have been disabled on the host with sysctl
             if check_sysctl_value("net.ipv6.conf.all.disable_ipv6", "0"):
                 skip_sysctl = True
@@ -676,7 +747,7 @@ class ContainerConfig:
         if self.__workspace_custom_path is None:
             self.__disable_workspace = True
 
-    def addComment(self, comment) -> None:
+    def addComment(self, comment: str) -> None:
         """Procedure to add comment to a container"""
         if not self.__comment:
             logger.verbose("Config: Adding comment to container info")
@@ -786,7 +857,7 @@ class ContainerConfig:
             else:
                 logger.warning("Rollback: the workspace directory isn't empty, it will NOT be removed automatically")
 
-    def entrypointRunCmd(self, endless_mode=False) -> None:
+    def entrypointRunCmd(self, endless_mode: bool = False) -> None:
         """Enable the run_cmd feature of the entrypoint. This feature execute the command stored in the $CMD container environment variables.
         The endless_mode parameter can specify if the container must stay alive after command execution or not"""
         self.__run_cmd = True
@@ -822,7 +893,7 @@ class ContainerConfig:
         Generate a new random password.
         """
         charset = string.ascii_letters + string.digits
-        return ''.join(random.choice(charset) for i in range(length))
+        return ''.join(random.choice(charset) for _ in range(length))
 
     @staticmethod
     def __findAvailableRandomPort(interface: str = 'localhost') -> int:
@@ -839,7 +910,7 @@ class ContainerConfig:
 
     # ===== Apply config section =====
 
-    def setWorkspaceShare(self, host_directory) -> None:
+    def setWorkspaceShare(self, host_directory: str) -> None:
         """Procedure to share a specific directory with the /workspace of the container"""
         path = Path(host_directory).expanduser().absolute()
         try:
@@ -850,22 +921,46 @@ class ContainerConfig:
         logger.verbose(f"Config: Sharing workspace directory {path}")
         self.__workspace_custom_path = str(path)
 
-    def setNetworkMode(self, host_mode: Optional[bool]) -> None:
+    def __setNetwork(self, network: Union[ExegolNetworkMode, str]) -> None:
+        """Procedure to set the network mode of the container"""
+
+        if type(network) is ExegolNetworkMode and network == ExegolNetworkMode.nat:
+            if not SessionHandler().pro_feature_access():
+                logger.critical(f"Isolated network mode [green]NAT[/green] is not available in the Community version of Exegol. You can use the [green]Docker[/green] mode instead.")
+                raise CancelOperation
+            elif EnvInfo.isOrbstack():
+                logger.warning("Orbstack doesn’t isolate networks. If you need improved security with [green]NAT[/green], use Docker Desktop. See https://github.com/orbstack/orbstack/issues/1944")
+
+        self.__networks.clear()
+        if type(network) is str or network != ExegolNetworkMode.disabled:
+            self.__networks.append(ExegolNetwork.instance_network(network, self.container_name))
+
+    def setNetworkMode(self, network: Optional[Union[ExegolNetworkMode, str]] = ExegolNetworkMode.host) -> None:
         """Set container's network mode, true for host, false for bridge"""
-        if host_mode is None:
-            host_mode = True
-        if len(self.__ports) > 0 and host_mode:
-            logger.warning("Host mode cannot be set with NAT ports configured. Disabling the shared network mode.")
-            host_mode = False
-        if EnvInfo.isDockerDesktop() and host_mode:
-            if not EnvInfo.isHostNetworkAvailable():
-                logger.warning("Host network mode for Docker desktop (Windows & macOS) is not available.")
-                logger.verbose("Official doc: https://docs.docker.com/network/drivers/host/#docker-desktop")
-                logger.info("To share network ports between the host and exegol, use the [bright_blue]--port[/bright_blue] parameter.")
-                host_mode = False
+        if network is None:
+            # When --network is not set by the user, use default network
+            network = UserConfig().network_default_mode
+        try:
+            if type(network) is str:
+                net_mode: Union[ExegolNetworkMode, str] = ExegolNetworkMode[network.lower()]
             else:
-                logger.warning("Docker desktop host network mode is enabled but in beta. Everything might not work as you expect.")
-        self.__network_host = host_mode
+                net_mode = network
+        except KeyError:
+            net_mode = network
+
+        # Check for host mode incompatibility
+        if type(net_mode) is ExegolNetworkMode and net_mode == ExegolNetworkMode.host:
+            if len(self.__ports) > 0:
+                logger.warning("Host mode cannot be set with NAT ports configured. Disabling the host network mode.")
+                net_mode = self.__fallback_network_mode
+            if EnvInfo.isDockerDesktop():
+                if not EnvInfo.isHostNetworkAvailable():
+                    net_mode = self.__fallback_network_mode
+                else:
+                    logger.warning("The network mode of the Docker desktop host has its limitations. It may not work as expected.")
+                    logger.verbose("More information from the official documentation of Docker Desktop: https://docs.docker.com/network/drivers/host/#docker-desktop")
+
+        self.__setNetwork(net_mode)
 
     def setPrivileged(self, status: bool = True) -> None:
         """Set container as privileged"""
@@ -896,7 +991,7 @@ class ContainerConfig:
             logger.warning(f"Sysctl {sysctl_key} already setup to '{self.__sysctls[sysctl_key]}'. Skipping.")
             return
         # Docs of supported sysctl by linux / docker: https://docs.docker.com/reference/cli/docker/container/run/#currently-supported-sysctls
-        if self.__network_host and sysctl_key.startswith('net.'):
+        if self.isNetworkHost() and sysctl_key.startswith('net.'):
             logger.warning(f"The sysctl container configuration is [red]not[/red] supported by docker in [blue]host[/blue] network mode.")
             logger.warning(f"Skipping the sysctl config: [magenta]{sysctl_key}[/magenta] = [orange3]{config}[/orange3].")
             logger.warning(f"If this configuration is mandatory in your situation, try to change it in sudo mode on your host.")
@@ -912,9 +1007,15 @@ class ContainerConfig:
             # When the sysctl is not present
             return False
 
-    def getNetworkMode(self) -> str:
-        """Network mode, docker term getter"""
-        return "host" if self.__network_host else "bridge"
+    def getNetwork(self) -> Tuple[Optional[str], Optional[str]]:
+        """First Network getter for docker API on container creation"""
+        if len(self.__networks) > 0:
+            return self.__networks[0].getNetworkConfig()
+        return None, None
+
+    def getNetworks(self) -> List[ExegolNetwork]:
+        """Networks getter"""
+        return self.__networks
 
     def setExtraHost(self, host: str, ip: str) -> None:
         """Add or update an extra host to resolv inside the container."""
@@ -930,7 +1031,7 @@ class ContainerConfig:
         Ensure in shared host environment that the container hostname will be correctly resolved to localhost.
         Return a dictionary of host and matching IP"""
         # When using host network mode, you need to add an extra_host to resolve $HOSTNAME
-        if self.__network_host and self.hostname not in self.__extra_host.keys():
+        if self.isNetworkHost() and self.hostname not in self.__extra_host.keys():
             self.setExtraHost(self.hostname, '127.0.0.1')
         return self.__extra_host
 
@@ -989,6 +1090,24 @@ class ContainerConfig:
     def isWorkspaceCustom(self) -> bool:
         """Return if the workspace have a custom host volume"""
         return bool(self.__workspace_custom_path)
+
+    def isNetworkHost(self) -> bool:
+        """Return True if the container is attached to the host network"""
+        for net in self.__networks:
+            if net.getNetworkMode() == ExegolNetworkMode.host:
+                return True
+        return False
+
+    def isNetworkBridge(self) -> bool:
+        """Return True if the container is attached to the host network"""
+        for net in self.__networks:
+            if net.getNetworkDriver() == DockerDrivers.Bridge:
+                return True
+        return False
+
+    def isNetworkDisabled(self) -> bool:
+        """Return True if the container is not connected to any network"""
+        return len(self.__networks) == 0
 
     def addVolume(self,
                   host_path: Union[str, Path],
@@ -1124,7 +1243,7 @@ class ContainerConfig:
     def getEnvs(self) -> Dict[str, str]:
         """Envs config getter"""
         # When using host network mode, service port must be randomized to avoid conflict between services and container
-        if self.__network_host:
+        if self.isNetworkHost():
             self.addEnv(self.ExegolEnv.randomize_service_port.value, "true")
         return self.__envs
 
@@ -1167,15 +1286,19 @@ class ContainerConfig:
                 protocol: str = 'tcp',
                 host_ip: str = '0.0.0.0') -> None:
         """Add port NAT config, only applicable on bridge network mode."""
-        if self.__network_host:
+        if self.isNetworkHost():
             logger.warning("Port sharing is configured, disabling the host network mode.")
-            self.setNetworkMode(False)
+            self.setNetworkMode(self.__fallback_network_mode)
         if protocol.lower() not in ['tcp', 'udp', 'sctp']:
             raise ProtocolNotSupported(f"Unknown protocol '{protocol}'")
         logger.debug(f"Adding port {host_ip}:{port_host} -> {port_container}/{protocol}")
-        self.__ports[f"{port_container}/{protocol}"] = (host_ip, port_host)
+        # Casting type because at this stage, the data is only controlled by the wrapper itself.
+        existing_config = self.__ports.get(f"{port_container}/{protocol}", [])
+        assert type(existing_config) is list
+        existing_config.append((host_ip, port_host))
+        self.__ports[f"{port_container}/{protocol}"] = existing_config
 
-    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[int], List[Dict[str, Union[int, str]]]]]]:
+    def getPorts(self) -> Dict[str, Optional[Union[int, Tuple[str, int], List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]]]]]:
         """Ports config getter"""
         return self.__ports
 
@@ -1252,7 +1375,7 @@ class ContainerConfig:
 
     # ===== User parameter parsing section =====
 
-    def addRawVolume(self, volume_string) -> None:
+    async def addRawVolume(self, volume_string: str) -> None:
         """Add a volume to the container configuration from raw text input.
         Expected format is one of:
         /source/path:/target/mount:rw
@@ -1278,12 +1401,12 @@ class ContainerConfig:
                 self.addVolume(full_host_path, container_path, read_only=readonly)
             except CancelOperation as e:
                 logger.error(f"The following volume couldn't be created [magenta]{volume_string}[/magenta]. {e}")
-                if not Confirm("Do you want to continue without this volume ?", False):
+                if not await ExegolRich.Confirm("Do you want to continue without this volume ?", False):
                     exit(0)
         else:
             logger.critical(f"Volume '{volume_string}' cannot be parsed. Exiting.")
 
-    def addUserDevice(self, user_device_config: str):
+    def addUserDevice(self, user_device_config: str) -> None:
         """Add a device from a user parameters"""
         if (EnvInfo.isDockerDesktop() or EnvInfo.isOrbstack()) and user_device_config not in self.__whitelist_dd_devices:
             if EnvInfo.isDockerDesktop():
@@ -1296,26 +1419,46 @@ class ContainerConfig:
         self.__addDevice(user_device_config)
 
     def addRawPort(self, user_test_port: str) -> None:
-        """Add port config from user input.
-        Format must be [<host_ipv4>:]<host_port>[:<container_port>][:<protocol>]
+        """Add port config or range of ports from user input.
+        Format must be [<host_ipv4>:]<host_port>[-<end_host_port>][:<container_port>[-<end_container_port>]][:<protocol>]
         If host_ipv4 is not set, default to 0.0.0.0
-        If container_port is not set, default is the same as host port
+        If container_port is not set, the same port(s) as host port(s) will be used
         If protocol is not set, default is 'tcp'"""
-        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+):?(\d+)?:?(udp|tcp|sctp)?$", user_test_port)
+        # Regex to capture port ranges and protocols correctly
+        match = re.search(r"^((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):)?(\d+)(-(\d+))?:?(\d+)?(-(\d+))?:?(udp|tcp|sctp)?$", user_test_port)
         if match is None:
-            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: [green][<host_ipv4>:]<host_port>[:<container_port>][:<protocol>][/green]")
+            logger.critical(f"Incorrect port syntax ({user_test_port}). Please use this format: '{SyntaxFormat.port_sharing}'")
             return
         host_ip = "0.0.0.0" if match.group(2) is None else match.group(2)
-        protocol = "tcp" if match.group(5) is None else match.group(5)
+        protocol = match.group(9) if match.group(9) else 'tcp'
         try:
-            host_port = int(match.group(3))
-            container_port = host_port if match.group(4) is None else int(match.group(4))
-            if host_port > 65535 or container_port > 65535:
-                raise ValueError
-        except ValueError:
-            logger.critical(f"The syntax for opening prot in NAT is incorrect. The ports must be numbers between 0 and 65535. ({match.group(3)}:{match.group(4)})")
+            start_host_port = int(match.group(3))
+            end_host_port = int(match.group(5)) if match.group(5) else start_host_port
+            start_container_port_defined = match.group(6) is not None
+            end_container_port_defined = match.group(8) is not None
+            start_container_port = int(match.group(6)) if start_container_port_defined else start_host_port
+            # If start_container_port is not defined, use end_host_port, otherwise use start_container_port or end_container_port if defined
+            if not start_container_port_defined:
+                end_container_port = end_host_port
+            else:
+                end_container_port = int(match.group(8)) if match.group(8) else start_container_port
+            # check port consistency
+            if (len(range(start_host_port, end_host_port)) != len(range(start_container_port, end_container_port))) or (
+                    start_host_port != end_host_port and (not start_container_port_defined and end_container_port_defined)) or (
+                    start_host_port != end_host_port and (start_container_port_defined and not end_container_port_defined)):
+                logger.info(
+                    f"Port sharing configuration does not respect standard usage ({user_test_port}). The configuration in the 'Container sumamry' below will be applied. Please consult the help section for more information on using the -p/--port option.")
+            # Check if start port is lower than end port
+            if end_host_port < start_host_port or end_container_port < start_container_port:
+                raise ValueError("End port cannot be less than start port.")
+            # Check if any port in the range exceeds the valid range
+            if end_host_port > 65535 or end_container_port > 65535:
+                raise ValueError(f"The syntax for opening port in NAT is incorrect. The ports must be numbers between 0 and 65535. ({end_host_port}:{end_container_port})")
+        except ValueError as e:
+            logger.critical(e)
             return
-        self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
+        for host_port, container_port in zip(range(start_host_port, end_host_port + 1), range(start_container_port, end_container_port + 1)):
+            self.addPort(host_port, container_port, protocol=protocol, host_ip=host_ip)
 
     def addRawEnv(self, env: str) -> None:
         """Parse and add an environment variable from raw user input"""
@@ -1348,7 +1491,7 @@ class ContainerConfig:
             result += f"{getColor(self.isDesktopEnabled())[0]}Remote Desktop: {self.getDesktopConfig()}{getColor(self.isDesktopEnabled())[1]}{os.linesep}"
         if verbose or not self.__enable_gui:
             result += f"{getColor(self.__enable_gui)[0]}Console GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
-        if verbose or not self.__network_host:
+        if verbose or not self.isNetworkHost():
             result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
@@ -1387,9 +1530,9 @@ class ContainerConfig:
 
     def getTextNetworkMode(self) -> str:
         """Network mode, text getter"""
-        network_mode = "host" if self.__network_host else "bridge"
+        network_mode = ', '.join([n.getTextNetworkMode() for n in self.__networks]) if len(self.__networks) > 0 else f"[bright_black]{ExegolNetworkMode.disabled.value}[/bright_black]"
         if self.__vpn_path:
-            network_mode += " with VPN"
+            network_mode += " (with VPN)"
         return network_mode
 
     def getTextCreationDate(self) -> str:
@@ -1435,40 +1578,123 @@ class ContainerConfig:
             result += f"{k}={v}{os.linesep}"
         return result
 
-    def getTextPorts(self) -> str:
+    def getTextPorts(self, is_running: bool = True) -> str:
         """Text formatter for Ports configuration.
         Dict Port key = container port/protocol
         Dict Port Values:
           None = Random port
-          int = open port ont he host
+          int = open port on the host
           tuple = (host_ip, port)
           list of int = open multiple host port
           list of dict = open one or more ports on host, key ('HostIp' / 'HostPort') and value ip or port"""
+
+        # Port configuration cannot be fetched from docker until container startup
+        if self.isNetworkBridge() and len(self.__ports) == 0 and not is_running:
+            return "[bright_black]Container must be started first[/bright_black]"
+
         result = ''
+
+        start_host_ip: Optional[str] = None
+        start_host_port: Optional[Union[int, str]] = None
+        previous_host_port: Optional[Union[str, int]] = None
+
+        start_container_protocol: Optional[str] = None
+        start_container_port: Optional[int] = None
+        previous_container_port: Optional[int] = None
+
+        previous_entry = None
+
         for container_config, host_config in self.__ports.items():
-            host_info = "Unknown"
+            # Parse config
+            current_container_port = int(container_config.split('/')[0])
+            current_container_protocole = container_config.split('/')[-1]
+            # We might have multiple host context config at the same time for the same container config
+            current_host_contexts: List[Dict[str, Union[str, int]]] = []
+            # Init range context, container side
+            if start_container_port is None:
+                start_container_port = current_container_port
+                previous_container_port = current_container_port
+                start_container_protocol = current_container_protocole
+
+            # Parse host config multiple format
             if host_config is None:
-                host_info = "0.0.0.0:<Random port>"
-            elif type(host_config) is int:
-                host_info = f"0.0.0.0:{host_config}"
-            elif type(host_config) is tuple:
-                assert len(host_config) == 2
-                host_info = f"{host_config[0]}:{host_config[1]}"
-            elif type(host_config) is list:
-                sub_info = []
-                for sub_host_config in host_config:
-                    if type(sub_host_config) is int:
-                        sub_info.append(f"0.0.0.0:{sub_host_config}")
-                    elif type(sub_host_config) is dict:
-                        sub_port = sub_host_config.get('HostPort', '<Random port>')
+                current_host_contexts.append({"ip": "0.0.0.0",
+                                              "port": "<Random port>"})
+            else:
+                if type(host_config) is list:
+                    host_configs: List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]] = host_config
+                else:
+                    host_configs = cast(List[Union[int, Tuple[str, int], Dict[str, Union[int, str]]]], [host_config])
+
+                for current_host_config in host_configs:
+                    if type(current_host_config) is int:
+                        current_host_contexts.append({"ip": "0.0.0.0",
+                                                      "port": current_host_config})
+                    elif type(current_host_config) is tuple:
+                        assert len(current_host_config) == 2
+                        current_host_contexts.append({"ip": current_host_config[0],
+                                                      "port": int(current_host_config[1])})
+                    elif type(current_host_config) is dict:
+                        sub_port = current_host_config.get('HostPort')
                         if sub_port is None:
                             sub_port = "<Random port>"
-                        sub_info.append(f"{sub_host_config.get('HostIp', '0.0.0.0')}:{sub_port}")
-                if len(sub_info) > 0:
-                    host_info = ", ".join(sub_info)
-            else:
-                logger.debug(f"Unknown port config: {type(host_config)}={host_config}")
-            result += f"{host_info} :right_arrow: {container_config}{os.linesep}"
+                        elif type(sub_port) is str:
+                            sub_port = int(sub_port)
+                        current_host_contexts.append({"ip": current_host_config.get('HostIp', '0.0.0.0'),
+                                                      "port": sub_port})
+                    else:
+                        logger.debug(f"Unknown port config: {type(host_config)}={host_config} :right_arrow: {container_config}")
+                        continue
+
+            for current_context in current_host_contexts:
+                current_host_port = current_context.get("port")
+                current_host_ip: Optional[str] = cast(Optional[str], current_context.get('ip'))
+                if current_host_port is None or current_host_ip is None:
+                    continue
+
+                # Init range context
+                if start_host_port is None:
+                    start_host_port = current_host_port
+                    previous_host_port = current_host_port
+                    start_host_ip = current_host_ip
+                # Check if range continue
+                elif (previous_host_port is not None and
+                      previous_container_port is not None and
+                      start_host_ip == current_host_ip and
+                      current_container_protocole == start_container_protocol and
+                      (current_host_port == previous_host_port or
+                       (type(previous_host_port) is int and current_host_port == previous_host_port + 1)) and
+                      (current_container_port == previous_container_port or
+                       (type(previous_container_port) is int and current_container_port == previous_container_port + 1))):
+                    previous_host_port = current_host_port
+                    previous_container_port = current_container_port
+                # If range exit, submit previous entry + reset new range context
+                else:
+                    # Register previous range
+                    if previous_entry:
+                        result += previous_entry
+                    # reset context host and container side
+                    start_host_port = current_host_port
+                    previous_host_port = current_host_port
+                    start_host_ip = current_host_ip
+                    start_container_port = current_container_port
+                    previous_container_port = current_container_port
+                    start_container_protocol = current_container_protocole
+
+                # Register last range
+                range_host_port = ""
+                if type(start_host_port) is int:
+                    assert type(previous_host_port) is int
+                    range_host_port = "" if previous_host_port - start_host_port <= 0 else f"-{previous_host_port}"
+                if previous_container_port is not None and start_container_port is not None:
+                    range_container_port = "" if previous_container_port - start_container_port <= 0 else f"-{previous_container_port}"
+                    previous_entry = (f"{start_host_ip}:{start_host_port}{range_host_port} :right_arrow: "
+                                      f"{start_container_port}{range_container_port}/{start_container_protocol}{os.linesep}")
+
+        # Submit last entry is any
+        if previous_entry:
+            result += previous_entry
+
         return result
 
     def __str__(self) -> str:
@@ -1478,7 +1704,7 @@ class ContainerConfig:
                f"Sysctls: {self.__sysctls}{os.linesep}" \
                f"X: {self.__enable_gui}{os.linesep}" \
                f"TTY: {self.tty}{os.linesep}" \
-               f"Network host: {self.getNetworkMode()}{os.linesep}" \
+               f"Network host: {self.getTextNetworkMode()}{os.linesep}" \
                f"Ports: {self.__ports}{os.linesep}" \
                f"Share timezone: {self.__share_timezone}{os.linesep}" \
                f"Common resources: {self.__my_resources}{os.linesep}" \

@@ -1,25 +1,103 @@
 import json
+import os
 import re
 import time
-import os
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, List, Union
 
 import requests
+from docker.models.images import Image
 from requests import Response
+from rich.status import Status
 
+from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
-from exegol.config.ConstantConfig import ConstantConfig
-from exegol.utils.ExeLog import logger
+from exegol.model.MetaImages import MetaImages
+from exegol.utils.ExeLog import logger, ExeLog
 
 
-class WebUtils:
+class WebRegistryUtils:
     __registry_token: Optional[str] = None
+
+    @classmethod
+    def listRemoteDockerhubImages(cls, image: str, status: Status) -> List[MetaImages]:
+        """
+        List remote dockerhub images available.
+        :param image: Name of docker image from Dockerhub
+        :param status: Status of Rich Progress TUI
+        Return a list of ExegolImage
+        """
+        logger.debug(f"Fetching remote image tags, digests and sizes from {image}")
+        status.update(status=f"Fetching registry information from [green]{image}[/green]")
+        remote_results = []
+        # Define max number of tags to download from dockerhub (in order to limit download time and discard historical versions)
+        page_size = 20
+        page_max = 3
+        current_page = 1
+        url: Optional[str] = f"https://{ConstantConfig.DOCKER_HUB}/v2/repositories/{image}/tags?page=1&page_size={page_size}"
+        # Handle multi-page tags from registry
+        while url is not None:
+            if current_page > page_max:
+                logger.debug("Max page limit reached. In non-verbose mode, downloads will stop there.")
+                if not logger.isEnabledFor(ExeLog.VERBOSE):
+                    break
+            current_page += 1
+            if logger.isEnabledFor(ExeLog.VERBOSE):
+                status.update(status=f"Fetching registry information from [green]{url}[/green]")
+            # TODO auth no supported
+            docker_repo_response = cls.runJsonRequest(url, "Dockerhub")
+            if docker_repo_response is None:
+                logger.warning("Skipping online queries.")
+                return []
+            error_message = docker_repo_response.get("message")
+            if error_message:
+                logger.error(f"Dockerhub send an error message: {error_message}")
+            for dockerhub_data in docker_repo_response.get("results", []):
+                # Parse dockerhub data to MetaImage format
+                dockerhub_images: List[Dict[str, Optional[Union[str, int]]]] = [a for a in dockerhub_data.get('images', []) if a.get("architecture") != 'unknown']
+                images_size: Dict[str, int] = {}  # Arch : size
+                for i in dockerhub_images:
+                    size = i.get('size', '0')
+                    if size is not None:
+                        images_size[cls.parseArch(i)] = int(size)
+                digest = dockerhub_data.get("digest")
+                tag_name = dockerhub_data.get("name", "")
+                if digest is None:
+                    if len(images_size.keys()) > 0:
+                        logger.debug(f"Missing ID for image {tag_name}, manual fetching ! May slow down the process..")
+                        digest = cls.getMetaDigestId(tag_name)
+                    else:
+                        # Single arch image dont need virtual meta_id
+                        digest = dockerhub_images[0].get('digest')
+                remote_results.append(MetaImages(digest=digest,
+                                                 image_name=image,
+                                                 tag_name=tag_name,
+                                                 images_size=images_size))
+            url = docker_repo_response.get("next")  # handle multiple page tags
+        # Remove duplication (version specific / latest release)
+        return remote_results
+
+    @staticmethod
+    def parseArch(docker_image: Union[Dict[str, Optional[Union[str, int]]], Image]) -> str:
+        """Parse and format arch in dockerhub style from registry dict struct.
+        Return arch in format 'arch/variant'."""
+        arch_key = "architecture"
+        variant_key = "variant"
+        # Support Docker image struct with specific dict key
+        if type(docker_image) is Image:
+            docker_image = docker_image.attrs
+            arch_key = "Architecture"
+            variant_key = "Variant"
+        arch = str(docker_image.get(arch_key, "amd64"))
+        variant = docker_image.get(variant_key)
+        if variant:
+            arch += f"/{variant}"
+        return arch
 
     @classmethod
     def __getGuestToken(cls, action: str = "pull", service: str = "registry.docker.io") -> Optional[str]:
         """Generate a guest token for Registry service"""
-        url = f"https://auth.docker.io/token?scope=repository:{ConstantConfig.IMAGE_NAME}:{action}&service={service}"
+        url = f"https://auth.docker.io/token?scope=repository:{ConstantConfig.COMMUNITY_IMAGE_NAME}:{action}&service={service}"
         response = cls.runJsonRequest(url, service_name="Docker Auth")
         if response is not None:
             return response.get("access_token")
@@ -68,7 +146,7 @@ class WebUtils:
             return None
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.list.v2+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
-        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.COMMUNITY_IMAGE_NAME}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="HEAD")
         digest_id: Optional[str] = None
         if response is not None:
@@ -89,7 +167,7 @@ class WebUtils:
         # In order to access the metadata of the image, the v1 manifest must be use
         manifest_headers = {"Accept": "application/vnd.docker.distribution.manifest.v1+json", "Authorization": f"Bearer {token}"}
         # Query Docker registry API on manifest endpoint using tag name
-        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{tag}"
+        url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.COMMUNITY_IMAGE_NAME}/manifests/{tag}"
         response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
         version: Optional[str] = None
         if response is not None and response.status_code == 200:
@@ -114,7 +192,7 @@ class WebUtils:
                     first_digest = manifest[0].get("digest")
                     # Retrieve specific image detail from first image digest (architecture not sensitive)
                     manifest_headers["Accept"] = "application/vnd.docker.distribution.manifest.v2+json"
-                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/manifests/{first_digest}"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.COMMUNITY_IMAGE_NAME}/manifests/{first_digest}"
                     response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
                     if response is not None and response.status_code == 200:
                         data = json.loads(response.content.decode("utf-8"))
@@ -127,7 +205,7 @@ class WebUtils:
                 config_digest: Optional[str] = data.get("config", {}).get('digest')
                 if config_digest is not None:
                     manifest_headers["Accept"] = "application/json"
-                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.IMAGE_NAME}/blobs/{config_digest}"
+                    url = f"https://{ConstantConfig.DOCKER_REGISTRY}/v2/{ConstantConfig.COMMUNITY_IMAGE_NAME}/blobs/{config_digest}"
                     response = cls.__runRequest(url, service_name="Docker Registry", headers=manifest_headers, method="GET")
                     if response is not None and response.status_code == 200:
                         data = json.loads(response.content.decode("utf-8"))
@@ -173,7 +251,8 @@ class WebUtils:
                     if no_proxy:
                         proxies['no_proxy'] = no_proxy
                     logger.debug(f"Fetching information from {url}")
-                    response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
+                    #response = requests.request(method=method, url=url, timeout=(10, 20), verify=ParametersManager().verify, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
+                    response = requests.request(method=method, url=url, timeout=(10, 20), verify=True, headers=headers, data=data, proxies=proxies if len(proxies) > 0 else None)
                     return response
                 except requests.exceptions.HTTPError as e:
                     if e.response is not None:

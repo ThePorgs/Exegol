@@ -126,8 +126,10 @@ def get_user_id() -> Tuple[int, int]:
     return user_uid, user_gid
 
 
-def mkdir(path) -> None:
+def mkdir(path: Path) -> None:
     """Function to recursively create a directory and setting the right user and group id to allow host user access."""
+    if not path.parent.is_dir():
+        mkdir(path.parent)
     try:
         path.mkdir(parents=False, exist_ok=False)
         if sys.platform == "linux" and os.getuid() == 0:
@@ -136,8 +138,5 @@ def mkdir(path) -> None:
     except FileExistsError:
         # The directory already exist, this setup can be skipped
         pass
-    except FileNotFoundError:
-        # Create parent directory first
-        mkdir(path.parent)
-        # Then create the targeted directory
-        mkdir(path)
+    except (FileNotFoundError, PermissionError):
+        logger.error(f"Unable to create directory {path}. Please check your file permissions.")

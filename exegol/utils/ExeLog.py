@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from typing import Any, cast
@@ -15,7 +16,7 @@ class ExeLog(logging.Logger):
     ADVANCED: int = 13
 
     @staticmethod
-    def setVerbosity(verbose: int, quiet: bool = False):
+    def setVerbosity(verbose: int, quiet: bool = False) -> None:
         """Set logging level accordingly to the verbose count or with quiet enable."""
         if quiet:
             logger.setLevel(logging.CRITICAL)
@@ -45,7 +46,7 @@ class ExeLog(logging.Logger):
             self._log(ExeLog.VERBOSE,
                       "{}[V]{} {}".format("[bold blue]", "[/bold blue]", msg), args, **kwargs)
 
-    def raw(self, msg: Any, level=VERBOSE, markup=False, highlight=False, emoji=False, rich_parsing=False) -> None:
+    def raw(self, msg: Any, level: int = VERBOSE, markup: bool = False, highlight: bool = False, emoji: bool = False, rich_parsing: bool = False) -> None:
         """Add raw text logging, used for stream printing."""
         if rich_parsing:
             markup = True
@@ -92,6 +93,9 @@ class ExeLog(logging.Logger):
 
 # Global rich console object
 console: Console = Console()
+
+# Global console lock for thread-safe console operations
+ConsoleLock = asyncio.Lock()
 
 # Main logging default config
 # Set default Logger class as ExeLog
