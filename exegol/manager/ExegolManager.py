@@ -455,8 +455,10 @@ class ExegolManager:
             # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
-                logger.warning(f"The container named '{container_tag}' has not been found")
+                if container_tag is not None:
+                    logger.warning(f"The container named '{container_tag}' has not been found")
                 return [] if multiple else None
+            logger.info(f"Creating new container named '{container_tag}'")
             return await cls.__createContainer(container_tag)
         assert cls.__container is not None
         return cast(Union[Optional[ExegolContainer], List[ExegolContainer]], cls.__container)
@@ -470,10 +472,6 @@ class ExegolManager:
             Union[Optional[ExegolImage], Optional[ExegolContainer], Sequence[ExegolImage], Sequence[ExegolContainer]]:
         """Interactive object selection process, depending on object_type.
         object_type can be ExegolImage or ExegolContainer."""
-        if must_exist and len(object_list) == 0:
-            logger.info(f"There is no {'container' if object_type is ExegolContainer else 'image'} to select. ")
-            return [] if multiple else None
-        # Interactive choice with TUI
         user_selection: Union[SelectableInterface, Sequence[SelectableInterface], str]
         if multiple:
             user_selection = await ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)

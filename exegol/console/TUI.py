@@ -289,10 +289,8 @@ class ExegolTUI:
         cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
-            if object_type is ExegolImage:
-                logger.warning("No images are available for selection")
-            elif object_type is ExegolContainer:
-                logger.warning("No containers have been created yet")
+            if object_type is ExegolImage or object_type is ExegolContainer:
+                logger.warning(f"No {'container' if object_type is ExegolContainer else 'images'} are available for selection")
             else:
                 # Using container syntax by default
                 logger.warning("No object available")
