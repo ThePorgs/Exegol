@@ -114,3 +114,6 @@ shared-resources/
 # PDM
 pdm.lock
 .pdm-build
+
+# macOS files
+.DS_Store
