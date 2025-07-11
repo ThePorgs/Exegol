@@ -162,6 +162,9 @@ class DockerUtils(metaclass=MetaSingleton):
         # Create container
         try:
             container = docker_create_function(**docker_args)
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to create container, retry later.")
+            raise RuntimeError
         except APIError as err:
             if err.explanation is None:
                 err.explanation = ''
@@ -188,14 +191,12 @@ class DockerUtils(metaclass=MetaSingleton):
             except Exception as e:
                 logger.debug(f"Error while removing dedicated network: {e}")
             logger.critical("Error while creating exegol container. Exiting.")
-            # Not reachable, critical logging will exit
-            return  # type: ignore
+            raise RuntimeError
         if container is not None:
             logger.success("Exegol container successfully created!")
         else:
             logger.critical("Unknown error while creating exegol container. Exiting.")
-            # Not reachable, critical logging will exit
-            return  # type: ignore
+            raise RuntimeError
         return ExegolContainer(container, model)
 
     def getContainer(self, tag: str) -> ExegolContainer:

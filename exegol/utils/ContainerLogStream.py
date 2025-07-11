@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from docker.models.containers import Container
+from requests import ReadTimeout
 
 from exegol.utils.ExeLog import logger
 
@@ -38,8 +39,12 @@ class ContainerLogStream:
         while True:
             # The data stream is fetch from the docker SDK once empty.
             if self.__data_stream is None:
-                # The 'follow' mode cannot be used because there is no timeout mechanism and will stuck the process forever
-                self.__data_stream = self.__container.logs(stream=True, follow=False, since=self.__since_date, until=self.__until_date)
+                try:
+                    # The 'follow' mode cannot be used because there is no timeout mechanism and will stuck the process forever
+                    self.__data_stream = self.__container.logs(stream=True, follow=False, since=self.__since_date, until=self.__until_date)
+                except ReadTimeout:
+                    logger.critical("Received a timeout error, Docker is busy... Unable to start the container, retry later.")
+                    raise RuntimeError
             assert self.__data_stream is not None
             # Parsed the data stream to extract characters and merge them into a line.
             for streamed_char in self.__data_stream:
