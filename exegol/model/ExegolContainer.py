@@ -1,9 +1,11 @@
 import asyncio
+import errno
 import os
 import shutil
 import subprocess
 import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Optional, Dict, Sequence, Tuple, Union
 
 from docker.errors import NotFound, ImageNotFound, APIError
@@ -35,6 +37,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
         self.__xhost_applied = False
+        self.__post_start_applied = False
         if model is None:
             image_name = ""
             try:
@@ -293,31 +296,51 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 # TODO review WSL workspace volume
                 logger.warning("Warning: WSL workspace directory cannot be removed automatically.")
                 return
-            logger.verbose("Removing workspace volume")
             logger.debug(f"Removing volume {volume_path}")
+            force_remove = False
             try:
-                list_files = os.listdir(volume_path)
-            except PermissionError:
-                if await ExegolRich.Confirm(f"Insufficient permission to view workspace files {volume_path}, "
-                                            f"do you want to delete your container's workspace?", default=False):
-                    # Set list_files as empty to skip user prompt again
-                    list_files = []
+                have_files = False
+                for _ in Path(volume_path).iterdir():
+                    have_files = True
+                    break
+            except (PermissionError, OSError) as e:
+                if type(e) is OSError:
+                    logger.warning(f"Error during workspace files access: {e}")
+                    message = f"Exegol cannot access the workspace files [magenta]{volume_path}[/magenta], do you want to delete your container's workspace?"
+                else:
+                    message = f"Insufficient permission to view workspace files [magenta]{volume_path}[/magenta], do you want to delete your container's workspace?"
+                if await ExegolRich.Confirm(message, default=False):
+                    # Set have_files to skip directly to rmtree
+                    have_files = True
+                    # Set force_remove to skip user prompt confirmation again
+                    force_remove = True
                 else:
                     return
             except FileNotFoundError:
                 logger.debug("This workspace has already been removed.")
                 return
             try:
-                if len(list_files) > 0:
+                try:
+                    if have_files:
+                        raise OSError
+                    logger.info(f"Removing empty workspace volume")
+                    os.rmdir(volume_path)  # This function can only remove an empty directory as failsafe
+                except OSError as e:
+                    if e.errno is not None and e.errno != errno.ENOTEMPTY:
+                        logger.error(f"Receive an error during workspace removal: {e}")
                     # Directory is not empty
-                    if not await ExegolRich.Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
-                                                    default=False):
+                    if (not force_remove and
+                            not await ExegolRich.Confirm(f"Workspace [magenta]{volume_path}[/magenta] is not empty, do you want to delete it?",
+                                                         default=False)):
                         # User can choose not to delete the workspace on the host
                         return
-                # Try to remove files from the host with user permission (work only without sub-directory)
-                shutil.rmtree(volume_path)
+                    logger.verbose(f"Removing workspace volume")
+                    # Try to remove files from the host with user permission (work only without sub-directory)
+                    shutil.rmtree(volume_path)
             except PermissionError:
                 logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
+                if not self.isRunning():
+                    await self.__start_container()
                 # If the host can't remove the container's file and folders, the rm command is exec from the container itself as root
                 await self.exec("rm -rf /workspace", as_daemon=False, quiet=True)
                 try:
@@ -329,13 +352,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.error(err)
                 return
             logger.success("Private workspace volume removed successfully")
+        else:
+            logger.warning(f"Externally managed workspaces are [red]NOT[/red] automatically removed by exegol. You can manually remove the directory if it's no longer needed: [magenta]{self.config.getHostWorkspacePath()}[/magenta]")
 
     async def __postStartSetup(self) -> None:
         """
         Operation to be performed after starting a container
         :return:
         """
-        await self.__applyX11ACLs()
+        if not self.__post_start_applied:
+            self.__post_start_applied = True
+            await self.__applyX11ACLs()
+            # TODO exec VPN start
 
     def __check_start_version(self) -> None:
         """

@@ -255,13 +255,13 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           dest="vpn",
                           default=None,
                           action="store",
-                          help="Setup an OpenVPN connection at the container creation (example: --vpn /home/user/vpn/conf.ovpn)",
+                          help="Setup an OpenVPN (.ovpn) or WireGuard (.conf) connection at the container creation (example: --vpn /home/user/vpn/client.ovpn)",
                           completer=FilesCompleter(["ovpn"], directories=True))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,
                                action="store",
-                               help="Enter the credentials with a file (first line: username, second line: password) to establish the VPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
+                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
