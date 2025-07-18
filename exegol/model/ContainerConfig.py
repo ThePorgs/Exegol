@@ -52,7 +52,7 @@ class ContainerConfig:
                              '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
 
     # Whitelist device for Docker Desktop
-    __whitelist_dd_devices = ["/dev/net/tun"]
+    __whitelist_dd_devices = ["/dev/net/tun", "/dev/fuse"]
 
     class ExegolFeatures(Enum):
         shell_logging = "org.exegol.feature.shell_logging"
@@ -189,7 +189,8 @@ class ContainerConfig:
         logger.debug(f"└── Load devices : {self.__devices}")
 
         # Volumes section
-        self.__parseMounts(container.attrs.get("Mounts", []), container.name.replace('exegol-', ''))
+        container_name = container.name[7:] if container.name.startswith("exegol-") else container.name
+        self.__parseMounts(container.attrs.get("Mounts", []), container_name)
 
         # Network section
         network_settings = container.attrs.get("NetworkSettings", {})
@@ -287,7 +288,11 @@ class ContainerConfig:
                 assert src_path is not None
                 self.__vpn_path = Path(src_path)
                 if self.__vpn_path.suffix == ".ovpn":
+                    self.__vpn_mode = "ovpn"
                     ovpn_parameters.append(f"--config {destination}")
+                elif self.__vpn_path.suffix == ".conf":
+                    self.__vpn_mode = "wgconf"
+                    self.__vpn_parameters = Path(destination).name[:-5]
                 logger.debug(f"└── Loading VPN config: {self.__vpn_path.name}")
             elif destination == "/.exegol/vpn/auth/creds.txt":
                 ovpn_parameters.append(f"--auth-user-pass /.exegol/vpn/auth/creds.txt")
@@ -1471,13 +1476,14 @@ class ContainerConfig:
     def addUserDevice(self, user_device_config: str) -> None:
         """Add a device from a user parameters"""
         if (EnvInfo.isDockerDesktop() or EnvInfo.isOrbstack()) and user_device_config not in self.__whitelist_dd_devices:
-            if EnvInfo.isDockerDesktop():
-                logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
-                logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
-            elif EnvInfo.isOrbstack():
-                logger.warning("Orbstack does not support (yet) USB device passthrough.")
-                logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
-            logger.critical("Device configuration cannot be applied, aborting operation.")
+            if not user_device_config.startswith("/dev/loop"):
+                if EnvInfo.isDockerDesktop():
+                    logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+                    logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+                elif EnvInfo.isOrbstack():
+                    logger.warning("Orbstack does not support (yet) USB device passthrough.")
+                    logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
+                logger.critical("Device configuration cannot be applied, aborting operation.")
         self.__addDevice(user_device_config)
 
     def addRawPort(self, user_test_port: str) -> None:

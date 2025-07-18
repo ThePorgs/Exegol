@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import IntFlag, auto as enum_auto
 from typing import Optional, List, Union, Tuple, Dict, Set
 
 from docker.models.containers import Container
@@ -22,6 +23,9 @@ from exegol.utils.WebRegistryUtils import WebRegistryUtils
 
 class ExegolImage(SelectableInterface):
     """Class of an exegol image. Container every information about the docker image."""
+
+    class Filters(IntFlag):
+        INSTALLED = enum_auto()
 
     def __init__(self,
                  name: str = "NONAME",
@@ -144,7 +148,7 @@ class ExegolImage(SelectableInterface):
         self.__setRealSize(self.__image.attrs["Size"])
         self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '')
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '') if self.__image.labels is not None else ''
         self.__setArch(WebRegistryUtils.parseArch(self.__image))
         self.__labelVersionParsing()
         # Set local image ID
@@ -157,6 +161,17 @@ class ExegolImage(SelectableInterface):
             self.__setRepository(repo)
         # Default status, must be refreshed later if some parameters will be changed externally
         self.syncStatus()
+
+    def filter(self, filters: int) -> bool:
+        """
+        Apply bitwise filter
+        :param filters:
+        :return:
+        """
+        match = True
+        if match and filters & self.Filters.INSTALLED:
+            match = self.isInstall()
+        return match
 
     def resetDockerImage(self) -> None:
         """During an image upgrade, the docker image and local parsed variable must be
@@ -179,7 +194,7 @@ class ExegolImage(SelectableInterface):
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '')
+        self.__build_date = self.__image.labels.get('org.exegol.build_date', '') if self.__image.labels is not None else ''
         # Check if local image is sync with remote digest id (check up-to-date status)
         image_repo, image_digest = self.__parseRepoDigests()
         self.__is_update = (self.__profile_digest if self.__profile_digest else self.__digest) == image_digest
@@ -241,7 +256,7 @@ class ExegolImage(SelectableInterface):
     def __labelVersionParsing(self) -> None:
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
-        if "N/A" in self.__image_version and self.__image is not None:
+        if "N/A" in self.__image_version and self.__image is not None and self.__image.labels is not None:
             version_label = self.__image.labels.get("org.exegol.version")
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
@@ -251,11 +266,15 @@ class ExegolImage(SelectableInterface):
     @classmethod
     def parseAliasTagName(cls, image: Image) -> str:
         """Create a tag name alias from labels when image's tag is lost"""
+        if image.labels is None:
+            return "[bright_black]Unknown[/bright_black]"
         return image.labels.get("org.exegol.tag", "<none>") + "-" + image.labels.get("org.exegol.version", "v?")
 
     def __checkLocalLabel(self) -> bool:
         """Check if the local label is set. Default to yes for old build"""
         assert self.__image is not None
+        if self.__image.labels is None:
+            return True
         return self.__image.labels.get("org.exegol.version", "local").lower() == "local"
 
     def syncStatus(self) -> None:

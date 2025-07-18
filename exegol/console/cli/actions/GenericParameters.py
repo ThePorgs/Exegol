@@ -37,9 +37,15 @@ class ContainerMultiSelector:
                                         action="store",
                                         help="Tag used to target one or more Exegol containers",
                                         completer=ContainerCompleter)
+        self.select_all = Option("--all",
+                                 dest="select_all",
+                                 action="store_true",
+                                 default=False,
+                                 help="Select every Exegol containers available")
 
         # Create group parameter for container multi selection
         groupArgs.append(GroupArg({"arg": self.multicontainertag, "required": False},
+                                  {"arg": self.select_all, "required": False},
                                   title="[blue]Containers selection options[/blue]"))
 
 
@@ -58,9 +64,20 @@ class ContainerStart:
                                 "If the container already exists, the variable will be present only in the current shell",
                            completer=EnvironCompleter)
 
+        self.capabilities = Option("--cap",
+                                   dest="capabilities",
+                                   metavar='CAPABILITY',  # Do not display available choices
+                                   action="append",
+                                   default=[],
+                                   choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",
+                                            "SYS_ADMIN", "LINUX_IMMUTABLE", "MAC_ADMIN", "SYSLOG", "ALL"},
+                                   help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
+                                        "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
+
         # Create group parameter for container options at start
         groupArgs.append(GroupArg({"arg": self.envs, "required": False},
-                                  title="[blue]Container start options[/blue]"))
+                                  {"arg": self.capabilities, "required": False},
+                                  title=f"[blue]Container creation or start options[/blue]"))
 
 
 class ContainerSpawnShell(ContainerStart):
@@ -97,7 +114,7 @@ class ContainerSpawnShell(ContainerStart):
         groupArgs.append(GroupArg({"arg": self.log, "required": False},
                                   {"arg": self.log_method, "required": False},
                                   {"arg": self.log_compress, "required": False},
-                                  title="[blue]Container creation Shell logging options[/blue]"))
+                                  title="[blue]Container shell logging options[/blue]"))
 
         ContainerStart.__init__(self, groupArgs)
 
@@ -134,9 +151,15 @@ class ImageMultiSelector:
                                     action="store",
                                     help="Tag used to target one or more Exegol images",
                                     completer=ImageCompleter)
+        self.select_all = Option("--all",
+                                 dest="select_all",
+                                 action="store_true",
+                                 default=False,
+                                 help="Select every Exegol images available")
 
         # Create group parameter for image multi selection
         groupArgs.append(GroupArg({"arg": self.multiimagetag, "required": False},
+                                  {"arg": self.select_all, "required": False},
                                   title="[blue]Images selection options[/blue]"))
 
 
@@ -207,15 +230,6 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Set a custom hostname to the exegol container (default: exegol-<name>)",
                                completer=VoidCompleter)
-        self.capabilities = Option("--cap",
-                                   dest="capabilities",
-                                   metavar='CAP',  # Do not display available choices
-                                   action="append",
-                                   default=[],
-                                   choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",
-                                            "SYS_ADMIN", "LINUX_IMMUTABLE", "MAC_ADMIN", "SYSLOG"},
-                                   help="[orange3](dangerous)[/orange3] Capabilities allow to add [orange3]specific[/orange3] privileges to the container "
-                                        "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
         self.privileged = Option("--privileged",
                                  dest="privileged",
                                  action="store_true",
@@ -240,7 +254,6 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.volumes, "required": False},
                                   {"arg": self.ports, "required": False},
                                   {"arg": self.hostname, "required": False},
-                                  {"arg": self.capabilities, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
                                   {"arg": self.X11, "required": False},
@@ -282,4 +295,4 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                      completer=DesktopConfigCompleter)
         groupArgs.append(GroupArg({"arg": self.desktop, "required": False},
                                   {"arg": self.desktop_config, "required": False},
-                                  title="[blue]Container creation Desktop options[/blue] [spring_green1](beta)[/spring_green1]"))
+                                  title="[blue]Container creation Desktop options[/blue]"))

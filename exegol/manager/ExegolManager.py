@@ -1,8 +1,9 @@
+import asyncio
 import binascii
 import logging
 import os
 from asyncio import gather
-from typing import Union, List, Tuple, Optional, cast, Sequence
+from typing import Union, List, Tuple, Optional, cast, Sequence, Type
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
@@ -96,7 +97,7 @@ class ExegolManager:
         """Upgrade exegol to the latest version"""
         if not SessionHandler().pro_feature_access():
             logger.critical("Exegol upgrade is only available for Pro or Enterprise users.")
-        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True, filters=[ExegolContainer.Filters.OUTDATED])
         assert container is not None and type(container) is list
         for c in container:
             try:
@@ -125,7 +126,7 @@ class ExegolManager:
     async def stop(cls) -> None:
         """Stop an exegol container"""
         logger.info("Stopping exegol")
-        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True)
+        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True, filters=[ExegolContainer.Filters.STARTED])
         assert container is not None and type(container) is list
         for c in container:
             await c.stop(timeout=5)
@@ -174,7 +175,7 @@ class ExegolManager:
         # Set log level to verbose in order to show every image installed including the outdated.
         if not logger.isEnabledFor(ExeLog.VERBOSE):
             logger.setLevel(ExeLog.VERBOSE)
-        images = await cls.__loadOrInstallImage(multiple=True, must_exist=True)
+        images = await cls.__loadOrInstallImage(multiple=True, filters=[ExegolImage.Filters.INSTALLED])
         assert type(images) is list
         if len(images) == 0:
             return
@@ -268,10 +269,22 @@ class ExegolManager:
             await UpdateManager.checkForWrapperUpdate()
         if await UpdateManager.isUpdateAvailable():
             logger.empty_line()
-            if await ExegolRich.Confirm(
-                    f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()}), do you want to update ?",
-                    default=True):
-                await UpdateManager.updateWrapper()
+            update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()})"
+            if ConstantConfig.git_source_installation:
+                if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
+                    await UpdateManager.updateWrapper()
+            else:
+                logger.info(update_message)
+                if ConstantConfig.pipx_installed:
+                    logger.info("You can update your exegol wrapper with the command [green]pipx upgrade exegol[/green]")
+                elif ConstantConfig.uv_installed:
+                    logger.info("You can update your exegol wrapper with the command [green]uv tool upgrade exegol[/green]")
+                elif ConstantConfig.pip_installed:
+                    logger.info("If you have installed Exegol with pip, check for an update with the command "
+                                "[green]pip3 install exegol --upgrade[/green]")
+                else:
+                    logger.warning("Exegol has [red]not[/red] been installed from sources. Skipping wrapper auto-update operation.")
+                await asyncio.sleep(1)
         else:
             logger.empty_line(log_level=logging.DEBUG)
 
@@ -286,15 +299,17 @@ class ExegolManager:
     async def __loadOrInstallImage(cls,
                                    override_image: Optional[str] = None,
                                    multiple: bool = False,
-                                   must_exist: bool = False,
-                                   show_custom: bool = False) -> Union[Optional[ExegolImage], List[ExegolImage]]:
+                                   show_custom: bool = False,
+                                   filters: Optional[List[ExegolImage.Filters]] = None) -> Union[Optional[ExegolImage], List[ExegolImage]]:
         """Select / Load (and install) an ExegolImage
-        When must_exist is set to True, return None if no image are installed
         When multiple is set to True, return a list of ExegolImage
+        When the action supports multi selection, the parameter filters must be supplied
+        When filters include ExegolImage.Filters.INSTALLED, return None if no image are installed
         Otherwise, always return an ExegolImage"""
         if cls.__image is not None:
             # Return cache
             return cls.__image
+        must_exist = filters is not None and ExegolImage.Filters.INSTALLED in filters
         image_tag = override_image if override_image is not None else ParametersManager().imagetag
         image_tags = ParametersManager().multiimagetag
         image_selection: Union[Optional[ExegolImage], List[ExegolImage]] = None
@@ -302,9 +317,17 @@ class ExegolManager:
         while image_selection is None:
             try:
                 if image_tag is None and (image_tags is None or len(image_tags) == 0):
-                    # Interactive (TUI) image selection
-                    image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
-                                           await cls.__interactiveSelection(ExegolImage, multiple, must_exist, show_custom))
+                    image_list: List[ExegolImage] = await DockerUtils().listImages(include_custom=show_custom)
+                    if filters is not None:
+                        filters_sum = sum(filters)
+                        image_list = [i for i in image_list if i.filter(filters_sum)]
+
+                    if ParametersManager().select_all:
+                        image_selection = image_list
+                    else:
+                        # Interactive (TUI) image selection
+                        image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
+                                               await cls.__interactiveSelection(ExegolImage, image_list, multiple, must_exist))
                 else:
                     # Select image by tag name (non-interactive)
                     if multiple:
@@ -403,7 +426,8 @@ class ExegolManager:
     async def __loadOrCreateContainer(cls,
                                       override_container: Optional[str] = None,
                                       multiple: bool = False,
-                                      must_exist: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
+                                      must_exist: bool = False,
+                                      filters: Optional[List[ExegolContainer.Filters]] = None) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
         """Select one or more ExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
@@ -421,9 +445,17 @@ class ExegolManager:
                     container_tags.append(tag)
         try:
             if container_tag is None and (container_tags is None or len(container_tags) == 0):
-                # Interactive container selection
-                cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
-                                       await cls.__interactiveSelection(ExegolContainer, multiple, must_exist))
+                container_list: List[ExegolContainer] = await DockerUtils().listContainers()
+                if filters is not None:
+                    filters_sum = sum(filters)
+                    container_list = [c for c in container_list if c.filter(filters_sum)]
+                if ParametersManager().select_all:
+                    # Select all container
+                    cls.__container = container_list
+                else:
+                    # Interactive container selection
+                    cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
+                                           await cls.__interactiveSelection(ExegolContainer, container_list, multiple, must_exist))
             else:
                 # Try to find the corresponding container
                 if multiple:
@@ -450,33 +482,23 @@ class ExegolManager:
             # IndexError is raise when no container exist (raised from TUI interactive selection)
             # Create container
             if must_exist:
-                logger.warning(f"The container named '{container_tag}' has not been found")
+                if container_tag is not None:
+                    logger.warning(f"The container named '{container_tag}' has not been found")
                 return [] if multiple else None
+            logger.info(f"Creating new container named '{container_tag}'")
             return await cls.__createContainer(container_tag)
         assert cls.__container is not None
         return cast(Union[Optional[ExegolContainer], List[ExegolContainer]], cls.__container)
 
     @classmethod
     async def __interactiveSelection(cls,
-                                     object_type: type,
+                                     object_type: Type[Union[ExegolImage, ExegolContainer]],
+                                     object_list: Sequence[SelectableInterface],
                                      multiple: bool = False,
-                                     must_exist: bool = False,
-                                     show_custom: bool = False) -> \
-            Union[ExegolImage, ExegolContainer, Sequence[ExegolImage], Sequence[ExegolContainer]]:
+                                     must_exist: bool = False) -> \
+            Union[Optional[ExegolImage], Optional[ExegolContainer], Sequence[ExegolImage], Sequence[ExegolContainer]]:
         """Interactive object selection process, depending on object_type.
         object_type can be ExegolImage or ExegolContainer."""
-        object_list: Sequence[SelectableInterface]
-        # Object listing depending on the type
-        if object_type is ExegolContainer:
-            # List all images available
-            object_list = await DockerUtils().listContainers()
-        elif object_type is ExegolImage:
-            # List all images available
-            object_list = await DockerUtils().listInstalledImages() if must_exist else await DockerUtils().listImages(include_custom=show_custom)
-        else:
-            logger.critical("Unknown object type during interactive selection. Exiting.")
-            raise Exception
-        # Interactive choice with TUI
         user_selection: Union[SelectableInterface, Sequence[SelectableInterface], str]
         if multiple:
             user_selection = await ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
@@ -607,7 +629,7 @@ class ExegolManager:
             skipping_msg = f"Run [green]exegol update {new_image.getName()}[/green] to install the new version [green]{new_image.getLatestVersion()}[/green] of your image first."
             logger.warning(f"You are going to upgrade your container [green]{c.name}[/green] to an outdated image:")
             logger.warning(f"Your installed image [blue]{new_image.getName()}[/blue] is currently in version [orange3]{new_image.getImageVersion()}[/orange3] instead of the latest [green]{new_image.getLatestVersion()}[/green]")
-            if not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
+            if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
                 if await ExegolRich.Confirm(f"Do you want to update your [green]{new_image.getName()}[/green] image now?", default=False):
                     image_update = await UpdateManager.updateImage(new_image.getName())
                     if image_update is None:
@@ -656,8 +678,7 @@ class ExegolManager:
         logger.success(f"Container [green]{c.name}[/green] data has been backed up.")
 
         # Remove container without removing the workspace
-        #c.remove(container_only=True)  # TODO to remove before PROD
-        c.config.container_name = "exegol-upgraded"  # TODO to remove before PROD
+        await c.remove(container_only=True)
 
         # Update exegol image to the latest version
         c.image = new_image

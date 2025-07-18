@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import tempfile
 from datetime import datetime
+from enum import IntFlag, auto as enum_auto
 from pathlib import Path
 from typing import Optional, Dict, Sequence, Tuple, Union
 
@@ -29,6 +30,10 @@ from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
 
 class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     """Class of an exegol container already create in docker"""
+
+    class Filters(IntFlag):
+        STARTED = enum_auto()
+        OUTDATED = enum_auto()
 
     __BACKUP_DIRECTORY = "/workspace/.ExegolUpgradeBackupAuto"
 
@@ -70,9 +75,25 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Default object text formatter, debug only"""
         return f"{self.getRawStatus()} - {super().__str__()}"
 
+    def filter(self, filters: int) -> bool:
+        """
+        Apply bitwise filter
+        :param filters:
+        :return:
+        """
+        match = True
+        if match and filters & self.Filters.STARTED:
+            match = self.isRunning()
+        if match and filters & self.Filters.OUTDATED:
+            match = self.image.isLocked()
+        return match
+
     def __getState(self) -> Dict:
         """Technical getter of the container status dict"""
-        self.__container.reload()
+        try:
+            self.__container.reload()
+        except NotFound:
+            return {"State": "Removed"}
         return self.__container.attrs.get("State", {})
 
     def getRawStatus(self) -> str:
@@ -182,7 +203,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         for device in self.config.getDevices():
             logger.info(f"Shared host device: {device.split(':')[0]}")
-        logger.success(f"Opening shell in Exegol '{self.name}'")
+        spawn_all_capabilities = (not self.config.getPrivileged() and
+                                  "ALL" not in self.config.getCapabilities() and
+                                  ParametersManager().capabilities and
+                                  "ALL" in ParametersManager().capabilities)
+        if not self.__new_container and not spawn_all_capabilities and ParametersManager().capabilities and len(ParametersManager().capabilities) > 0:
+            if set(ParametersManager().capabilities).issubset(self.config.getCapabilities()):
+                if not self.config.getPrivileged() and "ALL" not in self.config.getCapabilities():
+                    logger.warning("Can't set specific capability on existing containers, ignoring. Use [green]--cap ALL[/green] instead if needed.")
+            else:
+                logger.critical("Can't set specific capability on existing containers. Use [green]--cap ALL[/green] instead if needed.")
+        logger.success(f"Opening [blue]{ParametersManager().shell}[/blue] shell in Exegol [green]{self.name}[/green]"
+                       f"{' with [orange3]all capabilities[/orange3]' if spawn_all_capabilities or self.config.getPrivileged() or "ALL" in self.config.getCapabilities() else ''}")
         # In case of multi-user environment, xhost must be set before opening each session to be sure
         await self.__applyX11ACLs()
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
@@ -190,6 +222,8 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         options = ""
         if len(envs) > 0:
             options += f" -e {' -e '.join(envs)}"
+        if spawn_all_capabilities:
+            options += " --privileged"
         cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
         logger.debug(f"Opening shell with: {cmd}")
         if EnvInfo.isDockerDesktop() and (EnvInfo.is_windows_shell or EnvInfo.is_mac_shell):

@@ -121,7 +121,7 @@ class ExegolTUI:
         logfile = None
         if ParametersManager().build_log is not None:
             # Opening log file in line buffering mode (1) to support tail -f [file]
-            logfile = open(ParametersManager().build_log, 'a', buffering=1)
+            logfile = open(ParametersManager().build_log, 'a', buffering=1, encoding="utf-8")
         # Follow stream
         for line in build_stream:
             stream_text = line.get("stream", '')
@@ -289,10 +289,8 @@ class ExegolTUI:
         cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
-            if object_type is ExegolImage:
-                logger.warning("No images are available for selection")
-            elif object_type is ExegolContainer:
-                logger.warning("No containers have been created yet")
+            if object_type is ExegolImage or object_type is ExegolContainer:
+                logger.warning(f"No {'container' if object_type is ExegolContainer else 'images'} are available for selection")
             else:
                 # Using container syntax by default
                 logger.warning("No object available")
