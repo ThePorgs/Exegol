@@ -698,7 +698,7 @@ class DockerUtils(metaclass=MetaSingleton):
                             f"    [orange3]docker pull --platform linux/{image.getArch()} {image.getRepository()}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
 
-    async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
+    async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False, silent_error: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
@@ -718,6 +718,8 @@ class DockerUtils(metaclass=MetaSingleton):
             except APIError as err:
                 # Handle docker API error code
                 logger.verbose(err.explanation)
+                if silent_error and not logger.isEnabledFor(ExeLog.VERBOSE):
+                    return False
                 if err.status_code == 409:
                     if upgrade_mode:
                         logger.error(f"The '{image.getName()}' image cannot be deleted yet, "

@@ -101,7 +101,12 @@ class ExegolManager:
         assert container is not None and type(container) is list
         for c in container:
             try:
+                previous_image = c.image
                 await cls.__backupAndUpgrade(c)
+
+                # If the image used is deprecated, it must be deleted after the removal of its container
+                if previous_image.isLocked() and UserConfig().auto_remove_images:
+                    await DockerUtils().removeImage(previous_image, upgrade_mode=True, silent_error=True)
             except CancelOperation:
                 logger.error(f"Something unexpected happened during the [green]{c.name}[/green] container upgrade process.")
 
