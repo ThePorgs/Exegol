@@ -277,22 +277,23 @@ class ExegolManager:
             await UpdateManager.checkForWrapperUpdate()
         if await UpdateManager.isUpdateAvailable():
             logger.empty_line()
-            update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()})"
+            update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} :arrow_right: {UpdateManager.display_latest_version()})"
             if ConstantConfig.git_source_installation:
                 if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
                     await UpdateManager.updateWrapper()
             else:
                 logger.info(update_message)
+                update_command = None
                 if ConstantConfig.pipx_installed:
-                    logger.info("You can update your exegol wrapper with the command [green]pipx upgrade exegol[/green]")
+                    update_command = "You can update your exegol wrapper with the command [green]pipx upgrade exegol[/green]"
                 elif ConstantConfig.uv_installed:
-                    logger.info("You can update your exegol wrapper with the command [green]uv tool upgrade exegol[/green]")
+                    update_command = "You can update your exegol wrapper with the command [green]uv tool upgrade exegol[/green]"
                 elif ConstantConfig.pip_installed:
-                    logger.info("If you have installed Exegol with pip, check for an update with the command "
-                                "[green]pip3 install exegol --upgrade[/green]")
+                    update_command = "If you have installed Exegol with pip, update with the command [green]pip3 install exegol --upgrade[/green]"
                 else:
-                    logger.warning("Exegol has [red]not[/red] been installed from sources. Skipping wrapper auto-update operation.")
-                await asyncio.sleep(1)
+                    await ExegolRich.Acknowledge("Installation method not found (not among pip/pipx/uv/sources). You should update your wrapper manually.")
+                if update_command:
+                    await ExegolRich.Acknowledge(update_command)
         else:
             logger.empty_line(log_level=logging.DEBUG)
 
