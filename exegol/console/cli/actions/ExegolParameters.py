@@ -150,7 +150,7 @@ class Update(Command, ImageSelector):
 
         self._usages = {
             "Install or update interactively an exegol image": "exegol update",
-            "Install or update the [bright_blue]full[/bright_blue] image": "exegol update [bright_blue]full[/bright_blue]"
+            "Install or update the [bright_blue]full[/bright_blue] image": "exegol update [bright_blue]full[/bright_blue]",
         }
 
     def __call__(self, *args, **kwargs):
@@ -170,6 +170,11 @@ class Upgrade(Command, ContainerMultiSelector):
                                  action="store_true",
                                  help="Upgrade container without interactive user confirmation.")
 
+        self.no_backup = Option("--no-backup",
+                                dest="no_backup",
+                                action="store_true",
+                                help="Remove the outdated container after the upgrade instead of renaming it.")
+
         self.image_tag: Optional[Option] = Option("--image",
                                                   dest="image_tag",
                                                   action="store",
@@ -178,12 +183,16 @@ class Upgrade(Command, ContainerMultiSelector):
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.image_tag, "required": False},
+                                       {"arg": self.no_backup, "required": False},
                                        {"arg": self.force_mode, "required": False},
                                        title="[bold cyan]Upgrade[/bold cyan] [blue]specific options[/blue]"))
 
         self._usages = {
             "Upgrade an exegol container": "exegol upgrade",
-            "Upgrade the [bright_blue]ctf[/bright_blue] container": "exegol upgrade [bright_blue]ctf[/bright_blue]"
+            "Upgrade the [blue]ctf[/blue] container": "exegol upgrade [blue]ctf[/blue]",
+            "Upgrade the [blue]test[/blue] container to the [bright_blue]full[/bright_blue] image": "exegol upgrade --image [bright_blue]full[/bright_blue] [blue]test[/blue]",
+            "Upgrade [blue]lab[/blue] and [blue]test[/blue] containers without interactive user confirmation": "exegol upgrade -F [blue]lab[/blue] [blue]test[/blue]",
+            "Upgrade every outdated container": "exegol upgrade --all",
         }
 
     def __call__(self, *args, **kwargs):

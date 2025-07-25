@@ -11,7 +11,6 @@ class ConstantConfig:
     # Exegol documentation link
     landing: str = "https://exegol.com"
     documentation: str = "https://docs.exegol.com"
-    discord: str = "https://discord.gg/cXThyp7D6P"
     # OS Dir full root path of exegol project
     src_root_path_obj: Path = Path(__file__).parent.parent.parent.resolve()
     # Path of the entrypoint.sh

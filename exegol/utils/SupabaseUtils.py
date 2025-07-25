@@ -170,8 +170,6 @@ class SupabaseUtils:
             else:
                 logger.critical(f"Unable to enumerate licenses from exegol servers: [{e.status}] {e.message}")
             raise e
-        except Exception as e:
-            raise e
 
     @classmethod
     async def enum_licenses(cls, supabase_client: AsyncFunctionsClient) -> Dict:

@@ -110,10 +110,10 @@ def main() -> int:
         logger.raw(error, level=logging.ERROR)
         logger.empty_line()
         logger.error(f"A critical error occurred while running this git command: {' '.join(git_error.command)}")
-    except Exception:
-        print_exception_banner()
-        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http, httpx, postgrest, contextlib, supabase, asyncio])
     except SystemExit as e:
         if e.code is not None:
             return int(e.code)
+    except Exception:
+        print_exception_banner()
+        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http, httpx, postgrest, contextlib, supabase, asyncio])
     return 1

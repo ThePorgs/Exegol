@@ -28,9 +28,9 @@ class ExegolProgress(Progress):
         try:
             super(ExegolProgress, self).__enter__()
             return self
-        except Exception:
+        except Exception as e:
             ConsoleLock.release()
-            raise
+            raise e
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         try:

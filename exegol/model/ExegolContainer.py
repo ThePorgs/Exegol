@@ -7,7 +7,7 @@ import tempfile
 from datetime import datetime
 from enum import IntFlag, auto as enum_auto
 from pathlib import Path
-from typing import Optional, Dict, Sequence, Tuple, Union
+from typing import Optional, Dict, Sequence, Tuple, Union, List
 
 from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
@@ -16,7 +16,7 @@ from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.exceptions.ExegolExceptions import CancelOperation
+from exegol.exceptions.ExegolExceptions import CancelOperation, ObjectNotFound
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
@@ -35,7 +35,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         STARTED = enum_auto()
         OUTDATED = enum_auto()
 
-    __BACKUP_DIRECTORY = "/workspace/.ExegolUpgradeBackupAuto"
+    BACKUP_DIRECTORY = "/workspace/.ExegolUpgradeBackupAuto"
 
     def __init__(self, docker_container: Container, model: Optional[ExegolContainerTemplate] = None):
         logger.debug(f"Loading container: {docker_container.name}")
@@ -299,26 +299,53 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             cmd = f"zsh -c '{cmd}'"
         return cmd, str_cmd
 
-    async def remove(self, container_only: bool = False) -> None:
+    async def remove(self, container_only: bool = False, backup_history: Optional[List[str]] = None) -> None:
         """Stop and remove the docker container.
-        :param container_only: If True, only the container will be removed, not the workspace volume or the network."""
+        :param container_only: If True, only the container will be removed, not the workspace volume or the network.
+        :param backup_history: List for backup containers ID to remove too
+        """
         if not container_only:
             await self.__removeVolume()
         await self.stop(timeout=2)
-        logger.info(f"Removing container {self.name}")
+        have_backup = backup_history is not None and len(backup_history) > 0
+        backup_text = f" and {len(backup_history)} backup containers" if have_backup else ""
+        logger.info(f"Removing container {self.name}{backup_text}")
         try:
             self.__container.remove()
             logger.success(f"Container {self.name} successfully removed.")
         except NotFound:
             logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
         if not container_only:
-            nets = self.config.getNetworks()
             # Must be imported locally to avoid circular importation
             from exegol.utils.DockerUtils import DockerUtils
+            if have_backup:
+                for c_id in backup_history:
+                    try:
+                        DockerUtils().removeContainerById(c_id)
+                    except ObjectNotFound:
+                        continue
+            nets = self.config.getNetworks()
             for net in nets:
                 if net.shouldBeRemoved():
                     logger.debug(f"Network {net.getNetworkName()} will be removed.")
                     DockerUtils().removeNetwork(net.getNetworkName())
+
+    def getExistingBackupContainers(self) -> List[Tuple[str, str]]:
+        """
+        Get container's backup history and filter existing containers only.
+        :return: List of tuple of legacy container. For each entry the first element is the container id and the second is the container name.
+        """
+        raw_backup_history = self.config.getBackupHistory()
+        backup_history = [] if raw_backup_history is None else raw_backup_history.split(',')
+        result = []
+        if len(backup_history) > 0:
+            from exegol.utils.DockerUtils import DockerUtils
+            for container_id in backup_history:
+                # Check if the previous container still exists
+                bak_container = DockerUtils().isContainerExist(container_id)
+                if bak_container is not None:
+                    result.append((container_id, bak_container[7:]))
+        return result
 
     async def __removeVolume(self) -> None:
         """Remove private workspace volume directory if exist"""
@@ -382,9 +409,6 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 except PermissionError:
                     logger.warning(f"I don't have the rights to remove [magenta]{volume_path}[/magenta] (do it yourself)")
                     return
-            except Exception as err:
-                logger.error(err)
-                return
             logger.success("Private workspace volume removed successfully")
         else:
             logger.warning(f"Externally managed workspaces are [red]NOT[/red] automatically removed by exegol. You can manually remove the directory if it's no longer needed: [magenta]{self.config.getHostWorkspacePath()}[/magenta]")
@@ -397,7 +421,6 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not self.__post_start_applied:
             self.__post_start_applied = True
             await self.__applyX11ACLs()
-            # TODO exec VPN start
 
     def __check_start_version(self) -> None:
         """
@@ -523,6 +546,29 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.debug(f"Updating the {self.config.getUsername()} password inside the container")
             await self.exec(f"echo '{self.config.getUsername()}:{self.config.getPasswd()}' | chpasswd", quiet=True)
 
+    def rename_as_old(self):
+        import re
+        old_match = re.search(r"(.*-bak)(\d*)$", self.getContainerName())
+        i = 0 if not old_match else ((int(old_match.group(2)) if old_match.group(2) else 0) + 1)
+        base_name = self.getContainerName() + "-bak" if not old_match else old_match.group(1)
+        while True:
+            new_name = base_name
+            if i > 0:
+                new_name += str(i)
+            logger.debug(f"Renaming container {self.getContainerName()} as {new_name}")
+            try:
+                self.__container.rename(new_name)
+                logger.success(f"Your previous container [orange3]{self.name}[/orange3] has been renamed to [green]{new_name[7:]}[/green] as a backup. You will need to delete it manually when it is no longer needed.")
+                return
+            except APIError as e:
+                if e.status_code == 409 and "is already in use by" in e.explanation:
+                    i += 1
+                    logger.debug(f"Container {new_name} already exists, trying again")
+                    continue
+                else:
+                    logger.error(e.explanation)
+                    logger.critical(f"An unexpected error occurred from docker. Exegol cannot rename the container [green]{self.name}[/green]. Aborting the operation.")
+
     async def backup(self, backup_exh: bool) -> None:
         """
         This function automatically backup the exegol workspace and history to the workspace directory.
@@ -530,33 +576,32 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         if not SessionHandler().pro_feature_access():
             logger.critical("Exegol backup is only available for Pro or Enterprise users.")
-        # TODO test all this
         async with ExegolStatus(f"Ongoing backup of container [green]{self.name}[/green]", spinner_style="blue"):
-            result = await self.exec(f"mkdir {self.__BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
+            result = await self.exec(f"mkdir {self.BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
             if result != 0:
-                logger.error(
-                    f"The directory {self.__BACKUP_DIRECTORY} already exist in the container [green]{self.name}[/green]. It needs to be removed manually before trying to backup this container again.")
+                logger.error(f"The directory {self.BACKUP_DIRECTORY} already exist in the container [green]{self.name}[/green]. "
+                             f"It needs to be removed manually before trying to backup this container again.")
                 raise CancelOperation
 
             backup_tasks = [
                 # Backup bash/zsh history
-                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.zsh_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.zsh_history > {self.__BACKUP_DIRECTORY}/zsh_history", quiet=True, as_daemon=False),
-                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.bash_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.bash_history > {self.__BACKUP_DIRECTORY}/bash_history", quiet=True, as_daemon=False),
+                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.zsh_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.zsh_history > {self.BACKUP_DIRECTORY}/zsh_history", quiet=True, as_daemon=False),
+                self.exec(f"tail -n +$(($(grep -n '# -=-=-=-=-=-=-=- YOUR COMMANDS BELOW -=-=-=-=-=-=-=- #' ~/.bash_history | tail -n1 | cut -d ':' -f1) + 1)) ~/.bash_history > {self.BACKUP_DIRECTORY}/bash_history", quiet=True, as_daemon=False),
                 # Backup files
-                self.exec(f"cp -a /etc/hosts {self.__BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
-                self.exec(f"cp -a /etc/resolv.conf {self.__BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
-                self.exec(f"cp -a /etc/proxychains.conf {self.__BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
+                self.exec(f"cp -a /etc/hosts {self.BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
+                self.exec(f"cp -a /etc/resolv.conf {self.BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
+                self.exec(f"cp -a /etc/proxychains.conf {self.BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
                 self.exec(f"triliumnext-stop && "
-                          f"mkdir {self.__BACKUP_DIRECTORY}/triliumnext_data && "
-                          f"cp -a /opt/tools/triliumnext/data/document.db* {self.__BACKUP_DIRECTORY}/triliumnext_data/ && "
-                          f"cp -a /opt/tools/triliumnext/data/session_secret.txt {self.__BACKUP_DIRECTORY}/triliumnext_data/ && "
-                          f"cp -a /opt/tools/triliumnext/data/sessions {self.__BACKUP_DIRECTORY}/triliumnext_data/", quiet=True, as_daemon=False),
-                self.exec(f"[ $(sed-comment-line /opt/tools/Exegol-history/profile.sh | sed-empty-line | wc -l) -gt 0 ] || return 0 && cp -a /opt/tools/Exegol-history/profile.sh {self.__BACKUP_DIRECTORY}/exh_profile.sh", quiet=True, as_daemon=False),
+                          f"mkdir {self.BACKUP_DIRECTORY}/triliumnext_data && "
+                          f"cp -a /opt/tools/triliumnext/data/document.db* {self.BACKUP_DIRECTORY}/triliumnext_data/ && "
+                          f"cp -a /opt/tools/triliumnext/data/session_secret.txt {self.BACKUP_DIRECTORY}/triliumnext_data/ && "
+                          f"cp -a /opt/tools/triliumnext/data/sessions {self.BACKUP_DIRECTORY}/triliumnext_data/", quiet=True, as_daemon=False),
+                self.exec(f"[ $(sed-comment-line /opt/tools/Exegol-history/profile.sh | sed-empty-line | wc -l) -gt 0 ] || return 0 && cp -a /opt/tools/Exegol-history/profile.sh {self.BACKUP_DIRECTORY}/exh_profile.sh", quiet=True, as_daemon=False),
             ]
             if backup_exh:
                 # Backup exegol-history
                 backup_tasks.append(
-                    self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv && exh export hosts --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
+                    self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv && exh export hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
                 )
 
             results = await asyncio.gather(*backup_tasks)
@@ -565,7 +610,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.error(f"An error occurred during backup creation of [green]{self.name}[/green] container. Please check the logs above for more information.")
                     raise CancelOperation
 
-    async def restore(self) -> None:
+    async def restore(self) -> bool:
         """
         This function automatically restores a backup from the exegol workspace.
         :return:
@@ -575,25 +620,26 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
         async with ExegolStatus(f"Restoring backup of container [green]{self.name}[/green]", spinner_style="blue"):
             results = await asyncio.gather(
-                self.exec(f"cat {self.__BACKUP_DIRECTORY}/zsh_history >> ~/.zsh_history", quiet=True, as_daemon=False),
-                self.exec(f"cat {self.__BACKUP_DIRECTORY}/bash_history >> ~/.bash_history", quiet=True, as_daemon=False),
-                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/hosts /etc/hosts", quiet=True, as_daemon=False),
-                self.exec(f"cp -a {self.__BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf", quiet=True, as_daemon=False),
-                self.exec(f"mv {self.__BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf ", quiet=True, as_daemon=False),
+                self.exec(f"cat {self.BACKUP_DIRECTORY}/zsh_history >> ~/.zsh_history", quiet=True, as_daemon=False),
+                self.exec(f"cat {self.BACKUP_DIRECTORY}/bash_history >> ~/.bash_history", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.BACKUP_DIRECTORY}/hosts /etc/hosts", quiet=True, as_daemon=False),
+                self.exec(f"cp -a {self.BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf", quiet=True, as_daemon=False),
+                self.exec(f"mv {self.BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf ", quiet=True, as_daemon=False),
                 self.exec(f"rm /opt/tools/triliumnext/data/document.db* && "
-                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/document.db* /opt/tools/triliumnext/data/ && "
-                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/session_secret.txt /opt/tools/triliumnext/data/session_secret.txt && "
+                          f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/document.db* /opt/tools/triliumnext/data/ && "
+                          f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/session_secret.txt /opt/tools/triliumnext/data/session_secret.txt && "
                           f"rm -r /opt/tools/triliumnext/data/sessions && "
-                          f"mv {self.__BACKUP_DIRECTORY}/triliumnext_data/sessions /opt/tools/triliumnext/data/sessions", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exh_profile.sh ] || return 0 && mv {self.__BACKUP_DIRECTORY}/exh_profile.sh /opt/tools/Exegol-history/profile.sh", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv ] || return 0 && exh version && exh import creds --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv ] || return 0 && exh version && exh import hosts --format CSV --file {self.__BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
+                          f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/sessions /opt/tools/triliumnext/data/sessions", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exh_profile.sh ] || return 0 && mv {self.BACKUP_DIRECTORY}/exh_profile.sh /opt/tools/Exegol-history/profile.sh", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exegol_history_creds.csv ] || return 0 && exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your creds database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_creds.csv' && return 1) && exh import creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv ] || return 0 && exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your hosts database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv' && return 1) && exh import hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
             )
 
             for r in results:
                 if r != 0:
                     logger.error(f"An error occurred during backup restoration, aborting. Please check the logs above for more information.")
-                    logger.error(f"{self.__BACKUP_DIRECTORY} backup directory will not be removed automatically, you will have to remove it manually inside the container. ")
-                    raise CancelOperation
+                    logger.error(f"{self.BACKUP_DIRECTORY} backup directory will not be removed automatically, you will have to remove it manually inside the container. ")
+                    return False
 
-            await self.exec(f"rm -rf {self.__BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
+            await self.exec(f"rm -rf {self.BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
+            return True

@@ -183,12 +183,12 @@ class DockerUtils(metaclass=MetaSingleton):
                         if c.name == model.getContainerName():  # Search for exact match
                             container[0].remove()
                             logger.debug("Container removed")
-            except Exception as e:
+            except APIError as e:
                 logger.debug(f"Error while removing dcontainer: {e}")
             try:
                 if docker_args.get("network") is not None and self.removeNetwork(cast(str, docker_args["network"])):
                     logger.debug("Network removed")
-            except Exception as e:
+            except (ValueError, APIError) as e:
                 logger.debug(f"Error while removing dedicated network: {e}")
             logger.critical("Error while creating exegol container. Exiting.")
             raise RuntimeError
@@ -228,6 +228,35 @@ class DockerUtils(metaclass=MetaSingleton):
         # docker may return some results but none of them correspond to the request.
         # In this case, ObjectNotFound is raised
         raise ObjectNotFound
+
+    def removeContainerById(self, container_id: str) -> bool:
+        """Get an ExegolContainer from its ID"""
+        try:
+            c = self.__client.containers.get(container_id)
+        except NotFound:
+            raise ObjectNotFound
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            raise RuntimeError
+        c.remove()
+        return True
+
+    def isContainerExist(self, container_id: str) -> Optional[str]:
+        """
+        Test if a container still exists from its ID.
+        :param container_id:
+        :return: Return the name of the container if it still exists, None if it doesn't exist anymore.
+        """
+        try:
+            c = self.__client.containers.get(container_id)
+            return c.name
+        except NotFound:
+            return None
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+        return None
 
     # # # Volumes Section # # #
 

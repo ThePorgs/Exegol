@@ -66,6 +66,7 @@ class ContainerConfig:
         creation_date = "org.exegol.metadata.creation_date"
         comment = "org.exegol.metadata.comment"
         password = "org.exegol.metadata.passwd"
+        backups = "org.exegol.metadata.backups"
 
         @classmethod
         def values(cls):
@@ -90,7 +91,8 @@ class ContainerConfig:
     # Label metadata (label name / [setter method to set the value, getter method to update labels])
     __label_metadata = {ExegolMetadata.creation_date.value: ["setCreationDate", "getCreationDate"],
                         ExegolMetadata.comment.value: ["setComment", "getComment"],
-                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
+                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"],
+                        ExegolMetadata.backups.value: ["setBackupHistory", "getBackupHistory"]}
 
     def __init__(self, container: Optional[Container] = None, container_name: Optional[str] = None, hostname: Optional[str] = None):
         """Container config default value"""
@@ -137,6 +139,7 @@ class ContainerConfig:
         self.__desktop_port: Optional[int] = None
         # Metadata attributes
         self.__creation_date: Optional[str] = None
+        self.__backup_history: Optional[str] = None
         self.__comment: Optional[str] = None
         self.__username: str = "root"
         self.__passwd: Optional[str] = self.generateRandomPassword()
@@ -756,16 +759,15 @@ class ContainerConfig:
                 self.__addDevice("/dev/net/tun", mknod=True)
                 # OpenVPN config
                 self.__vpn_mode = "ovpn"
-                self.__vpn_parameters = self.__prepareOpenVpnVolumes(vpn_path)
+                self.__vpn_parameters = await self.__prepareOpenVpnVolumes(vpn_path)
             elif vpn_path.is_file() and vpn_path.suffix == ".conf":
                 if not SessionHandler().pro_feature_access():
-                    logger.error("WireGuard VPN feature is not yet available for Exegol Community edition.")
+                    logger.error("WireGuard VPN support is exclusive to Pro/Enterprise users. Coming soon to Community.")
                     self.__disableVPN()
                     return
                 # Wireguard config
                 self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
                 self.__vpn_mode = "wgconf"
-                # TODO run wg as exec for priv not entrypoint https://www.linuxserver.io/blog/routing-docker-host-and-container-traffic-through-wireguard
                 self.__vpn_parameters = self.__prepareWireguardVolumes(vpn_path)
             else:
                 logger.critical(f"Your VPN configuration {vpn_path} is not an OpenVPN directory / [green].ovpn[/green] file or a WireGuard [green].conf[/green] file.")
@@ -809,7 +811,7 @@ class ContainerConfig:
 
     # ===== Functional / technical methods section =====
 
-    def __prepareOpenVpnVolumes(self, vpn_path: Path) -> Optional[str]:
+    async def __prepareOpenVpnVolumes(self, vpn_path: Path) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
         Depending on the user's settings, different configurations can be applied.
         With or without username / password authentication via auth-user-pass.
@@ -820,7 +822,7 @@ class ContainerConfig:
         logger.debug(f"Configuring OpenVPN")
         self.__vpn_path = vpn_path
         if vpn_path.is_file():
-            self.__checkVPNConfigDNS(vpn_path)
+            await self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
             self.addVolume(vpn_path, "/.exegol/vpn/config/client.ovpn", read_only=True)
             ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
@@ -833,7 +835,7 @@ class ContainerConfig:
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
                 logger.info(f"Using VPN config: {file}")
-                self.__checkVPNConfigDNS(file)
+                await self.__checkVPNConfigDNS(file)
                 # Get filename only to match the future container path
                 vpn_filename = file.name
                 ovpn_parameters.append(f"--config /.exegol/vpn/config/{vpn_filename}")
@@ -875,9 +877,8 @@ class ContainerConfig:
 
         return ' '.join(wg_parameters)
 
-
     @staticmethod
-    def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
+    async def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
         logger.verbose("Checking OpenVPN config file")
         configs = ["script-security 2", "up /etc/openvpn/update-resolv-conf", "down /etc/openvpn/update-resolv-conf"]
         with open(vpn_path, 'r') as vpn_file:
@@ -892,10 +893,7 @@ class ContainerConfig:
             logger.raw(os.linesep.join(configs), level=logging.WARNING)
             logger.empty_line()
             logger.empty_line()
-            #await ExegolRich.Acknowledge("Your VPN configuration doesn't support dynamic DNS servers.")
-            # TODO review config tips
-            logger.info("Press enter to continue or Ctrl+C to cancel the operation")
-            input()
+            await ExegolRich.Acknowledge("Your VPN configuration won't support dynamic DNS servers.")
 
     def prepareShare(self, share_name: str) -> None:
         """Add workspace share before container creation"""
@@ -1410,6 +1408,15 @@ class ContainerConfig:
         if self.__creation_date is None:
             self.__creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
         return self.__creation_date
+
+    def setBackupHistory(self, backup_history: Optional[str]) -> None:
+        """Set the container backup history parsed from the labels of an existing container."""
+        self.__backup_history = backup_history
+
+    def getBackupHistory(self) -> Optional[str]:
+        """Get container backup history.
+        If no backup history has been supplied, returns None."""
+        return self.__backup_history
 
     def setComment(self, comment: str) -> None:
         """Set the container comment parsed from the labels of an existing container."""
