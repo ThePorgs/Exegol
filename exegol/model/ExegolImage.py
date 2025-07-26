@@ -249,8 +249,11 @@ class ExegolImage(SelectableInterface):
         self.syncStatus()
 
     def setupAsLegacy(self, legacy_tag: str) -> None:
-        """Used to pull legacy version specific image"""
+        """Used to pull legacy version specific image not installed locally"""
         self.__name = legacy_tag
+        self.__setImageVersion(self.tagNameParsing(legacy_tag))
+        self.__is_update = False
+        self.__outdated = True
         self.__version_specific = True
 
     def __labelVersionParsing(self) -> None:

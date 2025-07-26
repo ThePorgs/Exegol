@@ -76,7 +76,8 @@ class UpdateManager:
                 # if version tag have been successfully download, returning ExegolImage from docker response
                 if sync_result is not None and type(sync_result) is ExegolImage:
                     return sync_result
-                return await DockerUtils().getInstalledImage(selected_image.getName(), selected_image.getRepository())
+                # Version-specific images must skip cache to avoid loading latest image
+                return await DockerUtils().getInstalledImage(selected_image.getName(), selected_image.getRepository(), skip_cache=selected_image.isVersionSpecific())
         else:
             # Unknown use case
             logger.critical(f"Unknown selected image '{selected_image}'. Exiting.")

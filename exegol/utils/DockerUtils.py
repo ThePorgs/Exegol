@@ -509,10 +509,10 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
         return None
 
-    async def getInstalledImage(self, tag: str, repository: Optional[str] = None) -> ExegolImage:
+    async def getInstalledImage(self, tag: str, repository: Optional[str] = None, skip_cache: bool = False) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
         try:
-            if self.__images is not None:
+            if not skip_cache and self.__images is not None:
                 # Try to find image from cache
                 for img in self.__images:
                     if img.getName() == tag:

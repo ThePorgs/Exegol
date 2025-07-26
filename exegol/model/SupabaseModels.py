@@ -20,3 +20,6 @@ class SupabaseImage(BaseModel):
     repository: str
     version: str
     license: Optional[str]
+
+    def __repr__(self) -> str:
+        return f"{self.repository}:{self.tag} {self.version} ({self.arch})"
