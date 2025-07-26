@@ -409,7 +409,6 @@ class ExegolImage(SelectableInterface):
         Return a list of ordered ExegolImage."""
         logger.debug("Comparing and merging local and remote images data")
         results = []
-        latest_installed: List[str] = []
         # Convert array to dict
         remote_img_dict: Dict[str, SupabaseImage] = {}
         for r_img in remote_images:
@@ -435,7 +434,9 @@ class ExegolImage(SelectableInterface):
                         if remote.repo_digest == current_id:
                             selected = remote
                             break
-                current_tag = img.attrs.get('Config', {}).get('Labels', {}).get('org.exegol.tag')
+                #current_tag = img.attrs.get('Config', {}).get('Labels', {}).get('org.exegol.tag')
+                # Get tag from ExegolImage object instead of labels to handle the untagged outdated nightly case
+                current_tag = current_local_img.getName()
                 if selected is None and current_tag is not None:
                     selected = remote_img_dict.get(current_tag)
             else:
@@ -460,12 +461,12 @@ class ExegolImage(SelectableInterface):
                 remote_tag_matched.add(selected.tag)
                 current_local_img.setMetaImage(selected)
             else:
-                if len(remote_images) > 0:
+                if len(remote_images) > 0 and not current_local_img.isVersionSpecific() and not current_local_img.isLocked():
                     # If there is some result from internet but no match and this is not a local image, this image is probably discontinued or the remote image is too old (relative to other images)
+                    # Excluding local version specific / outdated images
                     current_local_img.setAsDiscontinued()
                 # If there are no remote images, the user probably doesn't have internet and can't know the status of the images from the registry (default: Unknown)
             results.append(current_local_img)
-            latest_installed.append(current_local_img.getName())
 
         # Add remote image left
         for current_remote in remote_images:
