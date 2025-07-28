@@ -674,21 +674,27 @@ class ExegolManager:
                     not ParametersManager().force_mode and
                     not await ExegolRich.Confirm("Do you want to [green]keep[/green] your old container as a backup?", default=True))
 
-        exh_line = '' if not exh_backup_supported else "\n    - Your [green]exegol-history[/green] database"
+        backup_items = [
+            "Your [green]my-resources[/green] customization" if c.config.isMyResourcesEnable() else "",
+            "The container [green]/workspace[/green] directory",
+            "Your [green]bash/zsh[/green] command history",
+            "Your [green]exegol-history[/green] database" if exh_backup_supported else "",
+            "Your [green]TriliumNext[/green] notes",
+            "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
+            "The following configurations: [green]Proxychains[/green]"
+        ]
         details = f"""You are about to upgrade your container and transfer:
-    - Your [green]my-resources[/green] customization
-    - The container [green]/workspace[/green] directory
-    - Your [green]bash/zsh[/green] command history{exh_line}
-    - Your [green]TriliumNext[/green] notes
-    - The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh
-    - The following configurations: [green]Proxychains[/green]
+    - {'\n    - '.join([i for i in backup_items if i])}
 """
-        # TODO
+        # TODO improve upgrade with
         #  Config of: Responder?
         #  DB of Responder, neo4j, postgres, nxc?, firefox, hashcat potfile, john?
 
         logger.warning(details)
-        if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"The list above will be [orange3]transferred to the new container[/orange3], [red]nothing more[/red]. Do you want to proceed with the upgrade of [green]{c.name}[/green]?", default=False):
+        if (not ParametersManager().force_mode and
+                not await ExegolRich.Confirm(f"The list above will be [orange3]{'kept' if remove_container else 'transferred'} "
+                                             f"to the new container[/orange3], [red]nothing more{', without backup' if remove_container else ''}[/red]! "
+                                             f"Do you want to proceed with the upgrade of [green]{c.name}[/green]?", default=False)):
             logger.critical("Aborting operation.")
 
         logger.warning("Please don't cancel this operation while it's running! You might loose some data!")
