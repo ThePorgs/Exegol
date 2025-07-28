@@ -170,8 +170,6 @@ class SupabaseUtils:
             else:
                 logger.critical(f"Unable to enumerate licenses from exegol servers: [{e.status}] {e.message}")
             raise e
-        except Exception as e:
-            raise e
 
     @classmethod
     async def enum_licenses(cls, supabase_client: AsyncFunctionsClient) -> Dict:
@@ -352,7 +350,7 @@ class SupabaseUtils:
         logger.debug(f"Fetching latest version of a specific image {tag} from metadata table")
         image: Optional[APIResponse] = await cls.__execute((await cls.__create_client())
                                                            .table("images")
-                                                           .select("digest, version")
+                                                           .select("repo_digest, version")
                                                            .eq("arch", arch)
                                                            .eq("tag", tag)
                                                            .not_.is_("version", None)
@@ -363,4 +361,4 @@ class SupabaseUtils:
         result: Optional[Dict[str, str]] = cast(Optional[Dict[str, str]], image.data)  # single mode cast
         if result is None:
             return None, None
-        return result["digest"], result["version"]
+        return result["repo_digest"], result["version"]

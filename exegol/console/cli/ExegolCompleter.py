@@ -33,7 +33,7 @@ def ImageCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str, 
             data = [img_cache.name for img_cache in DataCache().get_images_data().data if img_cache.source == "remote"]
         else:
             data = [img_cache.name for img_cache in DataCache().get_images_data().data]
-    except Exception as e:
+    except Exception:
         data = []
     if len(data) == 0:
         # Fallback with default data if the cache is not initialized yet

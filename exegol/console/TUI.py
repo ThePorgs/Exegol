@@ -121,7 +121,7 @@ class ExegolTUI:
         logfile = None
         if ParametersManager().build_log is not None:
             # Opening log file in line buffering mode (1) to support tail -f [file]
-            logfile = open(ParametersManager().build_log, 'a', buffering=1)
+            logfile = open(ParametersManager().build_log, 'a', buffering=1, encoding="utf-8")
         # Follow stream
         for line in build_stream:
             stream_text = line.get("stream", '')

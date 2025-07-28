@@ -41,6 +41,8 @@ function shutdown() {
   # Shutting down the container.
   # Sending SIGTERM to all interactive process for proper closing
   pgrep vnc && desktop-stop  # Stop webui desktop if started TODO improve desktop shutdown
+  # Stop wireguard if any
+  command -v wg-quick &> /dev/null && [ "$(find "/etc/wireguard/" -type f -name '*.conf' | wc -l)" -gt 0 ] && wg-quick down /etc/wireguard/* 2>/dev/null
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
@@ -78,12 +80,27 @@ function ovpn() {
       echo '[ERROR]Your exegol image does not support the VPN feature'
   else
     # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
-    echo "[PROGRESS]Starting [green]VPN[/green]"
+    echo "[PROGRESS]Starting [green]OpenVPN[/green]"
     # shellcheck disable=SC2164
     ([[ -d /.exegol/vpn/config ]] && cd /.exegol/vpn/config; openvpn --log-append /var/log/exegol/vpn.log "$@" &)
     sleep 2  # Waiting 2 seconds for the VPN to start before continuing
   fi
+}
 
+function wgconf() {
+  [[ "$DISPLAY" == *"host.docker.internal"* ]] && _resolv_docker_host
+  if ! command -v wg-quick &> /dev/null
+  then
+      echo '[ERROR]Your exegol image does not support the WireGuard VPN feature'
+  else
+    echo "[PROGRESS]Starting [green]WireGuard[/green] VPN"
+    if ! wg-quick up "$@" &>> /var/log/exegol/vpn.log
+    then
+      echo '[ERROR]An error has occurred during WireGuard VPN startup. Check logs in container at path /var/log/exegol/vpn.log'
+    else
+      echo '[SUCCESS]WireGuard [green]VPN[/green] successfully started!'
+    fi
+  fi
 }
 
 function run_cmd() {

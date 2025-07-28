@@ -76,7 +76,8 @@ class UpdateManager:
                 # if version tag have been successfully download, returning ExegolImage from docker response
                 if sync_result is not None and type(sync_result) is ExegolImage:
                     return sync_result
-                return await DockerUtils().getInstalledImage(selected_image.getName(), selected_image.getRepository())
+                # Version-specific images must skip cache to avoid loading latest image
+                return await DockerUtils().getInstalledImage(selected_image.getName(), selected_image.getRepository(), skip_cache=selected_image.isVersionSpecific())
         else:
             # Unknown use case
             logger.critical(f"Unknown selected image '{selected_image}'. Exiting.")
@@ -332,7 +333,7 @@ class UpdateManager:
 
         # Choose tag name
         blacklisted_build_name = ["stable", "full", "nightly", "ad", "web", "light", "osint", "free"]
-        while build_name is None or build_name in blacklisted_build_name:
+        while build_name is None or build_name in blacklisted_build_name or True in [build_name.startswith(x + '-') for x in blacklisted_build_name]:
             if build_name is not None:
                 logger.error("This name is reserved and cannot be used for local build. Please choose another one.")
             build_name = await ExegolRich.Ask("[bold blue][?][/bold blue] Choose a name for the new local image",

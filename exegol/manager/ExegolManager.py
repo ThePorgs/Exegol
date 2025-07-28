@@ -10,6 +10,7 @@ from exegol.config.UserConfig import UserConfig
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import ExegolRich
+from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.console.cli.actions.GenericParameters import ContainerCreation
@@ -89,6 +90,24 @@ class ExegolManager:
             container.start(),
             TaskManager.wait_for_all())
         await container.spawnShell()
+
+    @classmethod
+    async def upgrade(cls) -> None:
+        """Upgrade exegol to the latest version"""
+        if not SessionHandler().pro_feature_access():
+            logger.critical("Exegol upgrade is only available for Pro or Enterprise users.")
+        container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True, filters=[ExegolContainer.Filters.OUTDATED])
+        assert container is not None and type(container) is list
+        for c in container:
+            try:
+                previous_image = c.image
+                await cls.__backupAndUpgrade(c)
+
+                # If the image used is deprecated, it must be deleted after the removal of its container
+                if previous_image.isLocked() and UserConfig().auto_remove_images:
+                    await DockerUtils().removeImage(previous_image, upgrade_mode=True, silent_error=True)
+            except CancelOperation:
+                logger.error(f"Something unexpected happened during the [green]{c.name}[/green] container upgrade process.")
 
     @classmethod
     async def exec(cls) -> None:
@@ -189,7 +208,16 @@ class ExegolManager:
             logger.error("Aborting operation.")
             return
         for c in containers:
-            await c.remove()
+            # Check if containers have backups
+            backup_history = c.getExistingBackupContainers()
+            if len(backup_history) > 0:
+                all_backup_names = ', '.join([x[1] for x in backup_history])
+                if ParametersManager().force_mode:
+                    logger.info(f"The container [green]{c.name}[/green] has [green]{len(backup_history)}[/green] backup containers that will be removed too [orange3][ {all_backup_names} ][/orange3]")
+                elif not await ExegolRich.Confirm(f"The container [green]{c.name}[/green] has [green]{len(backup_history)}[/green] backup containers [orange3][ {all_backup_names} ][/orange3], do you want to remove them too?", default=True):
+                    logger.critical("Cannot remove container without also removing its backups. Aborting.")
+
+            await c.remove(backup_history=[x[0] for x in backup_history])
             # If the image used is deprecated, it must be deleted after the removal of its container
             if c.image.isLocked() and UserConfig().auto_remove_images:
                 await DockerUtils().removeImage(c.image, upgrade_mode=True)
@@ -211,12 +239,6 @@ class ExegolManager:
         logger.raw(f"[bold blue][*][/bold blue] Exegol {SessionHandler().get_license_type_display()} is currently in version {await UpdateManager.display_current_version()}{os.linesep}",
                    level=logging.INFO, markup=True)
         await LicenseManager.get()
-        logger.raw(
-            f"[bold magenta][*][/bold magenta] Exegol Discord serv.: [underline magenta]{ConstantConfig.discord}[/underline magenta]{os.linesep}",
-            level=logging.INFO, markup=True)
-        logger.raw(
-            f"[bold magenta][*][/bold magenta] Exegol documentation: [underline magenta]{ConstantConfig.documentation}[/underline magenta]{os.linesep}",
-            level=logging.INFO, markup=True)
         logger.raw(
             f"[bold magenta][*][/bold magenta] More about Exegol at: [underline magenta]{ConstantConfig.landing}[/underline magenta]{os.linesep}",
             level=logging.INFO, markup=True)
@@ -254,10 +276,23 @@ class ExegolManager:
             await UpdateManager.checkForWrapperUpdate()
         if await UpdateManager.isUpdateAvailable():
             logger.empty_line()
-            if await ExegolRich.Confirm(
-                    f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} -> {UpdateManager.display_latest_version()}), do you want to update ?",
-                    default=True):
-                await UpdateManager.updateWrapper()
+            update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} :arrow_right: {UpdateManager.display_latest_version()})"
+            if ConstantConfig.git_source_installation:
+                if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
+                    await UpdateManager.updateWrapper()
+            else:
+                logger.info(update_message)
+                update_command = None
+                if ConstantConfig.pipx_installed:
+                    update_command = "You can update your exegol wrapper with the command [green]pipx upgrade exegol[/green]"
+                elif ConstantConfig.uv_installed:
+                    update_command = "You can update your exegol wrapper with the command [green]uv tool upgrade exegol[/green]"
+                elif ConstantConfig.pip_installed:
+                    update_command = "If you have installed Exegol with pip, update with the command [green]pip3 install exegol --upgrade[/green]"
+                else:
+                    await ExegolRich.Acknowledge("Installation method not found (not among pip/pipx/uv/sources). You should update your wrapper manually.")
+                if update_command:
+                    await ExegolRich.Acknowledge(update_command)
         else:
             logger.empty_line(log_level=logging.DEBUG)
 
@@ -570,3 +605,129 @@ class ExegolManager:
         if len(detected) > 0:
             logger.warning(f"These parameters ({', '.join(detected)}) have been entered although the container already "
                            f"exists, they will not be taken into account.")
+
+    @classmethod
+    async def __backupAndUpgrade(cls, c: ExegolContainer) -> None:
+        logger.empty_line()
+
+        current_image_tag = c.image.getName().split('-')[0]
+        if ParametersManager().image_tag is None or ParametersManager().image_tag == current_image_tag:
+
+            # Check update conditions
+            if not c.image.isLocked():
+                if "Unknown" in c.image.getStatus():
+                    await c.image.autoLoad()
+                if c.image.isUpToDate():
+                    logger.error(f"Container [green]{c.name}[/green] is already using the latest version of [blue]{current_image_tag}[/blue]. No need to upgrade, skipping.")
+                    return
+
+            # Tips to upgrade from free image
+            if current_image_tag == "free":
+                logger.info(f"[orange3][Tips][/orange3] you can use the [green]--image IMAGE[/green] option to upgrade your container to a {SessionHandler().get_license_type_display()} image (e.g., 'full'').")
+                logger.empty_line()
+
+            new_image: ExegolImage = await DockerUtils().getInstalledImage(current_image_tag)
+            logger.info(f"Upgrading container [green]{c.name}[/green] using [green]{new_image.getName()}[/green] image")
+        else:
+            # Upgrade to a different image tag
+            new_image = await DockerUtils().getInstalledImage(ParametersManager().image_tag)
+            logger.info(f"Upgrading container [green]{c.name}[/green], your container will migrate from [blue]{current_image_tag}[/blue] to the [blue]{new_image.getName()}[/blue] image")
+
+        skipping_msg = ""
+        if not new_image.isUpToDate():
+            skipping_msg = f"Run [green]exegol update {new_image.getName()}[/green] to install the new version [green]{new_image.getLatestVersion()}[/green] of your image first."
+            logger.warning(f"You're upgrading to an outdated version of the [blue]{new_image.getName()}[/blue] image ([orange3]{new_image.getImageVersion()}[/orange3] :arrow_right: [green]{new_image.getLatestVersion()}[/green])")
+            if not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Are you sure you want to upgrade your container [green]{c.name}[/green] to an outdated image?", default=False):
+                if await ExegolRich.Confirm(f"Do you want to update your [green]{new_image.getName()}[/green] image now?", default=False):
+                    image_update = await UpdateManager.updateImage(new_image.getName())
+                    if image_update is None:
+                        logger.error(f"An error occurred during image update. Skipping upgrade of container [green]{c.name}[/green].")
+                        return
+                    new_image = image_update
+                else:
+                    logger.info(f"Skipping upgrade of container [green]{c.name}[/green]. {skipping_msg}")
+                    return
+
+        # Check if the new image is the same as the container's current image
+        if c.image.getLocalId() == new_image.getLocalId():
+            logger.error(f"Cannot upgrade [green]{c.name}[/green] because it's already using the latest local [blue]{new_image.getName()}[/blue] image (version [orange3]{new_image.getImageVersion()}[/orange3]), skipping.")
+            if not new_image.isUpToDate():
+                logger.info(skipping_msg)
+            return
+
+        # Start container and run pre-backup checks
+        if not c.isRunning():
+            await c.start()
+        async with ExegolStatus(f"Running pre-backup checks", spinner_style="blue"):
+            # Test if exh can be backup
+            backup_directory_exist = await c.exec(f"[ -d {ExegolContainer.BACKUP_DIRECTORY} ]", as_daemon=False, quiet=True, show_output=False) == 0
+            if not backup_directory_exist:
+                exh_backup_supported = await c.exec("exegol-history version", as_daemon=False, quiet=True, show_output=False) == 0
+
+        if backup_directory_exist:
+            logger.error(f"The directory {ExegolContainer.BACKUP_DIRECTORY} already exists in the container [green]{c.name}[/green]. "
+                         f"It needs to be removed manually before trying to upgrade this container.")
+            return
+
+        remove_container = ParametersManager().no_backup or (
+                    not ParametersManager().force_mode and
+                    not await ExegolRich.Confirm("Do you want to [green]keep[/green] your old container as a backup?", default=True))
+
+        backup_items = [
+            "Your [green]my-resources[/green] customization" if c.config.isMyResourcesEnable() else "",
+            "The container [green]/workspace[/green] directory",
+            "Your [green]bash/zsh[/green] command history",
+            "Your [green]exegol-history[/green] database" if exh_backup_supported else "",
+            "Your [green]TriliumNext[/green] notes",
+            "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
+            "The following configurations: [green]Proxychains[/green]"
+        ]
+        details = f"""You are about to upgrade your container and transfer:
+    - {'\n    - '.join([i for i in backup_items if i])}
+"""
+        # TODO improve upgrade with
+        #  Config of: Responder?
+        #  DB of Responder, neo4j, postgres, nxc?, firefox, hashcat potfile, john?
+
+        logger.warning(details)
+        if (not ParametersManager().force_mode and
+                not await ExegolRich.Confirm(f"The list above will be [orange3]{'kept' if remove_container else 'transferred'} "
+                                             f"to the new container[/orange3], [red]nothing more{', without backup' if remove_container else ''}[/red]! "
+                                             f"Do you want to proceed with the upgrade of [green]{c.name}[/green]?", default=False)):
+            logger.critical("Aborting operation.")
+
+        logger.warning("Please don't cancel this operation while it's running! You might loose some data!")
+
+        # Start container data Backup
+        await c.backup(backup_exh=exh_backup_supported)
+        logger.success(f"Container [green]{c.name}[/green] data has been backed up.")
+
+        # Get previous backups that still exist
+        backup_history = c.getExistingBackupContainers()
+
+        if remove_container:
+            # Remove the container without removing the workspace
+            await c.remove(container_only=True)
+        else:
+            await c.stop()
+            # Renaming old container
+            c.rename_as_old()
+            # Add and update backup history references
+            backup_history.append((c.getFullId(), ''))
+
+        # Updating previous backup containers references
+        c.config.setBackupHistory(','.join([x[0] for x in backup_history]) if len(backup_history) > 0 else None)
+
+        # Update container's exegol image to the new image target
+        c.image = new_image
+
+        # Create a new container from template
+        container = DockerUtils().createContainer(c)
+        await container.postCreateSetup()
+
+        # Restore data on new container
+        if await container.restore():
+            logger.success(f"Container [green]{c.name}[/green] successfully upgraded to the [green]{c.image.getLatestVersionName().replace('-', ' ')}[/green] image!")
+        else:
+            logger.warning("The container was upgraded, but errors occurred during data restoration. Consult the previous messages to recover the missing data in your new container")
+        logger.info(f"You can now open a shell in your new container with [green]exegol start {c.name}[/green]")

@@ -52,16 +52,25 @@ class ContainerConfig:
                              '/.exegol/entrypoint.sh', '/.exegol/spawn.sh', '/tmp/wayland-0', '/tmp/wayland-1']
 
     # Whitelist device for Docker Desktop
-    __whitelist_dd_devices = ["/dev/net/tun"]
+    __whitelist_dd_devices = ["/dev/net/tun", "/dev/fuse"]
 
     class ExegolFeatures(Enum):
         shell_logging = "org.exegol.feature.shell_logging"
         desktop = "org.exegol.feature.desktop"
 
+        @classmethod
+        def values(cls):
+            return list(map(lambda c: c.value, cls))
+
     class ExegolMetadata(Enum):
         creation_date = "org.exegol.metadata.creation_date"
         comment = "org.exegol.metadata.comment"
         password = "org.exegol.metadata.passwd"
+        backups = "org.exegol.metadata.backups"
+
+        @classmethod
+        def values(cls):
+            return list(map(lambda c: c.value, cls))
 
     class ExegolEnv(Enum):
         # feature
@@ -82,7 +91,8 @@ class ContainerConfig:
     # Label metadata (label name / [setter method to set the value, getter method to update labels])
     __label_metadata = {ExegolMetadata.creation_date.value: ["setCreationDate", "getCreationDate"],
                         ExegolMetadata.comment.value: ["setComment", "getComment"],
-                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"]}
+                        ExegolMetadata.password.value: ["setPasswd", "getPasswd"],
+                        ExegolMetadata.backups.value: ["setBackupHistory", "getBackupHistory"]}
 
     def __init__(self, container: Optional[Container] = None, container_name: Optional[str] = None, hostname: Optional[str] = None):
         """Container config default value"""
@@ -120,6 +130,7 @@ class ContainerConfig:
         self.__shell_logging: bool = False
         # Entrypoint features
         self.legacy_entrypoint: bool = True
+        self.__vpn_mode: Optional[str] = None
         self.__vpn_parameters: Optional[str] = None
         self.__run_cmd: bool = False
         self.__endless_container: bool = True
@@ -128,6 +139,7 @@ class ContainerConfig:
         self.__desktop_port: Optional[int] = None
         # Metadata attributes
         self.__creation_date: Optional[str] = None
+        self.__backup_history: Optional[str] = None
         self.__comment: Optional[str] = None
         self.__username: str = "root"
         self.__passwd: Optional[str] = self.generateRandomPassword()
@@ -210,14 +222,15 @@ class ContainerConfig:
             if not key.startswith("org.exegol."):
                 continue
             logger.debug(f"└── Parsing label : {key}")
-            if key.startswith("org.exegol.metadata."):
+            if key in self.ExegolMetadata.values():
                 # Find corresponding feature and attributes
                 refs = self.__label_metadata.get(key)  # Setter
                 if refs is not None:
                     # reflective execution of setter method (set metadata value to the corresponding attribute)
                     getattr(self, refs[0])(value)
-            elif key.startswith("org.exegol.feature."):
-                # Find corresponding feature and attributes
+            elif key in self.ExegolFeatures.values():
+                self.addLabel(key, value)
+                # Find corresponding feature and function
                 enable_function = self.__label_features.get(key)
                 if enable_function is not None:
                     # reflective execution of the feature enable method (add label & set attributes)
@@ -230,6 +243,7 @@ class ContainerConfig:
         if mounts is None:
             mounts = []
         self.__disable_workspace = True
+        ovpn_parameters = []
         for share in mounts:
             logger.debug(f"└── Parsing mount : {share}")
             src_path: Optional[PurePath] = None
@@ -249,14 +263,16 @@ class ContainerConfig:
                                        type=share.get('Type', 'volume'),
                                        read_only=(not share.get("RW", True)),
                                        propagation=share.get('Propagation', '')))
-            if share.get('Destination', '') in ["/etc/timezone", "/etc/localtime"]:
+
+            destination = share.get('Destination', '')
+            if destination in ["/etc/timezone", "/etc/localtime"]:
                 self.__share_timezone = True
-            elif "/opt/resources" in share.get('Destination', ''):
+            elif "/opt/resources" in destination:
                 self.__exegol_resources = True
-            elif "/opt/my-resources" in share.get('Destination', ''):
+            elif "/opt/my-resources" in destination:
                 self.__my_resources = True
-                self.__my_resources_path = share.get('Destination', '')
-            elif "/workspace" in share.get('Destination', ''):
+                self.__my_resources_path = destination
+            elif "/workspace" in destination:
                 # Workspace are always bind mount
                 assert src_path is not None
                 obj_path = cast(PurePath, src_path)
@@ -270,14 +286,23 @@ class ContainerConfig:
                 else:
                     logger.debug("└── Custom workspace detected")
                     self.__workspace_custom_path = str(obj_path)
-            elif "/.exegol/vpn" in share.get('Destination', ''):
+            elif "/.exegol/vpn" in destination or destination.startswith("/etc/wireguard/"):
                 # VPN are always bind mount
                 assert src_path is not None
-                obj_path = cast(PurePath, src_path)
-                self.__vpn_path = obj_path
+                self.__vpn_path = Path(src_path)
+                if self.__vpn_path.suffix == ".ovpn":
+                    self.__vpn_mode = "ovpn"
+                    ovpn_parameters.append(f"--config {destination}")
+                elif self.__vpn_path.suffix == ".conf":
+                    self.__vpn_mode = "wgconf"
+                    self.__vpn_parameters = Path(destination).name[:-5]
                 logger.debug(f"└── Loading VPN config: {self.__vpn_path.name}")
-            elif "/.exegol/spawn.sh" in share.get('Destination', ''):
+            elif destination == "/.exegol/vpn/auth/creds.txt":
+                ovpn_parameters.append(f"--auth-user-pass /.exegol/vpn/auth/creds.txt")
+            elif destination == "/.exegol/spawn.sh":
                 self.__wrapper_start_enabled = True
+        if len(ovpn_parameters) > 0:
+            self.__vpn_parameters = ' '.join(ovpn_parameters)
 
     # ===== Config init section =====
 
@@ -298,7 +323,7 @@ class ContainerConfig:
                 self.enableMyResources()
             if ParametersManager().exegol_resources:
                 await self.enableExegolResources()
-            if ParametersManager().log:
+            if ParametersManager().log or UserConfig().always_enable_shell_logging:
                 self.enableShellLogging(ParametersManager().log_method,
                                         UserConfig().shell_logging_compress ^ ParametersManager().log_compress)
             if ParametersManager().workspace_path:
@@ -611,6 +636,9 @@ class ContainerConfig:
     def enableDesktop(self, desktop_config: str = "") -> None:
         """Procedure to enable exegol desktop feature"""
         if not self.isDesktopEnabled():
+            if self.isNetworkDisabled():
+                logger.error(f"The current network mode doesn't support the desktop feature.")
+                return
             logger.verbose("Config: Enabling exegol desktop")
             self.configureDesktop(desktop_config, create_mode=True)
             assert self.__desktop_proto is not None
@@ -624,9 +652,6 @@ class ContainerConfig:
             if self.isNetworkHost():
                 self.addEnv(self.ExegolEnv.desktop_host.value, self.__desktop_host)
                 self.addEnv(self.ExegolEnv.desktop_port.value, str(self.__desktop_port))
-            elif self.isNetworkDisabled():
-                logger.error(f"The current network mode doesn't support the desktop feature.")
-                self.__disableDesktop()
             else:
                 # Container in bridge mode
                 # If we do not specify the host to the container it will automatically choose eth0 interface
@@ -639,9 +664,11 @@ class ContainerConfig:
         """Configure the exegol desktop feature from user parameters.
         Accepted format: 'proto:host:port'
         """
+        # Apply default config
         self.__desktop_proto = UserConfig().desktop_default_proto
         self.__desktop_host = "127.0.0.1" if UserConfig().desktop_default_localhost else "0.0.0.0"
 
+        # Set config from user input
         for i, data in enumerate(desktop_config.split(":")):
             if not data:
                 continue
@@ -709,7 +736,7 @@ class ContainerConfig:
             if EnvInfo.isLinuxHost():
                 logger.info(f"Defaulting to [magenta]{self.__fallback_network_mode.value}[/magenta] to protect host from VPN. Use [blue]--network host[/blue] if you need to access VPN from your host.")
             self.setNetworkMode(self.__fallback_network_mode)
-        # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels
+        # Add NET_ADMIN capabilities, this privilege is necessary to mount network tunnels interfaces
         self.addCapability("NET_ADMIN")
         # Add sysctl ipv6 config, some VPN connection need IPv6 to be enabled
         # TODO test with ipv6 disable with kernel modules
@@ -720,24 +747,53 @@ class ContainerConfig:
                 skip_sysctl = True
         if not skip_sysctl:
             self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "0")
-        # Add tun device, this device is needed to create VPN tunnels
-        self.__addDevice("/dev/net/tun", mknod=True)
-        # Sharing VPN configuration with the container
-        self.__vpn_parameters = self.__prepareVpnVolumes(config_path)
+
+        if config_path is not None or ParametersManager().vpn != '':
+            # VPN config path
+            vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
+
+            logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+            # Sharing VPN configuration with the container
+            if vpn_path.is_dir() or (vpn_path.is_file() and vpn_path.suffix == ".ovpn"):
+                # Add tun device, this device is needed to create OpenVPN tunnels
+                self.__addDevice("/dev/net/tun", mknod=True)
+                # OpenVPN config
+                self.__vpn_mode = "ovpn"
+                self.__vpn_parameters = await self.__prepareOpenVpnVolumes(vpn_path)
+            elif vpn_path.is_file() and vpn_path.suffix == ".conf":
+                if not SessionHandler().pro_feature_access():
+                    logger.error("WireGuard VPN support is exclusive to Pro/Enterprise users. Coming soon to Community.")
+                    self.__disableVPN()
+                    return
+                # Wireguard config
+                self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
+                self.__vpn_mode = "wgconf"
+                self.__vpn_parameters = self.__prepareWireguardVolumes(vpn_path)
+            else:
+                logger.critical(f"Your VPN configuration {vpn_path} is not an OpenVPN directory / [green].ovpn[/green] file or a WireGuard [green].conf[/green] file.")
+        else:
+            # Add tun device, this device is needed to create OpenVPN tunnels
+            self.__addDevice("/dev/net/tun", mknod=True)
+            # Add sysctl for wireguard default gateway
+            self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
+            logger.success("Enabling VPN capabilities without managing a VPN connection")
 
     def __disableVPN(self) -> bool:
         """Remove a VPN profile for container startup (Only for interactive config)"""
         if self.__vpn_path:
             logger.verbose('Removing VPN configuration')
             self.__vpn_path = None
+            self.__vpn_mode = None
             self.__vpn_parameters = None
             self.__removeCapability("NET_ADMIN")
             self.__removeSysctl("net.ipv6.conf.all.disable_ipv6")
+            self.__removeSysctl("net.ipv4.conf.all.src_valid_mark")
             self.removeDevice("/dev/net/tun")
             # Try to remove each possible volume
             self.removeVolume(container_path="/.exegol/vpn/auth/creds.txt")
             self.removeVolume(container_path="/.exegol/vpn/config/client.ovpn")
             self.removeVolume(container_path="/.exegol/vpn/config")
+            self.removeVolume(container_path="/etc/wireguard/wg0.conf")
             return True
         return False
 
@@ -751,12 +807,11 @@ class ContainerConfig:
         """Procedure to add comment to a container"""
         if not self.__comment:
             logger.verbose("Config: Adding comment to container info")
-            self.__comment = comment
-            self.addLabel(self.ExegolMetadata.comment.value, comment)
+            self.setComment(comment)
 
     # ===== Functional / technical methods section =====
 
-    def __prepareVpnVolumes(self, config_path: Optional[str]) -> Optional[str]:
+    async def __prepareOpenVpnVolumes(self, vpn_path: Path) -> Optional[str]:
         """Volumes must be prepared to share OpenVPN configuration files with the container.
         Depending on the user's settings, different configurations can be applied.
         With or without username / password authentication via auth-user-pass.
@@ -764,13 +819,10 @@ class ContainerConfig:
         the directory feature is useful when the configuration depends on multiple files like certificate, keys etc."""
         ovpn_parameters = []
 
-        # VPN config path
-        vpn_path = Path(config_path if config_path else ParametersManager().vpn).expanduser()
-
-        logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
+        logger.debug(f"Configuring OpenVPN")
         self.__vpn_path = vpn_path
         if vpn_path.is_file():
-            self.__checkVPNConfigDNS(vpn_path)
+            await self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
             self.addVolume(vpn_path, "/.exegol/vpn/config/client.ovpn", read_only=True)
             ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
@@ -783,7 +835,7 @@ class ContainerConfig:
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
                 logger.info(f"Using VPN config: {file}")
-                self.__checkVPNConfigDNS(file)
+                await self.__checkVPNConfigDNS(file)
                 # Get filename only to match the future container path
                 vpn_filename = file.name
                 ovpn_parameters.append(f"--config /.exegol/vpn/config/{vpn_filename}")
@@ -811,8 +863,22 @@ class ContainerConfig:
 
         return ' '.join(ovpn_parameters)
 
+    def __prepareWireguardVolumes(self, wireguard_path: Path) -> Optional[str]:
+        """Volumes must be prepared to share WireGuard configuration files with the container.
+        WireGuard config fil is .conf and include evry needed configuration like private key, public key, etc."""
+        wg_parameters = []
+        logger.debug(f"Configuring WireGuard")
+        self.__vpn_path = wireguard_path
+        if ParametersManager().vpn_auth is not None:
+            logger.warning("WireGuard setup doesn't support --vpn-auth parameter. It will be ignored.")
+
+        self.addVolume(wireguard_path, "/etc/wireguard/wg0.conf", read_only=True)
+        wg_parameters.append("wg0")
+
+        return ' '.join(wg_parameters)
+
     @staticmethod
-    def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
+    async def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
         logger.verbose("Checking OpenVPN config file")
         configs = ["script-security 2", "up /etc/openvpn/update-resolv-conf", "down /etc/openvpn/update-resolv-conf"]
         with open(vpn_path, 'r') as vpn_file:
@@ -827,8 +893,7 @@ class ContainerConfig:
             logger.raw(os.linesep.join(configs), level=logging.WARNING)
             logger.empty_line()
             logger.empty_line()
-            logger.info("Press enter to continue or Ctrl+C to cancel the operation")
-            input()
+            await ExegolRich.Acknowledge("Your VPN configuration won't support dynamic DNS servers.")
 
     def prepareShare(self, share_name: str) -> None:
         """Add workspace share before container creation"""
@@ -872,7 +937,7 @@ class ContainerConfig:
         if self.isDesktopEnabled():
             entrypoint_actions.append("desktop")
         if self.__vpn_path is not None:
-            entrypoint_actions.append(f"ovpn {self.__vpn_parameters}")
+            entrypoint_actions.append(f"{self.__vpn_mode} {self.__vpn_parameters}")
         if self.__run_cmd:
             entrypoint_actions.append("run_cmd")
         if self.__endless_container:
@@ -1268,7 +1333,7 @@ class ContainerConfig:
         # Handle shell logging
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basic
-        if self.__shell_logging or ParametersManager().log:
+        if self.__shell_logging or ParametersManager().log or UserConfig().always_enable_shell_logging:
             result.append(f"{self.ExegolEnv.shell_logging_method.value}={ParametersManager().log_method}")
             result.append(f"{self.ExegolEnv.shell_logging_compress.value}={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
         # Overwrite env from user parameters
@@ -1344,6 +1409,15 @@ class ContainerConfig:
             self.__creation_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
         return self.__creation_date
 
+    def setBackupHistory(self, backup_history: Optional[str]) -> None:
+        """Set the container backup history parsed from the labels of an existing container."""
+        self.__backup_history = backup_history
+
+    def getBackupHistory(self) -> Optional[str]:
+        """Get container backup history.
+        If no backup history has been supplied, returns None."""
+        return self.__backup_history
+
     def setComment(self, comment: str) -> None:
         """Set the container comment parsed from the labels of an existing container."""
         self.__comment = comment
@@ -1409,13 +1483,14 @@ class ContainerConfig:
     def addUserDevice(self, user_device_config: str) -> None:
         """Add a device from a user parameters"""
         if (EnvInfo.isDockerDesktop() or EnvInfo.isOrbstack()) and user_device_config not in self.__whitelist_dd_devices:
-            if EnvInfo.isDockerDesktop():
-                logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
-                logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
-            elif EnvInfo.isOrbstack():
-                logger.warning("Orbstack does not support (yet) USB device passthrough.")
-                logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
-            logger.critical("Device configuration cannot be applied, aborting operation.")
+            if not user_device_config.startswith("/dev/loop"):
+                if EnvInfo.isDockerDesktop():
+                    logger.warning("Docker desktop (Windows & macOS) does not support USB device passthrough.")
+                    logger.verbose("Official doc: https://docs.docker.com/desktop/faqs/#can-i-pass-through-a-usb-device-to-a-container")
+                elif EnvInfo.isOrbstack():
+                    logger.warning("Orbstack does not support (yet) USB device passthrough.")
+                    logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
+                logger.critical("Device configuration cannot be applied, aborting operation.")
         self.__addDevice(user_device_config)
 
     def addRawPort(self, user_test_port: str) -> None:

@@ -1,4 +1,6 @@
-from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter
+from typing import Optional
+
+from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
 from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
 from exegol.manager.ExegolManager import ExegolManager
@@ -148,12 +150,54 @@ class Update(Command, ImageSelector):
 
         self._usages = {
             "Install or update interactively an exegol image": "exegol update",
-            "Install or update the [bright_blue]full[/bright_blue] image": "exegol update [bright_blue]full[/bright_blue]"
+            "Install or update the [bright_blue]full[/bright_blue] image": "exegol update [bright_blue]full[/bright_blue]",
         }
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
         return ExegolManager.update
+
+
+class Upgrade(Command, ContainerMultiSelector):
+    """Upgrade an Exegol container"""
+
+    def __init__(self) -> None:
+        Command.__init__(self)
+        ContainerMultiSelector.__init__(self, self.groupArgs)
+
+        self.force_mode = Option("-F", "--force",
+                                 dest="force_mode",
+                                 action="store_true",
+                                 help="Upgrade container without interactive user confirmation.")
+
+        self.no_backup = Option("--no-backup",
+                                dest="no_backup",
+                                action="store_true",
+                                help="Remove the outdated container after the upgrade instead of renaming it.")
+
+        self.image_tag: Optional[Option] = Option("--image",
+                                                  dest="image_tag",
+                                                  action="store",
+                                                  help="Upgrade the container to another Exegol image using its tag",
+                                                  completer=ImageCompleter)
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.image_tag, "required": False},
+                                       {"arg": self.no_backup, "required": False},
+                                       {"arg": self.force_mode, "required": False},
+                                       title="[bold cyan]Upgrade[/bold cyan] [blue]specific options[/blue]"))
+
+        self._usages = {
+            "Upgrade an exegol container": "exegol upgrade",
+            "Upgrade the [blue]ctf[/blue] container": "exegol upgrade [blue]ctf[/blue]",
+            "Upgrade the [blue]test[/blue] container to the [bright_blue]full[/bright_blue] image": "exegol upgrade --image [bright_blue]full[/bright_blue] [blue]test[/blue]",
+            "Upgrade [blue]lab[/blue] and [blue]test[/blue] containers without interactive user confirmation": "exegol upgrade -F [blue]lab[/blue] [blue]test[/blue]",
+            "Upgrade every outdated container": "exegol upgrade --all",
+        }
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running upgrade module")
+        return ExegolManager.upgrade
 
 
 class Uninstall(Command, ImageMultiSelector):

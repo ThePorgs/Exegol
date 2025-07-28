@@ -90,7 +90,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.verbose("Loading Exegol containers")
             self.__containers = []
             try:
-                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": "org.exegol.app=Exegol"})
+                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -162,6 +162,9 @@ class DockerUtils(metaclass=MetaSingleton):
         # Create container
         try:
             container = docker_create_function(**docker_args)
+        except ReadTimeout:
+            logger.critical("Received a timeout error, Docker is busy... Unable to create container, retry later.")
+            raise RuntimeError
         except APIError as err:
             if err.explanation is None:
                 err.explanation = ''
@@ -174,35 +177,33 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             model.rollback()
             try:
-                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": "org.exegol.app=Exegol"})
+                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": f"{ExegolImage.Labels.app.value}=Exegol"})
                 if container is not None and len(container) > 0:
                     for c in container:
                         if c.name == model.getContainerName():  # Search for exact match
                             container[0].remove()
                             logger.debug("Container removed")
-            except Exception as e:
+            except APIError as e:
                 logger.debug(f"Error while removing dcontainer: {e}")
             try:
                 if docker_args.get("network") is not None and self.removeNetwork(cast(str, docker_args["network"])):
                     logger.debug("Network removed")
-            except Exception as e:
+            except (ValueError, APIError) as e:
                 logger.debug(f"Error while removing dedicated network: {e}")
             logger.critical("Error while creating exegol container. Exiting.")
-            # Not reachable, critical logging will exit
-            return  # type: ignore
+            raise RuntimeError
         if container is not None:
             logger.success("Exegol container successfully created!")
         else:
             logger.critical("Unknown error while creating exegol container. Exiting.")
-            # Not reachable, critical logging will exit
-            return  # type: ignore
+            raise RuntimeError
         return ExegolContainer(container, model)
 
     def getContainer(self, tag: str) -> ExegolContainer:
         """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": "org.exegol.app=Exegol"})
+            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -227,6 +228,35 @@ class DockerUtils(metaclass=MetaSingleton):
         # docker may return some results but none of them correspond to the request.
         # In this case, ObjectNotFound is raised
         raise ObjectNotFound
+
+    def removeContainerById(self, container_id: str) -> bool:
+        """Get an ExegolContainer from its ID"""
+        try:
+            c = self.__client.containers.get(container_id)
+        except NotFound:
+            raise ObjectNotFound
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            raise RuntimeError
+        c.remove()
+        return True
+
+    def isContainerExist(self, container_id: str) -> Optional[str]:
+        """
+        Test if a container still exists from its ID.
+        :param container_id:
+        :return: Return the name of the container if it still exists, None if it doesn't exist anymore.
+        """
+        try:
+            c = self.__client.containers.get(container_id)
+            return c.name
+        except NotFound:
+            return None
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+        return None
 
     # # # Volumes Section # # #
 
@@ -479,10 +509,10 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Received a timeout error, Docker is busy... Unable to list images, retry later.")
         return None
 
-    async def getInstalledImage(self, tag: str, repository: Optional[str] = None) -> ExegolImage:
+    async def getInstalledImage(self, tag: str, repository: Optional[str] = None, skip_cache: bool = False) -> ExegolImage:
         """Get an already installed ExegolImage from tag name."""
         try:
-            if self.__images is not None:
+            if not skip_cache and self.__images is not None:
                 # Try to find image from cache
                 for img in self.__images:
                     if img.getName() == tag:
@@ -521,7 +551,7 @@ class DockerUtils(metaclass=MetaSingleton):
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
             image_full_name = image_name + ("" if tag is None else f":{tag}")
-            images = self.__client.images.list(image_full_name, filters={"dangling": False, "label": ["org.exegol.app=Exegol"]})
+            images = self.__client.images.list(image_full_name, filters={"dangling": False, "label": [f"{ExegolImage.Labels.app.value}=Exegol"]})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -594,7 +624,7 @@ class DockerUtils(metaclass=MetaSingleton):
             if repo_tags is not None and len(repo_tags) > 0 or (not include_untag and repo_digest is not None and len(repo_digest) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
-            if img.labels is not None and img.labels.get('org.exegol.app', '') == "Exegol":
+            if img.labels is not None and img.labels.get(ExegolImage.Labels.app.value, '') == "Exegol":
                 result.append(img)
                 id_list.add(img.id)
         return result
@@ -697,7 +727,7 @@ class DockerUtils(metaclass=MetaSingleton):
                             f"    [orange3]docker pull --platform linux/{image.getArch()} {image.getRepository()}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
 
-    async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False) -> bool:
+    async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False, silent_error: bool = False) -> bool:
         """Remove an ExegolImage from disk"""
         tag = image.removeCheck()
         if tag is None:  # Skip removal if image is not installed locally.
@@ -717,6 +747,8 @@ class DockerUtils(metaclass=MetaSingleton):
             except APIError as err:
                 # Handle docker API error code
                 logger.verbose(err.explanation)
+                if silent_error and not logger.isEnabledFor(ExeLog.VERBOSE):
+                    return False
                 if err.status_code == 409:
                     if upgrade_mode:
                         logger.error(f"The '{image.getName()}' image cannot be deleted yet, "
@@ -781,8 +813,9 @@ class DockerUtils(metaclass=MetaSingleton):
                 self.__client.api.build(path=dockerfile_path,
                                         dockerfile=build_dockerfile,
                                         tag=f"{ConstantConfig.COMMUNITY_IMAGE_NAME}:{tag}",
-                                        buildargs={"TAG": f"{tag}-{build_profile}",
+                                        buildargs={"TAG": tag,
                                                    "VERSION": "local",
+                                                   "BUILD_PROFILE": build_profile,
                                                    "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                         platform="linux/" + ParametersManager().arch,
                                         rm=True,
