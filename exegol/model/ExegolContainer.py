@@ -214,7 +214,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             else:
                 logger.critical("Can't set specific capability on existing containers. Use [green]--cap ALL[/green] instead if needed.")
         logger.success(f"Opening [blue]{ParametersManager().shell}[/blue] shell in Exegol [green]{self.name}[/green]"
-                       f"{' with [orange3]all capabilities[/orange3]' if spawn_all_capabilities or self.config.getPrivileged() or "ALL" in self.config.getCapabilities() else ''}")
+                       f"{' with [orange3]all capabilities[/orange3]' if spawn_all_capabilities or self.config.getPrivileged() or 'ALL' in self.config.getCapabilities() else ''}")
         # In case of multi-user environment, xhost must be set before opening each session to be sure
         await self.__applyX11ACLs()
         # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
