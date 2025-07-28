@@ -682,8 +682,9 @@ class ExegolManager:
             "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
             "The following configurations: [green]Proxychains[/green]"
         ]
+        backup_text = '\n    - '.join([i for i in backup_items if i])
         details = f"""You are about to upgrade your container and transfer:
-    - {'\n    - '.join([i for i in backup_items if i])}
+    - {backup_text}
 """
         # TODO improve upgrade with
         #  Config of: Responder?
