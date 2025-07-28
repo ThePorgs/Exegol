@@ -323,7 +323,7 @@ class ContainerConfig:
                 self.enableMyResources()
             if ParametersManager().exegol_resources:
                 await self.enableExegolResources()
-            if ParametersManager().log:
+            if ParametersManager().log or UserConfig().always_enable_shell_logging:
                 self.enableShellLogging(ParametersManager().log_method,
                                         UserConfig().shell_logging_compress ^ ParametersManager().log_compress)
             if ParametersManager().workspace_path:
@@ -1333,7 +1333,7 @@ class ContainerConfig:
         # Handle shell logging
         # If shell logging was enabled at container creation, it'll always be enabled for every shell.
         # If not, it can be activated per shell basic
-        if self.__shell_logging or ParametersManager().log:
+        if self.__shell_logging or ParametersManager().log or UserConfig().always_enable_shell_logging:
             result.append(f"{self.ExegolEnv.shell_logging_method.value}={ParametersManager().log_method}")
             result.append(f"{self.ExegolEnv.shell_logging_compress.value}={UserConfig().shell_logging_compress ^ ParametersManager().log_compress}")
         # Overwrite env from user parameters

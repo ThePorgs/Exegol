@@ -1,5 +1,6 @@
+import re
 from datetime import datetime
-from enum import IntFlag, auto as enum_auto
+from enum import IntFlag, auto as enum_auto, Enum
 from typing import Optional, List, Union, Tuple, Dict, Set
 
 from docker.models.containers import Container
@@ -26,6 +27,12 @@ class ExegolImage(SelectableInterface):
 
     class Filters(IntFlag):
         INSTALLED = enum_auto()
+
+    class Labels(Enum):
+        tag = "org.exegol.tag"
+        version = "org.exegol.version"
+        build_date = "org.exegol.build_date"
+        app = "org.exegol.app"
 
     def __init__(self,
                  name: str = "NONAME",
@@ -100,6 +107,7 @@ class ExegolImage(SelectableInterface):
         assert self.__image is not None
         # If docker object exists, image is already installed
         self.__is_install = True
+        self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         # Set init values from docker object
         if len(self.__image.attrs["RepoTags"]) > 0:
             # Tag as outdated until the latest tag is found
@@ -111,7 +119,7 @@ class ExegolImage(SelectableInterface):
             self.__name = ""
             for repo_tag in self.__image.attrs["RepoTags"]:
                 tag_name = repo_tag.split(':')[-1]
-                if not self.isOfficialImage(repo_tag, suffix=":"):
+                if not self.isOfficialImage(repo_tag, suffix=":") or self.isLocal():
                     # Ignoring external images (set container using external image as outdated)
                     continue
                 custom_image = False
@@ -130,9 +138,13 @@ class ExegolImage(SelectableInterface):
 
             # Tag image as custom if needed
             if custom_image:
+                # Handle custom and local images
                 self.__outdated = False
                 self.__version_specific = False
-                self.__custom_status = "[bright_black]Unmanaged[/bright_black]"  # Block auto-load function
+                if not self.isLocal():
+                    self.setCustomStatus("[bright_black]Unmanaged[/bright_black]")  # Block auto-load function
+                else:
+                    self.__is_update = True  # Local images cannot be updated
 
             if self.isVersionSpecific():
                 if "N/A" in self.__image_version:
@@ -145,16 +157,18 @@ class ExegolImage(SelectableInterface):
             self.__display_name = f"{self.getName()} [orange3](untag)[/orange3]"
             self.__outdated = True
             self.__version_specific = True
+            if self.isLocal():
+                # Outdated image if retag by a more recent image or failed build
+                self.setCustomStatus("[orange3]Outdated local image[/orange3]")
         self.__setRealSize(self.__image.attrs["Size"])
         self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '') if self.__image.labels is not None else ''
+        self.__build_date = self.__image.labels.get(self.Labels.build_date.value, '') if self.__image.labels is not None else ''
         self.__setArch(WebRegistryUtils.parseArch(self.__image))
         self.__labelVersionParsing()
         # Set local image ID
         self.__setImageId(self.__image.attrs["Id"])
         # If this image is remote, set digest ID
-        self.__is_remote = not (len(self.__image.attrs["RepoDigests"]) == 0 and self.__checkLocalLabel())
         if self.__is_remote:
             repo, digest = self.__parseRepoDigests()
             self.__setDigest(digest)
@@ -194,7 +208,7 @@ class ExegolImage(SelectableInterface):
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
         # Set build date from labels
-        self.__build_date = self.__image.labels.get('org.exegol.build_date', '') if self.__image.labels is not None else ''
+        self.__build_date = self.__image.labels.get(self.Labels.build_date.value, '') if self.__image.labels is not None else ''
         # Check if local image is sync with remote digest id (check up-to-date status)
         image_repo, image_digest = self.__parseRepoDigests()
         self.__is_update = (self.__profile_digest if self.__profile_digest else self.__digest) == image_digest
@@ -260,7 +274,7 @@ class ExegolImage(SelectableInterface):
         """Fallback version parsing using image's label (if exist).
         This method can only be used if version has not been provided from the image's tag."""
         if "N/A" in self.__image_version and self.__image is not None and self.__image.labels is not None:
-            version_label = self.__image.labels.get("org.exegol.version")
+            version_label = self.__image.labels.get(self.Labels.version.value)
             if version_label is not None:
                 self.__setImageVersion(version_label, source_tag=False)
                 if self.isVersionSpecific():
@@ -271,14 +285,14 @@ class ExegolImage(SelectableInterface):
         """Create a tag name alias from labels when image's tag is lost"""
         if image.labels is None:
             return "[bright_black]Unknown[/bright_black]"
-        return image.labels.get("org.exegol.tag", "<none>") + "-" + image.labels.get("org.exegol.version", "v?")
+        return image.labels.get(cls.Labels.tag.value, "<none>") + "-" + image.labels.get(cls.Labels.version.value, "v?")
 
     def __checkLocalLabel(self) -> bool:
         """Check if the local label is set. Default to yes for old build"""
         assert self.__image is not None
         if self.__image.labels is None:
             return True
-        return self.__image.labels.get("org.exegol.version", "local").lower() == "local"
+        return self.__image.labels.get(self.Labels.version.value, "local").lower() == "local"
 
     def syncStatus(self) -> None:
         """When the image is loaded from a docker object, docker repository metadata are not present.
@@ -290,9 +304,9 @@ class ExegolImage(SelectableInterface):
                 not self.isUpToDate() and
                 not self.__is_discontinued and
                 not self.__outdated):
-            self.__custom_status = "[bright_black]Unknown[/bright_black]"
-        else:
-            self.__custom_status = ""
+            self.setCustomStatus("[bright_black]Unknown[/bright_black]")
+        elif "Unknown" in self.__custom_status:
+            self.setCustomStatus()
 
     def syncContainerData(self, container: Container) -> None:
         """Synchronization between the container and the image.
@@ -346,7 +360,7 @@ class ExegolImage(SelectableInterface):
                     # Fallback to version matching
                     self.__is_update = self.__is_update or self.__image_version == version
             if version or remote_digest:
-                self.__custom_status = ""
+                self.setCustomStatus()
         return self
 
     def updateCheck(self) -> Optional[str]:
@@ -434,7 +448,7 @@ class ExegolImage(SelectableInterface):
                         if remote.repo_digest == current_id:
                             selected = remote
                             break
-                #current_tag = img.attrs.get('Config', {}).get('Labels', {}).get('org.exegol.tag')
+                #current_tag = img.attrs.get('Config', {}).get('Labels', {}).get(cls.Labels.tag.value)
                 # Get tag from ExegolImage object instead of labels to handle the untagged outdated nightly case
                 current_tag = current_local_img.getName()
                 if selected is None and current_tag is not None:
@@ -483,11 +497,11 @@ class ExegolImage(SelectableInterface):
         uptodate, outdated, local_build, deprecated, pullable = [], [], [], [], []
         for img in images.copy():
             # First up-to-date
-            if img.isUpToDate() and not img.isLegacy():
+            if img.isUpToDate() and not img.isLegacy() and not img.isLocal():
                 uptodate.append(img)  # The current image if added to the corresponding groups
                 images.remove(img)  # and is removed from the pool (last image without any match will be last)
             # Second need upgrade
-            elif (not img.isLocal()) and img.isInstall():
+            elif not img.isLocal() and img.isInstall():
                 outdated.append(img)
                 images.remove(img)
             # Third local
@@ -541,9 +555,9 @@ class ExegolImage(SelectableInterface):
             (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
 
     def __repr__(self) -> str:
-        return str(self)
+        return re.sub(r"(\[/?[^]]+])", '', str(self)).replace(':arrow_right:', '->')
 
-    def setCustomStatus(self, status: str) -> None:
+    def setCustomStatus(self, status: str = "") -> None:
         """Manual image's status overwrite"""
         self.__custom_status = status
 

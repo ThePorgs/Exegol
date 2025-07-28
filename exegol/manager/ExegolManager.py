@@ -1,4 +1,3 @@
-import asyncio
 import binascii
 import logging
 import os
@@ -610,7 +609,6 @@ class ExegolManager:
     @classmethod
     async def __backupAndUpgrade(cls, c: ExegolContainer) -> None:
         logger.empty_line()
-        logger.info(f"Upgrading container [green]{c.name}[/green]")
 
         current_image_tag = c.image.getName().split('-')[0]
         if ParametersManager().image_tag is None or ParametersManager().image_tag == current_image_tag:
@@ -629,10 +627,11 @@ class ExegolManager:
                 logger.empty_line()
 
             new_image: ExegolImage = await DockerUtils().getInstalledImage(current_image_tag)
+            logger.info(f"Upgrading container [green]{c.name}[/green] using [green]{new_image.getName()}[/green] image")
         else:
             # Upgrade to a different image tag
             new_image = await DockerUtils().getInstalledImage(ParametersManager().image_tag)
-            logger.info(f"Your container will migrate from [blue]{current_image_tag}[/blue] to the [blue]{new_image.getName()}[/blue] image")
+            logger.info(f"Upgrading container [green]{c.name}[/green], your container will migrate from [blue]{current_image_tag}[/blue] to the [blue]{new_image.getName()}[/blue] image")
 
         skipping_msg = ""
         if not new_image.isUpToDate():

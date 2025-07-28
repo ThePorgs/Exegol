@@ -34,6 +34,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         # Shell logging
         self.shell_logging_method: str = "asciinema"
         self.shell_logging_compress: bool = True
+        self.always_enable_shell_logging: bool = False
         # Desktop
         self.desktop_default_enable: bool = False
         self.desktop_default_localhost: bool = True
@@ -92,6 +93,9 @@ config:
     
     # Change the configuration of the shell logging functionality
     shell_logging:
+        # Always enable shell logging
+        always_enable: {self.always_enable_shell_logging}
+    
         #Choice of the method used to record the sessions (script or asciinema)
         logging_method: {self.shell_logging_method}
         
@@ -178,6 +182,7 @@ config:
         shell_logging_data = config_data.get("shell_logging", {})
         self.shell_logging_method = self._load_config_str(shell_logging_data, 'logging_method', self.shell_logging_method, choices=self.shell_logging_method_options)
         self.shell_logging_compress = self._load_config_bool(shell_logging_data, 'enable_log_compression', self.shell_logging_compress)
+        self.always_enable_shell_logging = self._load_config_bool(shell_logging_data, 'always_enable', self.always_enable_shell_logging)
 
         # Desktop section
         desktop_data = config_data.get("desktop", {})
@@ -213,6 +218,7 @@ config:
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
             f"Auto-update fs: {boolFormatter(self.auto_update_workspace_fs)}",
             f"Default start shell: [blue]{self.default_start_shell}[/blue]",
+            f"Always enable Shell logging: [blue]{boolFormatter(self.always_enable_shell_logging)}[/blue]",
             f"Shell logging method: [blue]{self.shell_logging_method}[/blue]",
             f"Shell logging compression: {boolFormatter(self.shell_logging_compress)}",
             f"Desktop enabled by default: {boolFormatter(self.desktop_default_enable)}",

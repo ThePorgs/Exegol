@@ -308,7 +308,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             await self.__removeVolume()
         await self.stop(timeout=2)
         have_backup = backup_history is not None and len(backup_history) > 0
-        backup_text = f" and {len(backup_history)} backup containers" if have_backup else ""
+        backup_text = f" and {len(backup_history)} backup containers" if have_backup and backup_history is not None else ""
         logger.info(f"Removing container {self.name}{backup_text}")
         try:
             self.__container.remove()
@@ -318,7 +318,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if not container_only:
             # Must be imported locally to avoid circular importation
             from exegol.utils.DockerUtils import DockerUtils
-            if have_backup:
+            if have_backup and backup_history is not None:
                 for c_id in backup_history:
                     try:
                         DockerUtils().removeContainerById(c_id)

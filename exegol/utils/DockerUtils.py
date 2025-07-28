@@ -90,7 +90,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.verbose("Loading Exegol containers")
             self.__containers = []
             try:
-                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": "org.exegol.app=Exegol"})
+                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -177,7 +177,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             model.rollback()
             try:
-                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": "org.exegol.app=Exegol"})
+                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": f"{ExegolImage.Labels.app.value}=Exegol"})
                 if container is not None and len(container) > 0:
                     for c in container:
                         if c.name == model.getContainerName():  # Search for exact match
@@ -203,7 +203,7 @@ class DockerUtils(metaclass=MetaSingleton):
         """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": "org.exegol.app=Exegol"})
+            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -551,7 +551,7 @@ class DockerUtils(metaclass=MetaSingleton):
         logger.debug("Fetching local image tags, digests (and other attributes)")
         try:
             image_full_name = image_name + ("" if tag is None else f":{tag}")
-            images = self.__client.images.list(image_full_name, filters={"dangling": False, "label": ["org.exegol.app=Exegol"]})
+            images = self.__client.images.list(image_full_name, filters={"dangling": False, "label": [f"{ExegolImage.Labels.app.value}=Exegol"]})
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -624,7 +624,7 @@ class DockerUtils(metaclass=MetaSingleton):
             if repo_tags is not None and len(repo_tags) > 0 or (not include_untag and repo_digest is not None and len(repo_digest) > 0) or img.id in id_list:
                 # Skip image from other repo and image already found
                 continue
-            if img.labels is not None and img.labels.get('org.exegol.app', '') == "Exegol":
+            if img.labels is not None and img.labels.get(ExegolImage.Labels.app.value, '') == "Exegol":
                 result.append(img)
                 id_list.add(img.id)
         return result
@@ -813,8 +813,9 @@ class DockerUtils(metaclass=MetaSingleton):
                 self.__client.api.build(path=dockerfile_path,
                                         dockerfile=build_dockerfile,
                                         tag=f"{ConstantConfig.COMMUNITY_IMAGE_NAME}:{tag}",
-                                        buildargs={"TAG": f"{tag}-{build_profile}",
+                                        buildargs={"TAG": tag,
                                                    "VERSION": "local",
+                                                   "BUILD_PROFILE": build_profile,
                                                    "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
                                         platform="linux/" + ParametersManager().arch,
                                         rm=True,
