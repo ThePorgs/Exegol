@@ -10,7 +10,8 @@ class DockerDrivers(Enum):
 
 
 class ExegolNetworkMode(Enum):
-    """Enum for user display"""
+    """Enum for user display.
+    Key is the CLI parameter, Value is the display name"""
     disabled = 'Disabled'
     host = 'Host'
     docker = 'Docker'

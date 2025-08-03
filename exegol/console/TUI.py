@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple, Any
+from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple
 
 from rich import box
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
@@ -318,10 +318,10 @@ class ExegolTUI:
             choices_select = choices
         while True:
             match = []
-            choice = await ExegolRich.Ask(
-                f"[bold blue][?][/bold blue] Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
-                default=default, choices=choices_select,
-                show_choices=False)
+            choice = await ExegolRich.Ask(f"Select {'an' if object_type is ExegolImage else 'a'} {object_name} by its name",
+                                          default=default,
+                                          choices=choices_select,
+                                          show_choices=False)
             if conflict_mode:
                 # In conflict mode, choice are only index number offset by 1
                 return data[int(choice) - 1]
@@ -399,7 +399,7 @@ class ExegolTUI:
         cls.printTable(submit_data, title=title)
         if default is None:
             default = choices[0]
-        choice = await ExegolRich.Ask(f"[bold blue][?][/bold blue] Select {subject}", default=default, choices=choices,
+        choice = await ExegolRich.Ask(f"Select {subject}", default=default, choices=choices,
                                       show_choices=False)
         if type(data) is dict:
             return choice, data[choice]
