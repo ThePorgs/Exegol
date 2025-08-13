@@ -398,7 +398,7 @@ class ExegolImage(SelectableInterface):
             msg = "You need to activate Exegol with a license to download a pre-built Exegol image."
             if SessionHandler().is_enrolled():
                 msg = "Your license does not allow you to download this image."
-            msg += f" ({self.getDisplayRepository()} access needed)"
+            msg += f" Purchase at exegol.com/pricing"
             logger.critical(msg)
         return self.__license is not None and self.__license != "" and self.__repository != ConstantConfig.COMMUNITY_IMAGE_NAME
 
