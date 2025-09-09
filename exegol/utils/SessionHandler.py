@@ -381,7 +381,9 @@ owIDAQAB
         await TaskManager.wait_for(TaskManager.TaskId.LoadLicense, clean_task=False)
         # Check if session still valid
         if not self.__is_session_valid():
-            logger.critical("You cannot access the official registry without access to Exegol license servers.")
+            # Reload session if needed
+            if not await self.reload_session(force_refresh=True) or not self.__is_session_valid():
+                logger.critical("You cannot access the official registry without access to Exegol license servers.")
         if self.__license == LicenseType.Community or self.__session is None:
             logger.critical("Pro/Enterprise license required to download non-Free images.")
             raise SystemExit(1)
