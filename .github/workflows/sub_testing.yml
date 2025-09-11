@@ -42,7 +42,7 @@ jobs:
       - name: Set up PDM
         uses: pdm-project/setup-pdm@v4
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.version }}
       - name: Install requirements
         run: pdm update && pdm sync -d -G testing
       - name: Check python compatibility for ${{ matrix.os }}/${{ matrix.version }}

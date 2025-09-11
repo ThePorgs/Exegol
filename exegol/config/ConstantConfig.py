@@ -1,6 +1,7 @@
+import os
 from pathlib import Path
 
-__version__ = "5.1.1"
+__version__ = "5.1.2"
 
 
 class ConstantConfig:
@@ -21,8 +22,12 @@ class ConstantConfig:
     eula_path: Path = src_root_path_obj / "exegol/utils/docs/eula.md"
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
+    __sudo_home = os.getenv("SUDO_HOME")
+    if not exegol_config_path.is_dir() and __sudo_home:
+        # Use legacy path or use sudo home env by default for new config
+        exegol_config_path = Path(__sudo_home) / ".exegol"
     # Docker Desktop for mac config file
-    docker_desktop_mac_config_path = Path().home() / "Library/Group Containers/group.com.docker"
+    docker_desktop_mac_config_path = (Path(__sudo_home) if __sudo_home else Path().home()) / "Library/Group Containers/group.com.docker"
     docker_desktop_windows_config_short_path = "AppData/Roaming/Docker"
     docker_desktop_windows_config_path = Path().home() / docker_desktop_windows_config_short_path
     # Install mode, check if Exegol has been git cloned or installed using pip package

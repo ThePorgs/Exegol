@@ -9,10 +9,10 @@ class ExegolRich:
     # These methods cannot be run from another Thread
 
     @staticmethod
-    async def Ask(prompt: TextType = "", **kwargs) -> str:
+    async def Ask(prompt: str, **kwargs) -> str:
         """Quick function to format rich Prompt and options on every exegol interaction"""
         async with ConsoleLock:
-            return rich.prompt.Prompt.ask(prompt, console=console, **kwargs)
+            return rich.prompt.Prompt.ask("[bold blue][?][/bold blue] " + prompt, console=console, **kwargs)
 
     @staticmethod
     async def Confirm(question: str, default: bool) -> bool:

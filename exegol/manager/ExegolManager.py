@@ -523,13 +523,13 @@ class ExegolManager:
     async def __createContainer(cls, name: Optional[str]) -> ExegolContainer:
         """Create an ExegolContainer"""
         if name is None:
-            name = await ExegolRich.Ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
+            name = await ExegolRich.Ask("Enter the name of your new exegol container", default="default")
         logger.verbose("Configuring new exegol container")
         # Create exegol config
         image: Optional[ExegolImage] = cast(ExegolImage, await cls.__loadOrInstallImage(show_custom=True))
         assert image is not None  # load or install return an image
         if name is None:
-            name = await ExegolRich.Ask("[bold blue][?][/bold blue] Enter the name of your new exegol container", default="default")
+            name = await ExegolRich.Ask("Enter the name of your new exegol container", default="default")
         model = await ExegolContainerTemplate.newContainer(name, image, hostname=ParametersManager().hostname)
 
         # Recap

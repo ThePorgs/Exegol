@@ -50,7 +50,7 @@ class SupabaseUtils:
         email = None
         for i in range(3):
             if email is None:
-                email = await ExegolRich.Ask("[bold blue][?][/bold blue] Enter your exegol email account")
+                email = await ExegolRich.Ask("Enter your exegol email account")
             if email.strip() == "":
                 email = None
                 logger.error("You must supply a valid email account, please retry")
@@ -58,7 +58,7 @@ class SupabaseUtils:
             try:
                 logger.success("To link your account to the wrapper, you need to generate a login code "
                                "from your dashboard: https://dashboard.exegol.com/otp")
-                token = await ExegolRich.Ask("[bold blue][?][/bold blue] Enter your login token")
+                token = await ExegolRich.Ask("Enter your login token")
                 auth_response = await supabase_client.auth.verify_otp({
                     "type": "magiclink",
                     "email": email,

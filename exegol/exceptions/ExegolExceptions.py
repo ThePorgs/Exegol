@@ -21,3 +21,8 @@ class LicenseRevocation(Exception):
 
 class LicenseToleration(Exception):
     pass
+
+
+class InteractiveError(Exception):
+    """Custom exception when an error occurred. In the interactive mode this error can be retry be the user, in CLI mode this is a critical error"""
+    pass
