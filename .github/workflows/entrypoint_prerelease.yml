@@ -39,4 +39,5 @@ jobs:
   code_test:
     name: Python tests and checks
     needs: preprod_test
+    if: github.event.pull_request.head.ref != 'dev'
     uses: ./.github/workflows/sub_testing.yml
