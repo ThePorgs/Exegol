@@ -535,7 +535,7 @@ class ExegolManager:
         # Recap
         await ExegolTUI.printContainerRecap(model)
         if cls.__interactive_mode:
-            if not model.image.isUpToDate() and \
+            if not model.image.isUpToDate() and "Unknown" not in model.image.getStatus() and \
                     await ExegolRich.Confirm("Do you want to [green]update[/green] the selected image?", False):
                 image = await UpdateManager.updateImage(model.image.getName())
                 if image is not None:

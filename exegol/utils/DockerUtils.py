@@ -655,6 +655,9 @@ class DockerUtils(metaclass=MetaSingleton):
         if ParametersManager().offline_mode:
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return False
+        if "Unknown" in image.getStatus():
+            logger.warning("This image cannot be downloaded at this time. Please try again later.")
+            return False
         auth_config: Optional[dict] = None
         if await image.pullAuthNeeded():
             auth_config = await SessionHandler().get_registry_auth(image.getRepository(), image.getName())
