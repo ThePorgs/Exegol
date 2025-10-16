@@ -32,8 +32,11 @@ class ExegolRich:
         """Quick function to format rich Confirmation and options on every exegol interaction"""
         formatted_question = f"[bold blue][>][/bold blue] {message} [bright_magenta][Press ENTER to acknowledge][/bright_magenta]"
         async with ConsoleLock:
-            rich.prompt.Prompt.ask(
-                formatted_question,
-                show_choices=False,
-                show_default=False,
-                console=console)
+            try:
+                rich.prompt.Prompt.ask(
+                    formatted_question,
+                    show_choices=False,
+                    show_default=False,
+                    console=console)
+            except ValueError:
+                raise EOFError
