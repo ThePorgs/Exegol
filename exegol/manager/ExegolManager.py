@@ -335,7 +335,7 @@ class ExegolManager:
                     else:
                         # Interactive (TUI) image selection
                         image_selection = cast(Union[Optional[ExegolImage], List[ExegolImage]],
-                                               await cls.__interactiveSelection(ExegolImage, image_list, multiple, must_exist))
+                                               await cls.__interactiveSelection(ExegolImage, image_list, multiple))
                 else:
                     # Select image by tag name (non-interactive)
                     if multiple:
@@ -463,7 +463,7 @@ class ExegolManager:
                 else:
                     # Interactive container selection
                     cls.__container = cast(Union[Optional[ExegolContainer], List[ExegolContainer]],
-                                           await cls.__interactiveSelection(ExegolContainer, container_list, multiple, must_exist))
+                                           await cls.__interactiveSelection(ExegolContainer, container_list, multiple))
             else:
                 # Try to find the corresponding container
                 if multiple:
@@ -502,16 +502,15 @@ class ExegolManager:
     async def __interactiveSelection(cls,
                                      object_type: Type[Union[ExegolImage, ExegolContainer]],
                                      object_list: Sequence[SelectableInterface],
-                                     multiple: bool = False,
-                                     must_exist: bool = False) -> \
+                                     multiple: bool = False) -> \
             Union[Optional[ExegolImage], Optional[ExegolContainer], Sequence[ExegolImage], Sequence[ExegolContainer]]:
         """Interactive object selection process, depending on object_type.
         object_type can be ExegolImage or ExegolContainer."""
-        user_selection: Union[SelectableInterface, Sequence[SelectableInterface], str]
+        user_selection: Union[SelectableInterface, Sequence[SelectableInterface], Sequence[str], str]
         if multiple:
             user_selection = await ExegolTUI.multipleSelectFromTable(object_list, object_type=object_type)
         else:
-            user_selection = await ExegolTUI.selectFromTable(object_list, object_type=object_type, allow_None=object_type is ExegolContainer)
+            user_selection = await ExegolTUI.selectFromTable(object_list, object_type=object_type, allow_none=object_type is ExegolContainer)
             # Check if the user has chosen an existing object
             if type(user_selection) is str:
                 # Otherwise, create a new object with the supplied name

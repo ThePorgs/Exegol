@@ -280,12 +280,16 @@ class ExegolTUI:
                               data: Sequence[SelectableInterface],
                               object_type: Optional[Type] = None,
                               default: Optional[str] = None,
-                              allow_None: bool = False,
-                              conflict_mode: bool = False) -> Union[SelectableInterface, str]:
+                              allow_none: bool = False,
+                              conflict_mode: bool = False,
+                              multiple: bool = False) -> Union[SelectableInterface, str, Sequence[SelectableInterface], Sequence[str]]:
         """Return an object (implementing SelectableInterface) selected by the user
         Return a str when allow_none is true and no object have been selected
         Raise IndexError of the data list is empty.
-        Set conflict_mode to override the key in order to select a specific object with duplicate name"""
+        Set allow_none to allow the user to select no object and return a str
+        Set conflict_mode to override the key in order to select a specific object with duplicate name
+        Set multiple to add * option to select multiple objects
+        """
         cls.__isInteractionAllowed()
         # Check if there is at least one object in the list
         if len(data) == 0:
@@ -308,8 +312,10 @@ class ExegolTUI:
         # If no default have been supplied, using the first one
         if default is None:
             default = choices[0]
+        if multiple:
+            choices.append("*")
         # When allow_none is enabled, disabling choices restriction
-        if allow_None:
+        if allow_none:
             choices_select: Optional[List[str]] = None
             logger.info(
                 f"You can use a name that does not already exist to {action} a new {object_name}"
@@ -322,6 +328,8 @@ class ExegolTUI:
                                           default=default,
                                           choices=choices_select,
                                           show_choices=False)
+            if choice == "*":
+                return list(data)
             if conflict_mode:
                 # In conflict mode, choice are only index number offset by 1
                 return data[int(choice) - 1]
@@ -332,8 +340,8 @@ class ExegolTUI:
                 return match[0]
             elif len(match) > 1:
                 logger.error(f"Conflict detected ! Multiple {object_name} have the same name, please select the intended one.")
-                return await cls.selectFromTable(match, object_type, default=None, allow_None=False, conflict_mode=True)
-            if allow_None:
+                return await cls.selectFromTable(match, object_type, default=None, allow_none=False, conflict_mode=True, multiple=multiple)
+            if allow_none:
                 if await ExegolRich.Confirm(
                         f"No {object_name} is available under this name, do you want to {action} it?",
                         default=True):
@@ -361,9 +369,14 @@ class ExegolTUI:
         else:
             object_subject = "object"
         while True:
-            selected = cast(SelectableInterface, await cls.selectFromTable(pool, object_type, default))
-            result.append(selected)
-            pool.remove(selected)
+            selected = cast(Union[SelectableInterface, Sequence[SelectableInterface]], await cls.selectFromTable(pool, object_type, default, multiple=True))
+            if isinstance(selected, SelectableInterface):
+                result.append(selected)
+                pool.remove(selected)
+            else:
+                result.extend(selected)
+                for i in selected:
+                    pool.remove(i)
             if len(pool) == 0:
                 return result
             elif not await ExegolRich.Confirm(f"Do you want to select another {object_subject}?", default=False):

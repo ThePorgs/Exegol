@@ -43,7 +43,7 @@ class UpdateManager:
                 # Interactive selection
                 selected_image = await ExegolTUI.selectFromTable(available_images,
                                                                  object_type=ExegolImage,
-                                                                 allow_None=False)
+                                                                 allow_none=False)
             except IndexError:
                 # No images are available
                 if install_mode:
