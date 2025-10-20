@@ -76,11 +76,10 @@ class ExegolManager:
     @classmethod
     async def start(cls) -> None:
         """Create and/or start an exegol container to finally spawn an interactive shell"""
-        logger.info("Starting exegol")
         # Check if the first positional parameter have been supplied
         cls.__interactive_mode = not bool(ParametersManager().containertag)
         if not cls.__interactive_mode:
-            logger.info("Arguments supplied with the command, skipping interactive mode")
+            logger.info("Skipping interactive mode (arguments supplied)")
         container = await cls.__loadOrCreateContainer()
         assert container is not None and type(container) is ExegolContainer
         if not container.isNew():
@@ -113,7 +112,6 @@ class ExegolManager:
     async def exec(cls) -> None:
         """Create and/or start an exegol container to execute a specific command.
         The execution can be seen in console output or be relayed in the background as a daemon."""
-        logger.info("Starting exegol")
         if ParametersManager().tmp:
             container = await cls.__createTmpContainer(ParametersManager().selector)
             if not ParametersManager().daemon:
@@ -129,7 +127,7 @@ class ExegolManager:
     @classmethod
     async def stop(cls) -> None:
         """Stop an exegol container"""
-        logger.info("Stopping exegol")
+        logger.info("Stopping container(s)")
         container = await cls.__loadOrCreateContainer(multiple=True, must_exist=True, filters=[ExegolContainer.Filters.STARTED])
         assert container is not None and type(container) is list
         for c in container:
@@ -165,7 +163,7 @@ class ExegolManager:
     async def update(cls) -> None:
         """Update python wrapper (git installation required) and Pull a docker exegol image"""
         if ParametersManager().offline_mode:
-            logger.critical("It's not possible to update Exegol in offline mode. Please retry later with an internet connection.")
+            logger.critical("Exegol cannot be updated without Internet access. Skipping.")
         if not ParametersManager().skip_git:
             await UpdateManager.updateWrapper()
             await UpdateManager.updateResources()
@@ -175,7 +173,7 @@ class ExegolManager:
     @classmethod
     async def uninstall(cls) -> None:
         """Remove an exegol image"""
-        logger.info("Uninstalling an exegol image")
+        logger.info("Uninstalling image")
         # Set log level to verbose in order to show every image installed including the outdated.
         if not logger.isEnabledFor(ExeLog.VERBOSE):
             logger.setLevel(ExeLog.VERBOSE)
@@ -195,7 +193,7 @@ class ExegolManager:
     @classmethod
     async def remove(cls) -> None:
         """Remove an exegol container"""
-        logger.info("Removing an exegol container")
+        logger.info("Removing container(s)")
         containers = await cls.__loadOrCreateContainer(multiple=True, must_exist=True)
         assert type(containers) is list
         if len(containers) == 0:
@@ -491,9 +489,9 @@ class ExegolManager:
             # Create container
             if must_exist:
                 if container_tag is not None:
-                    logger.warning(f"The container named '{container_tag}' has not been found")
+                    logger.warning(f"Container '{container_tag}' has not been found")
                 return [] if multiple else None
-            logger.info(f"Creating new container named '{container_tag}'")
+            logger.info(f"Creating new container '{container_tag}'")
             return await cls.__createContainer(container_tag)
         assert cls.__container is not None
         return cast(Union[Optional[ExegolContainer], List[ExegolContainer]], cls.__container)
@@ -522,13 +520,13 @@ class ExegolManager:
     async def __createContainer(cls, name: Optional[str]) -> ExegolContainer:
         """Create an ExegolContainer"""
         if name is None:
-            name = await ExegolRich.Ask("Enter the name of your new exegol container", default="default")
+            name = await ExegolRich.Ask("Enter new container name", default="default")
         logger.verbose("Configuring new exegol container")
         # Create exegol config
         image: Optional[ExegolImage] = cast(ExegolImage, await cls.__loadOrInstallImage(show_custom=True))
         assert image is not None  # load or install return an image
         if name is None:
-            name = await ExegolRich.Ask("Enter the name of your new exegol container", default="default")
+            name = await ExegolRich.Ask("Enter new container name", default="default")
         model = await ExegolContainerTemplate.newContainer(name, image, hostname=ParametersManager().hostname)
 
         # Recap
