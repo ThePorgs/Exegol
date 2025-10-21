@@ -770,10 +770,6 @@ class ContainerConfig:
                 self.__vpn_mode = "ovpn"
                 self.__vpn_parameters = await self.__prepareOpenVpnVolumes(vpn_path, skip_conf_checks=apply_only)
             elif vpn_path.is_file() and vpn_path.suffix == ".conf":
-                if not SessionHandler().pro_feature_access():
-                    logger.error("WireGuard VPN support is exclusive to Pro/Enterprise users. Coming soon to Community.")
-                    self.__disableVPN()
-                    raise InteractiveError
                 # Wireguard config
                 self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
                 self.__vpn_mode = "wgconf"
