@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import Optional, Dict, cast, Tuple, Sequence
+from typing import Optional, Dict, cast, Tuple, Sequence, List
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
@@ -30,12 +30,12 @@ class UpdateManager:
         if image_args is not None and tag is None:
             tag = image_args
         if tag is None:
-            all_images = await DockerUtils().listImages()
+            all_images: List[ExegolImage] = await DockerUtils().listImages()
             # Filter for updatable images
             if install_mode:
-                available_images = [i for i in all_images if not i.isLocked()]
+                available_images = [i for i in all_images if not i.isLocked() and not i.isLocal()]
             else:
-                available_images = [i for i in all_images if i.isInstall() and not i.isUpToDate() and not i.isLocked()]
+                available_images = [i for i in all_images if i.isInstall() and not i.isLocal() and not i.isUpToDate() and not i.isLocked()]
                 if len(available_images) == 0:
                     logger.success("All images already installed are up to date!")
                     return None
