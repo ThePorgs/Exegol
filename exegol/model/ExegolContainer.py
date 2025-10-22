@@ -417,8 +417,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def __preStartChecks(self) -> None:
         """Rune pre-start test to avoid some docker errors with a better error message for the user"""
         # Check if VPN file still exists
-        if self.config.getVpnConfigPath() and not self.config.getVpnConfigPath().exists(follow_symlinks=True):
-            logger.error(f"The container [green]{self.name}[/green] VPN configuration no longer exists: [magenta]{self.config.getVpnConfigPath()}[/magenta]")
+        vpn = self.config.getVpnConfigPath()
+        if vpn and not vpn.exists(follow_symlinks=True):
+            logger.error(f"The container [green]{self.name}[/green] VPN configuration no longer exists: [magenta]{vpn}[/magenta]")
             logger.critical("Can't start with a missing config. Please restore the file before starting the container.")
         # Check volumes
         for volume in self.config.getVolumes():

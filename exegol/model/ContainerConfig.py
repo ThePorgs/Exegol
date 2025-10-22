@@ -126,7 +126,7 @@ class ContainerConfig:
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
         self.__container_entrypoint: List[str] = self.__default_entrypoint
-        self.__vpn_path: Optional[Union[Path, PurePath]] = None
+        self.__vpn_path: Optional[Path] = None
         self.__shell_logging: bool = False
         # Entrypoint features
         self.legacy_entrypoint: bool = True
