@@ -101,4 +101,4 @@ Any dispute arising out of or related to this Agreement will be submitted to the
 
 ## 10. Contact
 
-For any inquiries related to this Agreement or the Software, You may contact contact@exegol.com 
+For any inquiries related to this Agreement or the Software, You may contact contact@exegol.com
