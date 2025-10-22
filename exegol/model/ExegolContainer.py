@@ -134,6 +134,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     async def start(self) -> None:
         """Start the docker container"""
         if not self.isRunning():
+            self.__preStartChecks()
             logger.info(f"Starting container {self.name}")
             await self.__start_container()
             await self.__postStartSetup()
@@ -412,6 +413,21 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success("Private workspace volume removed successfully")
         else:
             logger.warning(f"Externally managed workspaces are [red]NOT[/red] automatically removed by exegol. You can manually remove the directory if it's no longer needed: [magenta]{self.config.getHostWorkspacePath()}[/magenta]")
+
+    def __preStartChecks(self) -> None:
+        """Rune pre-start test to avoid some docker errors with a better error message for the user"""
+        # Check if VPN file still exists
+        if self.config.getVpnConfigPath() and not self.config.getVpnConfigPath().exists(follow_symlinks=True):
+            logger.error(f"The container [green]{self.name}[/green] VPN configuration no longer exists: [magenta]{self.config.getVpnConfigPath()}[/magenta]")
+            logger.critical("Can't start with a missing config. Please restore the file before starting the container.")
+        # Check volumes
+        for volume in self.config.getVolumes():
+            source = volume.get("Source", "")
+            target = volume.get("Target", "")
+            # Check if the wayland socket still exists at the same path
+            if "wayland" in source and target.startswith("/tmp/wayland") and not Path(source).exists():
+                logger.error(f"The container [green]{self.name}[/green] was configured with a wayland socket path that no longer exist: [magenta]{source}[/magenta]")
+                logger.critical("Can't start with a missing socket. Please create a new container.")
 
     async def __postStartSetup(self) -> None:
         """

@@ -1612,6 +1612,10 @@ class ContainerConfig:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
 
+    def getVpnConfigPath(self) -> Optional[Path]:
+        """Get VPN Config path"""
+        return self.__vpn_path
+
     def getVpnName(self) -> str:
         """Get VPN Config name"""
         if self.__vpn_path is None:
