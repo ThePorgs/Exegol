@@ -2,12 +2,12 @@ import logging
 from enum import Enum
 from typing import Optional, Union, List, Tuple, Dict, cast
 
-from gotrue.errors import AuthApiError, AuthRetryableError, AuthInvalidCredentialsError, AuthUnknownError
 from httpx import ConnectError, TransportError
 from postgrest import APIError, AsyncFilterRequestBuilder, \
     AsyncMaybeSingleRequestBuilder, AsyncSingleRequestBuilder, AsyncSelectRequestBuilder, APIResponse
 from supabase import create_async_client, AsyncClient
 from supabase.lib.client_options import AsyncClientOptions
+from supabase_auth.errors import AuthApiError, AuthRetryableError, AuthInvalidCredentialsError, AuthUnknownError
 from supabase_functions import AsyncFunctionsClient
 from supabase_functions.errors import FunctionsHttpError, FunctionsRelayError
 
