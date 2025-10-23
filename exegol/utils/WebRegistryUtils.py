@@ -259,13 +259,16 @@ class WebRegistryUtils:
                         logger.error(f"Response error: {e.response.content.decode('utf-8')}")
                     else:
                         logger.error(f"Response error: {e}")
+                except requests.exceptions.SSLError as err:
+                    logger.debug(f"Error: {err}")
+                    logger.error(f"Connection error: Unable to establish a secured HTTPS connection with {url}")
                 except requests.exceptions.ConnectionError as err:
                     logger.debug(f"Error: {err}")
                     error_re = re.search(r"\[Errno [-\d]+]\s?([^']*)('\))+\)*", str(err))
                     error_msg = ""
                     if error_re:
                         error_msg = f" ({error_re.group(1)})"
-                    logger.error(f"Connection Error: you probably have no internet.{error_msg}")
+                    logger.error(f"Connection error: you probably have no internet.{error_msg}")
                     # Switch to offline mode
                     ParametersManager().offline_mode = True
                 except requests.exceptions.RequestException as err:

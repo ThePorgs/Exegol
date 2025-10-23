@@ -1,14 +1,14 @@
 docker~=7.1.0
-requests~=2.32.3
-rich~=13.7.1
+requests~=2.32.5
+rich~=14.2.0
 GitPython~=3.1.43
-PyYAML>=6.0.2
-argcomplete~=3.5.0
+PyYAML>=6.0.3
+argcomplete~=3.6.3
 tzlocal~=5.2; platform_system != 'Linux'
 ifaddr~=0.2.0
-supabase~=2.13.0
-pydantic~=2.11.1
+supabase~=2.18.1
+pydantic~=2.12.3
 pyjwt>=2.10.1
 pyjwt[crypto]>=2.10.1
-cryptography>=43.0.3
+cryptography~=46.0.3
 python-dateutil>=2.9.0; python_version < '3.11'

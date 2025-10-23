@@ -88,7 +88,7 @@ owIDAQAB
                 return_queue.put((new_session, None))
             except Exception as e:
                 return_queue.put((None, e))
-            lock_path.unlink()
+            lock_path.unlink(missing_ok=True)
             return None
         except FileExistsError:
             logger.debug(f"Session refresh lock detected.")
@@ -118,6 +118,11 @@ owIDAQAB
         data = {"token": token, "machine_id": muid}
         if self.__machine_id is not None and self.__machine_id != muid:
             data["previous_id"] = self.__machine_id
+        # Token comparison check in case lock have been overwritten
+        _, db_token = LocalDatastore().get_license()
+        if token != db_token:
+            logger.debug(f"Licence token mismatch detected. Refresh session cancelled.")
+            raise LicenseToleration
         # Rotate token
         try:
             refresh_token = await SupabaseUtils.rotate_token(data)

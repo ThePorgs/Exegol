@@ -8,8 +8,8 @@ from postgrest import APIError, AsyncFilterRequestBuilder, \
     AsyncMaybeSingleRequestBuilder, AsyncSingleRequestBuilder, AsyncSelectRequestBuilder, APIResponse
 from supabase import create_async_client, AsyncClient
 from supabase.lib.client_options import AsyncClientOptions
-from supafunc import AsyncFunctionsClient
-from supafunc.errors import FunctionsHttpError, FunctionsRelayError
+from supabase_functions import AsyncFunctionsClient
+from supabase_functions.errors import FunctionsHttpError, FunctionsRelayError
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
@@ -42,7 +42,7 @@ class SupabaseUtils:
     @classmethod
     async def login_user(cls) -> AsyncClient:
         if ParametersManager().offline_mode:
-            logger.critical("You can't activate Exegol in offline mode.")
+            logger.critical("Exegol can't be activated without Internet access.")
         # Login
         supabase_client = await cls.__create_client()
         logger.info("Authenticating to Exegol")
@@ -159,7 +159,7 @@ class SupabaseUtils:
                 raise FunctionsRelayError
             return cert
         except ConnectError as e:
-            logger.critical("Exegol license server is unreachable. Do you have internet access?")
+            logger.critical("Exegol license server can't be reached without Internet access")
             raise e
         except (FunctionsRelayError, TransportError) as e:
             logger.critical("Exegol license server seems to be unavailable for now. Please retry later.")
@@ -179,11 +179,11 @@ class SupabaseUtils:
         :return:
         """
         if ParametersManager().offline_mode:
-            logger.critical("You can't activate Exegol in offline mode.")
+            logger.critical("Exegol can't be activated without Internet access.")
         try:
             return await cls.__call_licenses_endpoint(supabase_client, cls.LicenseAction.LicenseEnum)
         except ConnectError as e:
-            logger.critical("Exegol license server is unreachable. Do you have internet access?")
+            logger.critical("Exegol license server can't be reached without Internet access.")
             raise e
         except (FunctionsRelayError, TransportError) as e:
             logger.critical("Exegol license server seems to be unavailable for now. Please retry later.")
@@ -198,11 +198,11 @@ class SupabaseUtils:
     @classmethod
     async def activate_licenses(cls, supabase_client: AsyncFunctionsClient, form: EnrollmentForm) -> LicenseEnrollment:
         if ParametersManager().offline_mode:
-            logger.critical("You can't activate Exegol in offline mode.")
+            logger.critical("You can't activate Exegol without Internet access.")
         try:
             return cast(LicenseEnrollment, await cls.__call_licenses_endpoint(supabase_client, cls.LicenseAction.LicenseActivation, cast(dict, form)))
         except ConnectError:
-            logger.error("Exegol license server is unreachable. Do you have internet access?")
+            logger.error("Exegol license server can't be reached without Internet access.")
             raise CancelOperation
         except (FunctionsRelayError, TransportError):
             logger.error("Exegol license server seems to be unavailable for now. Please retry later.")
@@ -260,7 +260,7 @@ class SupabaseUtils:
                 raise FunctionsRelayError("Received an empty response from license server.")
             return token
         except ConnectError:
-            logger.error("Exegol license server is unreachable. Do you have internet access?")
+            logger.error("Exegol license server can't be reached without Internet access")
             raise LicenseToleration
         except (FunctionsRelayError, TransportError) as e:
             # Error during http request
@@ -280,7 +280,7 @@ class SupabaseUtils:
                                                                              form))
             return result.get("session")
         except ConnectError:
-            logger.error("Exegol license server is unreachable. Do you have internet access?")
+            logger.error("Exegol license server can't be reached without Internet access")
             raise LicenseToleration
         except (FunctionsRelayError, TransportError) as e:
             # Error during http request
@@ -293,7 +293,7 @@ class SupabaseUtils:
     @classmethod
     async def registry_access(cls, form: dict, session: str) -> str:
         if ParametersManager().offline_mode:
-            logger.critical("You can't access the registry in offline mode.")
+            logger.critical("You can't access the registry without Internet access.")
         try:
             data = await cls.__call_licenses_endpoint((await cls.__create_client()).functions,
                                                       cls.LicenseAction.RegistryAccess,
@@ -326,7 +326,7 @@ class SupabaseUtils:
     @classmethod
     async def list_all_images(cls, arch: str) -> List[SupabaseImage]:
         if ParametersManager().offline_mode:
-            logger.warning("Offline mode enabled. Skipping image listing.")
+            logger.warning("Can't list images without Internet access. Skipping.")
             return []
         logger.debug(f"Listing images from metadata table")
         image_list = await cls.__execute((await cls.__create_client())

@@ -1,10 +1,13 @@
+import os
 import sqlite3
+import sys
 import threading
 from enum import Enum
 from typing import Tuple, Optional, Union, cast
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
+from exegol.utils.FsUtils import get_user_id
 from exegol.utils.MetaSingleton import MetaSingleton
 
 
@@ -24,14 +27,19 @@ class LocalDatastore(metaclass=MetaSingleton):
 
         self.__is_init = self.__DB_PATH.is_file()
         try:
-            self.__db = sqlite3.connect(ConstantConfig.exegol_config_path / ".datastore",
+            self.__db = sqlite3.connect(self.__DB_PATH,
                                         check_same_thread=False,
                                         autocommit=False)  # type: ignore[call-overload]
         except TypeError:
             # autocommit available from python 3.12, before that using isolation_level
-            self.__db = sqlite3.connect(ConstantConfig.exegol_config_path / ".datastore",
+            self.__db = sqlite3.connect(self.__DB_PATH,
                                         check_same_thread=False,
                                         isolation_level="IMMEDIATE")
+
+        # For a new installation, set the owner of the DB to the current user
+        if not self.__is_init and sys.platform == "linux" and os.getuid() == 0:
+            user_uid, user_gid = get_user_id()
+            os.chown(self.__DB_PATH, user_uid, user_gid)
 
         self.__apply_schema()
 

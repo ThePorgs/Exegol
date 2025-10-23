@@ -126,7 +126,7 @@ class ContainerConfig:
         self.__workspace_dedicated_path: Optional[str] = None
         self.__disable_workspace: bool = False
         self.__container_entrypoint: List[str] = self.__default_entrypoint
-        self.__vpn_path: Optional[Union[Path, PurePath]] = None
+        self.__vpn_path: Optional[Path] = None
         self.__shell_logging: bool = False
         # Entrypoint features
         self.legacy_entrypoint: bool = True
@@ -770,10 +770,6 @@ class ContainerConfig:
                 self.__vpn_mode = "ovpn"
                 self.__vpn_parameters = await self.__prepareOpenVpnVolumes(vpn_path, skip_conf_checks=apply_only)
             elif vpn_path.is_file() and vpn_path.suffix == ".conf":
-                if not SessionHandler().pro_feature_access():
-                    logger.error("WireGuard VPN support is exclusive to Pro/Enterprise users. Coming soon to Community.")
-                    self.__disableVPN()
-                    raise InteractiveError
                 # Wireguard config
                 self.__addSysctl("net.ipv4.conf.all.src_valid_mark", "1")
                 self.__vpn_mode = "wgconf"
@@ -1615,6 +1611,10 @@ class ContainerConfig:
         if not result:
             return "[i][bright_black]Default configuration[/bright_black][/i]"
         return result
+
+    def getVpnConfigPath(self) -> Optional[Path]:
+        """Get VPN Config path"""
+        return self.__vpn_path
 
     def getVpnName(self) -> str:
         """Get VPN Config name"""

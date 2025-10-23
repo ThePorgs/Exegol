@@ -6,6 +6,8 @@ By downloading, installing, accessing, or using the Software, You agree to be bo
 
 If You do not agree to the terms of this Agreement, You must not use the Software.
 
+For open-source components, please also refer to the Exegol Software License (ESL) (https://docs.exegol.com/legal/software-license).
+
 ## 1. License grant
 
 Subject to Your compliance with this Agreement, Execorp grants You a personal, limited, non-exclusive, non-transferable, revocable license to install and use the Software solely:
@@ -28,22 +30,22 @@ This requirement may not apply to certain Enterprise licenses, on a case-by-case
 
 ## 2. License restrictions
 
-You agree that You will not:
+Except where expressly permitted by the Exegol Software License (ESL) (https://docs.exegol.com/legal/software-license), other applicable open-source licenses, or by law, you agree that you will not:
+
 - Copy, distribute, sell, sublicense, lease, or otherwise transfer the Software to any third party
-- Modify, adapt, create derivative works from, or translate the Software
+- Modify, adapt, create derivative works from, or translate the Software, except for personal use or community contribution, provided such modification is not intended to circumvent license verification or other technical restrictions; any commercial use of modifications is only permitted in accordance with your subscription plan (Pro or Enterprise) and is subject to this Agreement, and the [Terms of Sale and Service](https://docs.exegol.com/legal/terms-of-sale-and-service); any form of commercial exploitation (such as reselling, providing managed services, or repackaging for third parties) is strictly prohibited without a separate written agreement with Execorp.
 - Reverse engineer, decompile, disassemble, or otherwise attempt to discover the source code of the Software, except as expressly permitted by applicable law and then only after prior written notice to Execorp
 - Remove, obscure, or alter any proprietary notices, labels, or marks on the Software
-- Use the Software for illegal activities or unauthorized penetration testing without explicit consent
+- Use the Software for illegal activities
 - Use the Software in any manner that infringes the intellectual property rights or other rights of Execorp or any third party
 
 ## 3. Commercial use
 
-Commercial use of the Software, including but not limited to:
-- Using the Software in a professional environment
+Commercial use of the Software, including:
+- Using the Software in a professional or revenue-generating environment
 - Providing services to third parties
-- Integrating the Software into commercial products or services
 
-Commercial uses require an active Pro or Enterprise subscription purchased from Execorp.
+requires an active Pro or Enterprise subscription purchased from Execorp.
 
 Use of the Community (i.e., free) plan is strictly limited to personal, non-commercial, educational, or research purposes.
 
@@ -52,6 +54,12 @@ Use of the Community (i.e., free) plan is strictly limited to personal, non-comm
 All rights, titles, and interests in and to the Software, including any intellectual property rights therein, are and will remain the exclusive property of Execorp and its licensors.
 
 This Agreement does not grant You any rights to trademarks or service marks of Execorp.
+
+### 4.1 Open-source components
+
+Certain components of the Software may be open-source and subject to additional licensing terms, including the Exegol Software License (ESL) (https://docs.exegol.com/legal/software-license) and, where applicable, the GNU General Public License version 3 (GPL3). You must comply with all applicable open-source licenses in addition to this EULA.
+
+For open-source components, the terms of the applicable open-source license take precedence over conflicting terms in this EULA, except for commercial use restrictions which remain subject to our Terms of Sale and Service, and commercial exploitation which is strictly prohibited without a separate written agreement with Execorp.
 
 ## 5. Updates and modifications
 
@@ -93,4 +101,4 @@ Any dispute arising out of or related to this Agreement will be submitted to the
 
 ## 10. Contact
 
-For any inquiries related to this Agreement or the Software, You may contact: [contact@exegol.com](mailto:contact@exegol.com)
+For any inquiries related to this Agreement or the Software, You may contact contact@exegol.com

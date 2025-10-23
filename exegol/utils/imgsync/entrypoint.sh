@@ -3,7 +3,10 @@
 trap shutdown SIGTERM
 
 function exegol_init() {
-    usermod -s "/.exegol/spawn.sh" root > /dev/null
+  # Restore hosts file backup if any
+  [ -f /etc/hosts.backup ] && cp -a /etc/hosts.backup /etc/hosts && rm /etc/hosts.backup
+  # Setup default user shell to startup script
+  usermod -s "/.exegol/spawn.sh" root > /dev/null
 }
 
 # Function specific
@@ -39,6 +42,8 @@ function endless() {
 
 function shutdown() {
   # Shutting down the container.
+  # Backup host file to restore after restart
+  cp -a /etc/hosts /etc/hosts.backup
   # Sending SIGTERM to all interactive process for proper closing
   pgrep vnc && desktop-stop  # Stop webui desktop if started TODO improve desktop shutdown
   # Stop wireguard if any
