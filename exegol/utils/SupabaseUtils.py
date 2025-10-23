@@ -8,8 +8,8 @@ from postgrest import APIError, AsyncFilterRequestBuilder, \
     AsyncMaybeSingleRequestBuilder, AsyncSingleRequestBuilder, AsyncSelectRequestBuilder, APIResponse
 from supabase import create_async_client, AsyncClient
 from supabase.lib.client_options import AsyncClientOptions
-from supafunc import AsyncFunctionsClient
-from supafunc.errors import FunctionsHttpError, FunctionsRelayError
+from supabase_functions import AsyncFunctionsClient
+from supabase_functions.errors import FunctionsHttpError, FunctionsRelayError
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
