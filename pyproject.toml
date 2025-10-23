@@ -24,7 +24,9 @@ classifiers = [
 ]
 keywords = ["pentest", "redteam", "ctf", "exegol"]
 
-requires-python = ">=3.9"
+# Starting support with python 3.9.2 because of the cryptography requirements
+requires-python = ">=3.9.2"
+
 dependencies = [
     "docker~=7.1.0",
     "requests~=2.32.5",
