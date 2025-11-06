@@ -352,6 +352,8 @@ class ContainerConfig:
                 await self.enableDesktop(ParametersManager().desktop_config)
             if ParametersManager().comment:
                 self.addComment(ParametersManager().comment)
+            if ParametersManager().hosts_file:
+                self.loadHostsFile(ParametersManager().hosts_file)
         except InteractiveError:
             logger.critical(f"Aborting new container creation.")
             raise
@@ -1374,6 +1376,37 @@ class ContainerConfig:
                 result.append(f"{key}={value}")
         return result
 
+    def loadHostsFile(self, hosts_file_path: str) -> None:
+        """Load hosts file into extra_hosts (format: IP HOSTNAME)."""        
+        if not hosts_file_path:
+            return
+        hosts_path = Path(FsUtils.resolvStrPath(hosts_file_path))
+        if not hosts_path.exists():
+            logger.error(f"Hosts file not found: {hosts_file_path}")
+            return
+        if not hosts_path.is_file():
+            logger.error(f"Invalid hosts file path: {hosts_file_path}")
+            return
+        try:
+            with open(hosts_path, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    # Remove leading/trailing whitespace
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    # Parse line (format: IP HOSTNAME)
+                    parts = line.split()
+                    if len(parts) < 2:
+                        logger.warning(f"Invalid hosts entry at line {line_num}: {line}")
+                        continue
+                    ip = parts[0]
+                    hostname = parts[1]
+                    # Add to extra_hosts
+                    self.setExtraHost(hostname, ip)
+        except Exception as e:
+            logger.error(f"Error reading hosts file: {e}")
+
     async def addPort(self,
                 port_host: int,
                 port_container: Union[int, str],
@@ -1803,6 +1836,13 @@ class ContainerConfig:
         if previous_entry:
             result += previous_entry
 
+        return result
+
+    def getTextExtraHosts(self) -> str:
+        """Text formatter for Extra Hosts configuration."""
+        result = ''
+        for hostname, ip in self.__extra_host.items():
+            result += f"{ip} :right_arrow: {hostname}{os.linesep}"
         return result
 
     def __str__(self) -> str:

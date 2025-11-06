@@ -242,6 +242,13 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
 
+        self.hosts_file = Option("--hosts-file",
+                        dest="hosts_file",
+                        metavar="HOSTS_FILE",
+                        action="store",
+                        help="Import custom host entries from a file (format: IP HOSTNAME)",
+                        completer=FilesCompleter())
+
         self.comment = Option("--comment",
                               dest="comment",
                               action="store",
@@ -262,6 +269,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.network, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.comment, "required": False},
+                                  {"arg": self.hosts_file, "required": False},
                                   title="[blue]Container creation options[/blue]"))
 
         self.vpn = Option("--vpn",
