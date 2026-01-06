@@ -59,7 +59,7 @@ class ContainerStart:
                            action="append",
                            default=[],
                            dest="envs",
-                           help="And an environment variable on Exegol (format: --env KEY=value). The variables "
+                           help="Add an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
                                 "If the container already exists, the variable will be present only in the current shell",
                            completer=EnvironCompleter)
