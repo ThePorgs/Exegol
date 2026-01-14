@@ -1,12 +1,12 @@
 from rich.status import Status
 
-from exegol.utils.ExeLog import console, ConsoleLock
+from exegol.utils.ExeLog import ExeLog, ConsoleLock
 
 
 class ExegolStatus(Status):
 
     def __init__(self, status: str, **kwargs) -> None:
-        super().__init__(status, console=console, **kwargs)
+        super().__init__(status, console=ExeLog.console, **kwargs)
 
     async def __aenter__(self) -> "ExegolStatus":
         await ConsoleLock.acquire()

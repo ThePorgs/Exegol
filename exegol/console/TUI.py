@@ -18,7 +18,7 @@ from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
 from exegol.model.LicensesTypes import LicensesEnumeration
 from exegol.model.SelectableInterface import SelectableInterface
-from exegol.utils.ExeLog import logger, console, ExeLog
+from exegol.utils.ExeLog import logger, ExeLog
 
 
 class ExegolTUI:
@@ -176,7 +176,7 @@ class ExegolTUI:
             else:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
-        console.print(table)
+        ExeLog.console.print(table)
         logger.empty_line()
 
     @staticmethod
@@ -432,7 +432,7 @@ class ExegolTUI:
         recap = cls.__buildContainerRecapTable(container)
 
         logger.empty_line()
-        console.print(recap)
+        ExeLog.console.print(recap)
         logger.empty_line()
 
     @staticmethod
@@ -493,10 +493,7 @@ class ExegolTUI:
                       f"{'[bright_black](/workspace/logs)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
         if "N/A" not in container.config.getVpnName():
             recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
-        if container.config.getPrivileged() is True:
-            recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]')
-        else:
-            recap.add_row("[bold blue]Privileged[/bold blue]", "[green]Off :heavy_check_mark:[/green]")
+        recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]' if container.config.getPrivileged() else '[green]Off :heavy_check_mark:[/green]')
         if len(capabilities) > 0:
             recap.add_row(f"[bold blue]Capabilities[/bold blue]",
                           f"[{privilege_color}]{', '.join(capabilities)}[/{privilege_color}]")

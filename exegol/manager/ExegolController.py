@@ -12,7 +12,7 @@ try:
     import postgrest
     import contextlib
 
-    from exegol.utils.ExeLog import logger, ExeLog, console
+    from exegol.utils.ExeLog import logger, ExeLog
     from exegol.utils.DockerUtils import DockerUtils
     from exegol.console.cli.ParametersManager import ParametersManager
     from exegol.console.cli.actions.ExegolParameters import Command
@@ -115,5 +115,5 @@ def main() -> int:
             return int(e.code)
     except Exception:
         print_exception_banner()
-        console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http, httpx, postgrest, contextlib, supabase, asyncio])
+        ExeLog.console.print_exception(show_locals=True, suppress=[docker, requests, git, urllib3, http, httpx, postgrest, contextlib, supabase, asyncio])
     return 1

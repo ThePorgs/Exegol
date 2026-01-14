@@ -1,8 +1,8 @@
-# Exegol Software License (ESL) - Version 1.0
+# Exegol Software License (ESL)
 
 ## Preamble
 
-The Exegol software suite ("Exegol") is developed by Execorp to serve the needs of cybersecurity professionals. While certain elements of the source code, scripts, documentation, or containers may be made publicly accessible, such availability is intended to foster transparency, community trust, and collaboration.
+The Exegol software suite ("Exegol") is developed by Execorp, with valuable contributions from the community, to serve the needs of cybersecurity professionals. While certain elements of the source code, scripts, documentation, or containers may be made publicly accessible, such availability is intended to foster transparency, community trust, and collaboration.
 
 This public access does not imply a waiver of Execorp's intellectual property rights, nor does it authorize unrestricted or commercial use of the software.
 
@@ -10,7 +10,7 @@ This public access does not imply a waiver of Execorp's intellectual property ri
 
 Exegol is transitioning from the GNU General Public License version 3 (GPL3) to the Execorp Software License (ESL). This transition is governed by the following rules:
 
-- All code released prior to June 5th, 2025 remains under GPL3 (i.e., [GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007](https://www.gnu.org/licenses/gpl-3.0.en.html))
+- All code released prior to June 5th, 2025 remains under GPL3 (i.e., GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 - https://www.gnu.org/licenses/gpl-3.0.en.html)
 - Code released since June 5th, 2025 (the start date of this dual-license mechanism) will be under either:
   - The Exegol Software License (ESL)
   - or GPL3 (if it contains or is derived from GPL3-licensed code)
@@ -40,9 +40,10 @@ Execorp grants the user a free, personal, non-exclusive, non-transferable, and r
 - Individual learning
 - Participation in cybersecurity competitions (CTF, hackathons)
 
-### 3.2 Commercial Use and Exploitation
+### 3.2 Commercial use and exploitation
 
 #### 3.2.1 Allowed Commercial Use (with subscription)
+
 With a valid subscription (Pro or Enterprise), you are permitted to use Exegol in a commercial context for your own business operations (e.g., technical assessments, penetration test, bug bounty, research), such as:
 - Using Exegol as part of your professional activities
 - Using Exegol in your business or enterprise environment
@@ -50,6 +51,7 @@ With a valid subscription (Pro or Enterprise), you are permitted to use Exegol i
 - Using Exegol as part of your security operations
 
 #### 3.2.2 Prohibited Commercial Exploitation
+
 The following activities are strictly prohibited, even with a valid subscription, as they constitute commercial exploitation of Exegol. These activities require a specific written agreement with Execorp:
 
 - Providing maintenance, support, or managed services on Exegol products
@@ -63,9 +65,7 @@ In simple terms: You may use Exegol commercially for your own business needs wit
 
 Any violation of these prohibitions may lead to legal action and immediate termination of the license.
 
-### 3.3 Specific limitation for Pro subscription
-
-An individual user holding a Pro subscription is authorized to activate up to two installations (e.g., two personal machines). Beyond this, an Enterprise subscription is mandatory.
+For specific details regarding subscription plans, license counts, and subscription limitations, please refer to the Terms of Service and Sale (https://docs.exegol.com/legal/terms-of-service).
 
 ## 4. Restrictions
 

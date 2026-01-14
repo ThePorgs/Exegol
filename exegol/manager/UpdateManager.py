@@ -65,7 +65,15 @@ class UpdateManager:
             if await DockerUtils().downloadImage(selected_image, install_mode):
                 sync_result = None
                 # Name comparison allow detecting images without version tag
-                if not selected_image.isVersionSpecific() and selected_image.hasVersionTag():
+                if selected_image.isVersionSpecific():
+                    # Install latest tag if not already installed
+                    try:
+                        result = await DockerUtils().getOfficialImageFromList(selected_image.getName().split('-')[0])
+                        if result is None or not result.isInstall():
+                            raise ObjectNotFound
+                    except ObjectNotFound:
+                        DockerUtils().createLocalLastestImageTag(selected_image)
+                elif selected_image.hasVersionTag():
                     async with ExegolStatus(f"Synchronizing version tag information. Please wait.", spinner_style="blue"):
                         # Download associated version tag.
                         sync_result = await DockerUtils().downloadVersionTag(selected_image)

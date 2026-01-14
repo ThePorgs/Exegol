@@ -60,7 +60,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                 f"    Check documentation for help: https://docs.exegol.com/troubleshooting#unable-to-connect-to-docker")
             elif 'PermissionError' in str(err):
                 logger.critical(f"Docker is installed on your host but you don't have the permission to interact with it. Exiting.{os.linesep}"
-                                f"    Check documentation for help: https://docs.dev.exegol.com/first-install#_2-wrapper-install")
+                                f"    Check documentation for help: https://docs.exegol.com/first-install#_2-wrapper-install")
             else:
                 logger.error(err)
                 logger.critical(
@@ -465,14 +465,14 @@ class DockerUtils(metaclass=MetaSingleton):
             result = [img for img in result if not img.isVersionSpecific() or img.isInstall()]
         return result
 
-    async def getOfficialImageFromList(self, tag: str) -> Union[ExegolImage, str]:
+    async def getOfficialImageFromList(self, tag: str) -> ExegolImage:
         """Get an ExegolImage from tag name."""
         # Fetch every official images available
         images = await self.listImages(include_version_tag=True, include_locked=True)
         match: Optional[ExegolImage] = None
         # image tag without version
         tag_only = tag.split('-')[0] if '-' in tag else None
-        tag_only_match = None
+        tag_only_match: Optional[ExegolImage] = None
         # Find a match
         for i in images:
             if i.getName() == tag:
@@ -724,11 +724,26 @@ class DockerUtils(metaclass=MetaSingleton):
                 return f"matching tag doesn't exist: {err.explanation}"
             else:
                 logger.debug(f"Error: {err}")
-                return f"en unknown error occurred while downloading this image : {err.explanation}"
+                return f"an unknown error occurred while downloading this image : {err.explanation}"
         except ReadTimeout:
             logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
                             f"    [orange3]docker pull --platform linux/{image.getArch()} {image.getRepository()}:{image.getLatestVersionName()}[/orange3].")
             return  # type: ignore
+
+    def createLocalLastestImageTag(self, image: ExegolImage) -> None:
+        """After installing a version-specific image, check if the latest tag already exists.
+        If not, add the latest tag to the local image to show the "update available" status"""
+        latest_local_image = self.__getImage(image.getFullVersionName())
+        if latest_local_image is None:
+            logger.critical(f"Unable to find locally the image {image.getFullVersionName()}.")
+            return
+        try:
+            self.__client.api.tag(latest_local_image.id, ConstantConfig.IMAGE_NAME, image.getName().split('-')[0])
+        except APIError as err:
+            logger.critical(f"An unknown error occurred while tagging the image as latest: {err.explanation}")
+        except ReadTimeout:
+            logger.critical(f"Received a timeout error, Docker is busy... Unable to download an image tag, retry later the following command:{os.linesep}"
+                            f"    [orange3]docker pull --platform linux/{image.getArch()} {image.getRepository()}:{image.getLatestVersionName()}[/orange3].")
 
     async def removeImage(self, image: ExegolImage, upgrade_mode: bool = False, silent_error: bool = False) -> bool:
         """Remove an ExegolImage from disk"""

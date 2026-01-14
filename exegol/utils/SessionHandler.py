@@ -6,7 +6,7 @@ import jwt
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
-from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation
+from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation, UnavailableService
 from exegol.manager.TaskManager import TaskManager
 from exegol.model.LicensesTypes import LicenseType
 from exegol.utils.ExeLog import logger
@@ -44,7 +44,7 @@ owIDAQAB
         self.__session_expiration_date: Optional[datetime] = None
         self.__session_issue_date: Optional[datetime] = None
         self.__is_enrolled: bool = False
-        self.__current_muid = MUID.get_current_muid()
+        self.__current_muid: Optional[str] = None
         # Fast loading local session
         self.__fast_load()
         # Local status
@@ -56,6 +56,11 @@ owIDAQAB
     Not supporting Exegol today probably means future features won't ever see the light of day. But yes, you'll save on a few bucks tough.
     Open-source probably was a mistake then...
     """
+
+    def __get_current_muid(self) -> str:
+        if self.__current_muid is None:
+            self.__current_muid = MUID.get_current_muid()
+        return self.__current_muid
 
     def is_enrolled(self) -> bool:
         """Return True if the wrapper is enrolled to an Exegol license expired or not"""
@@ -75,7 +80,7 @@ owIDAQAB
                 self.__expiration_date is not None and
                 not (self.__session_expiration_date < now or
                      self.__expiration_date < now or
-                     self.__machine_id != self.__current_muid))
+                     self.__machine_id != self.__get_current_muid()))
 
     async def __refresh_thread_main(self, token: str, muid: str, return_queue: Queue) -> None:
         # Acquire refresh lock cross-process
@@ -86,6 +91,8 @@ owIDAQAB
             try:
                 new_session = await self.__refresh_session(token, muid)
                 return_queue.put((new_session, None))
+            except UnavailableService:
+                return_queue.put((None, LicenseToleration))
             except Exception as e:
                 return_queue.put((None, e))
             lock_path.unlink(missing_ok=True)
@@ -162,7 +169,6 @@ owIDAQAB
                              options={"require": ["iat", "iss", "aud", "exp"], "verify_exp": False, "verify_iat": False},
                              audience="urn:exegol:wrapper",
                              issuer=self.__key_handler.getSubject(), )
-        logger.debug(f"Local session: {session}")
         self.__machine_id = session["machine_id"]
         self.__license_id = session["license_id"]
         self.__license_owner = session["license_owner"]
@@ -200,7 +206,7 @@ owIDAQAB
 
             # - Check local machine ID
             # - Expiration date still valid
-            if self.__machine_id != self.__current_muid or self.__expiration_date < now:
+            if self.__machine_id != self.__get_current_muid() or self.__expiration_date < now:
                 raise LicenseToleration
             logger.debug("Session is valid and fully processed")
             return True
@@ -252,7 +258,7 @@ owIDAQAB
                     raise LicenseToleration
                 refresh_queue: Queue[Tuple[Optional[str], Optional[Union[Exception, Type[Exception]]]]] = Queue()
                 # Critical task in thread to prevent abort and loose session binding
-                TaskManager.add_task(self.__refresh_thread_main(self.__token, self.__current_muid, refresh_queue),
+                TaskManager.add_task(self.__refresh_thread_main(self.__token, self.__get_current_muid(), refresh_queue),
                                      TaskManager.TaskId.RefreshSession)
                 await TaskManager.wait_for(TaskManager.TaskId.RefreshSession)
                 refresh_error: Optional[Union[Exception, Type[Exception]]]
@@ -280,7 +286,7 @@ owIDAQAB
 
             # - Check local machine ID
             # - Expiration date still valid
-            if self.__machine_id != self.__current_muid or self.__expiration_date < now:
+            if self.__machine_id != self.__get_current_muid() or self.__expiration_date < now:
                 if (now - self.__session_expiration_date).seconds <= 300:
                     raise LicenseToleration
                 if not force_refresh and not self.__session_refreshed:
@@ -370,6 +376,12 @@ owIDAQAB
             logger.verbose(display)
         if self.__expiration_date is not None:
             logger.verbose(f"License valid until {self.__expiration_date}")
+
+    def display_support_info(self):
+        logger.verbose("Support information:")
+        logger.verbose(f"- Licence ID: {self.__license_id}")
+        logger.verbose(f"- Machine ID: {self.__machine_id}")
+        logger.verbose(f"- Session expiration: {self.__session_expiration_date}")
 
     def get_license_type_display(self) -> str:
         if self.__license is not None:

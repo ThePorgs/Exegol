@@ -223,12 +223,14 @@ class ExegolManager:
     @classmethod
     async def activate(cls) -> None:
         """Activate an exegol license"""
+        licence_manager = await LicenseManager.get()
         if ParametersManager().revoke:
-            await (await LicenseManager.get()).revoke_exegol()
-        elif (await LicenseManager.get()).is_activated():
+            await licence_manager.revoke_exegol()
+        elif licence_manager.is_activated():
+            licence_manager.display_license()
             logger.success("Exegol is activated")
         else:
-            await (await LicenseManager.get()).activate_exegol(skip_prompt=True)
+            await licence_manager.activate_exegol(skip_prompt=True)
 
     @classmethod
     async def print_version(cls) -> None:
@@ -491,7 +493,7 @@ class ExegolManager:
                 if container_tag is not None:
                     logger.warning(f"Container '{container_tag}' has not been found")
                 return [] if multiple else None
-            logger.info(f"Creating new container '{container_tag}'")
+            logger.info(f"Creating new container [green]{container_tag if container_tag else ''}[/green]")
             return await cls.__createContainer(container_tag)
         assert cls.__container is not None
         return cast(Union[Optional[ExegolContainer], List[ExegolContainer]], cls.__container)
@@ -673,9 +675,10 @@ class ExegolManager:
         backup_items = [
             "Your [green]my-resources[/green] customization" if c.config.isMyResourcesEnable() else "",
             "The container [green]/workspace[/green] directory",
-            "Your [green]bash/zsh[/green] command history",
-            "Your [green]exegol-history[/green] database" if exh_backup_supported else "",
+            "Your [green]bash[/green],[green]zsh[/green],[green]python3[/green] command history",
+            f"Your {'[green]exegol-history[/green],' if exh_backup_supported else ''}[green]NetExec[/green],[green]Responder[/green] database and configuration",
             "Your [green]TriliumNext[/green] notes",
+            "Your [green]Hashcat[/green],[green]John[/green] potfiles",
             "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
             "The following configurations: [green]Proxychains[/green]"
         ]
@@ -684,8 +687,7 @@ class ExegolManager:
     - {backup_text}
 """
         # TODO improve upgrade with
-        #  Config of: Responder?
-        #  DB of Responder, neo4j, postgres, nxc?, firefox, hashcat potfile, john?
+        #  DB of neo4j, postgres, firefox
 
         logger.warning(details)
         if (not ParametersManager().force_mode and

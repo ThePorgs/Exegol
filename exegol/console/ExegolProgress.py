@@ -2,14 +2,14 @@ from typing import cast, Union
 
 from rich.progress import Progress, Task, TaskID, ProgressColumn
 
-from exegol.utils.ExeLog import console, ConsoleLock
+from exegol.utils.ExeLog import ConsoleLock, ExeLog
 
 
 class ExegolProgress(Progress):
     """Addition of a practical function to Rich Progress"""
 
     def __init__(self, *columns: Union[str, ProgressColumn], **kwargs) -> None:
-        super().__init__(*columns, console=console, **kwargs)
+        super().__init__(*columns, console=ExeLog.console, **kwargs)
 
     def getTask(self, task_id: TaskID) -> Task:
         """Return a specific task from task_id without error"""

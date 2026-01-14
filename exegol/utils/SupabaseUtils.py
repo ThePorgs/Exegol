@@ -1,5 +1,7 @@
+from datetime import datetime
 import logging
 from enum import Enum
+from json import JSONDecodeError
 from typing import Optional, Union, List, Tuple, Dict, cast
 
 from httpx import ConnectError, TransportError
@@ -14,7 +16,7 @@ from supabase_functions.errors import FunctionsHttpError, FunctionsRelayError
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.cli.ParametersManager import ParametersManager
-from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation
+from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation, UnavailableService
 from exegol.model.LicensesTypes import LicenseSession, TokenRotate, LicenseEnrollment, EnrollmentForm
 from exegol.model.SupabaseModels import SupabaseImage
 from exegol.utils.ExeLog import logger
@@ -72,7 +74,7 @@ class SupabaseUtils:
                     email = None
                 logger.error(f"{e}, please retry")
             except AuthRetryableError as e:
-                if e.status == 503:
+                if e.status in [503, 500]:
                     logger.critical("The Exegol servers are currently unavailable, please try again later.")
                 elif e.status == 0 and e.code is None:
                     logger.critical("You can't activate Exegol without internet access.")
@@ -112,10 +114,17 @@ class SupabaseUtils:
             options["body"] = body
         if auth_token:
             headers["app-session"] = auth_token
-        result = await supabase_client.invoke("licenses-endpoint", invoke_options=options)
+        try:
+            result = await supabase_client.invoke("licenses-endpoint", invoke_options=options)
+        except JSONDecodeError as e:
+            logger.debug(f"Supabase returned an error during invocation: {e}")
+            raise UnavailableService
         if type(result) is bytes:
             return {"result": result}
-        return result
+        elif type(result) is dict:
+            return result
+        logger.error(f"Received unexpected response type: {type(result)}")
+        raise NotImplementedError
 
     @classmethod
     async def __execute(cls, supabase_query: Union[AsyncFilterRequestBuilder, AsyncMaybeSingleRequestBuilder, AsyncSingleRequestBuilder, AsyncSelectRequestBuilder]) -> Optional[APIResponse]:
@@ -134,7 +143,7 @@ class SupabaseUtils:
         except TransportError:
             logger.warning("An error occurred while contacting the server.")
         except APIError as e:
-            if e.code == 503:
+            if e.code in [503, 500]:
                 logger.warning("The Exegol servers are currently unavailable, image status cannot be retrieved.")
             else:
                 logger.debug(e.details)
@@ -156,7 +165,8 @@ class SupabaseUtils:
             data: Dict[str, bytes] = await cls.__call_licenses_endpoint((await cls.__create_client()).functions, cls.LicenseAction.GetCertificate)
             cert = data.get("result")
             if cert is None:
-                raise FunctionsRelayError
+                logger.debug(f"Received data but without result: {data}")
+                raise FunctionsRelayError("Unknown error, result is missing")
             return cert
         except ConnectError as e:
             logger.critical("Exegol license server can't be reached without Internet access")
@@ -189,7 +199,7 @@ class SupabaseUtils:
             logger.critical("Exegol license server seems to be unavailable for now. Please retry later.")
             raise e
         except FunctionsHttpError as e:
-            if e.status in [403, 503, 504, 546]:
+            if e.status in [403, 503, 504, 546, 500]:
                 logger.critical("The Exegol servers are currently unavailable, please try again later.")
             else:
                 logger.critical(f"Unable to enumerate licenses from exegol servers: [{e.status}] {e.message}")
@@ -315,6 +325,8 @@ class SupabaseUtils:
                 logger.critical("Your license does not allow you to download this image.")
             elif e.status == 500:
                 logger.critical("The Exegol servers are currently unavailable, please try again later.")
+            elif e.status == 498:
+                logger.critical(f"Exegol was unable to synchronize with the servers. Please check that your system's date and time are correct: {datetime.now()}")
             else:
                 logger.debug(f"Error code {e.status}")
                 logger.critical(f"An error occurred for registry access: {e.message}")

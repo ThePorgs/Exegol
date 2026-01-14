@@ -6,8 +6,8 @@ PyYAML>=6.0.3
 argcomplete~=3.6.3
 tzlocal~=5.2; platform_system != 'Linux'
 ifaddr~=0.2.0
-supabase~=2.18.1
-pydantic~=2.12.3
+supabase~=2.24.0
+pydantic~=2.12.4
 pyjwt>=2.10.1
 pyjwt[crypto]>=2.10.1
 cryptography~=46.0.3

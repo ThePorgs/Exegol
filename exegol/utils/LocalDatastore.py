@@ -2,7 +2,7 @@ import os
 import sqlite3
 import sys
 import threading
-from enum import Enum
+from enum import IntEnum
 from typing import Tuple, Optional, Union, cast
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -14,7 +14,7 @@ from exegol.utils.MetaSingleton import MetaSingleton
 class LocalDatastore(metaclass=MetaSingleton):
     __DB_PATH = ConstantConfig.exegol_config_path / ".datastore"
 
-    class Key(Enum):
+    class Key(IntEnum):
         EULA = 0
         SESSION_CERT = 1
         TOKEN = 2
@@ -22,29 +22,34 @@ class LocalDatastore(metaclass=MetaSingleton):
 
     def __init__(self) -> None:
 
-        sqlite3.threadsafety = 3
         self.__db_lock = threading.Lock()
 
         self.__is_init = self.__DB_PATH.is_file()
-        try:
-            self.__db = sqlite3.connect(self.__DB_PATH,
-                                        check_same_thread=False,
-                                        autocommit=False)  # type: ignore[call-overload]
-        except TypeError:
-            # autocommit available from python 3.12, before that using isolation_level
-            self.__db = sqlite3.connect(self.__DB_PATH,
-                                        check_same_thread=False,
-                                        isolation_level="IMMEDIATE")
+        self.__db = sqlite3.connect(self.__DB_PATH,
+                                    check_same_thread=False,
+                                    isolation_level=None, # For WAL setup
+                                    timeout=5.0)
 
         # For a new installation, set the owner of the DB to the current user
         if not self.__is_init and sys.platform == "linux" and os.getuid() == 0:
             user_uid, user_gid = get_user_id()
             os.chown(self.__DB_PATH, user_uid, user_gid)
 
+        # Enable Write-Ahead Logging for concurrency (1 Writer, N Readers)
+        self.__db.execute("PRAGMA journal_mode=WAL;")
+
+        # Switch back to managed transaction mode
+        try:
+            # Python 3.12+ (PEP 249 compliant)
+            self.__db.autocommit = False  # type: ignore[attr-defined]
+        except AttributeError:
+            # Python < 3.12 (Legacy mode)
+            self.__db.isolation_level = "IMMEDIATE"
+
         self.__apply_schema()
 
     def __apply_schema(self) -> None:
-        with self.__db_lock, self.__db:
+        with self.__db_lock:
             try:
                 self.__db.execute("CREATE TABLE IF NOT EXISTS machine (rid TEXT NOT NULL, mid TEXT NOT NULL)")
                 self.__db.execute("CREATE TABLE IF NOT EXISTS kv (key SMALLINT NOT NULL UNIQUE, value TEXT NOT NULL)")
@@ -73,7 +78,7 @@ class LocalDatastore(metaclass=MetaSingleton):
         return cast(Optional[str], session), cast(Optional[str], token)
 
     def deactivate_license(self) -> None:
-        with self.__db_lock, self.__db:
+        with self.__db_lock:
             logger.debug("DB Deactivating license")
             try:
                 self.__db.execute("DELETE FROM kv WHERE key = ?", (self.Key.TOKEN.value,))
@@ -86,15 +91,22 @@ class LocalDatastore(metaclass=MetaSingleton):
 
     # MACHINE SECTION
     def get_machine_id(self) -> Tuple[Optional[str], Optional[str]]:
-        cursor = self.__db.cursor()
-        result = cursor.execute("SELECT * FROM machine").fetchone()
-        cursor.close()
+        result = None
+        try:
+            cursor = self.__db.execute("SELECT * FROM machine")
+            result = cursor.fetchone()
+            cursor.close()
+        except sqlite3.Error as e:
+            logger.error(f"DB error during: Getting machine ID: {e}")
+        # Close the implicit read transaction.
+        self.__db.rollback()
+
         if result is None:
             return None, None
         return result
 
     def update_mid(self, rid: str, mid: str) -> None:
-        with self.__db_lock, self.__db:
+        with self.__db_lock:
             logger.debug("DB Updating DB MID")
             try:
                 self.__db.execute("DELETE FROM machine")
@@ -107,14 +119,23 @@ class LocalDatastore(metaclass=MetaSingleton):
 
     # KV SECTION
     def get(self, key: Key) -> Optional[Union[str, bytes]]:
-        with self.__db_lock, self.__db:
-            result = self.__db.execute("SELECT value FROM kv WHERE key = ?", (key.value,)).fetchone()
+        result = None
+        try:
+            # No lock needed for reading in WAL mode
+            cursor = self.__db.execute("SELECT value FROM kv WHERE key = ?", (key.value,))
+            result = cursor.fetchone()
+            cursor.close()
+        except sqlite3.Error as e:
+            logger.error(f"DB error during: Getting DB KV {key.value}: {e}")
+        # Close the implicit read transaction.
+        self.__db.rollback()
+
         if result is None:
             return None
         return result[0]
 
     def set(self, key: Key, value: Optional[Union[str, bytes]]) -> None:
-        with self.__db_lock, self.__db:
+        with self.__db_lock:
             logger.debug(f"DB Updating KV {key.name}")
             try:
                 if value is not None:

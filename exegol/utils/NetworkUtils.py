@@ -5,7 +5,7 @@ import ifaddr
 from rich.prompt import Prompt
 
 from exegol.model.ExegolNetwork import ExegolNetworkMode
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger, ExeLog
 
 
 class NetworkUtils:
@@ -43,7 +43,7 @@ class NetworkUtils:
     @classmethod
     def __user_select_network(cls) -> ipaddress.IPv4Network:
         while True:
-            net_input = Prompt.ask(prompt="Please choose manually a network range for dedicated exegol networks (CIDR format):", console=console)
+            net_input = Prompt.ask(prompt="Please choose manually a network range for dedicated exegol networks (CIDR format):", console=ExeLog.console)
             try:
                 net_user = ipaddress.IPv4Network(net_input)
                 if not net_user.is_private:

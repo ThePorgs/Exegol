@@ -1,7 +1,6 @@
 import rich.prompt
-from rich.text import TextType
 
-from exegol.utils.ExeLog import console, ConsoleLock
+from exegol.utils.ExeLog import ConsoleLock, ExeLog
 
 
 class ExegolRich:
@@ -12,7 +11,7 @@ class ExegolRich:
     async def Ask(prompt: str, **kwargs) -> str:
         """Quick function to format rich Prompt and options on every exegol interaction"""
         async with ConsoleLock:
-            return rich.prompt.Prompt.ask("[bold blue][?][/bold blue] " + prompt, console=console, **kwargs)
+            return rich.prompt.Prompt.ask("[bold blue][?][/bold blue] " + prompt, console=ExeLog.console, **kwargs)
 
     @staticmethod
     async def Confirm(question: str, default: bool) -> bool:
@@ -24,7 +23,7 @@ class ExegolRich:
                 formatted_question,
                 show_choices=False,
                 show_default=False,
-                console=console,
+                console=ExeLog.console,
                 default=default)
 
     @staticmethod
@@ -37,6 +36,6 @@ class ExegolRich:
                     formatted_question,
                     show_choices=False,
                     show_default=False,
-                    console=console)
+                    console=ExeLog.console)
             except ValueError:
                 raise EOFError

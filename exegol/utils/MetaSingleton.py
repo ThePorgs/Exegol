@@ -19,3 +19,8 @@ class MetaSingleton(type):
             MetaSingleton.__spawning.remove(cls)
         # Return the desired object
         return MetaSingleton.__instances[cls]
+
+    @classmethod
+    def mock(cls, obj_type: type, mocked_obj: object) -> None:
+        """Mock a singleton object"""
+        MetaSingleton.__instances[obj_type] = mocked_obj

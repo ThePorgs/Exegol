@@ -15,7 +15,7 @@ from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.manager.TaskManager import TaskManager
 from exegol.model.LicensesTypes import LicensesEnumeration, LicenseType, LicenseEnrollment, EnrollmentForm
-from exegol.utils.ExeLog import logger, console
+from exegol.utils.ExeLog import logger, ExeLog
 from exegol.utils.LocalDatastore import LocalDatastore
 from exegol.utils.MUID import MUID
 from exegol.utils.SessionHandler import SessionHandler
@@ -26,7 +26,7 @@ class LicenseManager:
     __singleton_instance: Optional["LicenseManager"] = None
 
     def __init__(self) -> None:
-        self.__session = SessionHandler()
+        self.__session: SessionHandler = SessionHandler()
         self.__user_session: Optional[AsyncClient] = None
 
     @classmethod
@@ -40,9 +40,11 @@ class LicenseManager:
                     await cls.__singleton_instance.activate_exegol()
                 else:
                     cls.__singleton_instance.__session.display_license()
-            else:
-                cls.__singleton_instance.__session.display_license()
         return cls.__singleton_instance
+
+    def display_license(self) -> None:
+        self.__session.display_license(as_info=True)
+        self.__session.display_support_info()
 
     async def eula_process(self) -> None:
         if not ParametersManager().accept_eula:
@@ -94,7 +96,7 @@ class LicenseManager:
             # Display EULA
             with open(ConstantConfig.eula_path, 'r') as f:
                 markdown = Markdown(f.read())
-            console.print(markdown)
+            ExeLog.console.print(markdown)
 
     async def enroll_machine(self) -> bool:
         # Login

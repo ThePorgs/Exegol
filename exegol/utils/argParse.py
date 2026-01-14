@@ -15,7 +15,7 @@ class ExegolArgParse(argparse.ArgumentParser):
     # Using Exelog to print built-in parser message
     def _print_message(self, message: str, file=None) -> None:
         if message:
-            logger.raw(message, level=CRITICAL, rich_parsing=True)
+            logger.raw(message, level=CRITICAL, markup=True, emoji=True)
 
 
 class Parser:
@@ -51,7 +51,7 @@ class Parser:
 
     def __set_action_parser(self) -> None:
         """Create sub-parser for each action and configure it"""
-        self.__root_parser._positionals.title = "[green]Required arguments[/green]"
+        self.__root_parser._positionals.title = "[blue]Required arguments[/blue]"
         for action in self.__actions:
             # Each action has a dedicated sub-parser with different options
             # the 'help' description of the current action is retrieved

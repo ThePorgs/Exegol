@@ -890,6 +890,7 @@ class ContainerConfig:
 
     @staticmethod
     async def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
+        """Check if the OpenVPN configuration file contains DNS server dynamic update scripts"""
         logger.verbose("Checking OpenVPN config file")
         configs = ["script-security 2", "up /etc/openvpn/update-resolv-conf", "down /etc/openvpn/update-resolv-conf"]
         with open(vpn_path, 'r') as vpn_file:
@@ -906,8 +907,10 @@ class ContainerConfig:
             logger.empty_line()
             await ExegolRich.Acknowledge("Your VPN configuration won't support dynamic DNS servers.")
 
-    def prepareShare(self, share_name: str) -> None:
-        """Add workspace share before container creation"""
+    def prepareShare(self, container_name: str) -> None:
+        """Add workspace share before container creation.
+        :param container_name: Name of the container defined by the user (without the exegol- part)
+        """
         for mount in self.__mounts:
             if mount.get('Target') == '/workspace':
                 # Volume is already prepared
@@ -919,7 +922,7 @@ class ContainerConfig:
             return
         else:
             # Add dedicated private workspace bind volume
-            volume_path = str(UserConfig().private_volume_path.joinpath(share_name))
+            volume_path = str(UserConfig().private_volume_path.joinpath(container_name))
             self.addVolume(volume_path, '/workspace', enable_sticky_group=True)
 
     def rollback_preparation(self, share_name: str) -> None:

@@ -5,7 +5,7 @@ from git.objects.submodule.base import UpdateProgress
 from rich.console import Console
 from rich.progress import Progress, ProgressColumn, GetTimeCallable, Task
 
-from exegol.utils.ExeLog import console as exelog_console
+from exegol.utils.ExeLog import ExeLog
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
@@ -74,7 +74,7 @@ class MetaGitProgress(Progress, metaclass=MetaSingleton):
     def __init__(self, *columns: Union[str, ProgressColumn], console: Optional[Console] = None, auto_refresh: bool = True, refresh_per_second: float = 10, speed_estimate_period: float = 30.0,
                  transient: bool = False, redirect_stdout: bool = True, redirect_stderr: bool = True, get_time: Optional[GetTimeCallable] = None, disable: bool = False, expand: bool = False) -> None:
         if console is None:
-            console = exelog_console
+            console = ExeLog.console
         self.task_dict: Dict[int, Task] = {}
 
         super().__init__(*columns, console=console, auto_refresh=auto_refresh, refresh_per_second=refresh_per_second, speed_estimate_period=speed_estimate_period, transient=transient,

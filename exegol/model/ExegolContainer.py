@@ -236,6 +236,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
+    async def exec_raw(self, command: Union[str, Sequence[str]]) -> Tuple[int, str]:
+        """Execute a command / process on the docker container.
+        Return the exit code and the logs."""
+        if not self.isRunning():
+            await self.start()
+        exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet=True)
+        result = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=False, stream=False)
+        stdout = result.output.decode("utf-8") if type(result.output) is bytes else result.output
+        # result[0] : exit code
+        # result[1] : output
+        return result.exit_code, stdout
+
     async def exec(self, command: Union[str, Sequence[str]], as_daemon: bool = True, quiet: bool = False, is_tmp: bool = False, show_output: bool = True) -> int:
         """Execute a command / process on the docker container.
         Set as_daemon to not follow the command stream and detach the execution
@@ -608,6 +620,14 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.exec(f"cp -a /etc/hosts {self.BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/resolv.conf {self.BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/proxychains.conf {self.BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
+                self.exec(f"[ -f /root/.python_history ] || return 0  && cp -a /root/.python_history {self.BACKUP_DIRECTORY}/python_history", quiet=True, as_daemon=False),
+                self.exec(f"[ -f /root/.local/share/hashcat/hashcat.potfile ] || return 0 && cp -a /root/.local/share/hashcat/hashcat.potfile {self.BACKUP_DIRECTORY}/hashcat.potfile", quiet=True, as_daemon=False),
+                self.exec(f"[ -f /opt/tools/john/run/john.pot ] || return 0 && cp -a /opt/tools/john/run/john.pot {self.BACKUP_DIRECTORY}/john.pot", quiet=True, as_daemon=False),
+                self.exec(f"[ -f /opt/tools/Responder/Responder.db ] || return 0 && ("
+                          f"cp -a /opt/tools/Responder/Responder.db {self.BACKUP_DIRECTORY}/Responder.db && "
+                          f"cp -a /opt/tools/Responder/Responder.conf {self.BACKUP_DIRECTORY}/Responder.conf && "
+                          f"cp -a /opt/tools/Responder/logs {self.BACKUP_DIRECTORY}/Responder_logs)", quiet=True, as_daemon=False),
+                self.exec(f"[ -d /root/.nxc ] || return 0 && cp -a /root/.nxc {self.BACKUP_DIRECTORY}/nxc", quiet=True, as_daemon=False),
                 self.exec(f"triliumnext-stop && "
                           f"mkdir {self.BACKUP_DIRECTORY}/triliumnext_data && "
                           f"cp -a /opt/tools/triliumnext/data/document.db* {self.BACKUP_DIRECTORY}/triliumnext_data/ && "
@@ -641,7 +661,16 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.exec(f"cat {self.BACKUP_DIRECTORY}/bash_history >> ~/.bash_history", quiet=True, as_daemon=False),
                 self.exec(f"cp -a {self.BACKUP_DIRECTORY}/hosts /etc/hosts", quiet=True, as_daemon=False),
                 self.exec(f"cp -a {self.BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf", quiet=True, as_daemon=False),
-                self.exec(f"mv {self.BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf ", quiet=True, as_daemon=False),
+                self.exec(f"mv {self.BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/python_history ] || return 0 && mv {self.BACKUP_DIRECTORY}/python_history /root/.python_history", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/hashcat.potfile ] || return 0 && (mkdir -p /root/.local/share/hashcat && mv {self.BACKUP_DIRECTORY}/hashcat.potfile /root/.local/share/hashcat/hashcat.potfile)", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/john.pot ] || return 0 && (mkdir -p /opt/tools/john/run && mv {self.BACKUP_DIRECTORY}/john.pot /opt/tools/john/run/john.pot)", quiet=True, as_daemon=False),
+                self.exec(f"[ -d {self.BACKUP_DIRECTORY}/nxc ] && ([ -d /root/.nxc ] || return 0 && mv {self.BACKUP_DIRECTORY}/nxc/* /root/.nxc/ || mv {self.BACKUP_DIRECTORY}/nxc /root/.nxc)", quiet=True, as_daemon=False),
+                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/Responder.db ] || return 0 && ("
+                          f"mv {self.BACKUP_DIRECTORY}/Responder.db /opt/tools/Responder/Responder.db && "
+                          f"mv {self.BACKUP_DIRECTORY}/Responder.conf /opt/tools/Responder/Responder.conf && "
+                          f"mkdir -p /opt/tools/Responder/logs && "
+                          f"mv {self.BACKUP_DIRECTORY}/Responder_logs/* /opt/tools/Responder/logs/)", quiet=True, as_daemon=False),
                 self.exec(f"rm /opt/tools/triliumnext/data/document.db* && "
                           f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/document.db* /opt/tools/triliumnext/data/ && "
                           f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/session_secret.txt /opt/tools/triliumnext/data/session_secret.txt && "
