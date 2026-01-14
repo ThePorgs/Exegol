@@ -1377,15 +1377,16 @@ class ContainerConfig:
         return result
 
     def loadHostsFile(self, hosts_file_path: str) -> None:
-        """Load hosts file into extra_hosts (format: IP HOSTNAME)."""        
+        """Load hosts file into extra_hosts (format: IP HOSTNAME [HOSTNAME2 ...]).
+        Supports multiple spaces/tabs as separators and multiple hostnames per IP."""
         if not hosts_file_path:
             return
         hosts_path = Path(FsUtils.resolvStrPath(hosts_file_path))
         if not hosts_path.exists():
-            logger.error(f"Hosts file not found: {hosts_file_path}")
+            logger.critical(f"Hosts file not found: {hosts_file_path}")
             return
         if not hosts_path.is_file():
-            logger.error(f"Invalid hosts file path: {hosts_file_path}")
+            logger.critical(f"Invalid hosts file path: {hosts_file_path}")
             return
         try:
             with open(hosts_path, 'r') as f:
@@ -1395,17 +1396,22 @@ class ContainerConfig:
                     # Skip empty lines and comments
                     if not line or line.startswith('#'):
                         continue
-                    # Parse line (format: IP HOSTNAME)
-                    parts = line.split()
+                    # Remove inline comments
+                    if '#' in line:
+                        line = line.split('#')[0].strip()
+                    # Parse line using regex to handle multiple spaces/tabs
+                    # Format: IP HOSTNAME [HOSTNAME2 HOSTNAME3 ...]
+                    parts = re.split(r'[\s\t]+', line)
                     if len(parts) < 2:
                         logger.warning(f"Invalid hosts entry at line {line_num}: {line}")
                         continue
                     ip = parts[0]
-                    hostname = parts[1]
-                    # Add to extra_hosts
-                    self.setExtraHost(hostname, ip)
+                    # Add all hostnames (parts[1:]) for this IP
+                    for hostname in parts[1:]:
+                        if hostname:  # Skip empty strings
+                            self.setExtraHost(hostname, ip)
         except Exception as e:
-            logger.error(f"Error reading hosts file: {e}")
+            logger.critical(f"Error reading hosts file: {e}")
 
     async def addPort(self,
                 port_host: int,
@@ -1839,9 +1845,13 @@ class ContainerConfig:
         return result
 
     def getTextExtraHosts(self) -> str:
-        """Text formatter for Extra Hosts configuration."""
+        """Text formatter for Extra Hosts configuration.
+        Excludes self.hostname as it is automatically added in Host network mode."""
         result = ''
         for hostname, ip in self.__extra_host.items():
+            # Skip the container's hostname as it's auto-added in Host network mode
+            if hostname == self.hostname:
+                continue
             result += f"{ip} :right_arrow: {hostname}{os.linesep}"
         return result
 
