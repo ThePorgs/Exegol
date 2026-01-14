@@ -190,6 +190,10 @@ class ContainerConfig:
                 self.__devices.append(
                     f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
         logger.debug(f"└── Load devices : {self.__devices}")
+        extra_hosts = host_config.get("ExtraHosts", [])
+        for entry in extra_hosts:
+            hostname, ip = entry.split(":")
+            self.setExtraHost(hostname, ip)
 
         # Volumes section
         container_name = container.name[7:] if container.name.startswith("exegol-") else container.name
@@ -1847,15 +1851,15 @@ class ContainerConfig:
 
         return result
 
-    def getTextExtraHosts(self) -> str:
+    def getTextExtraHosts(self, verbose: bool = False) -> str:
         """Text formatter for Extra Hosts configuration.
         Excludes self.hostname as it is automatically added in Host network mode."""
         result = ''
         for hostname, ip in self.__extra_host.items():
             # Skip the container's hostname as it's auto-added in Host network mode
-            if hostname == self.hostname:
+            if not verbose and hostname == self.hostname:
                 continue
-            result += f"{ip} :right_arrow: {hostname}{os.linesep}"
+            result += f"{hostname} :right_arrow: {ip}{os.linesep}"
         return result
 
     def __str__(self) -> str:
