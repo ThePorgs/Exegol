@@ -717,18 +717,12 @@ class ExegolImage(SelectableInterface):
     def __emit_size_fallback_warning(self) -> None:
         """Emit once per tag when fallback is used and user is Pro/Enterprise."""
         if not SessionHandler().pro_feature_access():
-            logger.warning(
-                "Docker reported an unexpected image size; showing an estimate."
-                "If you'd like to help with an ongoing Docker issue, please report on the troubleshooting channel"
-            )
             return
         if self.__name in self._size_fallback_warned_tags:
             return
         self._size_fallback_warned_tags.add(self.__name)
-        logger.warning(
-            "Docker reported an unexpected image size; showing an estimate."
-            "If you'd like to help with an ongoing Docker issue, please open a ticket at discord.exegol.com"
-        )
+        logger.warning("Docker reported an unexpected image size; showing an estimate.")
+        logger.warning("If you'd like to help with an ongoing Docker issue, please report on the troubleshooting channel")
     # --- END WORKAROUND_DOCKER_SIZE_SIZEONDISK ---
 
     def getRealSize(self) -> str:
