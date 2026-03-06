@@ -677,7 +677,7 @@ class ExegolImage(SelectableInterface):
         "osint": (8.0, 14.0),
         "ad": (25.0, 30.0),
     }
-    _size_fallback_warned_tags: Set[str] = set()
+    _size_fallback_warning_emitted: bool = False
 
     def __get_expected_range_gb(self) -> Optional[Tuple[float, float]]:
         """Return (min_gb, max_gb) for this image tag, or None if unknown."""
@@ -715,14 +715,14 @@ class ExegolImage(SelectableInterface):
         return local_gb < min_gb or local_gb > max_gb
 
     def __emit_size_fallback_warning(self) -> None:
-        """Emit once per tag when fallback is used and user is Pro/Enterprise."""
+        """Emit once per run when fallback is used and user is Pro/Enterprise."""
         if not SessionHandler().pro_feature_access():
             return
-        if self.__name in self._size_fallback_warned_tags:
+        if ExegolImage._size_fallback_warning_emitted:
             return
-        self._size_fallback_warned_tags.add(self.__name)
+        ExegolImage._size_fallback_warning_emitted = True
         logger.warning("Docker reported an unexpected image size; showing an estimate.")
-        logger.warning("If you'd like to help with an ongoing Docker issue, please report on the troubleshooting channel")
+        logger.warning("If you'd like to help with an ongoing Docker issue, open a ticket at discord.exegol.com")
     # --- END WORKAROUND_DOCKER_SIZE_SIZEONDISK ---
 
     def getRealSize(self) -> str:
