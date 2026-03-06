@@ -71,9 +71,8 @@ class ExegolImage(SelectableInterface):
         self.__dl_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
-        # WORKAROUND_DOCKER_SIZE_SIZEONDISK: raw Docker size (bytes) and Supabase estimate for sanity check / fallback
-        self.__disk_size_bytes: Optional[int] = None
-        self.__estimated_disk_size: Optional[str] = None
+        # WORKAROUND_DOCKER_SIZE_SIZEONDISK: raw Docker size (bytes as str) for sanity check / fallback
+        self.__disk_size_bytes: str = ""
         # Remote image ID
         self.__digest: str = "[bright_black]N/A[/bright_black]"
         # Local docker image ID
@@ -101,7 +100,6 @@ class ExegolImage(SelectableInterface):
                 if meta_img.download_size is not None:
                     self.__dl_size = self.__processSize(meta_img.download_size)
                 self.__disk_size = self.__processSize(meta_img.disk_size)
-                self.__estimated_disk_size = self.__processSize(meta_img.disk_size)
                 self.__setDigest(meta_img.repo_digest)
                 self.__setLatestRemoteId(meta_img.repo_digest)  # Meta id is always the latest one
         # Debug every Exegol image init
@@ -201,7 +199,7 @@ class ExegolImage(SelectableInterface):
         self.__image_id = "Reset"
         self.__build_date = ""
         self.__disk_size = "[bright_black]N/A[/bright_black]"
-        self.__disk_size_bytes = None
+        self.__disk_size_bytes = ""
 
     def setDockerObject(self, docker_image: Image) -> None:
         """Docker object setter. Parse object to set up self configuration."""
@@ -245,7 +243,6 @@ class ExegolImage(SelectableInterface):
             self.__dl_size = self.__processSize(meta.download_size)
         if not self.__dl_size:
             self.__disk_size = self.__processSize(meta.disk_size)
-        self.__estimated_disk_size = self.__processSize(meta.disk_size)
         if not self.__build_date:
             self.__build_date = meta.build_date
         self.__setLatestVersion(meta.version)
@@ -665,64 +662,72 @@ class ExegolImage(SelectableInterface):
     def __setRealSize(self, value: int) -> None:
         """On-Disk image size setter"""
         self.__disk_size = self.__processSize(value)
-        self.__disk_size_bytes = value
+        self.__disk_size_bytes = str(value)
 
     # --- WORKAROUND_DOCKER_SIZE_SIZEONDISK: fallback when Docker reports wrong on-disk size ---
-    # Expected size ranges (min_gb, max_gb) per official tag. Remove this block when Docker fix is upstream.
-    _SIZE_RANGES_GB: Dict[str, Tuple[float, float]] = {
-        "free": (30.0, 45.0),
-        "full": (37.0, 45.0),
-        "light": (11.0, 17.0),
-        "web": (15.0, 22.0),
-        "osint": (8.0, 14.0),
-        "ad": (25.0, 30.0),
+    # Minimum expected size (GB) per official tag; fallback when Docker reports below this. Remove when Docker fix is upstream.
+    _SIZE_MIN_GB: Dict[str, float] = {
+        "free": 35.0,
+        "full": 37.0,
+        "light": 11.0,
+        "web": 15.0,
+        "osint": 8.0,
+        "ad": 25.0,
+        "nightly": 38.0
+    }
+    _ESTIMATED_SIZE_GB: Dict[str, float] = {
+        "free": 42.0,
+        "full": 41.0,
+        "light": 14.0,
+        "web": 19.0,
+        "osint": 11.0,
+        "ad": 28.0,
+        "nightly": 41.0
     }
     _size_fallback_warning_emitted: bool = False
 
-    def __get_expected_range_gb(self) -> Optional[Tuple[float, float]]:
-        """Return (min_gb, max_gb) for this image tag, or None if unknown."""
-        return self._SIZE_RANGES_GB.get(self.__name)
+    def __get_min_size_gb(self) -> Optional[float]:
+        """Return minimum expected size (GB) for this image tag, or None if unknown."""
+        return self._SIZE_MIN_GB.get(self.__name)
 
     def __get_local_size_gb(self) -> Optional[float]:
-        """Docker size in bytes to GB (1024^3)."""
-        if self.__disk_size_bytes is None:
+        """Docker size in bytes (stored as str) to GB (1024^3)."""
+        if not self.__disk_size_bytes:
             return None
-        return self.__disk_size_bytes / (1024 ** 3)
+        try:
+            return int(self.__disk_size_bytes) / (1024 ** 3)
+        except (ValueError, TypeError):
+            return None
 
     def __get_estimated_size_display(self) -> str:
-        """Single estimated size string when fallback is used (~value GB)."""
-        if self.__estimated_disk_size and "N/A" not in self.__estimated_disk_size:
-            plain = re.sub(r"\[/?[^]]+\]", "", self.__estimated_disk_size).strip()
-            if plain:
-                return f"~{plain}"
-        range_gb = self.__get_expected_range_gb()
-        if range_gb:
-            mid = (range_gb[0] + range_gb[1]) / 2
-            return f"~{mid:.1f} GB"
-        return "~? GB"
+        """Estimated size string when fallback is used (~value GB)."""
+        est = self._ESTIMATED_SIZE_GB.get(self.__name)
+        if est is None:
+            return "~? GB"
+        return f"~{est} GB"
 
     def __should_fallback_size(self) -> bool:
-        """True if we should show estimated size instead of Docker-reported size."""
-        if not self.__is_install or self.__disk_size_bytes is None:
+        """True if we should show estimated size instead of Docker-reported size (below minimum only)."""
+        if not self.__is_install or not self.__disk_size_bytes:
             return False
-        range_gb = self.__get_expected_range_gb()
-        if range_gb is None:
+        min_gb = self.__get_min_size_gb()
+        if min_gb is None:
             return False
         local_gb = self.__get_local_size_gb()
         if local_gb is None:
             return False
-        min_gb, max_gb = range_gb
-        return local_gb < min_gb or local_gb > max_gb
+        return local_gb < min_gb
 
     def __emit_size_fallback_warning(self) -> None:
-        """Emit once per run when fallback is used and user is Pro/Enterprise."""
-        if not SessionHandler().pro_feature_access():
-            return
+        """Emit once per run when fallback is used (verbose, all users)."""
         if ExegolImage._size_fallback_warning_emitted:
             return
         ExegolImage._size_fallback_warning_emitted = True
-        logger.warning("Docker reported an unexpected image size; showing an estimate.")
-        logger.warning("If you'd like to help with an ongoing Docker issue, open a ticket at discord.exegol.com")
+        logger.verbose("Docker reported an unexpected image size; showing an estimate. We're aware of this issue, and need help.")
+        if SessionHandler().pro_feature_access():
+            logger.verbose("If you'd like to help, please open a ticket at discord.exegol.com")
+        else:
+            logger.verbose("If you'd like to help, please head to the troubleshooting channel on discord.exegol.com")
     # --- END WORKAROUND_DOCKER_SIZE_SIZEONDISK ---
 
     def getRealSize(self) -> str:
