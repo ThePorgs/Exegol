@@ -127,27 +127,69 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Container's short id getter"""
         return self.__container.short_id
 
-    def getContainerStorageSize(self) -> str:
-        """Get the size of the container's writable layer (storage overhead).
+    def getContainerStorageSize(self, verbose: bool = False) -> str:
+        """Get the size of the container's writable layer and workspace.
+        In normal mode, returns total size. In verbose mode, returns tree breakdown.
         This excludes the base image size which is shared across containers."""
         try:
             from exegol.utils.DockerUtils import DockerUtils
+            from exegol.model.ExegolImage import ExegolImage
+            
             client = DockerUtils()._DockerUtils__client
             # Use low-level containers API with size=True
             containers_data = client.api.containers(all=True, filters={"id": self.__id}, size=True)
-            if containers_data:
-                size_rw = containers_data[0].get('SizeRw', 0)
-            else:
-                size_rw = 0
+            size_rw = containers_data[0].get('SizeRw', 0) if containers_data else 0
             
-            if size_rw == 0:
+            # Get workspace size in bytes
+            workspace_size = self.__getWorkspaceSize(return_bytes=True)
+            
+            # Calculate total
+            total_size = size_rw + workspace_size
+            
+            if verbose and (size_rw > 0 or workspace_size > 0):
+                # Verbose mode: show breakdown
+                container_str = ExegolImage._ExegolImage__processSize(size_rw) if size_rw > 0 else "0 B"
+                workspace_str = ExegolImage._ExegolImage__processSize(workspace_size) if workspace_size > 0 else "0 B"
+                return f"Container: {container_str}\nWorkspace: {workspace_str}"
+            
+            # Normal mode: show total only
+            if total_size == 0:
                 return "[bright_black]0 B[/bright_black]"
-            # Reuse the existing size formatting method from ExegolImage
-            from exegol.model.ExegolImage import ExegolImage
-            return ExegolImage._ExegolImage__processSize(size_rw)
+            return ExegolImage._ExegolImage__processSize(total_size)
         except Exception as e:
             logger.debug(f"Failed to get container storage size for {self.name}: {e}")
             return "[bright_black]N/A[/bright_black]"
+    
+    def __getWorkspaceSize(self, return_bytes: bool = False) -> Union[str, int]:
+        """Calculate workspace directory size.
+        If return_bytes=True, returns size as int. Otherwise returns formatted string."""
+        try:
+            workspace_path = self.config.getHostWorkspacePath()
+            if not workspace_path or not os.path.exists(workspace_path):
+                return 0 if return_bytes else ""
+            
+            # Use os.walk for efficiency (followlinks=False to avoid symlink issues)
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(workspace_path, followlinks=False):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    try:
+                        total_size += os.path.getsize(filepath)
+                    except (OSError, FileNotFoundError):
+                        # Skip files we can't read or that disappeared
+                        continue
+            
+            if return_bytes:
+                return total_size
+            
+            if total_size == 0:
+                return ""
+            
+            from exegol.model.ExegolImage import ExegolImage
+            return ExegolImage._ExegolImage__processSize(total_size)
+        except Exception as e:
+            logger.debug(f"Failed to get workspace size for {self.name}: {e}")
+            return 0 if return_bytes else ""
 
     def getKey(self) -> str:
         """Universal unique key getter (from SelectableInterface)"""
