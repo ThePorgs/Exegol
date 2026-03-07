@@ -127,6 +127,28 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Container's short id getter"""
         return self.__container.short_id
 
+    def getContainerStorageSize(self) -> str:
+        """Get the size of the container's writable layer (storage overhead).
+        This excludes the base image size which is shared across containers."""
+        try:
+            from exegol.utils.DockerUtils import DockerUtils
+            client = DockerUtils()._DockerUtils__client
+            # Use low-level containers API with size=True
+            containers_data = client.api.containers(all=True, filters={"id": self.__id}, size=True)
+            if containers_data:
+                size_rw = containers_data[0].get('SizeRw', 0)
+            else:
+                size_rw = 0
+            
+            if size_rw == 0:
+                return "[bright_black]0 B[/bright_black]"
+            # Reuse the existing size formatting method from ExegolImage
+            from exegol.model.ExegolImage import ExegolImage
+            return ExegolImage._ExegolImage__processSize(size_rw)
+        except Exception as e:
+            logger.debug(f"Failed to get container storage size for {self.name}: {e}")
+            return "[bright_black]N/A[/bright_black]"
+
     def getKey(self) -> str:
         """Universal unique key getter (from SelectableInterface)"""
         return self.name
