@@ -241,7 +241,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/ -d nvidia.com/gpu=all)")
-        self.gpu = Option("--gpu",
+        self.gpu = Option("--nvidia-gpu",
                           dest="gpu",
                           action="store_true",
                           default=False,

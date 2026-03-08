@@ -26,7 +26,7 @@ class Start(Command, ContainerCreation, ContainerSpawnShell):
             "Get a [blue]tmux[/blue] shell": "exegol start --shell [blue]tmux[/blue]",
             "Share a specific [blue]hardware device[/blue] [bright_black](e.g. Proxmark)[/bright_black]": "exegol start -d [bright_magenta]/dev/ttyACM0[/bright_magenta]",
             "Share every [blue]USB device[/blue] connected to the host": "exegol start -d [magenta]/dev/bus/usb/[/magenta]",
-            "Enable [blue]NVIDIA GPU[/blue] passthrough": "exegol start [blue]gpu[/blue] [bright_blue]free[/bright_blue] [magenta]--gpu[/magenta]",
+            "Enable [blue]NVIDIA GPU[/blue] passthrough": "exegol start [blue]gpu[/blue] [bright_blue]free[/bright_blue] [magenta]--nvidia-gpu[/magenta]",
         }
 
     def __call__(self, *args, **kwargs):
