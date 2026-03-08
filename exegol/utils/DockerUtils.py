@@ -129,6 +129,7 @@ class DockerUtils(metaclass=MetaSingleton):
                        "hostname": model.config.hostname,
                        "extra_hosts": model.config.getExtraHost(),
                        "devices": model.config.getDevices(),
+                       "device_requests": model.config.getDeviceRequests(),
                        "environment": model.config.getEnvs(),
                        "labels": model.config.getLabels(),
                        "ports": model.config.getPorts(),

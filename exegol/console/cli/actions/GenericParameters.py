@@ -240,7 +240,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               dest="devices",
                               default=[],
                               action="append",
-                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
+                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/ -d nvidia.com/gpu=all)")
 
         self.hosts_file = Option("--hosts-file",
                         dest="hosts_file",

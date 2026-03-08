@@ -113,6 +113,7 @@ class ContainerConfig:
         self.__wrapper_start_enabled: bool = False
         self.__mounts: List[Mount] = []
         self.__devices: List[str] = []
+        self.__device_requests: List[Dict[str, Union[str, int, List[str]]]] = []
         self.__capabilities: List[str] = []
         self.__sysctls: Dict[str, str] = {}
         self.__envs: Dict[str, str] = {}
@@ -190,6 +191,17 @@ class ContainerConfig:
                 self.__devices.append(
                     f"{device.get('PathOnHost', '?')}:{device.get('PathInContainer', '?')}:{device.get('CgroupPermissions', '?')}")
         logger.debug(f"└── Load devices : {self.__devices}")
+        device_requests = host_config.get("DeviceRequests", [])
+        if device_requests is not None:
+            for request in device_requests:
+                if request is None:
+                    continue
+                driver = request.get("Driver")
+                device_ids = request.get("DeviceIDs")
+                if driver == "cdi" and isinstance(device_ids, list):
+                    for device_id in device_ids:
+                        if isinstance(device_id, str):
+                            self.__addCdiDevice(device_id)
         extra_hosts = host_config.get("ExtraHosts", [])
         for entry in extra_hosts:
             hostname, ip = entry.rsplit(":", 1)
@@ -1330,6 +1342,10 @@ class ContainerConfig:
         """Devices config getter"""
         return self.__devices
 
+    def getDeviceRequests(self) -> List[Dict[str, Union[str, int, List[str]]]]:
+        """Device requests config getter (used for CDI selectors)."""
+        return self.__device_requests
+
     def addEnv(self, key: str, value: str) -> None:
         """Add or update an environment variable to the container configuration"""
         self.__envs[key] = value
@@ -1566,7 +1582,19 @@ class ContainerConfig:
                     logger.warning("Orbstack does not support (yet) USB device passthrough.")
                     logger.verbose("Official doc: https://docs.orbstack.dev/machines/#usb-devices")
                 logger.critical("Device configuration cannot be applied, aborting operation.")
+        if self.__isCdiDevice(user_device_config):
+            self.__addCdiDevice(user_device_config)
+            return
         self.__addDevice(user_device_config)
+
+    def __addCdiDevice(self, device_selector: str) -> None:
+        """Add a CDI selector as a Docker device request."""
+        self.__device_requests.append({"Driver": "cdi", "Count": 0, "DeviceIDs": [device_selector]})
+
+    @staticmethod
+    def __isCdiDevice(device: str) -> bool:
+        """Return True when user input looks like a CDI selector."""
+        return re.match(r"^[^/:]+/[^:=]+=[^:]+$", device) is not None
 
     async def addRawPort(self, user_test_port: str) -> None:
         """Add port config or range of ports from user input.
@@ -1711,11 +1739,21 @@ class ContainerConfig:
     def getTextDevices(self, verbose: bool = False) -> str:
         """Text formatter for Devices configuration. The verbose mode show full device configuration."""
         result = ''
-        for device in self.__devices:
+        text_devices = list(self.__devices)
+        for request in self.__device_requests:
+            driver = request.get("Driver")
+            device_ids = request.get("DeviceIDs")
+            if driver == "cdi" and isinstance(device_ids, list):
+                text_devices.extend([device for device in device_ids if isinstance(device, str)])
+        for device in text_devices:
             if verbose:
                 result += f"{device}{os.linesep}"
             else:
-                src, dest = device.split(':')[:2]
+                split_device = device.split(':')
+                if len(split_device) < 2:
+                    result += f"{device}{os.linesep}"
+                    continue
+                src, dest = split_device[:2]
                 if src == dest:
                     result += f"{src}{os.linesep}"
                 else:
