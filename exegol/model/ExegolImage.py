@@ -72,7 +72,7 @@ class ExegolImage(SelectableInterface):
         # Local uncompressed image's size
         self.__disk_size: str = "[bright_black]N/A[/bright_black]"
         # WORKAROUND_DOCKER_SIZE_SIZEONDISK: raw Docker size (bytes as str) for sanity check / fallback
-        self.__disk_size_bytes: str = ""
+        self.__disk_size_bytes: Optional[int] = None
         # Remote image ID
         self.__digest: str = "[bright_black]N/A[/bright_black]"
         # Local docker image ID
@@ -199,7 +199,7 @@ class ExegolImage(SelectableInterface):
         self.__image_id = "Reset"
         self.__build_date = ""
         self.__disk_size = "[bright_black]N/A[/bright_black]"
-        self.__disk_size_bytes = ""
+        self.__disk_size_bytes = None
 
     def setDockerObject(self, docker_image: Image) -> None:
         """Docker object setter. Parse object to set up self configuration."""
@@ -662,87 +662,71 @@ class ExegolImage(SelectableInterface):
     def __setRealSize(self, value: int) -> None:
         """On-Disk image size setter"""
         self.__disk_size = self.__processSize(value)
-        self.__disk_size_bytes = str(value)
+        self.__disk_size_bytes = value
 
     # --- WORKAROUND_DOCKER_SIZE_SIZEONDISK: fallback when Docker reports wrong on-disk size ---
     # Minimum expected size (GB) per official tag; fallback when Docker reports below this. Remove when Docker fix is upstream.
-    _SIZE_MIN_GB: Dict[str, float] = {
-        "free": 35.0,
-        "full": 37.0,
-        "light": 11.0,
-        "web": 15.0,
-        "osint": 8.0,
-        "ad": 25.0,
-        "nightly": 38.0
+    __SIZE_MIN_GB: Dict[str, int] = {
+        "free": 35,
+        "full": 37,
+        "light": 11,
+        "web": 15,
+        "osint": 8,
+        "ad": 25,
+        "nightly": 38
     }
-    _ESTIMATED_SIZE_GB: Dict[str, float] = {
-        "free": 42.0,
-        "full": 41.0,
-        "light": 14.0,
-        "web": 19.0,
-        "osint": 11.0,
-        "ad": 28.0,
-        "nightly": 41.0
+    __ESTIMATED_SIZE_GB: Dict[str, int] = {
+        "free": 42,
+        "full": 41,
+        "light": 14,
+        "web": 19,
+        "osint": 11,
+        "ad": 28,
+        "nightly": 41
     }
-    _size_fallback_warning_emitted: bool = False
-
-    def __get_min_size_gb(self) -> Optional[float]:
-        """Return minimum expected size (GB) for this image tag, or None if unknown."""
-        return self._SIZE_MIN_GB.get(self.__name)
-
-    def __get_local_size_gb(self) -> Optional[float]:
-        """Docker size in bytes (stored as str) to GB (1024^3)."""
-        if not self.__disk_size_bytes:
-            return None
-        try:
-            return int(self.__disk_size_bytes) / (1024 ** 3)
-        except (ValueError, TypeError):
-            return None
+    __size_fallback_warning_emitted: bool = False
 
     def __get_estimated_size_display(self) -> str:
         """Estimated size string when fallback is used (~value GB)."""
-        est = self._ESTIMATED_SIZE_GB.get(self.__name)
+        est = self.__ESTIMATED_SIZE_GB.get(self.__name.split('-')[0])
         if est is None:
             return "~? GB"
         return f"~{est} GB"
 
     def __should_fallback_size(self) -> bool:
-        """True if we should show estimated size instead of Docker-reported size (below minimum only)."""
-        if not self.__is_install or not self.__disk_size_bytes:
+        """Return True if we should show estimated size instead of Docker-reported size (below minimum only)."""
+        if not self.__is_install or self.__disk_size_bytes is None or self.isLocal():
             return False
-        min_gb = self.__get_min_size_gb()
-        if min_gb is None:
+        try:
+            # Convert byte size to GB
+            local_gb = self.__disk_size_bytes / (1024 ** 3)
+            return local_gb < self.__SIZE_MIN_GB[self.__name.split('-')[0]]
+        except (ValueError, TypeError, KeyError) as e:
+            logger.debug(f"Fallback size check error ({e}) with size {self.__disk_size_bytes} for image {self.__name}")
             return False
-        local_gb = self.__get_local_size_gb()
-        if local_gb is None:
-            return False
-        return local_gb < min_gb
 
     def __emit_size_fallback_warning(self) -> None:
         """Emit once per run when fallback is used (verbose, all users)."""
-        if ExegolImage._size_fallback_warning_emitted:
+        if self.__size_fallback_warning_emitted:
             return
-        ExegolImage._size_fallback_warning_emitted = True
-        logger.verbose("Docker reported an unexpected image size; showing an estimate. We're aware of this issue, and need help.")
-        if SessionHandler().pro_feature_access():
-            logger.verbose("If you'd like to help, please open a ticket at discord.exegol.com")
-        else:
-            logger.verbose("If you'd like to help, please head to the troubleshooting channel on discord.exegol.com")
+        self.__size_fallback_warning_emitted = True
+        logger.verbose("Docker reported an unexpected image size; showing an estimate.")
+        # TODO add link to Docker issue
     # --- END WORKAROUND_DOCKER_SIZE_SIZEONDISK ---
 
     def getRealSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        if self.__is_install and self.__should_fallback_size():
+        if self.__should_fallback_size():
             self.__emit_size_fallback_warning()
             return self.__get_estimated_size_display()
         return self.__disk_size if self.__is_install else f"[bright_black]{self.__disk_size}[/bright_black]"
 
     def getRealSizeRaw(self) -> str:
         """Image size getter without color. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        if self.__is_install and self.__should_fallback_size():
+        if self.__should_fallback_size():
             self.__emit_size_fallback_warning()
             return self.__get_estimated_size_display()
-        return self.__disk_size if self.__is_install else self.__disk_size
+        return self.__disk_size
 
     def getDownloadSize(self) -> str:
         """Remote size getter"""
