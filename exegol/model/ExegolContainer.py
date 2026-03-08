@@ -150,7 +150,18 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.__container.start()
             except APIError as e:
                 logger.debug(e)
-                logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+                explanation = e.explanation
+                if explanation is None:
+                    explanation = ""
+                elif isinstance(explanation, bytes):
+                    explanation = explanation.decode("utf-8", errors="ignore")
+                message = str(explanation)
+                lower_message = message.lower()
+                message = message.replace('[', '\\[')
+                logger.error(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {message}")
+                if "cdi device injection failed" in lower_message and "nvidia.com/gpu=all" in lower_message:
+                    logger.warning("Hint: verify NVIDIA CDI is configured (e.g. nvidia-container-toolkit installed and Docker CDI enabled).")
+                logger.critical("Error while starting exegol container. Exiting.")
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
