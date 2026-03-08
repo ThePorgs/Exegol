@@ -96,8 +96,8 @@ class ExegolImage(SelectableInterface):
                 self.__build_date = meta_img.build_date
                 self.__setArch(meta_img.arch)
                 if meta_img.download_size is not None:
-                    self.__dl_size = self.__processSize(meta_img.download_size)
-                self.__disk_size = self.__processSize(meta_img.disk_size)
+                    self.__dl_size = ConsoleFormat.process_size(meta_img.download_size)
+                self.__disk_size = ConsoleFormat.process_size(meta_img.disk_size)
                 self.__setDigest(meta_img.repo_digest)
                 self.__setLatestRemoteId(meta_img.repo_digest)  # Meta id is always the latest one
         # Debug every Exegol image init
@@ -237,9 +237,9 @@ class ExegolImage(SelectableInterface):
             self.__name = meta.tag
             self.__outdated = self.__version_specific
         if meta.download_size is not None:
-            self.__dl_size = self.__processSize(meta.download_size)
+            self.__dl_size = ConsoleFormat.process_size(meta.download_size)
         if not self.__dl_size:
-            self.__disk_size = self.__processSize(meta.disk_size)
+            self.__disk_size = ConsoleFormat.process_size(meta.disk_size)
         if not self.__build_date:
             self.__build_date = meta.build_date
         self.__setLatestVersion(meta.version)
@@ -523,21 +523,6 @@ class ExegolImage(SelectableInterface):
         result.extend(images)  # Adding left images
         return result
 
-    @staticmethod
-    def __processSize(size: Union[int, float], precision: int = 1, compression_factor: float = 1) -> str:
-        """Text formatter from size number to human-readable size."""
-        if size < 1000:
-            # Size is supplied in GB
-            return f"{size} GB"
-        # https://stackoverflow.com/a/32009595
-        suffixes = ["B", "KB", "MB", "GB", "TB"]
-        suffix_index = 0
-        calc: float = size * compression_factor
-        while calc > 1024 and suffix_index < 4:
-            suffix_index += 1  # increment the index of the suffix
-            calc = calc / 1024  # apply the division
-        return "%.*f %s" % (precision, calc, suffixes[suffix_index])
-
     def __eq__(self, other) -> bool:
         """Operation == overloading for ExegolImage object"""
         # How to compare two ExegolImage
@@ -658,7 +643,7 @@ class ExegolImage(SelectableInterface):
 
     def __setRealSize(self, value: int) -> None:
         """On-Disk image size setter"""
-        self.__disk_size = self.__processSize(value)
+        self.__disk_size = ConsoleFormat.process_size(value)
 
     def getRealSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""

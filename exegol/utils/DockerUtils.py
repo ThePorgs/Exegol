@@ -7,6 +7,7 @@ import docker
 import requests.exceptions
 from docker import DockerClient
 from docker.errors import APIError, DockerException, NotFound, ImageNotFound
+from docker.models.containers import Container
 from docker.models.images import Image
 from docker.models.networks import Network
 from docker.models.volumes import Volume
@@ -83,6 +84,24 @@ class DockerUtils(metaclass=MetaSingleton):
 
     # # # Container Section # # #
 
+    def __list_api_container(self, name: str, sparse: bool = False) -> List[Container]:
+        docker_containers = self.__client.api.containers(all=True, size=True, filters={"name": name, "label": f"{ExegolImage.Labels.app.value}=Exegol"})
+        containers = []
+        if docker_containers is not None:
+            for container in docker_containers:
+                if sparse:
+                    if len(container.get("Names", [])) > 0:
+                        container["Name"] = container["Names"][0]
+                    containers.append(self.__client.containers.prepare_model(container))
+                    continue
+                # Inspect the container for full information
+                full_container = self.__client.containers.get(container["Id"])
+                # Add missing info from the inspect action
+                full_container.attrs["SizeRw"] = container.get("SizeRw")
+                full_container.attrs["SizeRootFs"] = container.get("SizeRootFs")
+                containers.append(full_container)
+        return containers
+
     async def listContainers(self) -> List[ExegolContainer]:
         """List available docker containers.
         Return a list of ExegolContainer"""
@@ -90,7 +109,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.verbose("Loading Exegol containers")
             self.__containers = []
             try:
-                docker_containers = self.__client.containers.list(all=True, filters={"name": "exegol-", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
+                docker_containers = self.__list_api_container("exegol-")
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -177,14 +196,13 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             model.rollback()
             try:
-                container = self.__client.containers.list(all=True, filters={"name": model.getContainerName(), "label": f"{ExegolImage.Labels.app.value}=Exegol"})
-                if container is not None and len(container) > 0:
-                    for c in container:
-                        if c.name == model.getContainerName():  # Search for exact match
-                            container[0].remove()
-                            logger.debug("Container removed")
+                container = self.__list_api_container(model.getContainerName(), sparse=True)
+                for c in container:
+                    if c.name == model.getContainerName():  # Search for exact match
+                        c.remove()
+                        logger.debug("Container removed")
             except APIError as e:
-                logger.debug(f"Error while removing dcontainer: {e}")
+                logger.debug(f"Error while removing container: {e}")
             try:
                 if docker_args.get("network") is not None and self.removeNetwork(cast(str, docker_args["network"])):
                     logger.debug("Network removed")
@@ -203,14 +221,14 @@ class DockerUtils(metaclass=MetaSingleton):
         """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__client.containers.list(all=True, filters={"name": f"exegol-{tag}", "label": f"{ExegolImage.Labels.app.value}=Exegol"})
+            container = self.__list_api_container(f"exegol-{tag}")
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
             # Not reachable, critical logging will exit
             return  # type: ignore
         # Check if there is at least 1 result. If no container was found, raise ObjectNotFound.
-        if container is None or len(container) == 0:
+        if len(container) == 0:
             # Handle case-insensitive OS
             if EnvInfo.isWindowsHost() or EnvInfo.isMacHost():
                 # First try to fetch the container as-is (for retroactive support with old container with uppercase characters)
