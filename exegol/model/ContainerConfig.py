@@ -356,6 +356,11 @@ class ContainerConfig:
             if ParametersManager().volumes is not None:
                 for volume in ParametersManager().volumes:
                     await self.addRawVolume(volume)
+            if ParametersManager().gpu:
+                if EnvInfo.isMacHost() or EnvInfo.isWindowsHost():
+                    logger.critical("The --gpu option is currently supported only on Linux hosts.")
+                if "nvidia.com/gpu=all" not in ParametersManager().devices:
+                    self.addUserDevice("nvidia.com/gpu=all")
             if ParametersManager().devices is not None:
                 for device in ParametersManager().devices:
                     self.addUserDevice(device)
