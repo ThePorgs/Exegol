@@ -241,11 +241,12 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               default=[],
                               action="append",
                               help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/ -d nvidia.com/gpu=all)")
-        self.gpu = Option("--nvidia-gpu",
+        self.gpu = Option("--gpu",
                           dest="gpu",
-                          action="store_true",
-                          default=False,
-                          help="Enable NVIDIA GPU passthrough using Docker CDI on Linux hosts (equivalent to: -d nvidia.com/gpu=all)")
+                          choices=["nvidia"],
+                          default=[],
+                          action="append",
+                          help="Enable GPU passthrough using Docker CDI on Linux hosts (example: --gpu nvidia)")
 
         self.hosts_file = Option("--hosts-file",
                         dest="hosts_file",

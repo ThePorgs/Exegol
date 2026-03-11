@@ -358,9 +358,16 @@ class ContainerConfig:
                     await self.addRawVolume(volume)
             if ParametersManager().gpu:
                 if EnvInfo.isMacHost() or EnvInfo.isWindowsHost():
-                    logger.critical("The --nvidia-gpu option is currently supported only on Linux hosts.")
-                if "nvidia.com/gpu=all" not in ParametersManager().devices:
-                    self.addUserDevice("nvidia.com/gpu=all")
+                    logger.critical("The --gpu option is currently supported only on Linux hosts.")
+                gpu_cdi_selectors = {
+                    "nvidia": "nvidia.com/gpu=all",
+                }
+                for gpu_vendor in sorted(set(ParametersManager().gpu)):
+                    cdi_selector = gpu_cdi_selectors.get(gpu_vendor)
+                    if cdi_selector is None:
+                        logger.critical(f"Unsupported GPU vendor for --gpu: {gpu_vendor}")
+                    if cdi_selector not in ParametersManager().devices:
+                        self.addUserDevice(cdi_selector)
             if ParametersManager().devices is not None:
                 for device in ParametersManager().devices:
                     self.addUserDevice(device)
