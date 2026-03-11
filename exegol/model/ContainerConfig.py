@@ -202,6 +202,8 @@ class ContainerConfig:
                     for device_id in device_ids:
                         if isinstance(device_id, str):
                             self.__addCdiDevice(device_id)
+                else:
+                    logger.debug(f"Unsupported device request: {request}")
         extra_hosts = host_config.get("ExtraHosts", [])
         for entry in extra_hosts:
             hostname, ip = entry.rsplit(":", 1)
