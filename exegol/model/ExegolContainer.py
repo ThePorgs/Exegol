@@ -152,7 +152,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(e)
                 explanation = str(e.explanation if e.explanation is not None else "")
                 if "cdi device injection failed" in explanation.lower() and "nvidia.com/gpu=all" in explanation.lower():
-                    logger.warning("Hint: verify NVIDIA CDI is configured (e.g. nvidia-container-toolkit installed and Docker CDI enabled).")
+                    logger.warning("Hint: verify that nvidia-container-toolkit is installed. See https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html")
                 explanation = explanation.replace('[', '\\[')
                 logger.error(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {explanation}")
                 logger.critical("Error while starting exegol container. Exiting.")
