@@ -244,8 +244,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         self.gpu = Option("--gpu",
                           dest="gpu",
                           choices=["nvidia"],
-                          default=[],
-                          action="append",
+                          default=None,
+                          action="store",
                           help="Enable GPU passthrough using Docker CDI on Linux hosts (example: --gpu nvidia)")
 
         self.hosts_file = Option("--hosts-file",
