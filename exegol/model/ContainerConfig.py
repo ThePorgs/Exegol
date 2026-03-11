@@ -1603,7 +1603,7 @@ class ContainerConfig:
 
     def __addCdiDevice(self, device_selector: str) -> None:
         """Add a CDI selector as a Docker device request."""
-        self.__device_requests.append({"Driver": "cdi", "Count": 0, "DeviceIDs": [device_selector]})
+        self.__device_requests.append({"Driver": "cdi", "DeviceIDs": [device_selector]})
 
     @staticmethod
     def __isCdiDevice(device: str) -> bool:
