@@ -676,7 +676,7 @@ class ExegolManager:
             "Your [green]my-resources[/green] customization" if c.config.isMyResourcesEnable() else "",
             "The container [green]/workspace[/green] directory",
             "Your [green]bash[/green],[green]zsh[/green],[green]python3[/green] command history",
-            f"Your {'[green]exegol-history[/green],' if exh_backup_supported else ''}[green]NetExec[/green],[green]Responder[/green] database and configuration",
+            f"Your {'[green]exegol-history[/green],' if exh_backup_supported else ''}[green]NetExec[/green],[green]Responder[/green],[green]Firefox[/green] database and configuration",
             "Your [green]TriliumNext[/green] notes",
             "Your [green]Hashcat[/green],[green]John[/green] potfiles",
             "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
@@ -687,7 +687,7 @@ class ExegolManager:
     - {backup_text}
 """
         # TODO improve upgrade with
-        #  DB of neo4j, postgres, firefox
+        #  DB of neo4j, postgres
 
         logger.warning(details)
         if (not ParametersManager().force_mode and
