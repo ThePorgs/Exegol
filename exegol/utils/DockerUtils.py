@@ -239,6 +239,8 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             logger.critical(err.explanation)
             raise RuntimeError
+        if c.status == "running":
+            c.stop()
         c.remove()
         return True
 
