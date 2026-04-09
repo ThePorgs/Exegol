@@ -19,11 +19,11 @@ jobs:
       id-token: write
     needs: test
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+        uses: pdm-project/setup-pdm@973541a5febeafcfdadf8a51211435be6ecfd90f # v4.5
         with:
           python-version: "3.12"
       - name: Build Exegol
