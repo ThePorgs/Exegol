@@ -84,8 +84,14 @@ class ExegolTUI:
                     task_pool = downloading
                     if status == "Extracting":
                         task_pool = extracting
+                        if layer_id in layers_extracted:
+                            # Ignore extract status message received after extraction complete message
+                            continue
                         if not progress.getTask(task_layers_extract).started:
                             progress.start_task(task_layers_extract)
+                    elif layer_id in layers_downloaded:
+                        # Ignore download status message received after download complete message
+                        continue
                     task_id = task_pool.get(layer_id)
                     progressDetail = line.get("progressDetail", {})
                     if task_id is None:  # If this is a new layer, create a new task accordingly
