@@ -1,6 +1,7 @@
 import asyncio
 import errno
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -222,7 +223,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         envs = self.config.getShellEnvs()
         options = ""
         if len(envs) > 0:
-            options += f" -e {' -e '.join(envs)}"
+            options += " " + " ".join(f"-e {shlex.quote(env)}" for env in envs)
         if spawn_all_capabilities:
             options += " --privileged"
         cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
