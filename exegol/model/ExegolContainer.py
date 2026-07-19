@@ -1,6 +1,7 @@
 import asyncio
 import errno
 import os
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -222,7 +223,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         envs = self.config.getShellEnvs()
         options = ""
         if len(envs) > 0:
-            options += f" -e {' -e '.join(envs)}"
+            options += " " + " ".join(f"-e {shlex.quote(env)}" for env in envs)
         if spawn_all_capabilities:
             options += " --privileged"
         cmd = f"docker exec{options} -ti {self.getFullId()} {self.config.getShellCommand()}"
@@ -620,25 +621,26 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.exec(f"cp -a /etc/hosts {self.BACKUP_DIRECTORY}/hosts", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/resolv.conf {self.BACKUP_DIRECTORY}/resolv.conf", quiet=True, as_daemon=False),
                 self.exec(f"cp -a /etc/proxychains.conf {self.BACKUP_DIRECTORY}/proxychains.conf", quiet=True, as_daemon=False),
-                self.exec(f"[ -f /root/.python_history ] || return 0  && cp -a /root/.python_history {self.BACKUP_DIRECTORY}/python_history", quiet=True, as_daemon=False),
-                self.exec(f"[ -f /root/.local/share/hashcat/hashcat.potfile ] || return 0 && cp -a /root/.local/share/hashcat/hashcat.potfile {self.BACKUP_DIRECTORY}/hashcat.potfile", quiet=True, as_daemon=False),
-                self.exec(f"[ -f /opt/tools/john/run/john.pot ] || return 0 && cp -a /opt/tools/john/run/john.pot {self.BACKUP_DIRECTORY}/john.pot", quiet=True, as_daemon=False),
-                self.exec(f"[ -f /opt/tools/Responder/Responder.db ] || return 0 && ("
+                self.exec(f"if [ -f /root/.python_history ]; then cp -a /root/.python_history {self.BACKUP_DIRECTORY}/python_history; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f /root/.local/share/hashcat/hashcat.potfile ]; then cp -a /root/.local/share/hashcat/hashcat.potfile {self.BACKUP_DIRECTORY}/hashcat.potfile; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f /opt/tools/john/run/john.pot ]; then cp -a /opt/tools/john/run/john.pot {self.BACKUP_DIRECTORY}/john.pot; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f /opt/tools/Responder/Responder.db ]; then "
                           f"cp -a /opt/tools/Responder/Responder.db {self.BACKUP_DIRECTORY}/Responder.db && "
                           f"cp -a /opt/tools/Responder/Responder.conf {self.BACKUP_DIRECTORY}/Responder.conf && "
-                          f"cp -a /opt/tools/Responder/logs {self.BACKUP_DIRECTORY}/Responder_logs)", quiet=True, as_daemon=False),
-                self.exec(f"[ -d /root/.nxc ] || return 0 && cp -a /root/.nxc {self.BACKUP_DIRECTORY}/nxc", quiet=True, as_daemon=False),
+                          f"cp -a /opt/tools/Responder/logs {self.BACKUP_DIRECTORY}/Responder_logs; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -d /root/.nxc ]; then cp -a /root/.nxc {self.BACKUP_DIRECTORY}/nxc; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -d /root/.mozilla ]; then cp -a /root/.mozilla {self.BACKUP_DIRECTORY}/mozilla; fi", quiet=True, as_daemon=False),
                 self.exec(f"triliumnext-stop && "
                           f"mkdir {self.BACKUP_DIRECTORY}/triliumnext_data && "
                           f"cp -a /opt/tools/triliumnext/data/document.db* {self.BACKUP_DIRECTORY}/triliumnext_data/ && "
                           f"cp -a /opt/tools/triliumnext/data/session_secret.txt {self.BACKUP_DIRECTORY}/triliumnext_data/ && "
                           f"cp -a /opt/tools/triliumnext/data/sessions {self.BACKUP_DIRECTORY}/triliumnext_data/", quiet=True, as_daemon=False),
-                self.exec(f"[ $(sed-comment-line /opt/tools/Exegol-history/profile.sh | sed-empty-line | wc -l) -gt 0 ] || return 0 && cp -a /opt/tools/Exegol-history/profile.sh {self.BACKUP_DIRECTORY}/exh_profile.sh", quiet=True, as_daemon=False),
+                self.exec(f"if [ $(sed-comment-line /opt/tools/Exegol-history/profile.sh | sed-empty-line | wc -l) -gt 0 ]; then cp -a /opt/tools/Exegol-history/profile.sh {self.BACKUP_DIRECTORY}/exh_profile.sh; fi", quiet=True, as_daemon=False),
             ]
             if backup_exh:
                 # Backup exegol-history
                 backup_tasks.append(
-                    self.exec(f"[ -d ~/.exegol_history ] || return 0 && exh export creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv && exh export hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
+                    self.exec(f"if [ -d ~/.exegol_history ]; then exh export creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv && exh export hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv; fi", quiet=True, as_daemon=False),
                 )
 
             results = await asyncio.gather(*backup_tasks)
@@ -662,23 +664,24 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 self.exec(f"cp -a {self.BACKUP_DIRECTORY}/hosts /etc/hosts", quiet=True, as_daemon=False),
                 self.exec(f"cp -a {self.BACKUP_DIRECTORY}/resolv.conf /etc/resolv.conf", quiet=True, as_daemon=False),
                 self.exec(f"mv {self.BACKUP_DIRECTORY}/proxychains.conf /etc/proxychains.conf", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/python_history ] || return 0 && mv {self.BACKUP_DIRECTORY}/python_history /root/.python_history", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/hashcat.potfile ] || return 0 && (mkdir -p /root/.local/share/hashcat && mv {self.BACKUP_DIRECTORY}/hashcat.potfile /root/.local/share/hashcat/hashcat.potfile)", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/john.pot ] || return 0 && (mkdir -p /opt/tools/john/run && mv {self.BACKUP_DIRECTORY}/john.pot /opt/tools/john/run/john.pot)", quiet=True, as_daemon=False),
-                self.exec(f"[ -d {self.BACKUP_DIRECTORY}/nxc ] && ([ -d /root/.nxc ] || return 0 && mv {self.BACKUP_DIRECTORY}/nxc/* /root/.nxc/ || mv {self.BACKUP_DIRECTORY}/nxc /root/.nxc)", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/Responder.db ] || return 0 && ("
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/python_history ]; then mv {self.BACKUP_DIRECTORY}/python_history /root/.python_history; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/hashcat.potfile ]; then mkdir -p /root/.local/share/hashcat && mv {self.BACKUP_DIRECTORY}/hashcat.potfile /root/.local/share/hashcat/hashcat.potfile; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/john.pot ]; then mkdir -p /opt/tools/john/run && mv {self.BACKUP_DIRECTORY}/john.pot /opt/tools/john/run/john.pot; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -d {self.BACKUP_DIRECTORY}/nxc ]; then [ -d /root/.nxc ] && rm -rf /root/.nxc; mv {self.BACKUP_DIRECTORY}/nxc /root/.nxc; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -d {self.BACKUP_DIRECTORY}/mozilla ]; then [ -d /root/.mozilla ] && rm -rf /root/.mozilla; mv {self.BACKUP_DIRECTORY}/mozilla /root/.mozilla; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/Responder.db ]; then ("
                           f"mv {self.BACKUP_DIRECTORY}/Responder.db /opt/tools/Responder/Responder.db && "
                           f"mv {self.BACKUP_DIRECTORY}/Responder.conf /opt/tools/Responder/Responder.conf && "
                           f"mkdir -p /opt/tools/Responder/logs && "
-                          f"mv {self.BACKUP_DIRECTORY}/Responder_logs/* /opt/tools/Responder/logs/)", quiet=True, as_daemon=False),
+                          f"mv {self.BACKUP_DIRECTORY}/Responder_logs/* /opt/tools/Responder/logs/); fi", quiet=True, as_daemon=False),
                 self.exec(f"rm /opt/tools/triliumnext/data/document.db* && "
                           f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/document.db* /opt/tools/triliumnext/data/ && "
                           f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/session_secret.txt /opt/tools/triliumnext/data/session_secret.txt && "
                           f"rm -r /opt/tools/triliumnext/data/sessions && "
                           f"mv {self.BACKUP_DIRECTORY}/triliumnext_data/sessions /opt/tools/triliumnext/data/sessions", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exh_profile.sh ] || return 0 && mv {self.BACKUP_DIRECTORY}/exh_profile.sh /opt/tools/Exegol-history/profile.sh", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exegol_history_creds.csv ] || return 0 && exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your creds database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_creds.csv' && return 1) && exh import creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv", quiet=True, as_daemon=False),
-                self.exec(f"[ -f {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv ] || return 0 && exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your hosts database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv' && return 1) && exh import hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/exh_profile.sh ]; then mv {self.BACKUP_DIRECTORY}/exh_profile.sh /opt/tools/Exegol-history/profile.sh; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/exegol_history_creds.csv ]; then exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your creds database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_creds.csv' && return 1) && exh import creds --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_creds.csv; fi", quiet=True, as_daemon=False),
+                self.exec(f"if [ -f {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv ]; then exh version 2> /dev/null || (echo 'This image is not up-to-date, [green]exegol-history[/green] cannot restore your hosts database. Backup can be found in your container here: {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv' && return 1) && exh import hosts --format CSV --file {self.BACKUP_DIRECTORY}/exegol_history_hosts.csv; fi", quiet=True, as_daemon=False),
             )
 
             for r in results:

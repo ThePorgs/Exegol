@@ -29,9 +29,6 @@ from exegol.utils.FsUtils import check_sysctl_value, mkdir
 from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.SessionHandler import SessionHandler
 
-if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
-    from tzlocal import get_localzone_name
-
 
 class ContainerConfig:
     """Configuration class of an exegol container"""
@@ -540,17 +537,28 @@ class ContainerConfig:
                 self.removeEnv(k)
             self.__gui_engine.clear()
 
+    def __setup_timezone_env(self) -> bool:
+        """Find the host timezone and share it with the container via a dedicated environment variable"""
+        try:
+            from tzlocal import get_localzone_name
+            current_tz = get_localzone_name()
+        except Exception as e:
+            logger.debug(f"Unable to detect local timezone via tzlocal: {e}")
+            logger.warning("Your system timezone cannot be shared.")
+            return False
+        if current_tz:
+            logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
+            self.addEnv("TZ", current_tz)
+            return True
+        logger.warning("Your system timezone cannot be shared.")
+        return False
+
     def enableSharedTimezone(self) -> None:
         """Procedure to enable shared timezone feature"""
         if not self.__share_timezone:
             logger.verbose("Config: Enabling host timezones")
             if EnvInfo.is_windows_shell or EnvInfo.is_mac_shell:
-                current_tz = get_localzone_name()
-                if current_tz:
-                    logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
-                    self.addEnv("TZ", current_tz)
-                else:
-                    logger.warning("Your system timezone cannot be shared.")
+                if not self.__setup_timezone_env():
                     return
             else:
                 # Try to share /etc/timezone (deprecated old timezone file)
@@ -559,7 +567,7 @@ class ContainerConfig:
                     logger.verbose("Volume was successfully added for [magenta]/etc/timezone[/magenta]")
                     timezone_loaded = True
                 except CancelOperation:
-                    logger.verbose("File /etc/timezone is missing on host, cannot create volume for this.")
+                    logger.debug("File /etc/timezone is missing on host, cannot create volume for this.")
                     timezone_loaded = False
                 # Try to share /etc/localtime (new timezone file)
                 try:
@@ -567,9 +575,13 @@ class ContainerConfig:
                     logger.verbose("Volume was successfully added for [magenta]/etc/localtime[/magenta]")
                 except CancelOperation as e:
                     if not timezone_loaded:
-                        # If neither file was found, disable the functionality
-                        logger.error(f"The host's timezone could not be shared: {e}")
-                        return
+                        if not self.__setup_timezone_env():
+                            # If neither file was found, disable the functionality
+                            logger.error(f"The host's timezone could not be shared: {e}")
+                            return
+                        else:
+                            logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
+                                           "cannot create volume for this. Relying instead on [magenta]TZ[/magenta] environment variable.")
                     else:
                         logger.warning("File [magenta]/etc/localtime[/magenta] is [orange3]missing[/orange3] on host, "
                                        "cannot create volume for this. Relying instead on [magenta]/etc/timezone[/magenta] [orange3](deprecated)[/orange3].")
@@ -1421,10 +1433,10 @@ class ContainerConfig:
             logger.critical(f"Error reading hosts file: {e}")
 
     async def addPort(self,
-                port_host: int,
-                port_container: Union[int, str],
-                protocol: str = 'tcp',
-                host_ip: str = '0.0.0.0') -> None:
+                      port_host: int,
+                      port_container: Union[int, str],
+                      protocol: str = 'tcp',
+                      host_ip: str = '0.0.0.0') -> None:
         """Add port NAT config, only applicable on bridge network mode."""
         if self.isNetworkHost():
             logger.warning("Port sharing is configured, disabling the host network mode.")

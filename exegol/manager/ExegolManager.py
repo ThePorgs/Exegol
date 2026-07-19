@@ -278,11 +278,13 @@ class ExegolManager:
             logger.empty_line()
             update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} :arrow_right: {UpdateManager.display_latest_version()})"
             if ConstantConfig.git_source_installation:
-                if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
-                    await UpdateManager.updateWrapper()
+                if UserConfig().interactive_update_warning:
+                    if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
+                        await UpdateManager.updateWrapper()
+                else:
+                    logger.warning(update_message)
             else:
                 logger.info(update_message)
-                update_command = None
                 if ConstantConfig.pipx_installed:
                     update_command = "You can update your exegol wrapper with the command [green]pipx upgrade exegol[/green]"
                 elif ConstantConfig.uv_installed:
@@ -290,9 +292,12 @@ class ExegolManager:
                 elif ConstantConfig.pip_installed:
                     update_command = "If you have installed Exegol with pip, update with the command [green]pip3 install exegol --upgrade[/green]"
                 else:
-                    await ExegolRich.Acknowledge("Installation method not found (not among pip/pipx/uv/sources). You should update your wrapper manually.")
+                    update_command = "Installation method not found (not among pip/pipx/uv/sources). You should update your wrapper manually."
                 if update_command:
-                    await ExegolRich.Acknowledge(update_command)
+                    if UserConfig().interactive_update_warning:
+                        await ExegolRich.Acknowledge(update_command)
+                    else:
+                        logger.warning(update_command)
         else:
             logger.empty_line(log_level=logging.DEBUG)
 
@@ -676,7 +681,7 @@ class ExegolManager:
             "Your [green]my-resources[/green] customization" if c.config.isMyResourcesEnable() else "",
             "The container [green]/workspace[/green] directory",
             "Your [green]bash[/green],[green]zsh[/green],[green]python3[/green] command history",
-            f"Your {'[green]exegol-history[/green],' if exh_backup_supported else ''}[green]NetExec[/green],[green]Responder[/green] database and configuration",
+            f"Your {'[green]exegol-history[/green],' if exh_backup_supported else ''}[green]NetExec[/green],[green]Responder[/green],[green]Firefox[/green] database and configuration",
             "Your [green]TriliumNext[/green] notes",
             "Your [green]Hashcat[/green],[green]John[/green] potfiles",
             "The following files: /etc/hosts /etc/resolv.conf /opt/tools/Exegol-history/profile.sh",
@@ -687,7 +692,7 @@ class ExegolManager:
     - {backup_text}
 """
         # TODO improve upgrade with
-        #  DB of neo4j, postgres, firefox
+        #  DB of neo4j, postgres
 
         logger.warning(details)
         if (not ParametersManager().force_mode and

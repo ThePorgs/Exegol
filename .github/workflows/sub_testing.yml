@@ -1,3 +1,12 @@
+# Pinned GitHub Actions
+# - actions/checkout v6.0.2 @ de0fac2e4500dabe0009e67214ff5f5447ce83dd
+#   - Repo: https://github.com/actions/checkout
+#   - Version: https://github.com/actions/checkout/tree/v6.0.2
+#   - Pinned: https://github.com/actions/checkout/commit/de0fac2e4500dabe0009e67214ff5f5447ce83dd
+# - pdm-project/setup-pdm v4 @ 94a823180e06fcde4ad29308721954a521c96ed0
+#   - Repo: https://github.com/pdm-project/setup-pdm
+#   - Version: https://github.com/pdm-project/setup-pdm/tree/v4
+#   - Pinned: https://github.com/pdm-project/setup-pdm/commit/94a823180e06fcde4ad29308721954a521c96ed0
 name: Testing
 
 on:
@@ -8,11 +17,11 @@ jobs:
     name: Code testing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           submodules: false
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+        uses: pdm-project/setup-pdm@94a823180e06fcde4ad29308721954a521c96ed0
         with:
           python-version: "3.12"
       - name: Install requirements
@@ -36,11 +45,11 @@ jobs:
         version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         os: [win32, linux, darwin]
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           submodules: false
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+        uses: pdm-project/setup-pdm@94a823180e06fcde4ad29308721954a521c96ed0
         with:
           python-version: ${{ matrix.version }}
       - name: Install requirements
@@ -58,9 +67,9 @@ jobs:
 #        os: [ ubuntu-latest, macOS-latest, windows-latest ]
 #
 #    steps:
-#      - uses: actions/checkout@v4
+#      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 #      - name: Set up PDM
-#        uses: pdm-project/setup-pdm@v4
+#        uses: pdm-project/setup-pdm@94a823180e06fcde4ad29308721954a521c96ed0
 #        with:
 #          python-version: ${{ matrix.python-version }}
 #
@@ -74,11 +83,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: testing
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           submodules: true
       - name: Set up PDM
-        uses: pdm-project/setup-pdm@v4
+        uses: pdm-project/setup-pdm@94a823180e06fcde4ad29308721954a521c96ed0
         with:
           python-version: "3.12"
       - name: Build Exegol

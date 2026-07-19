@@ -84,7 +84,7 @@ class WebRegistryUtils:
         arch_key = "architecture"
         variant_key = "variant"
         # Support Docker image struct with specific dict key
-        if type(docker_image) is Image:
+        if isinstance(docker_image, Image):
             docker_image = docker_image.attrs
             arch_key = "Architecture"
             variant_key = "Variant"

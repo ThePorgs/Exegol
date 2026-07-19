@@ -239,7 +239,15 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             logger.critical(err.explanation)
             raise RuntimeError
-        c.remove()
+        try:
+            c.reload()
+            if c.status in ("running", "paused"):
+                c.stop()
+            c.remove()
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            raise RuntimeError
         return True
 
     def isContainerExist(self, container_id: str) -> Optional[str]:
