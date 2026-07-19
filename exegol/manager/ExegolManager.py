@@ -278,8 +278,11 @@ class ExegolManager:
             logger.empty_line()
             update_message = f"An [green]Exegol[/green] update is [orange3]available[/orange3] ({await UpdateManager.display_current_version()} :arrow_right: {UpdateManager.display_latest_version()})"
             if ConstantConfig.git_source_installation:
-                if UserConfig().interactive_update_warning and await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
-                    await UpdateManager.updateWrapper()
+                if UserConfig().interactive_update_warning:
+                    if await ExegolRich.Confirm(f"{update_message}, do you want to update ?", default=True):
+                        await UpdateManager.updateWrapper()
+                else:
+                    logger.warning(update_message)
             else:
                 logger.info(update_message)
                 if ConstantConfig.pipx_installed:

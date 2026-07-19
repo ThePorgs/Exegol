@@ -539,15 +539,19 @@ class ContainerConfig:
 
     def __setup_timezone_env(self) -> bool:
         """Find the host timezone and share it with the container via a dedicated environment variable"""
-        from tzlocal import get_localzone_name
-        current_tz = get_localzone_name()
+        try:
+            from tzlocal import get_localzone_name
+            current_tz = get_localzone_name()
+        except Exception as e:
+            logger.debug(f"Unable to detect local timezone via tzlocal: {e}")
+            logger.warning("Your system timezone cannot be shared.")
+            return False
         if current_tz:
             logger.debug(f"Sharing timezone via TZ env var: '{current_tz}'")
             self.addEnv("TZ", current_tz)
             return True
-        else:
-            logger.warning("Your system timezone cannot be shared.")
-            return False
+        logger.warning("Your system timezone cannot be shared.")
+        return False
 
     def enableSharedTimezone(self) -> None:
         """Procedure to enable shared timezone feature"""
