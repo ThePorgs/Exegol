@@ -20,6 +20,7 @@ if ConstantConfig.completion_mode:
 import asyncio
 import http
 import logging
+import sys
 
 try:
     import docker
@@ -67,9 +68,14 @@ class ExegolController:
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
         try:
+            if cls.__action.stdout_is_data:
+                # Keep stdout clean for the action's output, every log message goes to stderr
+                ExeLog.console.file = sys.stderr
             await ExegolManager.print_version()
-            DockerUtils()  # Init dockerutils
-            await ExegolManager.print_debug_banner()
+            if cls.__action.require_docker:
+                DockerUtils()  # Init dockerutils
+                # The debug banner needs the environment data loaded by DockerUtils
+                await ExegolManager.print_debug_banner()
             # Check for missing parameters
             missing_params = cls.__action.check_parameters()
             if len(missing_params) == 0:

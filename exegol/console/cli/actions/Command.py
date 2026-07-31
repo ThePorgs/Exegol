@@ -44,6 +44,12 @@ class GroupArg:
 class Command:
     """The Command class is the root of all CLI actions"""
 
+    # Set to False on actions that must be able to run without a working docker daemon
+    require_docker: bool = True
+    # Set to True on actions whose stdout is machine-readable data (i.e. meant to be redirected to a file).
+    # Every log message is sent to stderr instead, to keep the redirected output clean.
+    stdout_is_data: bool = False
+
     def __init__(self) -> None:
         # Root command usages (can be overwritten by subclasses to display different use cases)
         self._pre_usages = ""

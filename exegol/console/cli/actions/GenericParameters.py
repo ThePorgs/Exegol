@@ -217,7 +217,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               action="append",
                               default=[],
                               dest="volumes",
-                              help=f"Share a new volume between host and exegol (format: --volume {SyntaxFormat.volume})")
+                              help=f"Share a new volume between host and exegol (format: --volume {SyntaxFormat.volume})",
+                              completer=DirectoriesCompleter())
         self.ports = Option("-p", "--port",
                             action="append",
                             default=[],
@@ -240,7 +241,8 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               dest="devices",
                               default=[],
                               action="append",
-                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
+                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)",
+                              completer=FilesCompleter(directories=True))
 
         self.hosts_file = Option("--hosts-file",
                         dest="hosts_file",
@@ -277,12 +279,13 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=None,
                           action="store",
                           help="Setup an OpenVPN (.ovpn) or WireGuard (.conf) connection at the container creation (example: --vpn /home/user/vpn/client.ovpn)",
-                          completer=FilesCompleter(["ovpn"], directories=True))
+                          completer=FilesCompleter(["ovpn", "conf"], directories=True))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,
                                action="store",
-                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
+                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)",
+                               completer=FilesCompleter())
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
