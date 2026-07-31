@@ -4,7 +4,6 @@ from typing import Optional
 from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
 from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
-from exegol.manager.ExegolManager import ExegolManager
 from exegol.utils.ExeLog import logger
 
 
@@ -29,6 +28,8 @@ class Start(Command, ContainerCreation, ContainerSpawnShell):
         }
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.start
 
 
@@ -46,6 +47,8 @@ class Stop(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running stop module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.stop
 
 
@@ -64,6 +67,8 @@ class Restart(Command, ContainerSelector, ContainerSpawnShell):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running restart module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.restart
 
 
@@ -90,6 +95,8 @@ class Install(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.install
 
 
@@ -131,6 +138,8 @@ class Build(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running build module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.build
 
 
@@ -162,6 +171,8 @@ class Update(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.update
 
 
@@ -204,6 +215,8 @@ class Upgrade(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running upgrade module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.upgrade
 
 
@@ -230,6 +243,8 @@ class Uninstall(Command, ImageMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running uninstall module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.uninstall
 
 
@@ -257,6 +272,8 @@ class Remove(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running remove module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.remove
 
 
@@ -327,6 +344,8 @@ class Exec(Command, ContainerCreation, ContainerStart):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running exec module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.exec
 
 
@@ -344,6 +363,8 @@ class Info(Command, ContainerSelector):
         }
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.info
 
 
@@ -384,6 +405,8 @@ class Activate(Command):
                                        title="[bright_blue]Activate[/bright_blue][blue]-only options[/blue]"))
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.activate
 
 
