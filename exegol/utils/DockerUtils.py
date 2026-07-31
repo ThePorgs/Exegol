@@ -101,6 +101,8 @@ class DockerUtils(metaclass=MetaSingleton):
                 return  # type: ignore
             for container in docker_containers:
                 self.__containers.append(ExegolContainer(container))
+            # Refresh the container names used by the CLI autocompletion
+            DataCache().update_container_cache([c.name for c in self.__containers])
         return self.__containers
 
     def createContainer(self, model: ExegolContainerTemplate, temporary: bool = False) -> ExegolContainer:
@@ -197,6 +199,9 @@ class DockerUtils(metaclass=MetaSingleton):
         else:
             logger.critical("Unknown error while creating exegol container. Exiting.")
             raise RuntimeError
+        if not temporary:
+            # Temporary containers are auto-removed by docker without any callback, they must never be cached
+            DataCache().add_container_cache(model.name)
         return ExegolContainer(container, model)
 
     def getContainer(self, tag: str) -> ExegolContainer:
@@ -239,6 +244,8 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             logger.critical(err.explanation)
             raise RuntimeError
+        # The name must be resolved before the removal, only the id is supplied to this method
+        removed_name = c.name.removeprefix("exegol-")
         try:
             c.reload()
             if c.status in ("running", "paused"):
@@ -248,6 +255,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             logger.critical(err.explanation)
             raise RuntimeError
+        DataCache().remove_container_cache(removed_name)
         return True
 
     def isContainerExist(self, container_id: str) -> Optional[str]:

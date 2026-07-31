@@ -13,6 +13,7 @@ from typing import Optional, Dict, Sequence, Tuple, Union, List
 from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
 
+from exegol.config.DataCache import DataCache
 from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
@@ -329,6 +330,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Container {self.name} successfully removed.")
         except NotFound:
             logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
+        DataCache().remove_container_cache(self.name)
         if not container_only:
             # Must be imported locally to avoid circular importation
             from exegol.utils.DockerUtils import DockerUtils
@@ -588,6 +590,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.debug(f"Renaming container {self.getContainerName()} as {new_name}")
             try:
                 self.__container.rename(new_name)
+                # Reflect the rename on the container names used by the CLI autocompletion
+                DataCache().remove_container_cache(self.name)
+                DataCache().add_container_cache(new_name.removeprefix("exegol-"))
                 logger.success(f"Your previous container [orange3]{self.name}[/orange3] has been renamed to [green]{new_name[7:]}[/green] as a backup. You will need to delete it manually when it is no longer needed.")
                 return
             except APIError as e:
