@@ -40,7 +40,8 @@ class ExegolImage(SelectableInterface):
                  meta_img: Optional[SupabaseImage] = None,
                  image_id: Optional[str] = None,
                  docker_image: Optional[Image] = None,
-                 isUpToDate: bool = False):
+                 isUpToDate: bool = False,
+                 meta_size: Optional[Tuple[Optional[int], Optional[int]]] = None):
         """Docker image default value"""
         # Prepare parameters
         if meta_img:
@@ -68,11 +69,11 @@ class ExegolImage(SelectableInterface):
         self.__version_label_mode: bool = False
         self.__build_date: Union[datetime, str] = ""
         # Remote image size
-        self.__dl_size: str = "[bright_black]N/A[/bright_black]"
+        self.__image_packed_size: str = "[bright_black]N/A[/bright_black]"
         # Local uncompressed image's size
-        self.__disk_size: str = "[bright_black]N/A[/bright_black]"
-        # WORKAROUND_DOCKER_SIZE_SIZEONDISK: raw Docker size (bytes as str) for sanity check / fallback
-        self.__disk_size_bytes: Optional[int] = None
+        self.__image_unpacked_size: str = "[bright_black]N/A[/bright_black]"
+        # On-disk usage, only available with the containerd snapshotter (see __resolveSizes)
+        self.__disk_usage: Optional[str] = None
         # Remote image ID
         self.__digest: str = "[bright_black]N/A[/bright_black]"
         # Local docker image ID
@@ -87,6 +88,7 @@ class ExegolImage(SelectableInterface):
         self.__outdated: bool = self.__version_specific
         self.__custom_status: str = ""
         # Process data
+        self.__setMetaSize(meta_size)
         if docker_image is not None:
             self.__initFromDockerImage()
         else:
@@ -98,8 +100,8 @@ class ExegolImage(SelectableInterface):
                 self.__build_date = meta_img.build_date
                 self.__setArch(meta_img.arch)
                 if meta_img.download_size is not None:
-                    self.__dl_size = self.__processSize(meta_img.download_size)
-                self.__disk_size = self.__processSize(meta_img.disk_size)
+                    self.__image_packed_size = self.__processSize(meta_img.download_size)
+                self.__image_unpacked_size = self.__processSize(meta_img.disk_size)
                 self.__setDigest(meta_img.repo_digest)
                 self.__setLatestRemoteId(meta_img.repo_digest)  # Meta id is always the latest one
         # Debug every Exegol image init
@@ -163,7 +165,8 @@ class ExegolImage(SelectableInterface):
             if self.isLocal():
                 # Outdated image if retag by a more recent image or failed build
                 self.__setCustomStatus("[orange3]Outdated local image")
-        self.__setRealSize(self.__image.attrs["Size"])
+        if "N/A" in self.__image_unpacked_size:
+            self.__setUnpackedSize(self.__image.attrs["Size"])
         self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set build date from labels
         self.__build_date = self.__image.labels.get(self.Labels.build_date.value, '') if self.__image.labels is not None else ''
@@ -198,16 +201,18 @@ class ExegolImage(SelectableInterface):
         self.__digest = "[bright_black]N/A[/bright_black]"
         self.__image_id = "Reset"
         self.__build_date = ""
-        self.__disk_size = "[bright_black]N/A[/bright_black]"
-        self.__disk_size_bytes = None
+        self.__image_unpacked_size = "[bright_black]N/A[/bright_black]"
+        self.__disk_usage = None
 
-    def setDockerObject(self, docker_image: Image) -> None:
+    def setDockerObject(self, docker_image: Image, meta_size: Optional[Tuple[Optional[int], Optional[int]]] = None) -> None:
         """Docker object setter. Parse object to set up self configuration."""
         self.__image = docker_image
         # When a docker image exist, image is locally installed
         self.__is_install = True
         # Set real size on disk
-        self.__setRealSize(self.__image.attrs["Size"])
+        self.__setMetaSize(meta_size)
+        if "N/A" in self.__image_unpacked_size:
+            self.__setUnpackedSize(self.__image.attrs["Size"])
         self.__entrypoint = self.__image.attrs.get("Config", {}).get("Entrypoint")
         # Set local image ID
         self.__setImageId(docker_image.attrs["Id"])
@@ -230,6 +235,14 @@ class ExegolImage(SelectableInterface):
         # backup plan: Use label to retrieve image version
         self.__labelVersionParsing()
 
+    def __setMetaSize(self, meta_size: Optional[Tuple[Optional[int], Optional[int]]] = None):
+        if meta_size is not None and len(meta_size) == 2:
+            unpacked_size, disk_usage = meta_size
+            if unpacked_size is not None:
+                self.__setUnpackedSize(unpacked_size)
+            if disk_usage is not None:
+                self.__setDiskUsage(disk_usage)
+
     def setMetaImage(self, meta: SupabaseImage) -> None:
         self.__is_remote = True
         self.__setRepository(meta.repository)
@@ -240,9 +253,9 @@ class ExegolImage(SelectableInterface):
             self.__name = meta.tag
             self.__outdated = self.__version_specific
         if meta.download_size is not None:
-            self.__dl_size = self.__processSize(meta.download_size)
-        if not self.__dl_size:
-            self.__disk_size = self.__processSize(meta.disk_size)
+            self.__image_packed_size = self.__processSize(meta.download_size)
+        if not self.__image_packed_size:
+            self.__image_unpacked_size = self.__processSize(meta.disk_size)
         if not self.__build_date:
             self.__build_date = meta.build_date
         self.__setLatestVersion(meta.version)
@@ -415,7 +428,7 @@ class ExegolImage(SelectableInterface):
             return None
 
     @classmethod
-    def mergeImages(cls, remote_images: List[SupabaseImage], local_images: List[Image]) -> List['ExegolImage']:
+    def mergeImages(cls, remote_images: List[SupabaseImage], local_images: List["ExegolImage"]) -> List['ExegolImage']:
         """Compare and merge local images and remote images.
         Use case to process :
             - up-to-date : "Version specific" image can use exact digest_id matching. Latest image must match corresponding tag
@@ -435,8 +448,10 @@ class ExegolImage(SelectableInterface):
 
         # Searching a match for each local image
         logger.debug("Searching a match for each image installed")
-        for img in local_images:
-            current_local_img = ExegolImage(docker_image=img)
+        for current_local_img in local_images:
+            img = current_local_img.__image
+            if img is None:
+                raise RuntimeError("Local ExegolImage received without a docker image.")
             # quick handle of local images
             if current_local_img.isLocal():
                 results.append(current_local_img)
@@ -446,7 +461,7 @@ class ExegolImage(SelectableInterface):
             skip_image = False
             if len(img.attrs.get('RepoTags', [])) == 0:
                 # If RepoTags is lost, fallback to label and RepoDigests (happen when there is multiple arch install on the same tag name)
-                for sub_image in img.attrs.get('RepoDigests'):
+                for sub_image in img.attrs.get('RepoDigests', []):
                     current_image, current_id = sub_image.split('@')
                     for remote in remote_images:
                         if remote.repo_digest == current_id:
@@ -458,7 +473,7 @@ class ExegolImage(SelectableInterface):
                 if selected is None and current_tag is not None:
                     selected = remote_img_dict.get(current_tag)
             else:
-                for sub_image in img.attrs.get('RepoTags'):
+                for sub_image in img.attrs.get('RepoTags', []):
                     # parse multi-tag images (latest tag / version specific tag)
                     current_image, current_tag = sub_image.split(':')
                     tag_match = remote_img_dict.get(current_tag)
@@ -536,9 +551,9 @@ class ExegolImage(SelectableInterface):
         suffixes = ["B", "KB", "MB", "GB", "TB"]
         suffix_index = 0
         calc: float = size * compression_factor
-        while calc > 1024 and suffix_index < 4:
+        while calc > 1000 and suffix_index < 4:
             suffix_index += 1  # increment the index of the suffix
-            calc = calc / 1024  # apply the division
+            calc = calc / 1000  # apply the division
         return "%.*f %s" % (precision, calc, suffixes[suffix_index])
 
     def __eq__(self, other) -> bool:
@@ -555,8 +570,8 @@ class ExegolImage(SelectableInterface):
 
     def __str__(self) -> str:
         """Default object text formatter, debug only"""
-        return f"{self.getName()} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__disk_size} - " + \
-            (f"({self.getStatus()}, {self.__dl_size})" if self.__is_remote else f"{self.getStatus()}")
+        return f"{self.getName()} ({self.__image_version}/{self.__profile_version} {self.__arch}) - {self.__image_unpacked_size} - " + \
+            (f"({self.getStatus()}, {self.__image_packed_size})" if self.__is_remote else f"{self.getStatus()}")
 
     def __repr__(self) -> str:
         return re.sub(r"(\[/?[^]]+])", '', str(self)).replace(':arrow_right:', '->')
@@ -659,80 +674,33 @@ class ExegolImage(SelectableInterface):
         """Universal unique key getter (from SelectableInterface)"""
         return self.getName()
 
-    def __setRealSize(self, value: int) -> None:
-        """On-Disk image size setter"""
-        self.__disk_size = self.__processSize(value)
-        self.__disk_size_bytes = value
+    def __setUnpackedSize(self, value: int) -> None:
+        """Unpacked image size setter"""
+        self.__image_unpacked_size = self.__processSize(value)
 
-    # --- WORKAROUND_DOCKER_SIZE_SIZEONDISK: fallback when Docker reports wrong on-disk size ---
-    # Minimum expected size (GB) per official tag; fallback when Docker reports below this. Remove when Docker fix is upstream.
-    __SIZE_MIN_GB: Dict[str, int] = {
-        "free": 35,
-        "full": 37,
-        "light": 11,
-        "web": 15,
-        "osint": 8,
-        "ad": 25,
-        "nightly": 38
-    }
-    __ESTIMATED_SIZE_GB: Dict[str, int] = {
-        "free": 42,
-        "full": 41,
-        "light": 14,
-        "web": 19,
-        "osint": 11,
-        "ad": 28,
-        "nightly": 41
-    }
-    __size_fallback_warning_emitted: bool = False
+    def __setDiskUsage(self, value: int) -> None:
+        """Disk usage size setter"""
+        self.__disk_usage = self.__processSize(value)
 
-    def __get_estimated_size_display(self) -> str:
-        """Estimated size string when fallback is used (~value GB)."""
-        est = self.__ESTIMATED_SIZE_GB.get(self.__name.split('-')[0])
-        if est is None:
-            return "~? GB"
-        return f"~{est} GB"
-
-    def __should_fallback_size(self) -> bool:
-        """Return True if we should show estimated size instead of Docker-reported size (below minimum only)."""
-        if not self.__is_install or self.__disk_size_bytes is None or self.isLocal():
-            return False
-        try:
-            # Convert byte size to GB
-            local_gb = self.__disk_size_bytes / (1024 ** 3)
-            return local_gb < self.__SIZE_MIN_GB[self.__name.split('-')[0]]
-        except (ValueError, TypeError, KeyError) as e:
-            logger.debug(f"Fallback size check error ({e}) with size {self.__disk_size_bytes} for image {self.__name}")
-            return False
-
-    def __emit_size_fallback_warning(self) -> None:
-        """Emit once per run when fallback is used (verbose, all users)."""
-        if self.__size_fallback_warning_emitted:
-            return
-        self.__size_fallback_warning_emitted = True
-        logger.verbose("Docker reported an unexpected image size; showing an estimate.")
-        # TODO add link to Docker issue
-    # --- END WORKAROUND_DOCKER_SIZE_SIZEONDISK ---
+    def __formatImageSize(self) -> str:
+        """Add the on-disk usage to the image size when available."""
+        if self.__disk_usage is None or self.__disk_usage == self.__image_unpacked_size:
+            return self.__image_unpacked_size
+        return f"{self.__image_unpacked_size} / {self.__disk_usage}"
 
     def getRealSize(self) -> str:
         """Image size getter. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        if self.__should_fallback_size():
-            self.__emit_size_fallback_warning()
-            return self.__get_estimated_size_display()
-        return self.__disk_size if self.__is_install else f"[bright_black]{self.__disk_size}[/bright_black]"
+        return self.__formatImageSize() if self.__is_install else f"[bright_black]{self.__image_unpacked_size}[/bright_black]"
 
     def getRealSizeRaw(self) -> str:
         """Image size getter without color. If the image is installed, return the on-disk size, otherwise return the remote size"""
-        if self.__should_fallback_size():
-            self.__emit_size_fallback_warning()
-            return self.__get_estimated_size_display()
-        return self.__disk_size
+        return self.__formatImageSize()
 
     def getDownloadSize(self) -> str:
         """Remote size getter"""
         if not self.__is_remote:
             return "local"
-        return self.__dl_size
+        return self.__image_packed_size
 
     def getEntrypointConfig(self) -> Optional[Union[str, List[str]]]:
         """Image's entrypoint configuration getter.

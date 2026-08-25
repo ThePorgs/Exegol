@@ -201,12 +201,13 @@ class ExegolTUI:
         table.add_column("Image")
         if verbose_mode:
             table.add_column("Download size")
-            table.add_column("Size on disk")
+            # With the containerd snapshotter the on-disk usage is displayed next to the unpacked image size
+            table.add_column("Image size / Disk usage" if EnvInfo.isContainerdSnapshotter() else "Size on disk")
             table.add_column("Build date")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk
-            table.add_column("Size")
+            table.add_column("Size / On-disk" if EnvInfo.isContainerdSnapshotter() else "Size")
         table.add_column("Status")
         # Load data into the table
         for i in range(len(data)):

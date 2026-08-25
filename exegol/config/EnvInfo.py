@@ -1,10 +1,11 @@
 import json
 import os
 import platform
+import re
 from enum import Enum
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -33,6 +34,11 @@ class EnvInfo:
         ORBSTACK = "Orbstack"
         LINUX = "Kernel"
 
+    class StorageDriver(Enum):
+        """Dictionary class for static Docker storage driver name"""
+        OVERLAY2 = "overlay2"  # Legacy graphdriver
+        OVERLAYFS = "overlayfs"  # containerd snapshotter
+
     """Contain information about the environment (host, OS, platform, etc)"""
     # Shell env
     current_platform: str = "WSL" if "microsoft" in platform.release() else platform.system()  # Can be 'Windows', 'Linux' or 'WSL'
@@ -44,6 +50,9 @@ class EnvInfo:
     # Host OS
     __docker_host_os: Optional[HostOs] = None
     __docker_engine: Optional[DockerEngine] = None
+    # Docker storage driver and daemon version
+    __docker_storage_driver: Optional[str] = None
+    __docker_server_version: Tuple[int, ...] = ()
     # Docker desktop cache config
     __docker_desktop_resource_config: Optional[dict] = None
     # Architecture
@@ -80,6 +89,9 @@ class EnvInfo:
         # Fetch data from Docker daemon
         docker_os = docker_info.get("OperatingSystem", "unknown").lower()
         docker_kernel = docker_info.get("KernelVersion", "unknown").lower()
+        # Storage driver: 'overlay2' is the legacy graphdriver, 'overlayfs' the containerd snapshotter
+        cls.__docker_storage_driver = docker_info.get("Driver")
+        cls.__docker_server_version = cls.__parseVersion(docker_info.get("ServerVersion"))
         # Deduct a Windows Host from data
         cls.__is_docker_desktop = docker_os == "docker desktop"
         is_host_windows = cls.__is_docker_desktop and "microsoft" in docker_kernel
@@ -170,6 +182,45 @@ class EnvInfo:
     def isOrbstack(cls) -> bool:
         """Return true if docker desktop is used on the host"""
         return cls.__docker_engine == cls.DockerEngine.ORBSTACK
+
+    # Last Docker version where the image inspect 'Size' attribute reports the
+    # compressed size instead of the on-disk usage when the containerd snapshotter is enabled.
+    # Up to this version the disk usage must be fetched from /system/df, above it 'Size' can be trusted.
+    __DOCKER_LAST_BUGGED_SIZE_VERSION: Tuple[int, ...] = (29, 7, 2)
+
+    @staticmethod
+    def __parseVersion(version: Optional[str]) -> Tuple[int, ...]:
+        """Parse a docker version string (e.g. '29.7.2', '29.7.2-rc1') to a comparable tuple of int."""
+        if not version:
+            return ()
+        numbers = []
+        # Only keep the leading numeric parts, ignoring any pre-release / build suffix
+        for part in version.split('.'):
+            match = re.match(r"^\d+", part)
+            if match is None:
+                break
+            numbers.append(int(match.group()))
+        return tuple(numbers)
+
+    @classmethod
+    def getDockerStorageDriver(cls) -> Optional[str]:
+        """Return the docker storage driver name (e.g. 'overlay2' or 'overlayfs')"""
+        return cls.__docker_storage_driver
+
+    @classmethod
+    def isContainerdSnapshotter(cls) -> bool:
+        """Return true if docker uses the containerd snapshotter image store.
+        In this mode the image inspect 'Size' attributes have inconsistent value."""
+        return cls.__docker_storage_driver == cls.StorageDriver.OVERLAYFS.value
+
+    @classmethod
+    def hasWrongImageSizeAttr(cls) -> bool:
+        """Return true if the docker daemon is known to report the compressed size in the image 'Size' attribute.
+        Only relevant when the containerd snapshotter is used."""
+        # When the version is unknown, assume the daemon is still affected to keep the /system/df fallback
+        if not cls.__docker_server_version:
+            return True
+        return cls.isContainerdSnapshotter() and cls.__docker_server_version <= cls.__DOCKER_LAST_BUGGED_SIZE_VERSION
 
     @classmethod
     def getDockerEngine(cls) -> DockerEngine:
