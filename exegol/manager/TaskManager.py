@@ -6,6 +6,7 @@ from threading import Thread
 from typing import Coroutine, Dict, Optional, Any, Tuple, List, Set, cast
 
 from exegol.utils.ExeLog import logger
+from exegol.utils.SignalHandler import SignalHandler
 
 
 class TaskManager:
@@ -106,16 +107,19 @@ class TaskManager:
     @classmethod
     async def wait_for_all(cls, exit_mode: bool = False) -> None:
         tasks: List[Task] = []
+        cancelled_tasks: List[Task] = []
         threads: List[Thread] = []
         for t in cls.__tasks.copy():
             if not t.done() and not t.cancelled():
                 tasks.append(t)
         for t in cls.__named_tasks.values():
-            if (t.get_name() in cls.__waitable_tasks and
-                    not t.done() and not t.cancelled()):
+            if t.done() or t.cancelled():
+                continue
+            if t.get_name() in cls.__waitable_tasks:
                 tasks.append(t)
             else:
                 t.cancel()
+                cancelled_tasks.append(t)
         for th in cls.__named_threads.values():
             if th.is_alive():
                 threads.append(th)
@@ -124,21 +128,36 @@ class TaskManager:
             warning_sent = False
             logger.debug(f"Waiting for {len(tasks) + len(threads)} tasks")
             if len(threads) > 0:
-                for th in threads:
-                    if not th.is_alive():
-                        continue
-                    logger.debug(f"Waiting for {th.name} background task")
-                    th.join(timeout=2 if exit_mode else 5)  # Max 10 seconds
-                    if th.is_alive():
-                        if not warning_sent:
-                            logger.warning("Please wait for background tasks to complete.")
-                            warning_sent = True
-                        th.join(timeout=10)
+                # Threaded tasks are critical (e.g. session refresh holding a cross-process lock) and must
+                # not be aborted halfway, a user interruption is deferred until they are done.
+                with SignalHandler.protect():
+                    for th in threads:
+                        if not th.is_alive():
+                            continue
+                        logger.debug(f"Waiting for {th.name} background task")
+                        th.join(timeout=2 if exit_mode else 5)  # Max 10 seconds
+                        if th.is_alive():
+                            if not warning_sent:
+                                logger.warning("Please wait for background tasks to complete.")
+                                warning_sent = True
+                            th.join(timeout=10)
+                        if th.is_alive():
+                            logger.debug(f"Timeout reached, stop waiting for {th.name} background task")
             if len(tasks) > 0:
                 logger.debug(f"Waiting for {', '.join([t.get_name() for t in tasks if not t.done()])} background task")
                 # Task will not be awaited if the current context is canceled by user exit
-                await asyncio.gather(*tasks)
+                if exit_mode:
+                    # While exiting, a failing background task must not overwrite the exit code with a crash
+                    # report, and every task must be consumed to not leave any pending task behind.
+                    for task, result in zip(tasks, await asyncio.gather(*tasks, return_exceptions=True)):
+                        if isinstance(result, BaseException):
+                            logger.debug(f"Background task {task.get_name()} ended with an error: {type(result).__name__} {result}")
+                else:
+                    await asyncio.gather(*tasks)
             logger.debug(f"All background tasks done")
+        if len(cancelled_tasks) > 0:
+            # Consume the cancelled tasks to prevent any "exception was never retrieved" warning
+            await asyncio.gather(*cancelled_tasks, return_exceptions=True)
 
     @classmethod
     def sync_wait(cls, coroutine: Coroutine) -> Any:
