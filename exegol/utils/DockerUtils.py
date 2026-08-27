@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import List, Optional, Union, cast, Tuple, Set
+from typing import List, Optional, Union, cast, Tuple, Set, Dict, Any
 
 import docker
 import requests.exceptions
@@ -70,7 +70,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Docker daemon seems busy, Exegol receives timeout response. Try again later.")
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
-        self.__docker_df_cache = None
+        self.__docker_df_cache: Optional[Dict[str, Any]] = None
 
     def clearCache(self) -> None:
         """Remove class's images and containers data cache
@@ -589,7 +589,7 @@ class DockerUtils(metaclass=MetaSingleton):
             except (APIError, ReadTimeout) as e:
                 logger.debug(f"Unable to fetch the docker disk usage: {e}")
                 self.__docker_df_cache = {}
-        return self.__docker_df_cache.get(image_id)
+        return self.__docker_df_cache if self.__docker_df_cache is None else self.__docker_df_cache.get(image_id)
 
     async def __listLocalImages(self, image_name: str, tag: Optional[str] = None) -> Tuple[List[Image], Set[str]]:
         logger.debug("Fetching local image tags, digests (and other attributes)")
