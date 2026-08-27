@@ -57,7 +57,7 @@ def parse_date(date: str) -> datetime:
         from dateutil.parser import isoparse
         return isoparse(date)
 
-      
+
 def process_size(size: Union[int, float], precision: int = 1, compression_factor: float = 1) -> str:
     """Text formatter from size number to human-readable size."""
     if size == 0:
