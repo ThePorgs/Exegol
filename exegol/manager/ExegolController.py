@@ -1,6 +1,26 @@
+# PYTHON_ARGCOMPLETE_OK
+from exegol.config.ConstantConfig import ConstantConfig
+
+if ConstantConfig.completion_mode:
+    def __run_completion() -> None:
+        """Shell completion fast-path.
+        Building the parser triggers argcomplete, which supplies the completion options and terminates the process itself.
+        None of the heavy dependencies imported below (docker, git, supabase, ...) are ever loaded in this mode."""
+        # ExegolParameters must be imported first to register every Command subclass on the parser
+        from exegol.console.cli.actions import ExegolParameters  # noqa: F401
+        from exegol.console.cli.ParametersManager import ParametersManager
+        from exegol.utils.ExeLog import logger
+        # A completer must never terminate the process, an exception can be caught and reported as "no option"
+        logger.setCriticalMethod("raise")
+        ParametersManager()
+
+
+    __run_completion()
+
 import asyncio
 import http
 import logging
+import sys
 
 try:
     import docker
@@ -51,9 +71,14 @@ class ExegolController:
         # Let the signal handler deliver any user interruption inside this coroutine
         SignalHandler.attach_main_task(asyncio.current_task())
         try:
+            if cls.__action.stdout_is_data:
+                # Keep stdout clean for the action's output, every log message goes to stderr
+                ExeLog.console.file = sys.stderr
             await ExegolManager.print_version()
-            DockerUtils()  # Init dockerutils
-            await ExegolManager.print_debug_banner()
+            if cls.__action.require_docker:
+                DockerUtils()  # Init dockerutils
+                # The debug banner needs the environment data loaded by DockerUtils
+                await ExegolManager.print_debug_banner()
             # Check for missing parameters
             missing_params = cls.__action.check_parameters()
             if len(missing_params) == 0:

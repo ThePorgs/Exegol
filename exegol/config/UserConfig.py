@@ -8,7 +8,6 @@ from exegol.utils.DataFileUtils import DataFileUtils
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 from exegol.utils.NetworkUtils import NetworkUtils
-from exegol.utils.SessionHandler import SessionHandler
 
 
 class UserConfig(DataFileUtils, metaclass=MetaSingleton):
@@ -200,14 +199,21 @@ config:
         self.network_default_mode = self._load_config_str(network_data, 'default_network', self.network_default_mode, choices=NetworkUtils.get_options())
         self.network_dedicated_range = self._load_config_str(network_data, 'exegol_dedicated_range')  # Dynamic default
         self.network_default_netmask = NetworkUtils.parse_netmask(self._load_config_str(network_data, 'exegol_default_netmask', str(self.network_default_netmask)), default=self.network_default_netmask)
-        if SessionHandler().pro_feature_access():
-            self.network_fallback_mode = self._load_config_str(network_data, 'fallback_network', self.network_fallback_mode, choices={'nat', 'docker'})
-        else:
+        if ConstantConfig.completion_mode:
+            # The licensed features are never needed to supply completion options,
+            # loading the session here would import the whole license stack and slow down every completion
             self.network_fallback_mode = 'docker'
+        else:
+            # Imported locally to keep the CLI parser light (see the shell completion fast path)
+            from exegol.utils.SessionHandler import SessionHandler
+            if SessionHandler().pro_feature_access():
+                self.network_fallback_mode = self._load_config_str(network_data, 'fallback_network', self.network_fallback_mode, choices={'nat', 'docker'})
+            else:
+                self.network_fallback_mode = 'docker'
 
-        # Enterprise features
-        if SessionHandler().enterprise_feature_access():
-            self.custom_images = self._load_config_list_str(config_data, "custom_images")
+            # Enterprise features
+            if SessionHandler().enterprise_feature_access():
+                self.custom_images = self._load_config_list_str(config_data, "custom_images")
 
     def get_configs(self) -> List[str]:
         """User configs getter each options"""
@@ -235,6 +241,8 @@ config:
             f"Network range: [blue]{self.network_dedicated_range}[/blue]",
             f"Network exegol netmask: [blue]{self.network_default_netmask}[/blue]",
         ]
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.utils.SessionHandler import SessionHandler
         if SessionHandler().enterprise_feature_access():
             if len(self.custom_images) > 0:
                 configs.append(f"Custom images:")

@@ -233,6 +233,22 @@ class ExegolManager:
             await licence_manager.activate_exegol(skip_prompt=True)
 
     @classmethod
+    async def completion(cls) -> None:
+        """Print the shell completion script of the exegol wrapper"""
+        import argcomplete
+        shell = ParametersManager().shell_type
+        if shell is None:
+            # Auto-detect the user's shell from its environment
+            shell = os.path.basename(os.environ.get("SHELL", ""))
+            if shell not in ("bash", "zsh", "fish", "tcsh"):
+                shell = "bash"
+            logger.info(f"No shell supplied, using the auto-detected shell: [green]{shell}[/green]")
+        logger.info(f"Add the following script to your shell configuration, "
+                    f"check [green]exegol completion -h[/green] for ready-to-use commands.")
+        # Using a raw print here: the rich console would wrap and colorize the shell script and corrupt it
+        print(argcomplete.shellcode(["exegol"], shell=shell, use_defaults=False))
+
+    @classmethod
     async def print_version(cls) -> None:
         """Show exegol version (and context configuration on debug mode)"""
 

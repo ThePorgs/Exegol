@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Optional, Dict, Union, Sequence, cast
+from typing import Any, List, Optional, Dict, Union, Sequence, cast
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.utils.ExeLog import logger
@@ -75,6 +75,44 @@ class ImagesCacheModel:
         return str(self)
 
 
+class ContainerCacheModel:
+    """This model store every important information for container caching."""
+
+    def __init__(self, name: str):
+        self.name: str = name
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class ContainersCacheModel:
+    """This model can store multiple container and the date of the last update"""
+
+    def __init__(self, data: Sequence[Union[ContainerCacheModel, Dict]], metadata: Optional[Dict] = None):
+        # An old default date will be used until data are provided
+        default_date: Optional[str] = "01/01/1990" if len(data) == 0 else None
+        # Create or load (meta)data
+        self.metadata: MetadataCacheModel = MetadataCacheModel(default_date) if metadata is None else MetadataCacheModel(**metadata)
+        self.data: List[ContainerCacheModel] = []
+        if len(data) > 0:
+            if type(data[0]) is dict:
+                for container in data:
+                    self.data.append(ContainerCacheModel(**cast(Dict, container)))
+            elif type(data[0]) is ContainerCacheModel:
+                self.data = cast(List[ContainerCacheModel], data)
+            else:
+                raise NotImplementedError
+
+    def __str__(self) -> str:
+        return f"{len(self.data)} containers ({self.metadata.last_check})"
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
 class WrapperCacheModel:
     """Caching wrapper update information (last version / last update)"""
 
@@ -102,8 +140,13 @@ class CacheDB:
     def __init__(self) -> None:
         self.wrapper: WrapperCacheModel = WrapperCacheModel()
         self.images: ImagesCacheModel = ImagesCacheModel([])
+        self.containers: ContainersCacheModel = ContainersCacheModel([])
 
-    def load(self, wrapper: Dict, images: Dict) -> None:
-        """Load the CacheDB data from a raw Dict object"""
+    def load(self, wrapper: Dict, images: Dict, containers: Optional[Dict] = None, **kwargs: Any) -> None:
+        """Load the CacheDB data from a raw Dict object.
+        Every section added after the first version of the cache must have a default value
+        to stay compatible with cache files created by an older wrapper.
+        Unknown sections (i.e. written by a newer wrapper) are ignored."""
         self.wrapper = WrapperCacheModel(**wrapper)
         self.images = ImagesCacheModel(**images)
+        self.containers = ContainersCacheModel([]) if containers is None else ContainersCacheModel(**containers)

@@ -1,10 +1,11 @@
 import os
 from typing import Optional
 
+from argcomplete.completers import DirectoriesCompleter, FilesCompleter
+
 from exegol.console.cli.ExegolCompleter import HybridContainerImageCompleter, VoidCompleter, BuildProfileCompleter, ImageCompleter
 from exegol.console.cli.actions.Command import Command, Option, GroupArg
 from exegol.console.cli.actions.GenericParameters import ContainerCreation, ContainerSpawnShell, ContainerMultiSelector, ContainerSelector, ImageSelector, ImageMultiSelector, ContainerStart
-from exegol.manager.ExegolManager import ExegolManager
 from exegol.utils.ExeLog import logger
 
 
@@ -29,6 +30,8 @@ class Start(Command, ContainerCreation, ContainerSpawnShell):
         }
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.start
 
 
@@ -46,6 +49,8 @@ class Stop(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running stop module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.stop
 
 
@@ -64,6 +69,8 @@ class Restart(Command, ContainerSelector, ContainerSpawnShell):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running restart module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.restart
 
 
@@ -90,6 +97,8 @@ class Install(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running install module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.install
 
 
@@ -111,12 +120,14 @@ class Build(Command, ImageSelector):
                                 dest="build_log",
                                 metavar="LOGFILE_PATH",
                                 action="store",
-                                help="Write image building logs to a file.")
+                                help="Write image building logs to a file.",
+                                completer=FilesCompleter())
         self.build_path = Option("--build-path",
                                  dest="build_path",
                                  metavar="DOCKERFILES_PATH",
                                  action="store",
-                                 help=f"Path to the dockerfiles and sources.")
+                                 help=f"Path to the dockerfiles and sources.",
+                                 completer=DirectoriesCompleter())
 
         # Create group parameter for container selection
         self.groupArgs.append(GroupArg({"arg": self.build_profile, "required": False},
@@ -131,6 +142,8 @@ class Build(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running build module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.build
 
 
@@ -162,6 +175,8 @@ class Update(Command, ImageSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running update module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.update
 
 
@@ -204,6 +219,8 @@ class Upgrade(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running upgrade module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.upgrade
 
 
@@ -230,6 +247,8 @@ class Uninstall(Command, ImageMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running uninstall module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.uninstall
 
 
@@ -257,6 +276,8 @@ class Remove(Command, ContainerMultiSelector):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running remove module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.remove
 
 
@@ -327,6 +348,8 @@ class Exec(Command, ContainerCreation, ContainerStart):
 
     def __call__(self, *args, **kwargs):
         logger.debug("Running exec module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.exec
 
 
@@ -344,6 +367,8 @@ class Info(Command, ContainerSelector):
         }
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.info
 
 
@@ -384,7 +409,57 @@ class Activate(Command):
                                        title="[bright_blue]Activate[/bright_blue][blue]-only options[/blue]"))
 
     def __call__(self, *args, **kwargs):
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
         return ExegolManager.activate
+
+
+class Completion(Command):
+    """Generate the shell completion script of the Exegol wrapper"""
+
+    # Printing a static shell script must not require a running docker daemon
+    require_docker = False
+    # The generated script is meant to be redirected to a file, it must be the only thing on stdout
+    stdout_is_data = True
+
+    def __init__(self) -> None:
+        Command.__init__(self)
+
+        self.shell_type = Option("shell_type",
+                                 metavar="SHELL",
+                                 nargs="?",
+                                 action="store",
+                                 choices={"bash", "zsh", "fish", "tcsh", "powershell"},
+                                 default=None,
+                                 help="Shell to generate the completion script for "
+                                      "(default: [blue]auto-detected[/blue])")
+
+        self.groupArgs.append(GroupArg({"arg": self.shell_type, "required": False},
+                                       title="[bright_blue]Completion[/bright_blue][blue]-only options[/blue]"))
+
+        self._pre_usages = ("Once installed, restart your shell to complete container and image names "
+                            "with [blue]<TAB>[/blue]." + os.linesep)
+        self._usages = {
+            "Show the script of the [bright_black](auto-detected)[/bright_black] current shell": "exegol completion",
+            "Show the script of a specific shell": "exegol completion [blue]zsh[/blue]",
+        }
+        self._post_usages = (os.linesep +
+                             "[blue]Installation:[/blue]" + os.linesep +
+                             "  [bright_blue]bash[/bright_blue]" + os.linesep +
+                             "    [i]mkdir -p ~/.local/share/bash-completion/completions[/i]" + os.linesep +
+                             "    [i]exegol completion bash > ~/.local/share/bash-completion/completions/exegol[/i]" + os.linesep +
+                             "  [bright_blue]zsh[/bright_blue] [bright_black](the completion directory must be in your fpath before compinit)[/bright_black]" + os.linesep +
+                             "    [i]mkdir -p ~/.zsh/completions[/i]" + os.linesep +
+                             "    [i]exegol completion zsh > ~/.zsh/completions/_exegol[/i]" + os.linesep +
+                             "    [bright_black]# in ~/.zshrc, before compinit:[/bright_black] [i]fpath=(~/.zsh/completions $fpath)[/i]" + os.linesep +
+                             "  [bright_blue]fish[/bright_blue]" + os.linesep +
+                             "    [i]exegol completion fish > ~/.config/fish/completions/exegol.fish[/i]")
+
+    def __call__(self, *args, **kwargs):
+        logger.debug("Running completion module")
+        # Imported locally to keep the CLI parser light (see the shell completion fast path)
+        from exegol.manager.ExegolManager import ExegolManager
+        return ExegolManager.completion
 
 
 class Version(Command):
