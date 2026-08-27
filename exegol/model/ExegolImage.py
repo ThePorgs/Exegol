@@ -100,8 +100,8 @@ class ExegolImage(SelectableInterface):
                 self.__build_date = meta_img.build_date
                 self.__setArch(meta_img.arch)
                 if meta_img.download_size is not None:
-                    self.__image_packed_size = ConsoleFormat.processSize(meta_img.download_size)
-                self.__image_unpacked_size = ConsoleFormat.processSize(meta_img.disk_size)
+                    self.__image_packed_size = ConsoleFormat.process_size(meta_img.download_size)
+                self.__image_unpacked_size = ConsoleFormat.process_size(meta_img.disk_size)
                 self.__setDigest(meta_img.repo_digest)
                 self.__setLatestRemoteId(meta_img.repo_digest)  # Meta id is always the latest one
         # Debug every Exegol image init
@@ -253,9 +253,9 @@ class ExegolImage(SelectableInterface):
             self.__name = meta.tag
             self.__outdated = self.__version_specific
         if meta.download_size is not None:
-            self.__image_packed_size = ConsoleFormat.processSize(meta.download_size)
+            self.__image_packed_size = ConsoleFormat.process_size(meta.download_size)
         if not self.__image_packed_size:
-            self.__image_unpacked_size = ConsoleFormat.processSize(meta.disk_size)
+            self.__image_unpacked_size = ConsoleFormat.process_size(meta.disk_size)
         if not self.__build_date:
             self.__build_date = meta.build_date
         self.__setLatestVersion(meta.version)
@@ -661,11 +661,11 @@ class ExegolImage(SelectableInterface):
 
     def __setUnpackedSize(self, value: int) -> None:
         """Unpacked image size setter"""
-        self.__image_unpacked_size = ConsoleFormat.processSize(value)
+        self.__image_unpacked_size = ConsoleFormat.process_size(value)
 
     def __setDiskUsage(self, value: int) -> None:
         """Disk usage size setter"""
-        self.__disk_usage = ConsoleFormat.processSize(value)
+        self.__disk_usage = ConsoleFormat.process_size(value)
 
     def __formatImageSize(self) -> str:
         """Add the on-disk usage to the image size when available."""

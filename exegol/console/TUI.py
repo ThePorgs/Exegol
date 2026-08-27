@@ -240,6 +240,7 @@ class ExegolTUI:
         table.add_column("Container tag")
         table.add_column("State")
         table.add_column("Image tag")
+        table.add_column("Storage")
         table.add_column("Configurations")
         if verbose_mode:
             table.add_column("Mounts")
@@ -250,6 +251,7 @@ class ExegolTUI:
         for container in data:
             if verbose_mode:
                 table.add_row(container.getId(), container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
+                              container.getContainerStorageSize(verbose=True),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
@@ -257,6 +259,7 @@ class ExegolTUI:
                               container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
+                              container.getContainerStorageSize(verbose=False),
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod

@@ -14,6 +14,7 @@ from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
 
 from exegol.config.EnvInfo import EnvInfo
+from exegol.console import ConsoleFormat
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.cli.ParametersManager import ParametersManager
@@ -42,6 +43,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         logger.debug(f"Loading container: {docker_container.name}")
         self.__container: Container = docker_container
         self.__id: str = docker_container.id
+        self.__container_size: Optional[int] = docker_container.attrs.get('SizeRw')
         self.__xhost_applied = False
         self.__post_start_applied = False
         if model is None:
@@ -127,6 +129,55 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
     def getId(self) -> str:
         """Container's short id getter"""
         return self.__container.short_id
+
+    def getContainerStorageSize(self, verbose: bool = False) -> str:
+        """Get the size of the container's writable layer and workspace.
+        In normal mode, returns total size. In verbose mode, returns tree breakdown.
+        This excludes the base image size which is shared across containers."""
+        try:
+            # Get workspace size in bytes
+            workspace_size = self.__getWorkspaceSize()
+
+            size_rw = self.__container_size if self.__container_size is not None else 0
+
+            # Calculate total
+            total_size = size_rw + workspace_size
+
+            if verbose and (size_rw > 0 or workspace_size > 0):
+                # Verbose mode: show breakdown
+                container_str = ConsoleFormat.process_size(size_rw)
+                workspace_str = ConsoleFormat.process_size(workspace_size)
+                return f"Container: {container_str}{os.linesep}Workspace: {workspace_str}"
+
+            # Normal mode: show total only
+            return ConsoleFormat.process_size(total_size)
+        except Exception as e:
+            logger.debug(f"Failed to get container storage size for {self.name}: {e}")
+            return "[bright_black]N/A[/bright_black]"
+
+    def __getWorkspaceSize(self) -> int:
+        """Calculate workspace directory size.
+        returns size as int"""
+        try:
+            workspace_path = self.config.getHostWorkspacePath()
+            if not workspace_path or not os.path.exists(workspace_path):
+                return 0
+
+            # Use os.walk for efficiency (followlinks=False to avoid symlink issues)
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(workspace_path, followlinks=False):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    try:
+                        total_size += os.path.getsize(filepath)
+                    except (OSError, FileNotFoundError):
+                        # Skip files we can't read or that disappeared
+                        continue
+
+            return total_size
+        except Exception as e:
+            logger.debug(f"Failed to get workspace size for {self.name}: {e}")
+            return 0
 
     def getKey(self) -> str:
         """Universal unique key getter (from SelectableInterface)"""
