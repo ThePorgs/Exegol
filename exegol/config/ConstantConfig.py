@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-__version__ = "5.1.9"
+__version__ = "5.1.12b1"
 
 
 class ConstantConfig:
@@ -48,4 +48,4 @@ class ConstantConfig:
     EXEGOL_RESOURCES_REPO: str = "https://github.com/ThePorgs/Exegol-resources.git"
     # Supabase
     SUPABASE_URL: str = "https://piysvuvahfkfxnlxqpdd.supabase.co"
-    SUPABASE_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpeXN2dXZhaGZrZnhubHhxcGRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTc5MzYsImV4cCI6MjA2NDI3MzkzNn0.S0H6NwCdmYnvPU70tcDfFIzhJrRj7VD8e9CIkVuqcC8"
+    SUPABASE_KEY: str = "sb_publishable_pvQaN5IZryBn5a2kdkQxVw_TbxfM6Wq"

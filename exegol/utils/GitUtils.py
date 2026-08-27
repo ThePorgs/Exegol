@@ -262,7 +262,7 @@ class GitUtils:
         assert self.__gitRepo is not None
         branch = self.getCurrentBranch()
         if branch is None:
-            branch = "master"
+            return self.__gitRepo.head.commit
         # Get last local commit
         return self.__gitRepo.heads[branch].commit
 

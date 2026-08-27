@@ -4,7 +4,7 @@ contact_links:
     url: https://discord.gg/cXThyp7D6P
     about: 'Use the #open-a-ticket channel to ask your question.'
   - name: Read the Exegol documentation
-    url: https://exegol.readthedocs.io/
+    url: https://docs.exegol.com/
     about: 'An answer to your question may already be available in the documentation!'
   - name: Create an issue regarding the Exegol [IMAGE] project
     url: https://github.com/ThePorgs/Exegol-images/issues

@@ -22,6 +22,7 @@ from exegol.utils.SupabaseUtils import SupabaseUtils
 class SessionHandler(metaclass=MetaSingleton):
     __ALG = "ES256"
     __OFFLINE_KEY_PATH = ConstantConfig.exegol_config_path / "license.key"
+    __SESSION_LOCK = ConstantConfig.exegol_config_path / ".session.lock"
 
     def __init__(self) -> None:
         self.__key_handler: KeyHandler = KeyHandler()
@@ -89,9 +90,8 @@ class SessionHandler(metaclass=MetaSingleton):
 
     async def __refresh_thread_main(self, token: str, muid: str, return_queue: Queue) -> None:
         # Acquire refresh lock cross-process
-        lock_path = ConstantConfig.exegol_config_path / ".session.lock"
         try:
-            with open(lock_path, "x") as lock:
+            with open(self.__SESSION_LOCK, "x") as lock:
                 lock.write(str(datetime.now().timestamp()))
             try:
                 new_session = await self.__refresh_session(token, muid)
@@ -100,12 +100,20 @@ class SessionHandler(metaclass=MetaSingleton):
                 return_queue.put((None, LicenseToleration))
             except Exception as e:
                 return_queue.put((None, e))
-            lock_path.unlink(missing_ok=True)
+            except BaseException as e:
+                # The thread is being aborted (e.g. SystemExit): fallback to the toleration mode so that the
+                # caller never waits for a result that will not come, then let the thread die.
+                logger.debug(f"Session refresh thread aborted: {type(e).__name__} {e}")
+                return_queue.put((None, LicenseToleration))
+                raise
+            finally:
+                # Always release the cross-process lock, even if the refresh was aborted
+                self.__SESSION_LOCK.unlink(missing_ok=True)
             return None
         except FileExistsError:
             logger.debug(f"Session refresh lock detected.")
             creation_time = None
-            with open(lock_path, "r") as lock_file:
+            with open(self.__SESSION_LOCK, "r") as lock_file:
                 try:
                     creation_time = float(lock_file.read())
                 except ValueError:
@@ -113,12 +121,12 @@ class SessionHandler(metaclass=MetaSingleton):
             if creation_time is None:
                 # Fallback to file creation time
                 try:
-                    creation_time = lock_path.stat().st_birthtime  # type: ignore[attr-defined]
+                    creation_time = self.__SESSION_LOCK.stat().st_birthtime  # type: ignore[attr-defined]
                 except AttributeError:
-                    creation_time = lock_path.lstat().st_ctime
+                    creation_time = self.__SESSION_LOCK.lstat().st_ctime
             if creation_time is not None and creation_time > 0 and (datetime.now() - datetime.fromtimestamp(creation_time)).seconds >= 3600:
                 logger.debug(f"Session refresh lock is older than 1 hour. Removing it.")
-                lock_path.unlink()
+                self.__SESSION_LOCK.unlink()
                 return await self.__refresh_thread_main(token, muid, return_queue)
         except PermissionError:
             logger.error(f"Permission denied in {ConstantConfig.exegol_config_path} directory. Exegol need Read/Write access to this directory.")
@@ -541,6 +549,8 @@ class SessionHandler(metaclass=MetaSingleton):
         if not self.__is_online_session_valid():
             # Reload session if needed
             if not await self.reload_session(force_refresh=True) or not self.__is_online_session_valid():
+                if self.__SESSION_LOCK.exists():
+                    logger.critical("Another exegol instance is refreshing the session. Please close other exegol instances before downloading a new image. Contact support if the problem persists.")
                 logger.critical("You cannot access the official registry without access to Exegol license servers.")
         if self.__license == LicenseType.Community or self.__session is None:
             logger.critical("Pro/Enterprise license required to download non-Free images.")

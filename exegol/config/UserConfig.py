@@ -27,6 +27,7 @@ class UserConfig(DataFileUtils, metaclass=MetaSingleton):
         self.exegol_images_path: Path = self.__default_resource_location('exegol-images')
         # Config
         self.auto_check_updates: bool = True
+        self.interactive_update_warning: bool = True
         self.auto_remove_images: bool = True
         self.auto_update_workspace_fs: bool = False
         self.default_start_shell: str = "zsh"
@@ -78,6 +79,9 @@ volumes:
 config:
     # Enables automatic check for wrapper updates
     auto_check_update: {self.auto_check_updates}
+    
+    # Interactively ask the user to acknowledge the available wrapper update
+    interactive_update_warning: {self.interactive_update_warning}
     
     # Automatically remove outdated image when they are no longer used
     auto_remove_image: {self.auto_remove_images}
@@ -165,6 +169,7 @@ config:
         if config_data is None:
             config_data = {}
         self.auto_check_updates = self._load_config_bool(config_data, 'auto_check_update', self.auto_check_updates)
+        self.interactive_update_warning = self._load_config_bool(config_data, 'interactive_update_warning', self.interactive_update_warning)
         self.auto_remove_images = self._load_config_bool(config_data, 'auto_remove_image', self.auto_remove_images)
         self.auto_update_workspace_fs = self._load_config_bool(config_data, 'auto_update_workspace_fs', self.auto_update_workspace_fs)
         user_shell = self._load_config_str(config_data, 'default_start_shell', self.default_start_shell)
@@ -215,6 +220,7 @@ config:
             f"Exegol images: [magenta]{self.exegol_images_path}[/magenta]",
             f"My resources: [magenta]{self.my_resources_path}[/magenta]",
             f"Auto-check updates: {boolFormatter(self.auto_check_updates)}",
+            f"Interactive update message: {boolFormatter(self.interactive_update_warning)}",
             f"Auto-remove images: {boolFormatter(self.auto_remove_images)}",
             f"Auto-update fs: {boolFormatter(self.auto_update_workspace_fs)}",
             f"Default start shell: [blue]{self.default_start_shell}[/blue]",

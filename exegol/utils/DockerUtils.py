@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import List, Optional, Union, cast, Tuple, Set
+from typing import List, Optional, Union, cast, Tuple, Set, Dict, Any
 
 import docker
 import requests.exceptions
@@ -71,12 +71,14 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Docker daemon seems busy, Exegol receives timeout response. Try again later.")
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
+        self.__docker_df_cache: Optional[Dict[str, Any]] = None
 
     def clearCache(self) -> None:
         """Remove class's images and containers data cache
         Only needed if the list has to be updated in the same runtime at a later moment"""
         self.__containers = None
         self.__images = None
+        self.__docker_df_cache = None
 
     def getDockerInfo(self) -> dict:
         """Fetch info from docker daemon"""
@@ -257,7 +259,15 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.debug(err)
             logger.critical(err.explanation)
             raise RuntimeError
-        c.remove()
+        try:
+            c.reload()
+            if c.status in ("running", "paused"):
+                c.stop()
+            c.remove()
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            raise RuntimeError
         return True
 
     def isContainerExist(self, container_id: str) -> Optional[str]:
@@ -468,7 +478,8 @@ class DockerUtils(metaclass=MetaSingleton):
                     for custom in UserConfig().custom_images:
                         local_images.extend(await self.__listCustomLocalImages(custom))
                     logger.verbose("Retrieved [green]custom[/green] images")
-                self.__images = ExegolImage.mergeImages(remote_images, local_images)
+                local_images_with_size = [ExegolImage(docker_image=img, meta_size=self.__resolve_image_size(img)) for img in local_images]
+                self.__images = ExegolImage.mergeImages(remote_images, local_images_with_size)
         result = self.__images
         assert result is not None
         # Caching latest images
@@ -554,16 +565,49 @@ class DockerUtils(metaclass=MetaSingleton):
                 match = []
                 for img in recovery_images:
                     if ExegolImage.parseAliasTagName(img) == tag:
-                        match.append(ExegolImage(docker_image=img))
+                        match.append(ExegolImage(docker_image=img, meta_size=self.__resolve_image_size(img)))
                 if len(match) == 1:
                     return match[0]
                 elif len(match) > 1:
                     return cast(ExegolImage, await ExegolTUI.selectFromTable(match, object_type=ExegolImage))
                 raise ObjectNotFound
-            return await ExegolImage(docker_image=docker_local_image).autoLoad()
+            return await ExegolImage(docker_image=docker_local_image, meta_size=self.__resolve_image_size(docker_local_image)).autoLoad()
         except ObjectNotFound:
             logger.critical(f"The desired image is not installed or do not exist ({repository + ':' if repository else ''}{tag}). Exiting.")
         return  # type: ignore
+
+    def __resolve_image_size(self, image: Image) -> Tuple[Optional[int], Optional[int]]:
+        """Resolve image unpacked size and disk usage when using overlayfs"""
+        image_id = image.id
+        if image_id is None:
+            raise RuntimeError
+        disk_usage, unpacked_size= None, None
+        if EnvInfo.isContainerdSnapshotter():
+            # On affected daemons the 'Size' attribute reports the compressed size of the image,
+            # the disk usage must then be fetched from /system/df. Remove when support of these versions is dropped.
+            if EnvInfo.hasWrongImageSizeAttr():
+                disk_usage = self.__getDiskUsage(image_id)
+            unpacked_size = self.__getUnpackedSize(image_id)
+        return unpacked_size, disk_usage
+
+    def __getUnpackedSize(self, image_id: str) -> Optional[int]:
+        """Compute the unpacked image size from the sum of every layer size."""
+        try:
+            return sum(layer.get("Size") or 0 for layer in self.__client.api.history(image_id))
+        except (APIError, ReadTimeout) as e:
+            logger.debug(f"Unable to fetch the image history of {image_id}: {e}")
+            return None
+
+    def __getDiskUsage(self, image_id: str) -> Optional[int]:
+        """Fetch the on-disk usage of the image, only available with the containerd snapshotter."""
+        if self.__docker_df_cache is None:
+            try:
+                df_data = self.__client.api.df()
+                self.__docker_df_cache = {img["Id"]: img["Size"] for img in (df_data.get("Images") or [])}
+            except (APIError, ReadTimeout) as e:
+                logger.debug(f"Unable to fetch the docker disk usage: {e}")
+                self.__docker_df_cache = {}
+        return self.__docker_df_cache if self.__docker_df_cache is None else self.__docker_df_cache.get(image_id)
 
     async def __listLocalImages(self, image_name: str, tag: Optional[str] = None) -> Tuple[List[Image], Set[str]]:
         logger.debug("Fetching local image tags, digests (and other attributes)")
@@ -666,7 +710,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Received a timeout error, Docker is busy... Unable to find a specific image, retry later.")
             raise RuntimeError
         remote_image.resetDockerImage()
-        remote_image.setDockerObject(docker_image)
+        remote_image.setDockerObject(docker_image, meta_size=self.__resolve_image_size(docker_image))
 
     async def downloadImage(self, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
@@ -734,7 +778,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                               tag=image.getLatestVersionName(),
                                               platform="linux/" + image.getArch(),
                                               auth_config=auth_config)
-            return ExegolImage(docker_image=image, isUpToDate=True)
+            return ExegolImage(docker_image=image, isUpToDate=True, meta_size=self.__resolve_image_size(image))
         except APIError as err:
             if err.status_code == 500:
                 return f"error while contacting docker registry: {err.explanation}"

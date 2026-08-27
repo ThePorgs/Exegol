@@ -57,14 +57,11 @@ def parse_date(date: str) -> datetime:
         from dateutil.parser import isoparse
         return isoparse(date)
 
-
+      
 def process_size(size: Union[int, float], precision: int = 1, compression_factor: float = 1) -> str:
     """Text formatter from size number to human-readable size."""
     if size == 0:
         return "0 B"
-    #if size < 100:
-    #    # Size is supplied in GB
-    #    return f"{size} GB"
     # https://stackoverflow.com/a/32009595
     suffixes = ["B", "KB", "MB", "GB", "TB"]
     suffix_index = 0

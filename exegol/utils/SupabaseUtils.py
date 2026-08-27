@@ -70,6 +70,7 @@ class SupabaseUtils:
             except AuthInvalidCredentialsError:
                 logger.error("You must supply a valid email account, please retry")
             except AuthApiError as e:
+                logger.debug(f"Auth error with email: '{email}'")
                 if "Invalid email" in e.message:
                     email = None
                 logger.error(f"{e}, please retry")

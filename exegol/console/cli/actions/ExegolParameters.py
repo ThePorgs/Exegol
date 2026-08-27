@@ -74,6 +74,15 @@ class Install(Command, ImageSelector):
         Command.__init__(self)
         ImageSelector.__init__(self, self.groupArgs)
 
+        self.force_mode = Option("-F", "--force",
+                                 dest="force_mode",
+                                 action="store_true",
+                                 help="Install an image and exegol-resources without interactive user confirmation.")
+
+        # Create group parameter for container selection
+        self.groupArgs.append(GroupArg({"arg": self.force_mode, "required": False},
+                                       title="[bright_blue]Install[/bright_blue][blue]-only options[/blue]"))
+
         self._usages = {
             "Install an Exegol image [bright_black](interactive)[/bright_black]": "exegol install",
             "Install the [bright_blue]full[/bright_blue] image [bright_black](unattended)[/bright_black]": "exegol install [bright_blue]full[/bright_blue] -F"

@@ -139,14 +139,13 @@ class UpdateManager:
         current_branch = gitUtils.getCurrentBranch()
         if current_branch is None:
             logger.warning("HEAD is detached. Please checkout to an existing branch.")
-            current_branch = "unknown"
         if logger.isEnabledFor(ExeLog.VERBOSE):
             available_branches = gitUtils.listBranch()
             # Ask to checkout only if there is more than one branch available
             if len(available_branches) > 1:
                 logger.info(f"Current git branch : {current_branch}")
                 # List & Select git branch
-                if current_branch == 'unknown' or current_branch not in available_branches:
+                if current_branch is None or current_branch not in available_branches:
                     if "main" in available_branches:
                         default_choice = "main"
                     elif "master" in available_branches:

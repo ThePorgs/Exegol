@@ -19,6 +19,7 @@ try:
     from exegol.manager.ExegolManager import ExegolManager
     from exegol.manager.TaskManager import TaskManager
     from exegol.utils.SessionHandler import SessionHandler
+    from exegol.utils.SignalHandler import SignalHandler
 except ModuleNotFoundError as e:
     print("Mandatory dependencies are missing:", e)
     print("Please install them with python3 -m pip install --upgrade -r requirements.txt")
@@ -47,6 +48,8 @@ class ExegolController:
     async def call_action(cls) -> int:
         """Dynamically retrieve the main function corresponding to the action selected by the user
         and execute it on the main thread"""
+        # Let the signal handler deliver any user interruption inside this coroutine
+        SignalHandler.attach_main_task(asyncio.current_task())
         try:
             await ExegolManager.print_version()
             DockerUtils()  # Init dockerutils
@@ -94,6 +97,8 @@ def main() -> int:
     try:
         # Set logger verbosity depending on user input
         ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)
+        # Take over SIGINT before asyncio.run() installs its own (deferred) handler
+        SignalHandler.install()
         # Start Main controller & Executing action selected by user CLI
         return asyncio.run(ExegolController.call_action())
     except (KeyboardInterrupt, asyncio.CancelledError, EOFError):

@@ -84,8 +84,14 @@ class ExegolTUI:
                     task_pool = downloading
                     if status == "Extracting":
                         task_pool = extracting
+                        if layer_id in layers_extracted:
+                            # Ignore extract status message received after extraction complete message
+                            continue
                         if not progress.getTask(task_layers_extract).started:
                             progress.start_task(task_layers_extract)
+                    elif layer_id in layers_downloaded:
+                        # Ignore download status message received after download complete message
+                        continue
                     task_id = task_pool.get(layer_id)
                     progressDetail = line.get("progressDetail", {})
                     if task_id is None:  # If this is a new layer, create a new task accordingly
@@ -195,12 +201,13 @@ class ExegolTUI:
         table.add_column("Image")
         if verbose_mode:
             table.add_column("Download size")
-            table.add_column("Size on disk")
+            # With the containerd snapshotter the on-disk usage is displayed next to the unpacked image size
+            table.add_column("Image size / Disk usage" if EnvInfo.isContainerdSnapshotter() else "Size on disk")
             table.add_column("Build date")
         else:
             # Depending on whether the image has already been downloaded or not,
             # it will show the download size or the size on disk
-            table.add_column("Size")
+            table.add_column("Size / On-disk" if EnvInfo.isContainerdSnapshotter() else "Size")
         table.add_column("Status")
         # Load data into the table
         for i in range(len(data)):
@@ -445,6 +452,7 @@ class ExegolTUI:
         :param container: The container to fetch config from
         :return: A rich table fully built
         """
+        streamer_mode = os.getenv("EXEGOL_STREAMER_MODE") is not None
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         hosts = container.config.getTextExtraHosts(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -455,7 +463,7 @@ class ExegolTUI:
         volumes = container.config.getTextMounts(logger.isEnabledFor(ExeLog.VERBOSE))
         creation_date = container.config.getTextCreationDate()
         comment = container.config.getComment()
-        passwd = container.config.getPasswd()
+        passwd = '<REDACTED>' if streamer_mode else container.config.getPasswd()
 
         # Color code
         privilege_color = "bright_magenta"
@@ -483,7 +491,7 @@ class ExegolTUI:
             recap.add_row("[bold blue]Comment[/bold blue]", comment)
         if passwd:
             recap.add_row(f"[bold blue]Credentials[/bold blue]", f"[deep_sky_blue3]{container.config.getUsername()}[/deep_sky_blue3] : [deep_sky_blue3]{passwd}[/deep_sky_blue3]")
-        recap.add_row("[bold blue]Remote Desktop[/bold blue]", container.config.getDesktopConfig())
+        recap.add_row("[bold blue]Remote Desktop[/bold blue]", '<REDACTED>' if streamer_mode and container.config.isDesktopEnabled() else container.config.getDesktopConfig())
         if creation_date:
             recap.add_row("[bold blue]Creation date[/bold blue]", creation_date)
         recap.add_row("[bold blue]Console GUI[/bold blue]", boolFormatter(container.config.isGUIEnable()) + container.config.getTextGuiSockets())

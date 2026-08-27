@@ -83,7 +83,7 @@ class ExegolModules(metaclass=MetaSingleton):
         if ParametersManager().offline_mode:
             logger.error("It's not possible to install 'Exegol resources' in offline mode. Skipping the operation.")
             raise CancelOperation
-        if await ExegolRich.Confirm("Do you want to download exegol resources? (~1G)", True):
+        if ParametersManager().force_mode or await ExegolRich.Confirm("Do you want to download exegol resources? (~1G)", True):
             # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
             # if not, git clone resources
             if UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
@@ -115,5 +115,5 @@ class ExegolModules(metaclass=MetaSingleton):
         """Generic procedure to warn the user that not antivirus compatible files will be downloaded and that
         the destination folder should be excluded from the scans to avoid any problems"""
         logger.warning(f"If you are using an [orange3][g]Anti-Virus[/g][/orange3] on your host, you should exclude the folder {directory} before starting the download.")
-        while not await ExegolRich.Confirm(f"Are you ready to start the download?", True):
+        while not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Are you ready to start the download?", True):
             pass
