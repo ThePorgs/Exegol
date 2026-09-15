@@ -255,11 +255,12 @@ class DockerUtils(metaclass=MetaSingleton):
             raise RuntimeError
         return ExegolContainer(container, model)
 
-    def getContainer(self, tag: str) -> ExegolContainer:
-        """Get an ExegolContainer from tag name."""
+    def getContainer(self, tag: str, with_size: bool = False) -> ExegolContainer:
+        """Get an ExegolContainer from tag name.
+        The container size is only computed on demand (with_size) as it can be very slow with heavy containers."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__list_api_container(f"exegol-{tag}")
+            container = self.__list_api_container(f"exegol-{tag}", with_size=with_size)
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -273,7 +274,7 @@ class DockerUtils(metaclass=MetaSingleton):
                 # If the user's input didn't match any container, try to force the name in lowercase if not already tried
                 lowered_tag = tag.lower()
                 if lowered_tag != tag:
-                    return self.getContainer(lowered_tag)
+                    return self.getContainer(lowered_tag, with_size=with_size)
             raise ObjectNotFound
         # Filter results with exact name matching
         for c in container:

@@ -517,6 +517,9 @@ class ExegolTUI:
                           f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}] [bright_black](/workspace)[/bright_black]')
         else:
             recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta] [bright_black](/workspace)[/bright_black]')
+        # Container size is only fetched in verbose mode (with a timeout), the storage row is only displayed if the size is available
+        if type(container) is ExegolContainer and container.hasContainerSize():
+            recap.add_row("[bold blue]Size[/bold blue]", container.getContainerStorageSize(include_workspace=logger.isEnabledFor(ExeLog.ADVANCED)))
         if len(devices) > 0:
             recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(hosts) > 0:

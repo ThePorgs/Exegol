@@ -49,7 +49,9 @@ class ExegolManager:
             ExegolTUI.printTable(await UpdateManager.listGitStatus(), title="[not italic]:octopus: [/not italic][gold3][g]Project modules[/g][/gold3]")
         if bool(ParametersManager().containertag):
             # If the user have supplied a container name, show container config
-            container = await cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True)
+            # Container storage size is only displayed in verbose mode, skip its slow computation otherwise
+            container = await cls.__loadOrCreateContainer(ParametersManager().containertag, must_exist=True,
+                                                          with_size=logger.isEnabledFor(ExeLog.VERBOSE))
             if container is not None:
                 assert type(container) is ExegolContainer
                 await ExegolTUI.printContainerRecap(container)
@@ -441,11 +443,13 @@ class ExegolManager:
                                       override_container: Optional[str] = None,
                                       multiple: bool = False,
                                       must_exist: bool = False,
-                                      filters: Optional[List[ExegolContainer.Filters]] = None) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
+                                      filters: Optional[List[ExegolContainer.Filters]] = None,
+                                      with_size: bool = False) -> Union[Optional[ExegolContainer], List[ExegolContainer]]:
         """Select one or more ExegolContainer
         Or create a new ExegolContainer if no one already exist (and must_exist is not set)
         When must_exist is set to True, return None if no container exist
-        When multiple is set to True, return a list of ExegolContainer"""
+        When multiple is set to True, return a list of ExegolContainer
+        When with_size is set to True, the size of containers selected by tag is fetched (slow with heavy containers)"""
         if cls.__container is not None:
             # Return cache
             return cls.__container
@@ -478,7 +482,7 @@ class ExegolManager:
                     # test each user tag
                     for container_tag in container_tags:
                         try:
-                            cls.__container.append(DockerUtils().getContainer(container_tag))
+                            cls.__container.append(DockerUtils().getContainer(container_tag, with_size=with_size))
                         except ObjectNotFound:
                             # on multi select, an object not found is not critical
                             if must_exist:
@@ -490,7 +494,7 @@ class ExegolManager:
                                 raise NotImplementedError
                 else:
                     assert container_tag is not None
-                    cls.__container = DockerUtils().getContainer(container_tag)
+                    cls.__container = DockerUtils().getContainer(container_tag, with_size=with_size)
         except (ObjectNotFound, IndexError):
             # ObjectNotFound is raised when the container_tag provided by the user does not match any existing container.
             # IndexError is raise when no container exist (raised from TUI interactive selection)
