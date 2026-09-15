@@ -272,6 +272,15 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.hosts_file, "required": False},
                                   title="[blue]Container options[/blue] [bright_blue]at creation only[/bright_blue]"))
 
+        self.tor = Option("--tor",
+                          dest="tor",
+                          action="store_true",
+                          default=False,
+                          help="Route TCP and DNS through Tor; block other outbound traffic. "
+                               "Incompatible with VPN, host networking, privileged mode, published ports and desktop.")
+        groupArgs.append(GroupArg({"arg": self.tor, "required": False},
+                                  title="[bright_blue]Tor[/bright_blue][blue] options (at creation only)[/blue]"))
+
         self.vpn = Option("--vpn",
                           dest="vpn",
                           default=None,

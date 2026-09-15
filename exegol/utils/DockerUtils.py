@@ -128,6 +128,7 @@ class DockerUtils(metaclass=MetaSingleton):
         """Create an Exegol container from an ExegolContainerTemplate configuration.
         Return an ExegolContainer if the creation was successful."""
         logger.info("Creating new exegol container")
+        model.config.validateTor()
         model.prepare()
         logger.debug(model)
         # Preload docker volume before container creation
@@ -162,6 +163,12 @@ class DockerUtils(metaclass=MetaSingleton):
                        "mounts": model.config.getVolumes(),
                        "userns_mode": "host",
                        "working_dir": model.config.getWorkingDir()}
+        if model.config.isTorEnabled():
+            # Raw Ethernet sockets bypass IP firewall rules; ordinary raw-packet tools must fail closed.
+            docker_args["cap_drop"] = ["NET_RAW"]
+            # A fresh runtime directory prevents stale readiness markers after a restart.
+            docker_args["tmpfs"] = {"/run/exegol/tor": "rw,noexec,nosuid,nodev,mode=0700"}
+            docker_args["dns"] = ["127.0.0.1"]
         # Add networking args
         if model.config.isNetworkDisabled():
             docker_args["network_disabled"] = True

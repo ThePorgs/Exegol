@@ -119,7 +119,10 @@ class ExegolManager:
                 await container.stop(timeout=2)
             else:
                 # Command is passed at container creation in __createTmpContainer()
-                logger.success(f"Command executed as entrypoint of the container {container.getDisplayName()}")
+                if container.config.isTorEnabled():
+                    logger.success(f"Container {container.getDisplayName()} launched. Its command will run after Tor bootstrap succeeds.")
+                else:
+                    logger.success(f"Command executed as entrypoint of the container {container.getDisplayName()}")
         else:
             container = cast(ExegolContainer, await cls.__loadOrCreateContainer(override_container=ParametersManager().selector))
             await container.exec(command=ParametersManager().exec, as_daemon=ParametersManager().daemon)
@@ -545,7 +548,7 @@ class ExegolManager:
                 if image is not None:
                     model.image = image
                     await ExegolTUI.printContainerRecap(model)
-            command_options = []
+            command_options = ["--tor"] if model.config.isTorEnabled() else []
             while not await ExegolRich.Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 command_options = await model.config.interactiveConfig(model.name)
                 await ExegolTUI.printContainerRecap(model)
@@ -579,6 +582,9 @@ class ExegolManager:
         # Mount entrypoint as a volume (because in tmp mode the container is created with run instead of create method)
         model.config.addVolume(ConstantConfig.entrypoint_context_path_obj, "/.exegol/entrypoint.sh", must_exist=True, read_only=True)
 
+        if model.config.isTorEnabled():
+            model.config.addVolume(ConstantConfig.tor_context_path_obj, "/.exegol/tor.sh", must_exist=True, read_only=True)
+
         container = DockerUtils().createContainer(model, temporary=True)
         await container.postCreateSetup(is_temporary=True)
         return container
@@ -593,7 +599,7 @@ class ExegolManager:
         detected = []
         for param in creation_parameters.keys():
             # Skip parameters useful in a start context
-            if param in ('containertag',):
+            if param in ('containertag', 'tor'):
                 continue
             # For each parameter, check if it's not None and different from the default
             current_option = creation_parameters.get(param)

@@ -44,6 +44,12 @@ class ImageScriptSync:
                 info.mode = 0o500
                 entry_tar.addfile(info, fileobj=data)
 
+                # Tor is invoked by the entrypoint before any user setup runs.
+                info = entry_tar.gettarinfo(str(ConstantConfig.tor_context_path_obj), arcname="/.exegol/tor.sh")
+                info.mode = 0o500
+                with open(ConstantConfig.tor_context_path_obj, 'rb') as f:
+                    entry_tar.addfile(info, f)
+
             # Load start data
             if include_spawn:
                 spawn_script_path = ConstantConfig.spawn_context_path_obj
