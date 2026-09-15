@@ -60,7 +60,8 @@ class ExegolManager:
                 DockerUtils().listImages(include_version_tag=False, include_custom=True),
                 TaskManager.TaskId.ImageList)
             TaskManager.add_task(
-                DockerUtils().listContainers(),
+                # Container storage size is only displayed in verbose mode, skip its slow computation otherwise
+                DockerUtils().listContainers(with_size=logger.isEnabledFor(ExeLog.VERBOSE)),
                 TaskManager.TaskId.ContainerList)
             images, containers = await TaskManager.gather(TaskManager.TaskId.ImageList, TaskManager.TaskId.ContainerList)
             # List and print images

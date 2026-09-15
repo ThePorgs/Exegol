@@ -130,30 +130,20 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Container's short id getter"""
         return self.__container.short_id
 
-    def getContainerStorageSize(self, verbose: bool = False) -> str:
-        """Get the size of the container's writable layer and workspace.
-        In normal mode, returns total size. In verbose mode, returns tree breakdown.
-        This excludes the base image size which is shared across containers."""
-        try:
-            # Get workspace size in bytes
-            workspace_size = self.__getWorkspaceSize()
+    def hasContainerSize(self) -> bool:
+        """Check if the container's writable layer size has been fetched from docker"""
+        return self.__container_size is not None
 
-            size_rw = self.__container_size if self.__container_size is not None else 0
-
-            # Calculate total
-            total_size = size_rw + workspace_size
-
-            if verbose and (size_rw > 0 or workspace_size > 0):
-                # Verbose mode: show breakdown
-                container_str = ConsoleFormat.process_size(size_rw)
-                workspace_str = ConsoleFormat.process_size(workspace_size)
-                return f"Container: {container_str}{os.linesep}Workspace: {workspace_str}"
-
-            # Normal mode: show total only
-            return ConsoleFormat.process_size(total_size)
-        except Exception as e:
-            logger.debug(f"Failed to get container storage size for {self.name}: {e}")
+    def getContainerStorageSize(self, include_workspace: bool = False) -> str:
+        """Get the size of the container's writable layer (excludes the base image size which is shared across containers).
+        With include_workspace, the size of the host workspace directory is also calculated (can be slow)."""
+        if self.__container_size is None:
             return "[bright_black]N/A[/bright_black]"
+        container_str = ConsoleFormat.process_size(self.__container_size)
+        if not include_workspace:
+            return container_str
+        workspace_str = ConsoleFormat.process_size(self.__getWorkspaceSize())
+        return f"Container: {container_str}{os.linesep}Workspace: {workspace_str}"
 
     def __getWorkspaceSize(self) -> int:
         """Calculate workspace directory size.
