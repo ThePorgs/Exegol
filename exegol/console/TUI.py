@@ -235,12 +235,15 @@ class ExegolTUI:
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
+        # Container size is only fetched in verbose mode (with a timeout), the size column is only displayed if the size is available
+        size_mode = verbose_mode and len(data) > 0 and data[0].hasContainerSize()
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Container tag")
         table.add_column("State")
         table.add_column("Image tag")
-        table.add_column("Storage")
+        if size_mode:
+            table.add_column("Size")
         table.add_column("Configurations")
         if verbose_mode:
             table.add_column("Mounts")
@@ -250,8 +253,9 @@ class ExegolTUI:
         # Load data into the table
         for container in data:
             if verbose_mode:
+                size = [container.getContainerStorageSize(include_workspace=debug_mode)] if size_mode else []
                 table.add_row(container.getId(), container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
-                              container.getContainerStorageSize(verbose=True),
+                              *size,
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
@@ -259,7 +263,6 @@ class ExegolTUI:
                               container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
-                              container.getContainerStorageSize(verbose=False),
                               container.config.getTextFeatures(verbose_mode))
 
     @staticmethod
@@ -514,6 +517,9 @@ class ExegolTUI:
                           f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}] [bright_black](/workspace)[/bright_black]')
         else:
             recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta] [bright_black](/workspace)[/bright_black]')
+        # Container size is only fetched in verbose mode (with a timeout), the storage row is only displayed if the size is available
+        if type(container) is ExegolContainer and container.hasContainerSize():
+            recap.add_row("[bold blue]Size[/bold blue]", container.getContainerStorageSize(include_workspace=logger.isEnabledFor(ExeLog.ADVANCED)))
         if len(devices) > 0:
             recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(hosts) > 0:

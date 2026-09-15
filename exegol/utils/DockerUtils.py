@@ -45,7 +45,7 @@ class DockerUtils(metaclass=MetaSingleton):
         try:
             # Connect Docker SDK to the local docker instance.
             # Docker connection setting is loaded from the user environment variables.
-            self.__client: DockerClient = docker.from_env()
+            self.__client: DockerClient = docker.from_env(timeout=300)
             # Check if the docker daemon is serving linux container
             self.__daemon_info = self.__client.info()
             if self.__daemon_info.get("OSType", "linux").lower() != "linux":
@@ -71,6 +71,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Docker daemon seems busy, Exegol receives timeout response. Try again later.")
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
+        self.__containers_with_size: bool = False
         self.__docker_df_cache: Optional[Dict[str, Any]] = None
 
     def clearCache(self) -> None:
@@ -86,8 +87,41 @@ class DockerUtils(metaclass=MetaSingleton):
 
     # # # Container Section # # #
 
-    def __list_api_container(self, name: str, sparse: bool = False) -> List[Container]:
-        docker_containers = self.__client.api.containers(all=True, size=True, filters={"name": name, "label": f"{ExegolImage.Labels.app.value}=Exegol"})
+    # Maximum time (in seconds) given to docker to compute the containers size before falling back to a listing without size
+    # In advanced mode, the default client timeout is used instead
+    __CONTAINER_SIZE_TIMEOUT = 60
+
+    def __list_api_container(self, name: str, sparse: bool = False, with_size: bool = False) -> List[Container]:
+        """List Exegol docker containers matching a name.
+        Computing the containers size (with_size) can be very slow with heavy containers,
+        this request is bounded by a timeout (the default one in advanced mode) and fallback to a listing without size."""
+        filters = {"name": name, "label": f"{ExegolImage.Labels.app.value}=Exegol"}
+        docker_containers = None
+        try:
+            if with_size:
+                advanced_mode = logger.isEnabledFor(ExeLog.ADVANCED)
+                default_timeout = self.__client.api.timeout
+                # Do not change default timeout on advanced mode
+                if not advanced_mode:
+                    self.__client.api.timeout = self.__CONTAINER_SIZE_TIMEOUT
+                try:
+                    docker_containers = self.__client.api.containers(all=True, size=True, filters=filters)
+                except ReadTimeout:
+                    logger.warning("Docker took too long to compute the containers size, the container storage size will not be available."
+                                   + ("" if advanced_mode else " Add -vv to your command to retry with a longer timeout."))
+                finally:
+                    if not advanced_mode:
+                        self.__client.api.timeout = default_timeout
+            if docker_containers is None:
+                docker_containers = self.__client.api.containers(all=True, filters=filters)
+        except APIError as err:
+            logger.debug(err)
+            logger.critical(err.explanation)
+            raise RuntimeError
+        except ReadTimeout:
+            logger.critical("Received a timeout error... Unable to list containers, retry later.")
+            raise RuntimeError
+
         containers = []
         if docker_containers is not None:
             for container in docker_containers:
@@ -104,14 +138,16 @@ class DockerUtils(metaclass=MetaSingleton):
                 containers.append(full_container)
         return containers
 
-    async def listContainers(self) -> List[ExegolContainer]:
+    async def listContainers(self, with_size: bool = False) -> List[ExegolContainer]:
         """List available docker containers.
+        The containers size is only computed on demand (with_size) as it can be very slow with heavy containers.
         Return a list of ExegolContainer"""
-        if self.__containers is None:
+        if self.__containers is None or (with_size and not self.__containers_with_size):
             logger.verbose("Loading Exegol containers")
             self.__containers = []
+            self.__containers_with_size = with_size
             try:
-                docker_containers = self.__list_api_container("exegol-")
+                docker_containers = self.__list_api_container("exegol-", with_size=with_size)
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -219,11 +255,12 @@ class DockerUtils(metaclass=MetaSingleton):
             raise RuntimeError
         return ExegolContainer(container, model)
 
-    def getContainer(self, tag: str) -> ExegolContainer:
-        """Get an ExegolContainer from tag name."""
+    def getContainer(self, tag: str, with_size: bool = False) -> ExegolContainer:
+        """Get an ExegolContainer from tag name.
+        The container size is only computed on demand (with_size) as it can be very slow with heavy containers."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__list_api_container(f"exegol-{tag}")
+            container = self.__list_api_container(f"exegol-{tag}", with_size=with_size)
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -237,7 +274,7 @@ class DockerUtils(metaclass=MetaSingleton):
                 # If the user's input didn't match any container, try to force the name in lowercase if not already tried
                 lowered_tag = tag.lower()
                 if lowered_tag != tag:
-                    return self.getContainer(lowered_tag)
+                    return self.getContainer(lowered_tag, with_size=with_size)
             raise ObjectNotFound
         # Filter results with exact name matching
         for c in container:
