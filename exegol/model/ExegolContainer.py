@@ -5,6 +5,7 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import time
 from datetime import datetime
 from enum import IntFlag, auto as enum_auto
 from pathlib import Path
@@ -180,12 +181,43 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info(f"Starting container {self.name}")
             await self.__start_container()
             await self.__postStartSetup()
+        else:
+            await self.__waitForTor()
+
+    async def __waitForTor(self) -> None:
+        """Wait for Tor before opening a shell or executing a command."""
+        if ParametersManager().tor and not self.config.isTorEnabled():
+            logger.critical("This container was created without Tor. Use --tor with a new container.")
+        if not self.config.isTorEnabled():
+            return
+        self.config.validateTor()
+        if "ALL" in (ParametersManager().capabilities or []):
+            logger.critical("Tor cannot be combined with --cap ALL.")
+        deadline = time.monotonic() + 330
+        while time.monotonic() < deadline:
+            self.__container.reload()
+            if self.__container.status != "running":
+                logger.critical("Tor startup failed. Check the container logs and /var/log/exegol/tor.log.")
+            try:
+                result = self.__container.exec_run(["/bin/bash", "/.exegol/tor.sh", "check"])
+            except APIError as error:
+                logger.debug(error)
+                logger.critical("Cannot check Tor status. Aborting.")
+            if result.exit_code == 0:
+                return
+            if result.exit_code == 2:
+                logger.critical("Tor stopped. Restart the container to reconnect.")
+            await asyncio.sleep(1)
+        logger.critical("Tor startup timed out. Check /var/log/exegol/tor.log.")
 
     async def __start_container(self) -> None:
         """
         This method starts the container and displays startup status updates to the user.
         :return:
         """
+        if ParametersManager().tor and not self.config.isTorEnabled():
+            logger.critical("This container was created without Tor. Use --tor with a new container.")
+        self.config.validateTor()
         async with ExegolStatus(f"Waiting to start {self.name}", spinner_style="blue") as progress:
             start_date = datetime.now()
             try:
@@ -193,6 +225,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except APIError as e:
                 logger.debug(e)
                 logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+            await self.__waitForTor()
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -242,6 +275,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     async def spawnShell(self) -> None:
         """Spawn a shell on the docker container"""
+        await self.__waitForTor()
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         for device in self.config.getDevices():
@@ -283,6 +317,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Return the exit code and the logs."""
         if not self.isRunning():
             await self.start()
+        await self.__waitForTor()
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet=True)
         result = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=False, stream=False)
         stdout = result.output.decode("utf-8") if type(result.output) is bytes else result.output
@@ -297,6 +332,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Set is_tmp if the container will automatically be removed after execution"""
         if not self.isRunning():
             await self.start()
+        await self.__waitForTor()
         if not quiet:
             logger.info("Executing command on Exegol")
             if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
