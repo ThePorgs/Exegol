@@ -14,6 +14,7 @@ from typing import Any, Optional, Dict, Sequence, Tuple, Union, List
 
 from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
+from requests import ReadTimeout
 
 from exegol.config.DataCache import DataCache
 from exegol.config.EnvInfo import EnvInfo
@@ -198,6 +199,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except APIError as e:
                 logger.debug(e)
                 logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+            except ReadTimeout:
+                logger.critical("Received a timeout error fom docker... Unable to start the container, retry later.")
+                raise
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -402,6 +406,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         try:
             self.__container.remove()
             logger.success(f"Container {self.name} successfully removed.")
+        except ReadTimeout:
+            logger.critical("Received a timeout error from docker while removing the container. Check container status later.")
+            raise
         except NotFound:
             logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
         DataCache().remove_container_cache(self.name)
@@ -750,6 +757,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 else:
                     logger.error(e.explanation)
                     logger.critical(f"An unexpected error occurred from docker. Exegol cannot rename the container [green]{self.name}[/green]. Aborting the operation.")
+            except ReadTimeout:
+                logger.error("Received a timeout error from docker during container rename.")
+                raise
 
     async def backup(self, backup_exh: bool) -> None:
         """
