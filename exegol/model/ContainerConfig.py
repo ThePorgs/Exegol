@@ -54,6 +54,7 @@ class ContainerConfig:
     class ExegolFeatures(Enum):
         shell_logging = "org.exegol.feature.shell_logging"
         desktop = "org.exegol.feature.desktop"
+        tor = "org.exegol.feature.tor"
 
         @classmethod
         def values(cls):
@@ -311,12 +312,17 @@ class ContainerConfig:
         """Create Exegol configuration from user input"""
         # Container configuration from user CLI options
         try:
-            # Container configuration from user CLI options
+            # Set the Tor network before configuring other features.
+            if ParametersManager().tor:
+                if ParametersManager().vpn is not None or ParametersManager().vpn_auth is not None:
+                    raise CancelOperation("--tor cannot be combined with --vpn or --vpn-auth.")
+                await self.enableTor()
             if ParametersManager().X11:
                 await self.enableGUI()
             if ParametersManager().share_timezone:
                 self.enableSharedTimezone()
-            await self.setNetworkMode(ParametersManager().network)
+            if not self.isTorEnabled():
+                await self.setNetworkMode(ParametersManager().network)
             if ParametersManager().ports is not None:
                 for port in ParametersManager().ports:
                     await self.addRawPort(port)
@@ -388,7 +394,9 @@ class ContainerConfig:
             command_options.append(f"-w {workspace_path}")
 
         # Network config
-        if self.isNetworkHost():
+        if self.isTorEnabled():
+            command_options.append("--tor")
+        elif self.isNetworkHost():
             if await ExegolRich.Confirm(f"Do you want to [green]use[/green] a [blue]{'dedicated ' if self.__fallback_network_mode is ExegolNetworkMode.nat else ''}private network[/blue]?", False):
                 await self.setNetworkMode(self.__fallback_network_mode)
         elif await ExegolRich.Confirm("Do you want to share the [green]host's[/green] [blue]networks[/blue]?", False):
@@ -398,7 +406,7 @@ class ContainerConfig:
             command_options.append(f"--network {self.__networks[0].getNetworkMode().name if len(self.__networks) > 0 else 'disabled'}")
 
         # VPN config
-        if self.__vpn_path is None and await ExegolRich.Confirm(
+        if not self.isTorEnabled() and self.__vpn_path is None and await ExegolRich.Confirm(
                 "Do you want to [green]enable[/green] a [blue]VPN[/blue] in this container", False):
             while True:
                 vpn_path = Path(await ExegolRich.Ask('Enter the [green]path[/green] to the [blue]VPN config file[/blue]')).expanduser()
@@ -420,7 +428,7 @@ class ContainerConfig:
         if self.isDesktopEnabled():
             if await ExegolRich.Confirm("Do you want to [orange3]disable[/orange3] [blue]Desktop[/blue]?", False):
                 self.__disableDesktop()
-        elif await ExegolRich.Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
+        elif not self.isTorEnabled() and await ExegolRich.Confirm("Do you want to [green]enable[/green] [blue]Desktop[/blue]?", False):
             await self.enableDesktop()
         # Command builder info
         if self.isDesktopEnabled():
@@ -659,6 +667,8 @@ class ContainerConfig:
 
     async def enableDesktop(self, desktop_config: str = "") -> None:
         """Procedure to enable exegol desktop feature"""
+        if self.isTorEnabled():
+            raise CancelOperation("Tor cannot be combined with desktop.")
         if not self.isDesktopEnabled():
             if self.isNetworkDisabled():
                 logger.error(f"The current network mode doesn't support the desktop feature.")
@@ -753,8 +763,42 @@ class ContainerConfig:
         self.__workspace_custom_path = os.getcwd()
         logger.verbose(f"Config: Sharing current workspace directory {self.__workspace_custom_path}")
 
+    async def enableTor(self) -> None:
+        """Enable transparent Tor routing in a container-owned network namespace."""
+        if self.__vpn_path is not None:
+            raise CancelOperation("Tor cannot be combined with a VPN.")
+        network = ParametersManager().network or ExegolNetworkMode.docker
+        if network not in (ExegolNetworkMode.docker, ExegolNetworkMode.nat, "docker", "nat"):
+            raise CancelOperation("--tor requires --network docker or --network nat (default: docker).")
+        await self.setNetworkMode(network)
+        self.addLabel(self.ExegolFeatures.tor.value, "Enabled")
+        self.addCapability("NET_ADMIN")
+        self.__addSysctl("net.ipv6.conf.all.disable_ipv6", "1")
+        self.__addSysctl("net.ipv6.conf.default.disable_ipv6", "1")
+        logger.info("Tor enabled: TCP and DNS only.")
+
+    def isTorEnabled(self) -> bool:
+        """Whether this container was created with Tor routing."""
+        return self.__labels.get(self.ExegolFeatures.tor.value) == "Enabled"
+
+    def validateTor(self) -> None:
+        """Reject configurations that would undermine or conflict with Tor routing."""
+        if not self.isTorEnabled():
+            return
+        if len(self.__networks) != 1 or self.__networks[0].getNetworkMode() not in (
+                ExegolNetworkMode.docker, ExegolNetworkMode.nat):
+            logger.critical("Tor requires a container-owned Docker or NAT network.")
+        if self.__privileged or "ALL" in self.__capabilities:
+            logger.critical("Tor cannot be combined with --privileged or --cap ALL.")
+        if "NET_ADMIN" not in self.__capabilities:
+            logger.critical("Tor requires the NET_ADMIN capability to configure its firewall.")
+        if self.__vpn_path is not None or any(self.__ports.values()) or self.isDesktopEnabled():
+            logger.critical("Tor cannot be combined with VPN, published ports or desktop.")
+
     async def enableVPN(self, config_path: Optional[Union[str, PurePath]] = None, apply_only: bool = False) -> None:
         """Configure a VPN profile for container startup"""
+        if self.isTorEnabled():
+            raise CancelOperation("Tor cannot be combined with a VPN.")
         # Check host mode : custom (allows you to isolate the VPN connection from the host's network)
         if not apply_only and self.isNetworkHost() and ParametersManager().network is None:
             if EnvInfo.isLinuxHost():
@@ -962,6 +1006,8 @@ class ContainerConfig:
         """Get container entrypoint/command arguments.
         The default container_entrypoint is '/bin/bash /.exegol/entrypoint.sh' and the default container_command is ['load_setups', 'endless']."""
         entrypoint_actions = []
+        if self.isTorEnabled():
+            entrypoint_actions.append("tor")
         if self.__my_resources:
             entrypoint_actions.append("load_setups")
         if self.isDesktopEnabled():
@@ -1043,6 +1089,9 @@ class ContainerConfig:
         except KeyError:
             net_mode = network
 
+        if self.isTorEnabled() and net_mode not in (ExegolNetworkMode.docker, ExegolNetworkMode.nat):
+            raise CancelOperation("Tor requires a container-owned Docker or NAT network.")
+
         # Feature that must be reloaded if the network setting is changed
         desktop_config = None
         if self.isDesktopEnabled():
@@ -1078,6 +1127,8 @@ class ContainerConfig:
 
     def setPrivileged(self, status: bool = True) -> None:
         """Set container as privileged"""
+        if status and self.isTorEnabled():
+            raise CancelOperation("Tor cannot be combined with --privileged.")
         logger.verbose(f"Config: Setting container privileged as {status}")
         if status:
             logger.warning("Setting container as privileged (this exposes the host to security risks)")
@@ -1085,6 +1136,8 @@ class ContainerConfig:
 
     def addCapability(self, cap_string: str) -> None:
         """Add a linux capability to the container"""
+        if self.isTorEnabled() and cap_string == "ALL":
+            raise CancelOperation("Tor cannot be combined with --cap ALL.")
         if cap_string in self.__capabilities:
             logger.verbose("Capability already setup. Skipping.")
             return
@@ -1438,6 +1491,8 @@ class ContainerConfig:
                       protocol: str = 'tcp',
                       host_ip: str = '0.0.0.0') -> None:
         """Add port NAT config, only applicable on bridge network mode."""
+        if self.isTorEnabled():
+            raise CancelOperation("Tor cannot be combined with published ports or desktop.")
         if self.isNetworkHost():
             logger.warning("Port sharing is configured, disabling the host network mode.")
             await self.setNetworkMode(self.__fallback_network_mode)
@@ -1655,6 +1710,8 @@ class ContainerConfig:
             result += f"{getColor(self.__enable_gui)[0]}Console GUI: {boolFormatter(self.__enable_gui)}{getColor(self.__enable_gui)[1]}{os.linesep}"
         if verbose or not self.isNetworkHost():
             result += f"[green]Network mode: [/green]{self.getTextNetworkMode()}{os.linesep}"
+        if self.isTorEnabled():
+            result += f"[green]Tor: [/green]TCP and DNS (other traffic blocked){os.linesep}"
         if self.__vpn_path is not None:
             result += f"[green]VPN: [/green]{self.getVpnName()}{os.linesep}"
         if verbose or not self.__share_timezone:

@@ -42,6 +42,12 @@ function endless() {
 
 function shutdown() {
   # Shutting down the container.
+  if [[ -n "${TOR_SETUP_PID:-}" ]]; then
+    kill "$TOR_SETUP_PID" 2>/dev/null
+  fi
+  if [[ -f /run/exegol/tor/pid ]]; then
+    /bin/bash /.exegol/tor.sh stop
+  fi
   # Backup host file to restore after restart
   cp -a /etc/hosts /etc/hosts.backup
   # Sending SIGTERM to all interactive process for proper closing
@@ -133,6 +139,14 @@ function desktop() {
 #
 #############################################
 echo "Starting exegol"
+# Establish protection before init, my-resources, desktop or user commands.
+if [[ "${1:-}" == "tor" ]]; then
+  /bin/bash /.exegol/tor.sh start &
+  TOR_SETUP_PID=$!
+  wait "$TOR_SETUP_PID" || exit 1
+  TOR_SETUP_PID=""
+  shift
+fi
 exegol_init
 
 ### Argument parsing

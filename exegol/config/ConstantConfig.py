@@ -18,6 +18,8 @@ class ConstantConfig:
     entrypoint_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/entrypoint.sh"
     # Path of the spawn.sh
     spawn_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/spawn.sh"
+    # Path of the tor.sh
+    tor_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/tor.sh"
     # Path to the EULA docs
     eula_path: Path = src_root_path_obj / "exegol/utils/docs/eula.md"
     # True when the current process has been spawned by the shell completion system (argcomplete).
