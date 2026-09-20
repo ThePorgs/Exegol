@@ -20,6 +20,9 @@ class ConstantConfig:
     spawn_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/spawn.sh"
     # Path to the EULA docs
     eula_path: Path = src_root_path_obj / "exegol/utils/docs/eula.md"
+    # True when the current process has been spawned by the shell completion system (argcomplete).
+    # In this mode, everything not strictly required to supply completion options must be skipped.
+    completion_mode: bool = bool(os.getenv("_ARGCOMPLETE"))
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
     __sudo_home = os.getenv("SUDO_HOME")

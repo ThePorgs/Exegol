@@ -120,3 +120,7 @@ pdm.lock
 
 # Cursor files
 .cursor/
+
+# Claude Code files
+.claude/
+CLAUDE.md
