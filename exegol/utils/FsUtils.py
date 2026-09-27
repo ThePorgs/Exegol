@@ -8,7 +8,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path, PurePath
-from typing import List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
@@ -110,6 +110,19 @@ def check_sysctl_value(sysctl: str, compare_to: str) -> bool:
     except PermissionError:
         logger.debug(f"Unable to read sysctl {sysctl} permission!")
     return False
+
+
+REQUIRED_OVPN_DNS_LINES: Tuple[str, ...] = (
+    "script-security 2",
+    "up /etc/openvpn/update-resolv-conf",
+    "down /etc/openvpn/update-resolv-conf",
+)
+
+
+def missing_ovpn_dns_lines(config_lines: Iterable[str]) -> List[str]:
+    """Which of the required OpenVPN dynamic-DNS lines are absent, in declared order."""
+    present = {line.strip() for line in config_lines}
+    return [line for line in REQUIRED_OVPN_DNS_LINES if line not in present]
 
 
 def get_user_id() -> Tuple[int, int]:

@@ -25,7 +25,7 @@ from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.OptionsEnum import SentinelUpdateStrategy
 from exegol.config.StaticContainerPath import StaticContainerPath, StaticFileName
 from exegol.console.ConsoleFormat import boolFormatter, getColor
-from exegol.console.ExegolPrompt import ExegolRich
+from exegol.console.ExegolPrompt import ExegolRich, stdinCanAnswer
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.console.cli.SyntaxFormat import SyntaxFormat
 from exegol.exceptions.ExegolExceptions import ProtocolNotSupported, CancelOperation, InteractiveError
@@ -36,7 +36,7 @@ from exegol.profile.ProfileAskUser import ask_user_for_value
 from exegol.sentinel.SentinelProfileManager import SentinelProfileManager
 from exegol.utils import FsUtils
 from exegol.utils.ExeLog import logger, ExeLog
-from exegol.utils.FsUtils import SCRATCH_SUFFIX, check_sysctl_value, mkdir, scratch_prefix, sweep_stale_scratch
+from exegol.utils.FsUtils import SCRATCH_SUFFIX, check_sysctl_value, missing_ovpn_dns_lines, mkdir, scratch_prefix, sweep_stale_scratch
 from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.SessionHandler import SessionHandler
 
@@ -1183,7 +1183,7 @@ class ContainerConfig:
         self.__vpn_path = vpn_path
         if vpn_path.is_file():
             if not skip_conf_checks:
-                await self.__checkVPNConfigDNS(vpn_path)
+                vpn_path = await self.__checkVPNConfigDNS(vpn_path)
             # Configure VPN with single file
             self.addVolume(vpn_path, StaticContainerPath.OPENVPN_CONFIG_FILE.value, read_only=True)
             ovpn_parameters.append("--config /.exegol/vpn/config/client.ovpn")
@@ -1195,9 +1195,11 @@ class ContainerConfig:
             vpn_filename = None
             # Try to find the config file in order to configure the autostart command of the container
             for file in vpn_path.glob('*.ovpn'):
-                logger.info(f"Using VPN config: {file}")
                 if not skip_conf_checks:
-                    await self.__checkVPNConfigDNS(file)
+                    # A patched copy (missing DNS lines appended) lands beside `file` in this
+                    # same directory, already covered by the addVolume() above.
+                    file = await self.__checkVPNConfigDNS(file)
+                logger.info(f"Using VPN config: {file}")
                 # Get filename only to match the future container path
                 vpn_filename = file.name
                 ovpn_parameters.append(f"--config /.exegol/vpn/config/{vpn_filename}")
@@ -1245,23 +1247,49 @@ class ContainerConfig:
         return ' '.join(wg_parameters)
 
     @staticmethod
-    async def __checkVPNConfigDNS(vpn_path: Union[str, Path]) -> None:
-        """Check if the OpenVPN configuration file contains DNS server dynamic update scripts"""
+    async def __checkVPNConfigDNS(vpn_path: Path) -> Path:
+        """Check if the OpenVPN configuration file contains DNS server dynamic update scripts.
+        Offers to generate a patched copy (instead of a manual edit) when they're missing."""
         logger.verbose("Checking OpenVPN config file")
-        configs = ["script-security 2", "up /etc/openvpn/update-resolv-conf", "down /etc/openvpn/update-resolv-conf"]
         with open(vpn_path, 'r') as vpn_file:
-            for line in vpn_file:
-                line = line.strip()
-                if line in configs:
-                    configs.remove(line)
-        if len(configs) > 0:
-            logger.warning("Some OpenVPN config are [red]missing[/red] to support VPN [orange3]dynamic DNS servers[/orange3]! "
-                           "Please add the following line to your configuration file:")
-            logger.empty_line()
-            logger.raw(os.linesep.join(configs), level=logging.WARNING)
-            logger.empty_line()
-            logger.empty_line()
-            await ExegolRich.Acknowledge("Your VPN configuration won't support dynamic DNS servers.")
+            missing = missing_ovpn_dns_lines(vpn_file)
+        if not missing:
+            return vpn_path
+
+        logger.warning("Some OpenVPN config are [red]missing[/red] to support VPN [orange3]dynamic DNS servers[/orange3]! "
+                       "Please add the following line to your configuration file:")
+        logger.empty_line()
+        logger.raw(os.linesep.join(missing), level=logging.WARNING)
+        logger.empty_line()
+
+        if stdinCanAnswer() and await ExegolRich.Confirm(
+                "Do you want Exegol to create a copy of this file with the missing lines appended?", default=True):
+            patched_path = vpn_path.with_name(f"{vpn_path.stem}.exegol{vpn_path.suffix}")
+            sweep_stale_scratch(vpn_path.parent, patched_path.name)
+            try:
+                fd, tmp_name = tempfile.mkstemp(dir=str(vpn_path.parent), prefix=scratch_prefix(patched_path.name), suffix=SCRATCH_SUFFIX)
+                os.close(fd)
+                tmp_file = Path(tmp_name)
+                try:
+                    # Bytes, not text mode: a Windows-authored file's line endings must survive
+                    # untouched, only the appended lines are new.
+                    original = vpn_path.read_bytes()
+                    if not original.endswith(b"\n"):
+                        original += b"\n"
+                    addition = b"\n# Added by Exegol to support VPN dynamic DNS servers\n" + \
+                        b"\n".join(line.encode() for line in missing) + b"\n"
+                    tmp_file.write_bytes(original + addition)
+                    tmp_file.replace(patched_path)
+                except Exception:
+                    tmp_file.unlink(missing_ok=True)
+                    raise
+                logger.success(f"Using patched VPN config: [magenta]{patched_path}[/magenta]")
+                return patched_path
+            except OSError as e:
+                logger.warning(f"Could not create a patched copy of the VPN config ({e}).")
+
+        await ExegolRich.Acknowledge("Your VPN configuration won't support dynamic DNS servers.")
+        return vpn_path
 
     def prepareShare(self, container_name: str) -> None:
         """Add workspace share before container creation.
