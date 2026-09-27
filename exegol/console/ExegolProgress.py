@@ -19,6 +19,17 @@ class ExegolProgress(Progress):
             raise IndexError
         return cast(Task, task)
 
+    def __clear_tasks(self) -> None:
+        """Remove every remaining task so no progress bar lingers after the context exits."""
+        for task_id in list(self.task_ids):
+            self.remove_task(task_id)
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        # Generic cleanup: drop any leftover tasks BEFORE stopping so the final render is
+        # empty and nothing stays on screen, regardless of how the operation ended.
+        self.__clear_tasks()
+        super(ExegolProgress, self).__exit__(exc_type, exc_val, exc_tb)
+
     def __enter__(self) -> "ExegolProgress":
         super(ExegolProgress, self).__enter__()
         return self

@@ -13,6 +13,9 @@ class LicenseType(Enum):
 # Features
 class LicenseFeature(Enum):
     Offline = 0
+    All = 1
+    AllWrapper = 2
+    Sentinel = 3
 
 # Form data
 class EnrollmentForm(TypedDict):

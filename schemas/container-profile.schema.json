@@ -1,0 +1,901 @@
+{
+  "$defs": {
+    "CustomizationSection": {
+      "additionalProperties": false,
+      "description": "The my-resources volume: the user's personal tool/environment customisation space.",
+      "properties": {
+        "share_my_resources": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share My Resources"
+        },
+        "my_resources_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "My Resources Path"
+        }
+      },
+      "title": "CustomizationSection",
+      "type": "object"
+    },
+    "DesktopSection": {
+      "additionalProperties": false,
+      "description": "The Exegol desktop feature and how it is exposed.\n\n``proto``, ``listen_ip`` and ``port`` are the split form of the CLI's\n``\"proto:host:port\"`` string; declare ``proto`` alongside the other two.",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "proto": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proto"
+        },
+        "listen_ip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Listen Ip"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 65535,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port"
+        }
+      },
+      "title": "DesktopSection",
+      "type": "object"
+    },
+    "DisplaySection": {
+      "additionalProperties": false,
+      "description": "GUI sharing: X11 passthrough and the desktop feature.",
+      "properties": {
+        "share_x11": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share X11"
+        },
+        "desktop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DesktopSection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "DisplaySection",
+      "type": "object"
+    },
+    "ImageSection": {
+      "additionalProperties": false,
+      "description": "Which image a container is created from, and which extra images are known.",
+      "properties": {
+        "tag": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tag"
+        },
+        "custom_images": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Custom Images"
+        }
+      },
+      "title": "ImageSection",
+      "type": "object"
+    },
+    "LogOutputSection": {
+      "additionalProperties": false,
+      "description": "Inline terminal-output capture, mirroring the profilable ``UserConfig.sentinel_log_output_*``.\n\nAll three keys are profile-overridable, ``enabled`` included, because what they set is a\ndefault rather than a control: these values are backfilled into the deployed config only\nwhen the selected Sentinel audit profile declares no ``log_output`` block of its own, and\nan audit profile that declares one replaces them wholesale. So an audit profile can always\nturn inline capture on or off over the top of ``~/.exegol/config.yml`` \u2014 that path is\ndocumented \u2014 and withholding ``enabled`` here would not have closed that capability, only\nmade this family inconsistent and blocked an org-wide container profile from enabling\nauditing by default.\n\n``enabled`` is nevertheless the one key here whose direction matters, so an unreadable or\nunrecognised value resolves to capture off.",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "max_size": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Size"
+        },
+        "truncation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Truncation"
+        }
+      },
+      "title": "LogOutputSection",
+      "type": "object"
+    },
+    "LogRotationSection": {
+      "additionalProperties": false,
+      "description": "Sentinel log rotation, mirroring ``UserConfig.sentinel_log_rotation_*``.",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "max_size": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Size"
+        },
+        "max_files": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Files"
+        },
+        "compress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compress"
+        }
+      },
+      "title": "LogRotationSection",
+      "type": "object"
+    },
+    "LoggingSection": {
+      "additionalProperties": false,
+      "description": "Shell logging (commands and outputs recorded to /workspace/logs/).",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "compress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compress"
+        }
+      },
+      "title": "LoggingSection",
+      "type": "object"
+    },
+    "MetadataSection": {
+      "additionalProperties": false,
+      "description": "Free-form annotation: ``description`` describes the profile, ``comment`` is carried onto the container.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "comment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment"
+        },
+        "comment_ask_user": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comment Ask User"
+        }
+      },
+      "title": "MetadataSection",
+      "type": "object"
+    },
+    "NetworkSection": {
+      "additionalProperties": false,
+      "description": "Networking defaults a profile may supply.\n\nThere is no fallback-mode field: if ``mode`` cannot be honoured on a host, that host's\n``~/.exegol/config.yml`` fallback policy decides.",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        },
+        "ports": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ports"
+        },
+        "hostname": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hostname"
+        },
+        "hostname_ask_user": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hostname Ask User"
+        },
+        "hosts_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hosts File"
+        },
+        "hosts": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hosts"
+        },
+        "dedicated_range": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dedicated Range"
+        },
+        "default_netmask": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 32,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default Netmask"
+        }
+      },
+      "title": "NetworkSection",
+      "type": "object"
+    },
+    "SentinelSection": {
+      "additionalProperties": false,
+      "description": "Sentinel audit logging. ``profile`` names a Sentinel audit profile, not a container profile.\n\n* ``enabled: true``, no ``profile``    -> enabled with the default audit profile\n* ``enabled: true``, ``profile: NAME`` -> enabled with that audit profile\n* ``enabled: false``                   -> disabled; ``profile`` is ignored\n* ``profile: NAME``, ``enabled`` unset -> enabled with that audit profile (like ``-SP NAME``)\n\nA null value is read as an omitted key, and ``profile: \"\"`` as no profile: both fall\nthrough to ``sentinel_enabled_by_default`` / ``sentinel_default_profile``. So a profile\nfile cannot express \"Sentinel on, no audit profile\" when a default audit profile is\nconfigured; only ``-SP \"\"`` on the command line can.",
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enabled"
+        },
+        "profile": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profile"
+        },
+        "update_strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Update Strategy"
+        },
+        "gid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gid"
+        },
+        "sentinel_logs_host_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sentinel Logs Host Path"
+        },
+        "log_rotation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LogRotationSection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "log_output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LogOutputSection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "SentinelSection",
+      "type": "object"
+    },
+    "ShellSection": {
+      "additionalProperties": false,
+      "description": "Which shell starts, and what environment it starts with.",
+      "properties": {
+        "default": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        },
+        "env": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Env"
+        }
+      },
+      "title": "ShellSection",
+      "type": "object"
+    },
+    "SystemSection": {
+      "additionalProperties": false,
+      "description": "Host-level sharing and container privileges.",
+      "properties": {
+        "share_timezone": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share Timezone"
+        },
+        "privileged": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Privileged"
+        },
+        "devices": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Devices"
+        },
+        "capabilities": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capabilities"
+        }
+      },
+      "title": "SystemSection",
+      "type": "object"
+    },
+    "VolumesSection": {
+      "additionalProperties": false,
+      "description": "What is mounted into the container, and from where on the host.\n\nThere is deliberately no ``mount_current_dir`` / ``-cwd`` field: it expands to the\nlaunch directory, so a shared profile could bind-mount an arbitrary host tree.",
+      "properties": {
+        "mounts": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mounts"
+        },
+        "workspace_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workspace Path"
+        },
+        "share_exegol_resources": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Share Exegol Resources"
+        },
+        "update_fs_perms": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Update Fs Perms"
+        },
+        "exegol_resources_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exegol Resources Path"
+        },
+        "private_workspace_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Private Workspace Path"
+        }
+      },
+      "title": "VolumesSection",
+      "type": "object"
+    },
+    "VpnSection": {
+      "additionalProperties": false,
+      "description": "VPN configuration, referenced BY PATH only.\n\nPaths are not expanded nor checked when the file is read, only at container creation.\nNo field accepts credential contents: ``auth_file`` names a file, never a secret.",
+      "properties": {
+        "config": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config"
+        },
+        "auth_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Auth File"
+        }
+      },
+      "title": "VpnSection",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Root model of a container profile file: one document, one profile.\n\n``version`` is schema-format metadata reserved for future structural changes; absent\nmeans version 1.",
+  "properties": {
+    "version": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    },
+    "image": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ImageSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "network": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/NetworkSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "volumes": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VolumesSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "customization": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CustomizationSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "display": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DisplaySection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "vpn": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VpnSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "shell": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ShellSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "logging": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoggingSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "system": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SystemSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "sentinel": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SentinelSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MetadataSection"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "ContainerProfile",
+  "type": "object"
+}

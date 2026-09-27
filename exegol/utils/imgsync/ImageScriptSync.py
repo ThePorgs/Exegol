@@ -3,6 +3,7 @@ import tarfile
 from typing import Optional
 
 from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.StaticContainerPath import StaticContainerPath
 from exegol.utils.ExeLog import logger
 
 
@@ -39,7 +40,7 @@ class ImageScriptSync:
                     data = io.BytesIO(initial_bytes=raw)
 
                 # Import file to tar object
-                info = tarfile.TarInfo(name="/.exegol/entrypoint.sh")
+                info = tarfile.TarInfo(name=StaticContainerPath.EXEGOL_ENTRYPOINT.value)
                 info.size = len(raw)
                 info.mode = 0o500
                 entry_tar.addfile(info, fileobj=data)
@@ -56,7 +57,7 @@ class ImageScriptSync:
                     data = io.BytesIO(initial_bytes=raw)
 
                 # Import file to tar object
-                info = tarfile.TarInfo(name="/.exegol/spawn.sh")
+                info = tarfile.TarInfo(name=StaticContainerPath.EXEGOL_SPAWN.value)
                 info.size = len(raw)
                 info.mode = 0o500
                 entry_tar.addfile(info, fileobj=data)

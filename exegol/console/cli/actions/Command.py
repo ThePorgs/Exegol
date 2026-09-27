@@ -2,9 +2,20 @@ import os
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
+from rich.markup import escape
+
 from exegol.console.ConsoleFormat import richLen
 from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
+
+
+def _help_literal(value: object) -> str:
+    """Escape one user-supplied value for a help string: `%` for argparse's `%`-expansion, `[` for rich markup.
+
+    Apply exactly once, to a single value, never to an assembled help string (that would
+    render a literal `%%`).
+    """
+    return escape(str(value).replace("%", "%%"))
 
 
 class Option:

@@ -3,9 +3,11 @@ from logging import CRITICAL
 from typing import Optional, List, Union, Dict, cast
 
 import argcomplete
+from rich.markup import escape
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.cli.actions.Command import Command, Option
+from exegol.console.cli.actions.ForceToggleAction import ForceToggleAction
 from exegol.utils.ExeLog import logger
 
 
@@ -18,13 +20,49 @@ class ExegolArgParse(argparse.ArgumentParser):
             logger.raw(message, level=CRITICAL, markup=True, emoji=True)
 
 
+class ExegolHelpFormatter(argparse.RawTextHelpFormatter):
+    """Renders a ForceToggleAction's spellings as one merged `-l, --[no-]log` help line.
+
+    Every other option is delegated to `super()` (argparse's rendering varies across Python
+    versions); the usage synopsis is left untouched.
+
+    The merged form is rich-escaped (`--\\[no-]log`): help is printed with `markup=True`, and
+    an unescaped `[no-]` would be swallowed as a style tag.
+
+    On 3.14+ argparse colours options inside this method, so the theme codes are re-applied
+    around the escaped text (`_theme` is read with `getattr`; it is absent before 3.14). The
+    theme's own codes are used so `_decolor` keeps help columns aligned. With colour on, the
+    merged form is no longer a contiguous substring of `format_help()`, which is why
+    `tests/resolver/test_help_defaults.py` forces the no-colour path.
+    """
+
+    def _format_action_invocation(self, action: argparse.Action) -> str:
+        if not isinstance(action, ForceToggleAction):
+            return super()._format_action_invocation(action)
+        # `_theme` exists only on 3.14+; before that every code is "" and wrapping is a no-op.
+        theme = getattr(self, "_theme", None)
+        short_code: str = getattr(theme, "short_option", "")
+        long_code: str = getattr(theme, "long_option", "")
+        reset_code: str = getattr(theme, "reset", "")
+        # Shorts first, then each long spelling merged with its negative sibling if any.
+        # Text is escaped before the colour is wrapped around it: ANSI codes are not markup.
+        positives = action.positiveSpellings()
+        parts: List[str] = [f"{short_code}{escape(option)}{reset_code}"
+                            for option in positives if not option.startswith("--")]
+        for long_option in (option for option in positives if option.startswith("--")):
+            merged = (long_option if action.negativeOf(long_option) is None
+                      else f"--[no-]{long_option[2:]}")
+            parts.append(f"{long_code}{escape(merged)}{reset_code}")
+        return ", ".join(parts)
+
+
 class Parser:
     """Custom Exegol CLI Parser. Main controller of argument building and parsing."""
 
     __description = f"""This Python script is a wrapper for Exegol. It can be used to easily manage Exegol on your machine.
 
 [bold magenta]Exegol documentation:[/bold magenta] [underline magenta]{ConstantConfig.documentation}[/underline magenta]"""
-    __formatter_class = argparse.RawTextHelpFormatter
+    __formatter_class = ExegolHelpFormatter
 
     def __init__(self, actions: List[Command]):
         """Custom parser creation"""

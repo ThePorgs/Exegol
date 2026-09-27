@@ -3,16 +3,19 @@ import re
 from typing import Union, Optional, List, Dict, Type, Generator, Set, cast, Sequence, Tuple
 
 from rich import box
+from rich.console import RenderableType
+from rich.markup import escape
 from rich.progress import TextColumn, BarColumn, TransferSpeedColumn, TimeElapsedColumn, TimeRemainingColumn, TaskID
 from rich.table import Table
 
 from exegol.config.EnvInfo import EnvInfo
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter, getColor, richLen
 from exegol.console.ExegolProgress import ExegolProgress
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.LayerTextColumn import LayerTextColumn
-from exegol.console.cli.ParametersManager import ParametersManager
+from exegol.model.ContainerProfileSelectable import ContainerProfileSelectable
 from exegol.model.ExegolContainer import ExegolContainer
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
 from exegol.model.ExegolImage import ExegolImage
@@ -125,9 +128,11 @@ class ExegolTUI:
         """Rich interface for docker image building from SDK stream"""
         # Prepare log file
         logfile = None
-        if ParametersManager().build_log is not None:
+        # Resolved once: resolve() is not memoised, so two reads could disagree.
+        build_log = OptionResolver().get(OptionKey.BUILD_LOG)
+        if build_log is not None:
             # Opening log file in line buffering mode (1) to support tail -f [file]
-            logfile = open(ParametersManager().build_log, 'a', buffering=1, encoding="utf-8")
+            logfile = open(build_log, 'a', buffering=1, encoding="utf-8")
         # Follow stream
         for line in build_stream:
             stream_text = line.get("stream", '')
@@ -156,14 +161,29 @@ class ExegolTUI:
             logfile.close()
 
     @staticmethod
+    def __newTable(title: Optional[str]) -> Table:
+        """Table shell shared by `printTable` and `buildDictTable`."""
+        return Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
+                     box=box.SQUARE, title_justify="left")
+
+    @staticmethod
+    def buildDictTable(data: Sequence[Dict[str, str]], title: Optional[str] = None) -> Table:
+        """Build, without printing, the table `printTable` renders for dict rows.
+
+        Cells are passed to Rich as markup: the caller must escape them.
+        """
+        table = ExegolTUI.__newTable(title)
+        ExegolTUI.__buildDictTable(table, data)
+        return table
+
+    @staticmethod
     def printTable(data: Union[Sequence[SelectableInterface], Sequence[str], Sequence[Dict[str, str]]],
                    title: Optional[str] = None,
                    safe_key: bool = False) -> None:
         """Printing Rich table for a list of object.
         Set safe_key to override the key selection"""
         logger.empty_line()
-        table = Table(title=title, show_header=True, header_style="bold blue", border_style="grey35",
-                      box=box.SQUARE, title_justify="left")
+        table = ExegolTUI.__newTable(title)
         if len(data) == 0:
             logger.debug("No data supplied")
             return
@@ -172,6 +192,11 @@ class ExegolTUI:
                 ExegolTUI.__buildImageTable(table, cast(Sequence[ExegolImage], data), safe_key=safe_key)
             elif type(data[0]) is ExegolContainer:
                 ExegolTUI.__buildContainerTable(table, cast(Sequence[ExegolContainer], data))
+            # safe_key is not forwarded: conflict_mode cannot fire for profiles because
+            # colliding names are keyed source.name. Widening selectFromTable's conflict_mode
+            # guard requires __buildProfileTable to honour safe_key in the same change.
+            elif type(data[0]) is ContainerProfileSelectable:
+                ExegolTUI.__buildProfileTable(table, cast(Sequence[ContainerProfileSelectable], data))
             elif type(data[0]) is str:
                 if title is not None:
                     ExegolTUI.__buildStringTable(table, cast(Sequence[str], data), cast(str, title))
@@ -183,6 +208,13 @@ class ExegolTUI:
                 logger.error(f"Print table of {type(data[0])} is not implemented")
                 raise NotImplementedError
         ExeLog.console.print(table)
+        logger.empty_line()
+
+    @staticmethod
+    def printRenderable(renderable: RenderableType) -> None:
+        """Print a pre-built renderable (e.g. a profile tree) with printTable's spacing."""
+        logger.empty_line()
+        ExeLog.console.print(renderable)
         logger.empty_line()
 
     @staticmethod
@@ -235,15 +267,12 @@ class ExegolTUI:
         # Define columns
         verbose_mode = logger.isEnabledFor(ExeLog.VERBOSE)
         debug_mode = logger.isEnabledFor(ExeLog.ADVANCED)
-        # Container size is only fetched in verbose mode (with a timeout), the size column is only displayed if the size is available
-        size_mode = verbose_mode and len(data) > 0 and data[0].hasContainerSize()
         if verbose_mode:
             table.add_column("Id")
         table.add_column("Container tag")
         table.add_column("State")
         table.add_column("Image tag")
-        if size_mode:
-            table.add_column("Size")
+        table.add_column("Storage")
         table.add_column("Configurations")
         if verbose_mode:
             table.add_column("Mounts")
@@ -253,9 +282,8 @@ class ExegolTUI:
         # Load data into the table
         for container in data:
             if verbose_mode:
-                size = [container.getContainerStorageSize(include_workspace=debug_mode)] if size_mode else []
                 table.add_row(container.getId(), container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
-                              *size,
+                              container.getContainerStorageSize(verbose=True),
                               container.config.getTextFeatures(verbose_mode),
                               container.config.getTextMounts(debug_mode),
                               container.config.getTextDevices(debug_mode),
@@ -263,7 +291,24 @@ class ExegolTUI:
                               container.config.getTextEnvs(debug_mode))
             else:
                 table.add_row(container.getDisplayName(), container.getTextStatus(), container.image.getDisplayName(),
+                              container.getContainerStorageSize(verbose=False),
                               container.config.getTextFeatures(verbose_mode))
+
+    @staticmethod
+    def __buildProfileTable(table: Table, data: Sequence[ContainerProfileSelectable]) -> None:
+        """Building Rich table from a list of ContainerProfileSelectable"""
+        table.title = "[not italic]:gear: [/not italic][gold3][g]Select a container profile[/g][/gold3]"
+        # Source is always shown so the layout does not depend on name ambiguity.
+        table.add_column("Source")
+        table.add_column("Name")
+        table.add_column("Description")
+        # Load data into the table
+        for entry in data:
+            # Escape operator-authored name and description. getSourceLabel() is already escaped
+            # and colour-tagged, so it must not be escaped again.
+            table.add_row(entry.getSourceLabel(),
+                          escape(entry.getKey()),
+                          escape(entry.getDescription()) or "[bright_black]—[/bright_black]")
 
     @staticmethod
     def __buildStringTable(table: Table, data: Sequence[str], title: str = "Key") -> None:
@@ -288,6 +333,15 @@ class ExegolTUI:
             # Array is directly pass as *args to handle dynamic columns number
             table.add_row(*data.values())
 
+    @staticmethod
+    def __describeSelectable(object_type: Optional[Type]) -> Tuple[str, str]:
+        """Return the ``(subject, verb)`` pair ``selectFromTable`` uses in its prompts."""
+        if object_type is ExegolContainer:
+            return "container", "create"
+        elif object_type is ExegolImage:
+            return "image", "build"
+        return "profile", "select"
+
     @classmethod
     async def selectFromTable(cls,
                               data: Sequence[SelectableInterface],
@@ -308,13 +362,14 @@ class ExegolTUI:
         if len(data) == 0:
             if object_type is ExegolImage or object_type is ExegolContainer:
                 logger.warning(f"No {'container' if object_type is ExegolContainer else 'images'} are available for selection")
+            elif object_type is ContainerProfileSelectable:
+                logger.warning("No container profiles are available for selection")
             else:
                 # Using container syntax by default
                 logger.warning("No object available")
             raise IndexError
         object_type = type(data[0])
-        object_name = "container" if object_type is ExegolContainer else "image"
-        action = "create" if object_type is ExegolContainer else "build"
+        object_name, action = cls.__describeSelectable(object_type)
         # Get a list of every choice available
         choices: List[str] = [obj.getKey() for obj in data]
         if conflict_mode or (len(data) > 1 and len(set(choices)) == 1):
@@ -455,7 +510,7 @@ class ExegolTUI:
         :param container: The container to fetch config from
         :return: A rich table fully built
         """
-        streamer_mode = os.getenv("EXEGOL_STREAMER_MODE") is not None
+        streamer_mode = EnvInfo.get_env("EXEGOL_STREAMER_MODE") is not None
         # Fetch data
         devices = container.config.getTextDevices(logger.isEnabledFor(ExeLog.VERBOSE))
         hosts = container.config.getTextExtraHosts(logger.isEnabledFor(ExeLog.VERBOSE))
@@ -506,6 +561,8 @@ class ExegolTUI:
                       f"{'[bright_black]({})[/bright_black]'.format(container.config.getMyResourcesPath()) if container.config.isMyResourcesEnable() else ''}")
         recap.add_row("[bold blue]Shell logging[/bold blue]", boolFormatter(container.config.isShellLoggingEnable()) +
                       f"{'[bright_black](/workspace/logs)[/bright_black]' if container.config.isShellLoggingEnable() else ''}")
+        recap.add_row("[bold blue]Sentinel[/bold blue]", boolFormatter(container.config.isSentinelEnable()) +
+                      f"{'[bright_black]({})[/bright_black]'.format(container.config.getSentinelProfile()) if container.config.getSentinelProfile() is not None else ''}")
         if "N/A" not in container.config.getVpnName():
             recap.add_row("[bold blue]VPN[/bold blue]", container.config.getVpnName())
         recap.add_row("[bold blue]Privileged[/bold blue]", '[orange3]On :fire:[/orange3]' if container.config.getPrivileged() else '[green]Off :heavy_check_mark:[/green]')
@@ -517,9 +574,6 @@ class ExegolTUI:
                           f'[{path_color}]{container.config.getHostWorkspacePath()}[/{path_color}] [bright_black](/workspace)[/bright_black]')
         else:
             recap.add_row("[bold blue]Workspace[/bold blue]", '[bright_magenta]Dedicated[/bright_magenta] [bright_black](/workspace)[/bright_black]')
-        # Container size is only fetched in verbose mode (with a timeout), the storage row is only displayed if the size is available
-        if type(container) is ExegolContainer and container.hasContainerSize():
-            recap.add_row("[bold blue]Size[/bold blue]", container.getContainerStorageSize(include_workspace=logger.isEnabledFor(ExeLog.ADVANCED)))
         if len(devices) > 0:
             recap.add_row("[bold blue]Devices[/bold blue]", devices.strip())
         if len(hosts) > 0:
@@ -538,6 +592,8 @@ class ExegolTUI:
 
     @classmethod
     def __isInteractionAllowed(cls) -> None:
-        # if not ParametersManager().interactive_mode:  # TODO improve non-interactive mode
+        # if not <resolved interactive_mode>:  # TODO improve non-interactive mode
         #    logger.critical(f'A required information is missing. Exiting.')
+        # `--non-interactive` is commented out in Command.py; if revived, read it through
+        # OptionResolver().get(...).
         pass

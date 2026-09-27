@@ -120,7 +120,11 @@ def print_exception_banner() -> None:
 def main() -> int:
     """Exegol main console entrypoint"""
     try:
-        # Set logger verbosity depending on user input
+        # Set logger verbosity depending on user input.
+        # Logging bootstrap: runs on every invocation, before any resolver exists. Both dests
+        # only have a CLI tier with a non-null default, so the resolver would add nothing.
+        # One marker covers both reads, which share the line below.
+        # resolver-exempt: logging bootstrap; both dests have no tier below the CLI, so the resolver would return the same value.
         ExeLog.setVerbosity(ParametersManager().verbosity, ParametersManager().quiet)
         # Take over SIGINT before asyncio.run() installs its own (deferred) handler
         SignalHandler.install()

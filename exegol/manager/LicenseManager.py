@@ -9,6 +9,7 @@ from supabase import AsyncClient
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ConsoleFormat import get_display_date
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.TUI import ExegolTUI
@@ -37,7 +38,8 @@ class LicenseManager:
             if not LocalDatastore().is_eula_accepted():
                 await cls.__singleton_instance.eula_process()
                 # For non-interactive commands skip first-time activation (or activation action)
-                if not ParametersManager().accept_eula and ParametersManager().getCurrentActionName() != "activate":
+                # `getCurrentActionName()` is a method, not an option, so it stays a direct call.
+                if not OptionResolver().get(OptionKey.ACCEPT_EULA) and ParametersManager().getCurrentActionName() != "activate":
                     await cls.__singleton_instance.activate_exegol()
                 else:
                     cls.__singleton_instance.__session.display_license()
@@ -48,17 +50,20 @@ class LicenseManager:
         self.__session.display_support_info()
 
     async def eula_process(self) -> None:
-        if not ParametersManager().accept_eula:
+        if not OptionResolver().get(OptionKey.ACCEPT_EULA):
             while not await ExegolRich.Confirm("I confirm that I've read and accepted the EULA (https://docs.exegol.com/legal/eula)", default=False):
                 await self.display_eula()
         LocalDatastore().update_eula(True)
 
     async def activate_exegol(self, skip_prompt: bool = False) -> None:
-        if skip_prompt and ParametersManager().api_key:
+        # API_KEY and LICENSE_ID are registered for a single retrieval path, but a profile
+        # must never supply credentials: see ProfileFieldMap.PROFILE_TIER_DEAD before adding
+        # a schema field. EXEGOL_API_KEY / EXEGOL_LICENSE_ID still work as argparse defaults.
+        if skip_prompt and OptionResolver().get(OptionKey.API_KEY):
             await self.__api_activation()
         # Do you want to activate your Exegol?
         elif skip_prompt or await ExegolRich.Confirm("Do you want to activate your Exegol subscription now?", default=False):
-            if ParametersManager().offline_mode:
+            if OptionResolver().get(OptionKey.OFFLINE_MODE):
                 logger.info("If you have an offline license, you can generate an exegol license from the exegol web dashboard and activate your wrapper.")
                 logger.info(f"Activation ID of your current machine: [green]{MUID.get_activation_id()[:4]}-{MUID.get_activation_id()[4:]}[/green]")
                 return
@@ -110,14 +115,14 @@ class LicenseManager:
             ExeLog.console.print(markdown)
 
     async def __api_activation(self) -> None:
-        license_id = ParametersManager().license_id
+        license_id = OptionResolver().get(OptionKey.LICENSE_ID)
         if license_id is None:
             logger.critical("API activation requires a valid license ID")
         logger.info("Activation using API Key")
         if not re.search(r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", license_id, re.IGNORECASE):
             logger.critical("The license ID provided is not in a valid format.")
         try:
-            await self.__activation(license_id, revoke_previous_machine=True, api_key=ParametersManager().api_key)
+            await self.__activation(license_id, revoke_previous_machine=True, api_key=OptionResolver().get(OptionKey.API_KEY))
         except CancelOperation:
             logger.critical("Exegol activation failed")
 
@@ -195,8 +200,7 @@ class LicenseManager:
                 current_os = "mac"
         hostname = platform.node()
         if not hostname.strip():
-            import os
-            hostname = os.environ.get("HOSTNAME", "unknown")
+            hostname = EnvInfo.get_env("HOSTNAME", "unknown")
         if not hostname.strip():
             hostname = "unknown"
         # Enroll

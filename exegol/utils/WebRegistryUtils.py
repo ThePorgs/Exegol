@@ -1,8 +1,7 @@
 import json
-import os
 import re
 import time
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Optional, Dict, List, Union, cast
 
 import requests
 from docker.models.images import Image
@@ -10,6 +9,8 @@ from requests import Response
 from rich.status import Status
 
 from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.EnvInfo import EnvInfo
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.model.MetaImages import MetaImages
@@ -83,13 +84,19 @@ class WebRegistryUtils:
         Return arch in format 'arch/variant'."""
         arch_key = "architecture"
         variant_key = "variant"
-        # Support Docker image struct with specific dict key
-        if isinstance(docker_image, Image):
-            docker_image = docker_image.attrs
+        # Support Docker image struct with specific dict key.
+        # Narrow on dict rather than on Image: with --ignore-missing-imports the docker stubs are
+        # absent, so Image is Any and a `type(x) is Image` test narrows nothing for the type checker.
+        image_data: Dict[str, Any]
+        if isinstance(docker_image, dict):
+            image_data = docker_image
+        else:
+            image_data = docker_image.attrs
             arch_key = "Architecture"
             variant_key = "Variant"
-        arch = str(docker_image.get(arch_key, "amd64"))
-        variant = docker_image.get(variant_key)
+        # `or "amd64"`, not a .get() default: a key PRESENT but null must fall back too.
+        arch = str(image_data.get(arch_key) or "amd64")
+        variant = image_data.get(variant_key)
         if variant:
             arch += f"/{variant}"
         return arch
@@ -123,7 +130,7 @@ class WebRegistryUtils:
     @classmethod
     def getLatestWrapperRelease(cls) -> str:
         """Fetch from GitHub release the latest Exegol wrapper version"""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             raise CancelOperation
         url: str = f"https://api.github.com/repos/{ConstantConfig.GITHUB_REPO}/releases/latest"
         github_response = cls.runJsonRequest(url, "Github")
@@ -138,7 +145,7 @@ class WebRegistryUtils:
     @classmethod
     def getMetaDigestId(cls, tag: str) -> Optional[str]:
         """Get Virtual digest id of a specific image tag from docker registry"""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             return None
         try:
             token = cls.__getRegistryToken()
@@ -158,7 +165,7 @@ class WebRegistryUtils:
     @classmethod
     def getRemoteVersion(cls, tag: str) -> Optional[str]:
         """Get image version of a specific image tag from docker registry."""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             return None
         try:
             token = cls.__getRegistryToken()
@@ -218,7 +225,7 @@ class WebRegistryUtils:
     @classmethod
     def runJsonRequest(cls, url: str, service_name: str, headers: Optional[Dict] = None, method: str = "GET", data: Any = None, retry_count: int = 2) -> Any:
         """Fetch a web page from url and parse the result as json."""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             return None
         data = cls.__runRequest(url, service_name, headers, method, data, retry_count)
         if data is not None and data.status_code == 200:
@@ -241,13 +248,13 @@ class WebRegistryUtils:
             try:
                 try:
                     proxies = {}
-                    http_proxy = os.environ.get('HTTP_PROXY') or os.environ.get('http_proxy')
+                    http_proxy = EnvInfo.get_env('HTTP_PROXY') or EnvInfo.get_env('http_proxy')
                     if http_proxy:
                         proxies['http'] = http_proxy
-                    https_proxy = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy')
+                    https_proxy = EnvInfo.get_env('HTTPS_PROXY') or EnvInfo.get_env('https_proxy')
                     if https_proxy:
                         proxies['https'] = https_proxy
-                    no_proxy = os.environ.get('NO_PROXY') or os.environ.get('no_proxy')
+                    no_proxy = EnvInfo.get_env('NO_PROXY') or EnvInfo.get_env('no_proxy')
                     if no_proxy:
                         proxies['no_proxy'] = no_proxy
                     logger.debug(f"Fetching information from {url}")
@@ -269,7 +276,8 @@ class WebRegistryUtils:
                     if error_re:
                         error_msg = f" ({error_re.group(1)})"
                     logger.error(f"Connection error: you probably have no internet.{error_msg}")
-                    # Switch to offline mode
+                    # Switch to offline mode. Direct write on purpose (the only runtime write-back
+                    # allowed): the resolver reads the live parameter object, so every gate sees it.
                     ParametersManager().offline_mode = True
                 except requests.exceptions.RequestException as err:
                     logger.error(f"Unknown connection error: {err}")

@@ -8,11 +8,10 @@ from docker.models.images import Image
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
-from exegol.config.UserConfig import UserConfig
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import get_display_date
 from exegol.console.ExegolStatus import ExegolStatus
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.manager.TaskManager import TaskManager
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.model.SupabaseModels import SupabaseImage
@@ -343,10 +342,11 @@ class ExegolImage(SelectableInterface):
 
     async def autoLoad(self, from_cache: bool = True) -> 'ExegolImage':
         """If the current image is in an unknown state, it's possible to load remote data specifically."""
+        # Read live, not snapshotted: `WebRegistryUtils` may switch offline mode on mid-process.
         if self.UNKNOWN_STATUS in self.__custom_status and \
                 not self.isVersionSpecific() and \
                 "N/A" in self.__profile_version and \
-                not ParametersManager().offline_mode:
+                not OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.debug(f"Auto-load remote version for the specific image '{self.__name}'")
             # Find remote metadata for the specific current image
             async with ExegolStatus(f"Synchronization of the [green]{self.__name}[/green] image status...",
@@ -755,7 +755,9 @@ class ExegolImage(SelectableInterface):
             return self.getDisplayLicense() if self.__license else "Official"
         elif self.__repository == ConstantConfig.COMMUNITY_IMAGE_NAME:
             return "Community"
-        elif self.__repository in UserConfig().custom_images:
+        # Already Enterprise-gated by the profile tier: don't re-gate it, and don't bypass the
+        # gate by reading UserConfig directly.
+        elif self.__repository in OptionResolver().get(OptionKey.CUSTOM_IMAGES):
             return "Custom"
         elif self.isLocal():
             return "Local"
@@ -764,7 +766,7 @@ class ExegolImage(SelectableInterface):
     def getDisplayName(self) -> str:
         """Image's display name getter"""
         result = self.__display_name if self.__display_name else self.getName()
-        if self.getArch().split('/')[0] != ParametersManager().arch or logger.isEnabledFor(ExeLog.VERBOSE):
+        if self.getArch().split('/')[0] != OptionResolver().get(OptionKey.ARCH) or logger.isEnabledFor(ExeLog.VERBOSE):
             color = ConsoleFormat.getArchColor(self.getArch())
             result += f" [{color}]({self.getArch()})[/{color}]"
         return result

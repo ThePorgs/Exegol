@@ -17,10 +17,9 @@ from requests import ReadTimeout
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
 from exegol.config.EnvInfo import EnvInfo
-from exegol.config.UserConfig import UserConfig
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound
 from exegol.manager.TaskManager import TaskManager
 from exegol.model.ExegolContainer import ExegolContainer
@@ -38,6 +37,11 @@ from exegol.utils.SupabaseUtils import SupabaseUtils
 # SDK Documentation : https://docker-py.readthedocs.io/en/stable/index.html
 
 
+def _docker_client_environment() -> Dict[str, str]:
+    """Return the environment used to configure the docker client, with the docker settings resolved from the host user"""
+    return EnvInfo.get_env_overlay(EnvInfo.docker_env_names)
+
+
 class DockerUtils(metaclass=MetaSingleton):
 
     def __init__(self) -> None:
@@ -45,7 +49,7 @@ class DockerUtils(metaclass=MetaSingleton):
         try:
             # Connect Docker SDK to the local docker instance.
             # Docker connection setting is loaded from the user environment variables.
-            self.__client: DockerClient = docker.from_env(timeout=300)
+            self.__client: DockerClient = docker.from_env(environment=_docker_client_environment())
             # Check if the docker daemon is serving linux container
             self.__daemon_info = self.__client.info()
             if self.__daemon_info.get("OSType", "linux").lower() != "linux":
@@ -71,7 +75,6 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.critical("Docker daemon seems busy, Exegol receives timeout response. Try again later.")
         self.__images: Optional[List[ExegolImage]] = None
         self.__containers: Optional[List[ExegolContainer]] = None
-        self.__containers_with_size: bool = False
         self.__docker_df_cache: Optional[Dict[str, Any]] = None
 
     def clearCache(self) -> None:
@@ -87,41 +90,8 @@ class DockerUtils(metaclass=MetaSingleton):
 
     # # # Container Section # # #
 
-    # Maximum time (in seconds) given to docker to compute the containers size before falling back to a listing without size
-    # In advanced mode, the default client timeout is used instead
-    __CONTAINER_SIZE_TIMEOUT = 60
-
-    def __list_api_container(self, name: str, sparse: bool = False, with_size: bool = False) -> List[Container]:
-        """List Exegol docker containers matching a name.
-        Computing the containers size (with_size) can be very slow with heavy containers,
-        this request is bounded by a timeout (the default one in advanced mode) and fallback to a listing without size."""
-        filters = {"name": name, "label": f"{ExegolImage.Labels.app.value}=Exegol"}
-        docker_containers = None
-        try:
-            if with_size:
-                advanced_mode = logger.isEnabledFor(ExeLog.ADVANCED)
-                default_timeout = self.__client.api.timeout
-                # Do not change default timeout on advanced mode
-                if not advanced_mode:
-                    self.__client.api.timeout = self.__CONTAINER_SIZE_TIMEOUT
-                try:
-                    docker_containers = self.__client.api.containers(all=True, size=True, filters=filters)
-                except ReadTimeout:
-                    logger.warning("Docker took too long to compute the containers size, the container storage size will not be available."
-                                   + ("" if advanced_mode else " Add -vv to your command to retry with a longer timeout."))
-                finally:
-                    if not advanced_mode:
-                        self.__client.api.timeout = default_timeout
-            if docker_containers is None:
-                docker_containers = self.__client.api.containers(all=True, filters=filters)
-        except APIError as err:
-            logger.debug(err)
-            logger.critical(err.explanation)
-            raise RuntimeError
-        except ReadTimeout:
-            logger.critical("Received a timeout error... Unable to list containers, retry later.")
-            raise RuntimeError
-
+    def __list_api_container(self, name: str, sparse: bool = False) -> List[Container]:
+        docker_containers = self.__client.api.containers(all=True, size=True, filters={"name": name, "label": f"{ExegolImage.Labels.app.value}=Exegol"})
         containers = []
         if docker_containers is not None:
             for container in docker_containers:
@@ -138,16 +108,14 @@ class DockerUtils(metaclass=MetaSingleton):
                 containers.append(full_container)
         return containers
 
-    async def listContainers(self, with_size: bool = False) -> List[ExegolContainer]:
+    async def listContainers(self) -> List[ExegolContainer]:
         """List available docker containers.
-        The containers size is only computed on demand (with_size) as it can be very slow with heavy containers.
         Return a list of ExegolContainer"""
-        if self.__containers is None or (with_size and not self.__containers_with_size):
+        if self.__containers is None:
             logger.verbose("Loading Exegol containers")
             self.__containers = []
-            self.__containers_with_size = with_size
             try:
-                docker_containers = self.__list_api_container("exegol-", with_size=with_size)
+                docker_containers = self.__list_api_container("exegol-")
             except APIError as err:
                 logger.debug(err)
                 logger.critical(err.explanation)
@@ -260,12 +228,11 @@ class DockerUtils(metaclass=MetaSingleton):
             DataCache().add_container_cache(model.name)
         return ExegolContainer(container, model)
 
-    def getContainer(self, tag: str, with_size: bool = False) -> ExegolContainer:
-        """Get an ExegolContainer from tag name.
-        The container size is only computed on demand (with_size) as it can be very slow with heavy containers."""
+    def getContainer(self, tag: str) -> ExegolContainer:
+        """Get an ExegolContainer from tag name."""
         try:
             # Fetch potential container match from DockerSDK
-            container = self.__list_api_container(f"exegol-{tag}", with_size=with_size)
+            container = self.__list_api_container(f"exegol-{tag}")
         except APIError as err:
             logger.debug(err)
             logger.critical(err.explanation)
@@ -279,7 +246,7 @@ class DockerUtils(metaclass=MetaSingleton):
                 # If the user's input didn't match any container, try to force the name in lowercase if not already tried
                 lowered_tag = tag.lower()
                 if lowered_tag != tag:
-                    return self.getContainer(lowered_tag, with_size=with_size)
+                    return self.getContainer(lowered_tag)
             raise ObjectNotFound
         # Filter results with exact name matching
         for c in container:
@@ -457,9 +424,13 @@ class DockerUtils(metaclass=MetaSingleton):
     def createNetwork(self, network_name: str, driver: str) -> bool:
         """Create a new exegol network"""
         docker_networks = self.__listDockerNetworks()
+        # Range and netmask are one decision: resolve both once (resolve() is not memoised).
+        # Both arrive already validated by the profile-UserConfig tier, so nothing is re-parsed.
+        dedicated_range = OptionResolver().get(OptionKey.NETWORK_DEDICATED_RANGE)
+        default_netmask = OptionResolver().get(OptionKey.NETWORK_DEFAULT_NETMASK)
         ip_pool = IPAMPool(subnet=str(NetworkUtils.get_next_available_range(
-            UserConfig().network_dedicated_range,
-            UserConfig().network_default_netmask,
+            dedicated_range,
+            default_netmask,
             docker_networks)))
         config = IPAMConfig(pool_configs=[ip_pool])
         try:
@@ -510,7 +481,7 @@ class DockerUtils(metaclass=MetaSingleton):
             logger.verbose("Loading Exegol images")
             async with ExegolStatus(f"Loading Exegol images", spinner_style="blue") as s:
                 TaskManager.add_task(
-                    SupabaseUtils.list_all_images(ParametersManager().arch),
+                    SupabaseUtils.list_all_images(OptionResolver().get(OptionKey.ARCH)),
                     TaskManager.TaskId.RemoteImageList)
                 TaskManager.add_task(
                     self.__listOfficialLocalImages(),
@@ -518,9 +489,12 @@ class DockerUtils(metaclass=MetaSingleton):
                 remote_images: List[SupabaseImage]
                 local_images: List[Image]
                 remote_images, local_images = await TaskManager.gather(TaskManager.TaskId.RemoteImageList, TaskManager.TaskId.LocalImageList)
-                if include_custom and len(UserConfig().custom_images) > 0:
+                # Resolved once so the guard and the loop see the same list. The Enterprise
+                # gate already ran in ProfileUserConfigTier: do not re-gate nor bypass it here.
+                custom_images = OptionResolver().get(OptionKey.CUSTOM_IMAGES)
+                if include_custom and len(custom_images) > 0:
                     s.update(status=f"Retrieving [green]custom[/green] images")
-                    for custom in UserConfig().custom_images:
+                    for custom in custom_images:
                         local_images.extend(await self.__listCustomLocalImages(custom))
                     logger.verbose("Retrieved [green]custom[/green] images")
                 local_images_with_size = [ExegolImage(docker_image=img, meta_size=self.__resolve_image_size(img)) for img in local_images]
@@ -759,7 +733,8 @@ class DockerUtils(metaclass=MetaSingleton):
 
     async def downloadImage(self, image: ExegolImage, install_mode: bool = False) -> bool:
         """Download/pull an ExegolImage"""
-        if ParametersManager().offline_mode:
+        # Not a snapshot: WebRegistryUtils may switch offline mode on mid-process, and get() sees it.
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return False
         if ExegolImage.UNKNOWN_STATUS in image.getStatus():
@@ -787,7 +762,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                            auth_config=auth_config))
                 logger.success(f"Image successfully {'installed' if install_mode else 'updated'}")
                 # Remove old image
-                if not install_mode and image.isInstall() and UserConfig().auto_remove_images:
+                if not install_mode and image.isInstall() and OptionResolver().get(OptionKey.AUTO_REMOVE_IMAGES):
                     await self.removeImage(image, upgrade_mode=not install_mode)
                 return True
             except APIError as err:
@@ -812,7 +787,7 @@ class DockerUtils(metaclass=MetaSingleton):
 
     async def downloadVersionTag(self, image: ExegolImage) -> Union[ExegolImage, str]:
         """Pull a docker image for a specific version tag and return the corresponding ExegolImage"""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("It's not possible to download a docker image in offline mode ...")
             return ""
         auth_config: Optional[dict] = None
@@ -918,7 +893,7 @@ class DockerUtils(metaclass=MetaSingleton):
 
     async def buildImage(self, tag: str, build_profile: Optional[str], build_dockerfile: Optional[str], dockerfile_path: str) -> None:
         """Build a docker image from source"""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("It's not possible to build a docker image in offline mode. The build process need access to internet ...")
             raise RuntimeError
         logger.info(f"Building exegol image : {tag}")
@@ -926,9 +901,11 @@ class DockerUtils(metaclass=MetaSingleton):
             build_profile = "full"
             build_dockerfile = "Dockerfile"
         logger.info("Starting build. Please wait, this will be long.")
+        # Resolved once so the log, the host check and the build platform agree.
+        target_arch = OptionResolver().get(OptionKey.ARCH)
         logger.verbose(f"Creating build context from [gold]{dockerfile_path}[/gold] with "
-                       f"[green][b]{build_profile}[/b][/green] profile ({ParametersManager().arch}).")
-        if EnvInfo.arch != ParametersManager().arch:
+                       f"[green][b]{build_profile}[/b][/green] profile ({target_arch}).")
+        if EnvInfo.arch != target_arch:
             logger.warning("Building an image for a different host architecture can cause unexpected problems and slowdowns!")
         try:
             # path is the directory full path where Dockerfile is.
@@ -942,7 +919,7 @@ class DockerUtils(metaclass=MetaSingleton):
                                                    "VERSION": "local",
                                                    "BUILD_PROFILE": build_profile,
                                                    "BUILD_DATE": datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')},
-                                        platform="linux/" + ParametersManager().arch,
+                                        platform="linux/" + target_arch,
                                         rm=True,
                                         forcerm=True,
                                         pull=True,

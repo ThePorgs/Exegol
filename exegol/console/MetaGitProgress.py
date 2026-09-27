@@ -5,7 +5,7 @@ from git.objects.submodule.base import UpdateProgress
 from rich.console import Console
 from rich.progress import Progress, ProgressColumn, GetTimeCallable, Task
 
-from exegol.utils.ExeLog import ExeLog
+from exegol.utils.ExeLog import ExeLog, ConsoleLock
 from exegol.utils.ExeLog import logger
 from exegol.utils.MetaSingleton import MetaSingleton
 
@@ -43,7 +43,12 @@ def clone_update_progress(op_code: int, cur_count: Union[str, float], max_count:
         max_count = 0
     max_count = int(max_count)
     cur_count = int(cur_count)
-    main_task = MetaGitProgress().tasks[0]
+    # This callback runs inside GitPython's stderr pump THREAD, so an exception here surfaces
+    # as a stray traceback and kills all progress feedback. The singleton has no tasks when
+    # the caller never entered a MetaGitProgress context (e.g. the full-clone SHA fallback,
+    # which runs under an ExegolStatus instead), so never index tasks[0] blindly.
+    tasks = MetaGitProgress().tasks
+    main_task = tasks[0] if tasks else None
     step = 0
 
     # COUNTING
@@ -64,8 +69,9 @@ def clone_update_progress(op_code: int, cur_count: Union[str, float], max_count:
     else:
         logger.debug(f"Git OPCODE {op_code} is not handled by Exegol TUI.")
 
-    main_task.total = 4
-    main_task.completed = step
+    if main_task is not None:
+        main_task.total = 4
+        main_task.completed = step
 
 
 class MetaGitProgress(Progress, metaclass=MetaSingleton):
@@ -97,6 +103,44 @@ class MetaGitProgress(Progress, metaclass=MetaSingleton):
                         description += f" • [green4]{message}"
                     counting_task.description = description
             if op_code & RemoteProgress.END != 0:
-                MetaGitProgress().remove_task(MetaGitProgress().task_dict[ref_op_code].id)
+                # Pop instead of indexing: __clear_tasks() empties task_dict on every context
+                # exit, and git's stderr pump runs in another thread that can still emit a
+                # trailing END after the `async with` closed -- a KeyError there would surface
+                # as a stray traceback from inside that thread.
+                ended_task = MetaGitProgress().task_dict.pop(ref_op_code, None)
+                if ended_task is not None:
+                    MetaGitProgress().remove_task(ended_task.id)
             return True
         return False
+
+    def __clear_tasks(self) -> None:
+        """Remove every remaining task so no progress bar lingers after the context exits
+        (e.g. a task left behind by a failed clone or a submodule operation)."""
+        for task_id in list(self.task_ids):
+            self.remove_task(task_id)
+        self.task_dict.clear()
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        # Generic cleanup: drop any leftover tasks BEFORE stopping so the final render is
+        # empty and nothing stays on screen, regardless of how the operation ended.
+        self.__clear_tasks()
+        super(MetaGitProgress, self).__exit__(exc_type, exc_val, exc_tb)
+
+    def __enter__(self) -> "MetaGitProgress":
+        super(MetaGitProgress, self).__enter__()
+        return self
+
+    async def __aenter__(self) -> "MetaGitProgress":
+        await ConsoleLock.acquire()
+        try:
+            super(MetaGitProgress, self).__enter__()
+            return self
+        except Exception as e:
+            ConsoleLock.release()
+            raise e
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        try:
+            self.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            ConsoleLock.release()
