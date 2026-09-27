@@ -2,9 +2,20 @@ import os
 from argparse import Namespace
 from typing import List, Optional, Tuple, Union, Dict, cast
 
+from rich.markup import escape
+
 from exegol.console.ConsoleFormat import richLen
 from exegol.config.EnvInfo import EnvInfo
 from exegol.utils.ExeLog import logger
+
+
+def _help_literal(value: object) -> str:
+    """Escape one user-supplied value for a help string: `%` for argparse's `%`-expansion, `[` for rich markup.
+
+    Apply exactly once, to a single value, never to an assembled help string (that would
+    render a literal `%%`).
+    """
+    return escape(str(value).replace("%", "%%"))
 
 
 class Option:
@@ -43,6 +54,12 @@ class GroupArg:
 
 class Command:
     """The Command class is the root of all CLI actions"""
+
+    # Set to False on actions that must be able to run without a working docker daemon
+    require_docker: bool = True
+    # Set to True on actions whose stdout is machine-readable data (i.e. meant to be redirected to a file).
+    # Every log message is sent to stderr instead, to keep the redirected output clean.
+    stdout_is_data: bool = False
 
     def __init__(self) -> None:
         # Root command usages (can be overwritten by subclasses to display different use cases)

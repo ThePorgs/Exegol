@@ -114,9 +114,15 @@ shared-resources/
 # PDM
 pdm.lock
 .pdm-build
+.pdm-python
 
 # macOS files
 .DS_Store
 
 # Cursor files
+.planning/
 .cursor/
+
+# Claude Code files
+.claude/
+CLAUDE.md

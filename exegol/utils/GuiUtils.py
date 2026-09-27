@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 from exegol.config.EnvInfo import EnvInfo
 from exegol.console.ExegolPrompt import ExegolRich
@@ -19,6 +19,7 @@ class GuiUtils:
     from the information of the system (through X11 sharing)."""
 
     __distro_name = ""
+    __wayland_runtime_dir_warned: bool = False
     default_x11_path = "/tmp/.X11-unix"
 
     @classmethod
@@ -77,8 +78,11 @@ class GuiUtils:
         Get the host path of the Wayland socket
         :return:
         """
-        wayland_dir = os.getenv("XDG_RUNTIME_DIR")
-        wayland_socket = os.getenv("WAYLAND_DISPLAY")
+        wayland_dir = EnvInfo.get_env("XDG_RUNTIME_DIR")
+        wayland_socket = EnvInfo.get_env("WAYLAND_DISPLAY")
+        if wayland_dir is None and not cls.__wayland_runtime_dir_warned:
+            cls.__wayland_runtime_dir_warned = True
+            logger.warning("The XDG_RUNTIME_DIR environment variable is not set on your host. This can prevent GUI apps to start through Wayland sharing")
         if wayland_dir is None or wayland_socket is None:
             return None
         return Path(wayland_dir, wayland_socket)
@@ -96,11 +100,11 @@ class GuiUtils:
         # Add ENV check is case of user don't have it, which will mess up GUI (X11 sharing) if fallback does not work
         # @see https://github.com/ThePorgs/Exegol/issues/148
         if not EnvInfo.is_windows_shell:
-            if os.getenv("DISPLAY") is None:
+            if EnvInfo.get_env("DISPLAY") is None:
                 logger.warning("The DISPLAY environment variable is not set on your host. This can prevent GUI apps to start through X11 sharing")
 
         # DISPLAY var is fetch from the current user environment. If it doesn't exist, using ':0'.
-        return os.getenv('DISPLAY', ":0")
+        return EnvInfo.get_env('DISPLAY', ":0")
 
     @classmethod
     def getWaylandEnv(cls) -> str:
@@ -108,7 +112,16 @@ class GuiUtils:
         Get the current WAYLAND_DISPLAY environment to access wayland socket
         :return:
         """
-        return os.getenv('WAYLAND_DISPLAY', 'wayland-0')
+        return EnvInfo.get_env('WAYLAND_DISPLAY', 'wayland-0')
+
+    @staticmethod
+    def run_x11_command(argv: List[str], env: Dict[str, str], hide_stderr: bool = False) -> None:
+        """Run a host X11 tool without a shell, ignoring its exit status"""
+        try:
+            subprocess.run(argv, env=env, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL if hide_stderr else None, check=False)
+        except OSError as e:
+            logger.debug(f"Unable to run {argv[0]}: {e}")
 
     # # # # # # Mac specific methods # # # # # #
 
@@ -161,7 +174,7 @@ class GuiUtils:
 
     @staticmethod
     def __isXQuartzInstalled() -> bool:
-        return 'xquartz' in os.getenv('DISPLAY', "").lower()
+        return 'xquartz' in EnvInfo.get_env('DISPLAY', "").lower()
 
     @staticmethod
     def __xquartzAllowNetworkClients() -> bool:

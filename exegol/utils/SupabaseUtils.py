@@ -15,11 +15,13 @@ from supabase_functions.errors import FunctionsHttpError, FunctionsRelayError
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation, UnavailableService
 from exegol.model.LicensesTypes import LicenseSession, TokenRotate, LicenseEnrollment, EnrollmentForm
 from exegol.model.SupabaseModels import SupabaseImage
 from exegol.utils.ExeLog import logger
+
+# `OptionResolver` is imported inside each offline gate below to break a circular import:
+# OptionResolver -> UserConfig -> SessionHandler -> SupabaseUtils.
 
 
 class SupabaseUtils:
@@ -43,7 +45,8 @@ class SupabaseUtils:
 
     @classmethod
     async def login_user(cls) -> AsyncClient:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("Exegol can't be activated without Internet access.")
         # Login
         supabase_client = await cls.__create_client()
@@ -105,7 +108,8 @@ class SupabaseUtils:
         :param headers: Custom headers (if any)
         :return:
         """
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             # This check must be made before
             raise NotImplementedError
         if headers is None:
@@ -134,7 +138,8 @@ class SupabaseUtils:
 
     @classmethod
     async def __execute(cls, supabase_query: Union[AsyncFilterRequestBuilder, AsyncMaybeSingleRequestBuilder, AsyncSingleRequestBuilder, AsyncSelectRequestBuilder]) -> Optional[APIResponse]:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             # This check must be made before
             raise NotImplementedError
         try:
@@ -165,7 +170,8 @@ class SupabaseUtils:
         Get new public certificate from license server.
         :return: Public certificate as string.
         """
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("You need internet access to validate Exegol license.")
         try:
             data: Dict[str, bytes] = await cls.__call_licenses_endpoint((await cls.__create_client()).functions, cls.LicenseAction.GetCertificate)
@@ -194,7 +200,8 @@ class SupabaseUtils:
         :param supabase_client:
         :return:
         """
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("Exegol can't be activated without Internet access.")
         try:
             return await cls.__call_licenses_endpoint(supabase_client, cls.LicenseAction.LicenseEnum)
@@ -213,7 +220,8 @@ class SupabaseUtils:
 
     @classmethod
     async def activate_licenses(cls, supabase_client: Optional[AsyncFunctionsClient], form: EnrollmentForm, api_key: Optional[str] = None) -> LicenseEnrollment:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("You can't activate Exegol without Internet access.")
         if supabase_client is None:
             supabase_client = (await cls.__create_client()).functions
@@ -272,7 +280,8 @@ class SupabaseUtils:
 
     @classmethod
     async def rotate_token(cls, form: dict, show_connection_error: bool) -> str:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             raise LicenseToleration
         try:
             result = cast(TokenRotate, await cls.__call_licenses_endpoint((await cls.__create_client()).functions,
@@ -297,7 +306,8 @@ class SupabaseUtils:
 
     @classmethod
     async def refresh_session(cls, form: dict) -> Optional[str]:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             raise LicenseToleration
         try:
             result = cast(LicenseSession, await cls.__call_licenses_endpoint((await cls.__create_client()).functions,
@@ -317,7 +327,8 @@ class SupabaseUtils:
 
     @classmethod
     async def registry_access(cls, form: dict, session: str) -> str:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.critical("You can't access the registry without Internet access.")
         try:
             data = await cls.__call_licenses_endpoint((await cls.__create_client()).functions,
@@ -352,7 +363,8 @@ class SupabaseUtils:
 
     @classmethod
     async def list_all_images(cls, arch: str) -> List[SupabaseImage]:
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.warning("Can't list online images without Internet access. Skipping.")
             return []
         logger.debug(f"Listing images from metadata table")
@@ -372,7 +384,8 @@ class SupabaseUtils:
     @classmethod
     async def get_tag_version(cls, tag: str, arch: str) -> Tuple[Optional[str], Optional[str]]:
         """Get the latest version information of a specific image"""
-        if ParametersManager().offline_mode:
+        from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             return None, None
         logger.debug(f"Fetching latest version of a specific image {tag} from metadata table")
         image: Optional[APIResponse] = await cls.__execute((await cls.__create_client())

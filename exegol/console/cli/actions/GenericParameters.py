@@ -2,10 +2,14 @@ from typing import List, Optional
 
 from argcomplete.completers import EnvironCompleter, DirectoriesCompleter, FilesCompleter
 
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.config.UserConfig import UserConfig
+from exegol.console.cli.OptionsEnum import SentinelUpdateStrategy
 from exegol.console.cli.ExegolCompleter import ContainerCompleter, ImageCompleter, VoidCompleter, DesktopConfigCompleter
+from exegol.console.cli.SentinelCompleter import SentinelProfileCompleter
 from exegol.console.cli.SyntaxFormat import SyntaxFormat
-from exegol.console.cli.actions.Command import Option, GroupArg
+from exegol.console.cli.actions.Command import Option, GroupArg, _help_literal
+from exegol.console.cli.actions.ForceToggleAction import ForceToggleAction
 from exegol.utils.NetworkUtils import NetworkUtils
 
 
@@ -57,7 +61,7 @@ class ContainerStart:
         # Create options on container start
         self.envs = Option("-e", "--env",
                            action="append",
-                           default=[],
+                           default=None,
                            dest="envs",
                            help="Add an environment variable on Exegol (format: --env KEY=value). The variables "
                                 "configured during the creation of the container will be persistent in all shells. "
@@ -68,9 +72,8 @@ class ContainerStart:
                                    dest="capabilities",
                                    metavar='CAPABILITY',  # Do not display available choices
                                    action="append",
-                                   default=[],
-                                   choices={"NET_ADMIN", "NET_BROADCAST", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO",
-                                            "SYS_ADMIN", "LINUX_IMMUTABLE", "MAC_ADMIN", "SYSLOG", "ALL"},
+                                   default=None,
+                                   choices=UserConfig.capability_options,
                                    help="[orange3](dangerous)[/orange3] Capabilities allow to add specific privileges to the container "
                                         "(e.g. need to mount volumes, perform low-level operations on the network, etc).")
 
@@ -90,25 +93,31 @@ class ContainerSpawnShell(ContainerStart):
                             dest="shell",
                             action="store",
                             choices=UserConfig.start_shell_options,
-                            default=UserConfig().default_start_shell,
-                            help=f"Select a shell environment to launch at startup (Default: [blue]{UserConfig().default_start_shell}[/blue])")
+                            default=None,
+                            help=f"Select a shell environment to launch at startup (Default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.SHELL))}[/blue])")
 
-        self.log = Option("-l", "--log",
+        # Help template for every --[no-]NAME toggle: "<feature> (default: Enabled/Disabled)",
+        # with the default read through defaultFor() (see ContainerCreation for why only it).
+        # Spellings are written literally: `_REGISTRY`'s `flags` tuples copy them verbatim.
+        # A short flag only ever sits on the positive half.
+        self.log = Option("-l", "--log", "--no-log",
                           dest="log",
-                          action="store_true",
-                          default=False,
-                          help="Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: [bright_black]Disabled[/bright_black])")
+                          action=ForceToggleAction,
+                          default=None,
+                          help=f"Enable shell logging (commands and outputs) on exegol to /workspace/logs/ (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.LOG) else '[bright_black]Disabled[/bright_black]'})")
         self.log_method = Option("--log-method",
                                  dest="log_method",
                                  action="store",
                                  choices=UserConfig.shell_logging_method_options,
-                                 default=UserConfig().shell_logging_method,
-                                 help=f"Select a shell logging method used to record the session (default: [blue]{UserConfig().shell_logging_method}[/blue])")
-        self.log_compress = Option("--log-compress",
+                                 default=None,
+                                 help=f"Select a shell logging method used to record the session (default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.LOG_METHOD))}[/blue])")
+        # `--no-log` is a prefix of `--no-log-compress` and resolves by exact match; the
+        # abbreviations `--no-l`/`--no-lo` are now ambiguous (pinned in test_cli_alias_matrix).
+        self.log_compress = Option("--log-compress", "--no-log-compress",
                                    dest="log_compress",
-                                   action="store_true",
-                                   default=False,
-                                   help=f"Enable or disable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if UserConfig().shell_logging_compress else '[red]Disabled[/red]'})")
+                                   action=ForceToggleAction,
+                                   default=None,
+                                   help=f"Enable the automatic compression of log files at the end of the session (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.LOG_COMPRESS) else '[bright_black]Disabled[/bright_black]'})")
 
         # Group dedicated to shell logging feature
         groupArgs.append(GroupArg({"arg": self.log, "required": False},
@@ -171,56 +180,65 @@ class ContainerCreation(ContainerSelector, ImageSelector):
         ContainerSelector.__init__(self, groupArgs)
         ImageSelector.__init__(self, groupArgs)
 
-        self.X11 = Option("--disable-X11",
-                          action="store_false",
-                          default=True,
-                          dest="X11",
-                          help="Disable X11 sharing to run GUI-based applications (default: [green]Enabled[/green])")
-        self.my_resources = Option("--disable-my-resources",
-                                   action="store_false",
-                                   default=True,
+        # Covers X11 and Wayland. The profile field keeps its `display.share_x11` name so
+        # existing profiles stay valid (see ProfileFieldMap.py).
+        self.gui = Option("--gui", "--no-gui",
+                          dest="gui",
+                          action=ForceToggleAction,
+                          default=None,
+                          help=f"Share the host GUI (X11 or Wayland) so graphical applications can display (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.GUI) else '[bright_black]Disabled[/bright_black]'})")
+        # Help defaults use defaultFor(), never get()/resolve()/isExplicit(): these f-strings
+        # are built while ParametersManager is mid-construction, and reaching the CLI tier
+        # would trip MetaSingleton's recursion guard on every invocation.
+        self.my_resources = Option("--my-resources", "--no-my-resources",
                                    dest="my_resources",
-                                   help=f"Disable the mount of the my-resources (/opt/my-resources) from the host ({UserConfig().my_resources_path}) (default: [green]Enabled[/green])")
-        self.exegol_resources = Option("--disable-exegol-resources",
-                                       action="store_false",
-                                       default=True,
+                                   action=ForceToggleAction,
+                                   default=None,
+                                   help=f"Mount the my-resources volume (/opt/my-resources) from the host ({_help_literal(OptionResolver().defaultFor(OptionKey.MY_RESOURCES_PATH))}) (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.MY_RESOURCES) else '[bright_black]Disabled[/bright_black]'})")
+        self.exegol_resources = Option("--exegol-resources", "--no-exegol-resources",
                                        dest="exegol_resources",
-                                       help=f"Disable the mount of the exegol resources (/opt/resources) from the host ({UserConfig().exegol_resources_path}) (default: [green]Enabled[/green])")
+                                       action=ForceToggleAction,
+                                       default=None,
+                                       help=f"Mount the exegol resources volume (/opt/resources) from the host ({_help_literal(OptionResolver().defaultFor(OptionKey.EXEGOL_RESOURCES_PATH))}) (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.EXEGOL_RESOURCES) else '[bright_black]Disabled[/bright_black]'})")
         self.network = Option("--network",
                               dest="network",
                               action="store",
                               default=None,
                               choices=NetworkUtils.get_options(),
-                              help=f"Select the type of network to which the container will be attached (default: [blue]{UserConfig().network_default_mode}[/blue])")
-        self.share_timezone = Option("--disable-shared-timezones",
-                                     action="store_false",
-                                     default=True,
+                              help=f"Select the type of network to which the container will be attached (default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.NETWORK))}[/blue])")
+        # Singular, like the dest and the `system.share_timezone` profile field. Makes the
+        # abbreviations `--sh` and `--no-s` ambiguous (pinned in test_cli_alias_matrix).
+        self.share_timezone = Option("--share-timezone", "--no-share-timezone",
                                      dest="share_timezone",
-                                     help="Disable the sharing of the host's time and timezone configuration with exegol (default: [green]Enabled[/green])")
+                                     action=ForceToggleAction,
+                                     default=None,
+                                     help=f"Share the host's time and timezone configuration with exegol (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.SHARE_TIMEZONE) else '[bright_black]Disabled[/bright_black]'})")
         self.mount_current_dir = Option("-cwd", "--cwd-mount",
                                         dest="mount_current_dir",
                                         action="store_true",
-                                        default=False,
+                                        default=None,
                                         help="This option is a shortcut to set the /workspace folder to the user's current working directory")
         self.workspace_path = Option("-w", "--workspace",
                                      dest="workspace_path",
                                      action="store",
                                      help="The specified host folder will be linked to the /workspace folder in the container",
                                      completer=DirectoriesCompleter())
-        self.update_fs_perms = Option("-fs", "--update-fs",
-                                      action="store_true",
-                                      default=False,
+        # `-fs` enables only, like every short flag.
+        self.update_fs_perms = Option("-fs", "--update-fs", "--no-update-fs",
+                                      action=ForceToggleAction,
+                                      default=None,
                                       dest="update_fs_perms",
                                       help=f"Modifies the permissions of folders and sub-folders shared in your workspace to access the files created within the container using your host user account. "
-                                           f"(default: {'[green]Enabled[/green]' if UserConfig().auto_update_workspace_fs else '[bright_black]Disabled[/bright_black]'})")
+                                           f"(default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.UPDATE_FS_PERMS) else '[bright_black]Disabled[/bright_black]'})")
         self.volumes = Option("-V", "--volume",
                               action="append",
-                              default=[],
+                              default=None,
                               dest="volumes",
-                              help=f"Share a new volume between host and exegol (format: --volume {SyntaxFormat.volume})")
+                              help=f"Share a new volume between host and exegol (format: --volume {SyntaxFormat.volume})",
+                              completer=DirectoriesCompleter())
         self.ports = Option("-p", "--port",
                             action="append",
-                            default=[],
+                            default=None,
                             dest="ports",
                             help=f"Share a network port between host and exegol (format: --port {SyntaxFormat.port_sharing}). This configuration will disable the default host network.",
                             completer=VoidCompleter)
@@ -230,17 +248,22 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                action="store",
                                help="Set a custom hostname to the exegol container (default: exegol-<name>)",
                                completer=VoidCompleter)
-        self.privileged = Option("--privileged",
+        # `--no-privileged` lets the operator refuse a profile's `system.privileged: true`.
+        # Passing both halves exits 2 (ForceToggleAction) instead of last-wins, which is why
+        # argparse.BooleanOptionalAction is not used.
+        self.privileged = Option("--privileged", "--no-privileged",
                                  dest="privileged",
-                                 action="store_true",
-                                 default=False,
-                                 help="[red](dangerous)[/red] Give ALL admin privileges to the container when it is created "
-                                      "(if the need is specifically identified, consider adding capabilities instead).")
+                                 action=ForceToggleAction,
+                                 default=None,
+                                 help=f"[red](dangerous)[/red] Give ALL admin privileges to the container when it is created "
+                                      f"(if the need is specifically identified, consider adding capabilities instead) "
+                                      f"(default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.PRIVILEGED) else '[bright_black]Disabled[/bright_black]'})")
         self.devices = Option("-d", "--device",
                               dest="devices",
-                              default=[],
+                              default=None,
                               action="append",
-                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)")
+                              help="Add host [default not bold]device(s)[/default not bold] at the container creation (example: -d /dev/ttyACM0 -d /dev/bus/usb/)",
+                              completer=FilesCompleter(directories=True))
 
         self.hosts_file = Option("--hosts-file",
                         dest="hosts_file",
@@ -255,6 +278,36 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                               help="The specified comment will be added to the container info",
                               completer=VoidCompleter)
 
+        # `-S` is a pure toggle (consumes no token) and `-SP` carries the profile name, so
+        # `exegol start -S mycontainer` never binds the container name to the profile.
+        self.sentinel = Option("-S", "--sentinel", "--no-sentinel",
+                               dest="sentinel",
+                               action=ForceToggleAction,
+                               default=None,
+                               help=f"Enable Sentinel audit logging on the exegol container (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.SENTINEL) else '[bright_black]Disabled[/bright_black]'})")
+
+        # Required value: `nargs='?'` would greedily consume the next token.
+        self.sentinel_profile = Option("-SP", "--sentinel-profile",
+                                       dest="sentinel_profile",
+                                       metavar="SENTINEL_PROFILE",
+                                       action="store",
+                                       default=None,
+                                       # The default is unvalidated config.yml text: `_help_literal` escapes both argparse `%`
+                                       # expansion and rich markup, which would otherwise crash or corrupt the help. The
+                                       # condition tests the unescaped value.
+                                       help=f"Name the [green]Sentinel[/green] audit profile to deploy in the container; supplying it enables Sentinel "
+                                            f"(default: {f'[blue]{_help_literal(OptionResolver().defaultFor(OptionKey.SENTINEL_PROFILE))}[/blue]' if OptionResolver().defaultFor(OptionKey.SENTINEL_PROFILE) else '[bright_black]none[/bright_black]'})",
+                                       completer=SentinelProfileCompleter)
+
+        self.sentinel_strategy = Option("--sentinel-strategy",
+                                        dest="sentinel_strategy",
+                                        metavar="STRATEGY",
+                                        action="store",
+                                        choices=SentinelUpdateStrategy.values(),
+                                        default=None,
+                                        help=f"Set the Sentinel profile update strategy for this container (default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.SENTINEL_STRATEGY))}[/blue]). "
+                                             f"'on_restart' regenerates the config from host sources at every restart; 'disabled' freezes it until forced.")
+
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
@@ -263,7 +316,10 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.hostname, "required": False},
                                   {"arg": self.privileged, "required": False},
                                   {"arg": self.devices, "required": False},
-                                  {"arg": self.X11, "required": False},
+                                  {"arg": self.sentinel, "required": False},
+                                  {"arg": self.sentinel_profile, "required": False},
+                                  {"arg": self.sentinel_strategy, "required": False},
+                                  {"arg": self.gui, "required": False},
                                   {"arg": self.my_resources, "required": False},
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.network, "required": False},
@@ -277,29 +333,33 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                           default=None,
                           action="store",
                           help="Setup an OpenVPN (.ovpn) or WireGuard (.conf) connection at the container creation (example: --vpn /home/user/vpn/client.ovpn)",
-                          completer=FilesCompleter(["ovpn"], directories=True))
+                          completer=FilesCompleter(["ovpn", "conf"], directories=True))
         self.vpn_auth = Option("--vpn-auth",
                                dest="vpn_auth",
                                default=None,
                                action="store",
-                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)")
+                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)",
+                               completer=FilesCompleter())
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},
                                   {"arg": self.vpn_auth, "required": False},
                                   title="[bright_blue]VPN[/bright_blue][blue] options (at creation only)[/blue]"))
 
-        self.desktop = Option("--desktop",
+        # `--desktop-config` has no `--no-` half: a value option is overridden by passing another value.
+        self.desktop = Option("--desktop", "--no-desktop",
                               dest="desktop",
-                              action="store_true",
-                              default=False,
-                              help=f"Enable or disable the Exegol desktop feature (default: {'[green]Enabled[/green]' if UserConfig().desktop_default_enable else '[bright_black]Disabled[/bright_black]'})")
+                              action=ForceToggleAction,
+                              default=None,
+                              help=f"Enable the Exegol desktop feature (default: {'[green]Enabled[/green]' if OptionResolver().defaultFor(OptionKey.DESKTOP) else '[bright_black]Disabled[/bright_black]'})")
+        # The default shown is composed from its two resolved component settings (via defaultFor(),
+        # see --my-resources); `desktop_available_proto` is a class constant, not a setting.
         self.desktop_config = Option("--desktop-config",
                                      dest="desktop_config",
-                                     default="",
+                                     default=None,
                                      action="store",
                                      help=f"Configure your exegol desktop ([blue]{'[/blue] or [blue]'.join(UserConfig.desktop_available_proto)}[/blue]) and its exposure "
                                           f"(format: {SyntaxFormat.desktop_config}) "
-                                          f"(default: [blue]{UserConfig().desktop_default_proto}[/blue]:[blue]{'127.0.0.1' if UserConfig().desktop_default_localhost else '0.0.0.0'}[/blue]:[blue]<random>[/blue])",
+                                          f"(default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.DESKTOP_DEFAULT_PROTO))}[/blue]:[blue]{'127.0.0.1' if OptionResolver().defaultFor(OptionKey.DESKTOP_DEFAULT_LOCALHOST) else '0.0.0.0'}[/blue]:[blue]<random>[/blue])",
                                      completer=DesktopConfigCompleter)
         groupArgs.append(GroupArg({"arg": self.desktop, "required": False},
                                   {"arg": self.desktop_config, "required": False},

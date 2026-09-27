@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import Optional, Union
 
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.UserConfig import UserConfig
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ExegolPrompt import ExegolRich
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation
 from exegol.utils.ExeLog import logger
 from exegol.utils.GitUtils import GitUtils
 from exegol.utils.MetaSingleton import MetaSingleton
+from exegol.utils.SessionHandler import SessionHandler
 
 
 class ExegolModules(metaclass=MetaSingleton):
@@ -20,6 +20,7 @@ class ExegolModules(metaclass=MetaSingleton):
         self.__git_wrapper: Optional[GitUtils] = None
         self.__git_source: Optional[GitUtils] = None
         self.__git_resources: Optional[GitUtils] = None
+        self.__git_sentinel_core: Optional[GitUtils] = None
 
         # Git loading mode
         self.__wrapper_fast_loaded = False
@@ -39,7 +40,7 @@ class ExegolModules(metaclass=MetaSingleton):
         Set skip_install to skip to installation process of the modules if not available.
         if skip_install is NOT set, the CancelOperation exception is raised if the installation failed."""
         if self.__git_source is None:
-            self.__git_source = await GitUtils(UserConfig().exegol_images_path, "images").initialize(skip_submodule_update=fast_load)
+            self.__git_source = await GitUtils(OptionResolver().get(OptionKey.EXEGOL_IMAGES_PATH), "images").initialize(skip_submodule_update=fast_load)
         if not self.__git_source.isAvailable and not skip_install:
             await self.__init_images_repo()
         return self.__git_source
@@ -49,16 +50,35 @@ class ExegolModules(metaclass=MetaSingleton):
         Set fast_load to True to disable submodule init/update.
         Set skip_install to skip to installation process of the modules if not available.
         if skip_install is NOT set, the CancelOperation exception is raised if the installation failed."""
+        # Resolved once, from the same registry entry ContainerConfig uses to bind-mount this
+        # tree, so the updated tree and the mounted tree cannot diverge.
+        resources_path = OptionResolver().get(OptionKey.EXEGOL_RESOURCES_PATH)
+        download_allowed = OptionResolver().get(OptionKey.ENABLE_EXEGOL_RESOURCES)
         if self.__git_resources is None:
-            self.__git_resources = await GitUtils(UserConfig().exegol_resources_path, "resources", "").initialize(skip_submodule_update=fast_load)
-        if not self.__git_resources.isAvailable and not skip_install and UserConfig().enable_exegol_resources:
+            self.__git_resources = await GitUtils(resources_path, "resources", "").initialize(skip_submodule_update=fast_load)
+        if not self.__git_resources.isAvailable and not skip_install and download_allowed:
             await self.__init_resources_repo()
         return self.__git_resources
+
+    async def getSentinelCoreGit(self, fast_load: bool = False, skip_install: bool = False) -> GitUtils:
+        """GitUtils Sentinel core repo singleton getter (mirrors getResourcesGit).
+        The core source lives at component_path/core.
+        Set fast_load to True to disable submodule init/update.
+        Set skip_install to skip the installation process of the module if not available.
+        The auto-install (clone) path only runs for licensed Enterprise sessions.
+        if skip_install is NOT set, the CancelOperation exception is raised if the installation failed."""
+        if self.__git_sentinel_core is None:
+            # Discovery root: never profile-supplied (see ProfileFieldMap.PROFILE_TIER_DEAD).
+            self.__git_sentinel_core = await GitUtils(OptionResolver().get(OptionKey.SENTINEL_PROFILE_PATH) / ConstantConfig.SENTINEL_CORE_SOURCE_KEY, "sentinel-core", "sentinel library").initialize(skip_submodule_update=fast_load)
+        # License gate: mirror ContainerConfig.enableSentinel's enterprise_feature_access() check.
+        if not self.__git_sentinel_core.isAvailable and not skip_install and SessionHandler().enterprise_feature_access():
+            await self.__init_sentinel_core_repo()
+        return self.__git_sentinel_core
 
     async def __init_images_repo(self) -> None:
         """Initialization procedure of exegol images module.
         Raise CancelOperation if the initialization failed."""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.error("It's not possible to install 'Exegol Images' in offline mode. Skipping the operation.")
             raise CancelOperation
         # If git wrapper is ready and exegol images location is the corresponding submodule, running submodule update
@@ -80,13 +100,13 @@ class ExegolModules(metaclass=MetaSingleton):
     async def __init_resources_repo(self) -> None:
         """Initialization procedure of exegol resources module.
         Raise CancelOperation if the initialization failed."""
-        if ParametersManager().offline_mode:
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
             logger.error("It's not possible to install 'Exegol resources' in offline mode. Skipping the operation.")
             raise CancelOperation
-        if ParametersManager().force_mode or await ExegolRich.Confirm("Do you want to download exegol resources? (~1G)", True):
+        if OptionResolver().get(OptionKey.FORCE_MODE) or await ExegolRich.Confirm("Do you want to download exegol resources? (~1G)", True):
             # If git wrapper is ready and exegol resources location is the corresponding submodule, running submodule update
             # if not, git clone resources
-            if UserConfig().exegol_resources_path == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
+            if OptionResolver().get(OptionKey.EXEGOL_RESOURCES_PATH) == ConstantConfig.src_root_path_obj / 'exegol-resources' and \
                     (await self.getWrapperGit()).isAvailable:
                 # When resources are load from git submodule, git objects are stored in the root .git directory
                 await self.__warningExcludeFolderAV(ConstantConfig.src_root_path_obj)
@@ -97,13 +117,29 @@ class ExegolModules(metaclass=MetaSingleton):
                     # Error during install, raise error to avoid update process
                     raise CancelOperation
             else:
-                await self.__warningExcludeFolderAV(UserConfig().exegol_resources_path)
+                await self.__warningExcludeFolderAV(OptionResolver().get(OptionKey.EXEGOL_RESOURCES_PATH))
                 assert self.__git_resources is not None
                 if not await self.__git_resources.clone(ConstantConfig.EXEGOL_RESOURCES_REPO):
                     # Error during install, raise error to avoid update process
                     raise CancelOperation
         else:
             # User cancel installation, skip update update
+            raise CancelOperation
+
+    async def __init_sentinel_core_repo(self) -> None:
+        """Initialization procedure of the Sentinel core source module.
+        Raise CancelOperation if the initialization failed."""
+        if OptionResolver().get(OptionKey.OFFLINE_MODE):
+            logger.error("It's not possible to install the Sentinel 'core' source in offline mode. Skipping the operation.")
+            raise CancelOperation
+        # No submodule branch: the core repo is public over HTTPS, so a runtime clone covers
+        # every install mode.
+        if ConstantConfig.git_source_installation:
+            # TODO(optional): submoduleSourceUpdate("exegol-sentinel-core") if a submodule checkout is ever preferred.
+            logger.advanced("Sentinel 'core' source uses the runtime-clone path (submodule branch not shipped).")
+        assert self.__git_sentinel_core is not None
+        if not await self.__git_sentinel_core.clone(ConstantConfig.EXEGOL_SENTINEL_CORE_REPO):
+            # Error during install, raise error to avoid update process
             raise CancelOperation
 
     async def isExegolResourcesReady(self) -> bool:
@@ -115,5 +151,5 @@ class ExegolModules(metaclass=MetaSingleton):
         """Generic procedure to warn the user that not antivirus compatible files will be downloaded and that
         the destination folder should be excluded from the scans to avoid any problems"""
         logger.warning(f"If you are using an [orange3][g]Anti-Virus[/g][/orange3] on your host, you should exclude the folder {directory} before starting the download.")
-        while not ParametersManager().force_mode and not await ExegolRich.Confirm(f"Are you ready to start the download?", True):
+        while not OptionResolver().get(OptionKey.FORCE_MODE) and not await ExegolRich.Confirm(f"Are you ready to start the download?", True):
             pass

@@ -14,9 +14,13 @@ class MetaSingleton(type):
                 raise RuntimeError(f"Singleton {cls.__name__} is already being spawned. Recursive error detected.")
             # Spawning new singleton
             MetaSingleton.__spawning.add(cls)
-            # If the instance does not already exist, it is created
-            MetaSingleton.__instances[cls] = super(MetaSingleton, cls).__call__(*args, **kwargs)
-            MetaSingleton.__spawning.remove(cls)
+            try:
+                # If the instance does not already exist, it is created
+                MetaSingleton.__instances[cls] = super(MetaSingleton, cls).__call__(*args, **kwargs)
+            finally:
+                # Always clear the spawning guard, even if construction raised, so a failed
+                # instantiation does not poison later attempts with a false recursion error.
+                MetaSingleton.__spawning.discard(cls)
         # Return the desired object
         return MetaSingleton.__instances[cls]
 

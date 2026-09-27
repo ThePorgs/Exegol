@@ -1,6 +1,6 @@
 from rich.status import Status
 
-from exegol.utils.ExeLog import ExeLog, ConsoleLock
+from exegol.utils.ExeLog import ExeLog, ConsoleLock, logger
 
 
 class ExegolStatus(Status):
@@ -9,6 +9,8 @@ class ExegolStatus(Status):
         super().__init__(status, console=ExeLog.console, **kwargs)
 
     async def __aenter__(self) -> "ExegolStatus":
+        if ConsoleLock.locked():
+            logger.debug("Another console lock is preventing ExegolStatus to be created !")
         await ConsoleLock.acquire()
         try:
             self.__enter__()

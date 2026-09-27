@@ -1,0 +1,743 @@
+{
+  "$defs": {
+    "CommandTrigger": {
+      "additionalProperties": false,
+      "description": "Matches on the executable name of the command.",
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CommandTriggerOptions"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "CommandTrigger",
+      "type": "object"
+    },
+    "CommandTriggerOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `command` trigger.",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "One executable name, or a list of names any one of which matches. Compared against the executable name only, never the whole command line. Every command in a pipeline is examined, and both the invoked path and its final component are compared.",
+          "title": "Name"
+        },
+        "ignore_extension": {
+          "default": false,
+          "description": "Strip the file extension before comparing, so one entry `secretsdump` also matches `secretsdump.py`.",
+          "title": "Ignore Extension",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CommandTriggerOptions",
+      "type": "object"
+    },
+    "CompositeTrigger": {
+      "additionalProperties": false,
+      "description": "Combines other triggers with AND or OR.\n\nThe YAML key is `trigger`, not `composite`: every other type is named after the thing\nit inspects, and this one inspects other triggers. Writing `composite:` is an unknown\nkey, which is a hard validation error.",
+      "properties": {
+        "trigger": {
+          "$ref": "#/$defs/CompositeTriggerOptions"
+        }
+      },
+      "required": [
+        "trigger"
+      ],
+      "title": "CompositeTrigger",
+      "type": "object"
+    },
+    "CompositeTriggerOptions": {
+      "additionalProperties": false,
+      "description": "Options of a composite trigger (the `trigger` key).",
+      "properties": {
+        "operator": {
+          "default": "AND",
+          "description": "How the entries combine. AND requires every entry to match, OR requires one. Uppercase only.",
+          "enum": [
+            "AND",
+            "OR"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "triggers": {
+          "description": "Names of triggers defined elsewhere, or inline anonymous triggers written in place \u2014 including a nested composite. An inline trigger has no name and cannot be referenced from anywhere else.",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/CommandTrigger"
+                  },
+                  {
+                    "$ref": "#/$defs/RegexTrigger"
+                  },
+                  {
+                    "$ref": "#/$defs/ParameterTrigger"
+                  },
+                  {
+                    "$ref": "#/$defs/EnvVarTrigger"
+                  },
+                  {
+                    "$ref": "#/$defs/CompositeTrigger"
+                  }
+                ]
+              }
+            ]
+          },
+          "title": "Triggers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "triggers"
+      ],
+      "title": "CompositeTriggerOptions",
+      "type": "object"
+    },
+    "DumpEnvAction": {
+      "additionalProperties": false,
+      "description": "Writes the environment of the matched command into the artifact directory.",
+      "properties": {
+        "dump_env": {
+          "$ref": "#/$defs/DumpEnvOptions"
+        }
+      },
+      "required": [
+        "dump_env"
+      ],
+      "title": "DumpEnvAction",
+      "type": "object"
+    },
+    "DumpEnvOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `dump_env` action.",
+      "properties": {
+        "filters": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ALLOWLIST of variable NAMES, matched with case-sensitive globs (`AWS_*`, `*_TOKEN`) and never against values. Quote any pattern beginning with '*': unquoted it is a YAML alias node, not a string. Absent or empty, this action captures EVERY environment variable in the command's environment, exported credentials and session tokens included.",
+          "title": "Filters"
+        }
+      },
+      "title": "DumpEnvOptions",
+      "type": "object"
+    },
+    "DumpKerberosAction": {
+      "additionalProperties": false,
+      "description": "Copies the Kerberos credential cache the matched command used.\n\nTakes no parameters, but the empty mapping is mandatory: write `dump_kerberos: {}`. A\nbare `dump_kerberos:` is YAML null, which fails validation and drops the whole source.\n\nThe cache comes from `KRB5CCNAME` in the command's environment; when that is unset,\n`/tmp` is scanned for `krb5cc_<digits>` instead.",
+      "properties": {
+        "dump_kerberos": {
+          "$ref": "#/$defs/DumpKerberosOptions"
+        }
+      },
+      "title": "DumpKerberosAction",
+      "type": "object"
+    },
+    "DumpKerberosOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `dump_kerberos` action: it takes none.",
+      "properties": {},
+      "title": "DumpKerberosOptions",
+      "type": "object"
+    },
+    "EnvVarTrigger": {
+      "additionalProperties": false,
+      "description": "Matches when a given environment variable is set for the command.",
+      "properties": {
+        "env_var": {
+          "$ref": "#/$defs/EnvVarTriggerOptions"
+        }
+      },
+      "required": [
+        "env_var"
+      ],
+      "title": "EnvVarTrigger",
+      "type": "object"
+    },
+    "EnvVarTriggerOptions": {
+      "additionalProperties": false,
+      "description": "Options of an `env_var` trigger.",
+      "properties": {
+        "variable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "description": "One environment-variable name, or a list any one of which matches. This is a PRESENCE test: the value is never compared and an empty value still counts as set. No globbing on the name.",
+          "title": "Variable"
+        }
+      },
+      "required": [
+        "variable"
+      ],
+      "title": "EnvVarTriggerOptions",
+      "type": "object"
+    },
+    "ExecCommandAction": {
+      "additionalProperties": false,
+      "description": "Runs a shell command on the operator's behalf and stores its output.\n\nThis is remote code execution by design: the command runs inside the container every\ntime its rule fires, unfiltered and unconfined. Trusting a profile source is trusting\nit to run code in your container.",
+      "properties": {
+        "exec_command": {
+          "$ref": "#/$defs/ExecCommandOptions"
+        }
+      },
+      "required": [
+        "exec_command"
+      ],
+      "title": "ExecCommandAction",
+      "type": "object"
+    },
+    "ExecCommandOptions": {
+      "additionalProperties": false,
+      "description": "Options of an `exec_command` action.",
+      "properties": {
+        "command": {
+          "description": "Shell command executed inside the container after the matched command finishes, in the operator's own zsh with `~/.zshrc` sourced, so aliases and shell functions resolve as they do at the prompt. It is not filtered and not confined.",
+          "title": "Command",
+          "type": "string"
+        },
+        "timeout": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Seconds to wait before the command's whole process group is killed and the artifact records that it was cut short. Omit it, or write 0, for no limit. Negative values are refused.",
+          "title": "Timeout"
+        },
+        "max_output": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "pattern": "^\\s*[0-9]+(\\.[0-9]+)?\\s*([KMGTkmgt]?[BbOo]?)\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "A byte count (1048576) or a size string with a binary-unit suffix (100MB, 512KB, 2GB). K/M/G/T are powers of 1024.",
+              "ge": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Output cap applied to standard output and standard error SEPARATELY. Beyond it, output is dropped and the artifact is flagged as truncated. Omit it for the 1 MB default, or write 0 to keep everything. Negative values are refused.",
+          "title": "Max Output"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ExecCommandOptions",
+      "type": "object"
+    },
+    "LogOutputConfig": {
+      "additionalProperties": false,
+      "description": "Inline terminal-output capture, overriding `sentinel.log_output` from `~/.exegol/config.yml`.\n\nThese three keys are the whole block, and a profile block replaces the machine default\nWHOLESALE rather than being merged key by key. Note that `enabled` is settable here and\nin `~/.exegol/config.yml` only \u2014 a CONTAINER profile can never supply it.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "description": "Embed the command's terminal output in every audit event. On by default: the event field is the primary destination, the `output_capture` artifact action being opt-in.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_size": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^\\s*[0-9]+(\\.[0-9]+)?\\s*([KMGTkmgt]?[BbOo]?)\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 4096,
+          "description": "Cap on the CLEANED UTF-8 text embedded in the event, cut on a character boundary. Defaults to 4KB, which keeps the output plus the event metadata under the 10000-byte default a stock Splunk truncates at. Must be strictly positive: this is the ONE knob here where 0 does not mean unlimited, because the field rides on EVERY event \u2014 switch the field off with `enabled: false`, and use an `output_capture` action to keep a whole window.",
+          "title": "Max Size"
+        },
+        "truncation": {
+          "default": "both",
+          "description": "Which end of an oversized capture to keep. `both` spends half the budget on each end and names the dropped byte count in between.",
+          "enum": [
+            "head",
+            "tail",
+            "both"
+          ],
+          "title": "Truncation",
+          "type": "string"
+        }
+      },
+      "title": "LogOutputConfig",
+      "type": "object"
+    },
+    "LogRotationConfig": {
+      "additionalProperties": false,
+      "description": "Rotation of the event stream, overriding `sentinel.log_rotation` from `~/.exegol/config.yml`.\n\nThese four keys are the whole block. The interval that debounces two consecutive\nrotations is fixed product behaviour, not a tunable: declaring a fifth key fails\nvalidation and drops the whole source.",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "description": "Turn rotation of the event stream on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_size": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "pattern": "^\\s*[0-9]+(\\.[0-9]+)?\\s*([KMGTkmgt]?[BbOo]?)\\s*$",
+              "type": "string"
+            }
+          ],
+          "default": 104857600,
+          "description": "Rotate once the event stream grows past this. Defaults to 100MB. 0 means NEVER rotate, matching `max_files` below \u2014 and rotation is the only bound on the event stream, so at 0 it grows until the disk does. Negative values are refused.",
+          "title": "Max Size"
+        },
+        "max_files": {
+          "default": 0,
+          "description": "How many rotated generations to keep. 0 keeps all of them; nothing is ever deleted.",
+          "minimum": 0,
+          "title": "Max Files",
+          "type": "integer"
+        },
+        "compress": {
+          "default": true,
+          "description": "Gzip each rotated generation.",
+          "title": "Compress",
+          "type": "boolean"
+        }
+      },
+      "title": "LogRotationConfig",
+      "type": "object"
+    },
+    "NetworkCaptureAction": {
+      "additionalProperties": false,
+      "description": "Runs a packet capture spanning the matched command's execution.",
+      "properties": {
+        "network_capture": {
+          "$ref": "#/$defs/NetworkCaptureOptions"
+        }
+      },
+      "required": [
+        "network_capture"
+      ],
+      "title": "NetworkCaptureAction",
+      "type": "object"
+    },
+    "NetworkCaptureOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `network_capture` action.",
+      "properties": {
+        "interface": {
+          "default": "any",
+          "description": "Interface passed straight to `tcpdump -i`. `any` captures on every interface at once.",
+          "title": "Interface",
+          "type": "string"
+        },
+        "duration": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fixed capture window in seconds. Omit it to capture for as long as the matching command runs.",
+          "title": "Duration"
+        }
+      },
+      "title": "NetworkCaptureOptions",
+      "type": "object"
+    },
+    "OutputCaptureAction": {
+      "additionalProperties": false,
+      "properties": {
+        "output_capture": {
+          "$ref": "#/$defs/OutputCaptureOptions"
+        }
+      },
+      "required": [
+        "output_capture"
+      ],
+      "title": "OutputCaptureAction",
+      "type": "object"
+    },
+    "OutputCaptureOptions": {
+      "additionalProperties": false,
+      "description": "Options of an `output_capture` action: a command's terminal output kept as an artifact.",
+      "properties": {
+        "format": {
+          "default": "raw",
+          "description": "Which bytes land on disk. `raw` is the pty stream verbatim \u2014 replayable, with colours and control sequences kept. `text` is the same cleaning the inline event field applies. There is no combined value: capturing one command both ways is two actions on the rule, each with its own file pair and manifest.",
+          "enum": [
+            "raw",
+            "text"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "max_size": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "pattern": "^\\s*[0-9]+(\\.[0-9]+)?\\s*([KMGTkmgt]?[BbOo]?)\\s*$",
+                  "type": "string"
+                }
+              ],
+              "description": "A byte count (1048576) or a size string with a binary-unit suffix (100MB, 512KB, 2GB). K/M/G/T are powers of 1024.",
+              "ge": 0
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cap on the captured payload. Omit it, or write 0, for UNLIMITED \u2014 the author targeted this command and wants all of it. To keep nothing, do not declare the action at all. Negative values are refused.",
+          "title": "Max Size"
+        },
+        "truncation": {
+          "default": "head",
+          "description": "Which end of an over-cap capture survives. Only meaningful alongside `max_size`: declaring it without one is refused, because a truncation mode that can never fire is a setting the operator believes is protecting them.",
+          "enum": [
+            "head",
+            "tail",
+            "both"
+          ],
+          "title": "Truncation",
+          "type": "string"
+        }
+      },
+      "title": "OutputCaptureOptions",
+      "type": "object"
+    },
+    "ParameterTrigger": {
+      "additionalProperties": false,
+      "description": "Matches when a given argument is present on the command line.",
+      "properties": {
+        "parameter": {
+          "$ref": "#/$defs/ParameterTriggerOptions"
+        }
+      },
+      "required": [
+        "parameter"
+      ],
+      "title": "ParameterTrigger",
+      "type": "object"
+    },
+    "ParameterTriggerOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `parameter` trigger.",
+      "properties": {
+        "argument": {
+          "description": "A single argument, matched exactly against the command's parsed arguments. Values are never inspected, so `-k` matches that flag wherever it appears. When the argument is not a standalone token, a plain substring test against the command as typed is used as a fallback.",
+          "title": "Argument",
+          "type": "string"
+        }
+      },
+      "required": [
+        "argument"
+      ],
+      "title": "ParameterTriggerOptions",
+      "type": "object"
+    },
+    "Profile": {
+      "additionalProperties": false,
+      "description": "A named audit profile: a list of rules, and optional per-profile settings.\n\nAn unknown EXTRA key at this level is silently ignored, so a stray `confg:` beside a\nvalid `rules:` loads a healthy-looking profile that collects nothing. When a profile\nvalidates but never fires, re-read its own keys first.",
+      "properties": {
+        "rules": {
+          "description": "Rules, evaluated independently against every command.",
+          "items": {
+            "$ref": "#/$defs/ProfileRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProfileConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "rules"
+      ],
+      "title": "Profile",
+      "type": "object"
+    },
+    "ProfileConfig": {
+      "additionalProperties": false,
+      "description": "Optional per-profile settings, alongside `rules:`. Exactly three keys.",
+      "properties": {
+        "log_rotation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LogRotationConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "log_output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LogOutputConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inline terminal-output capture for this profile. Omitted, the machine default from `sentinel.log_output` in `~/.exegol/config.yml` is backfilled host-side, exactly as `log_rotation` is; a block here replaces that default WHOLESALE rather than being merged key by key."
+        },
+        "env_redact": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "DENYLIST of environment-variable NAMES whose VALUES are masked to the literal `<REDACTED>` wherever they would be logged \u2014 the dump_env artifact and the captured environment of the command alike. Matching is case-sensitive and the whole name must match, so `KRBTGT*` covers `KRBTGT_SECRET` but a bare `TOKEN` covers only the variable named exactly `TOKEN`. Quote any pattern beginning with '*'. There is no default: a profile that omits it redacts NOTHING. Distinct from dump_env's `filters`, which is an allowlist deciding what is collected at all.",
+          "title": "Env Redact"
+        }
+      },
+      "title": "ProfileConfig",
+      "type": "object"
+    },
+    "ProfileRule": {
+      "additionalProperties": false,
+      "description": "One rule: run these actions when these triggers match.\n\nRules are evaluated independently against every command, so adding one never changes\nwhat an existing one collects. Both keys are REQUIRED \u2014 misspelling either (`action:`\nfor `actions:`) is a missing-required-field error that drops the whole source.",
+      "properties": {
+        "triggers": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/ProfileRuleTriggers"
+            }
+          ],
+          "description": "A plain list of trigger names (combined with AND), or the long form with an explicit `operator` and `refs`.",
+          "title": "Triggers"
+        },
+        "actions": {
+          "description": "Action names to run when the triggers match. Same resolution rule as triggers: own source first, then `core`.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Actions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "triggers",
+        "actions"
+      ],
+      "title": "ProfileRule",
+      "type": "object"
+    },
+    "ProfileRuleTriggers": {
+      "additionalProperties": false,
+      "description": "The long form of a rule's `triggers`, and the only way to get an OR at rule level.",
+      "properties": {
+        "operator": {
+          "default": "AND",
+          "description": "How the referenced triggers combine. Uppercase only.",
+          "enum": [
+            "AND",
+            "OR"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "refs": {
+          "description": "Trigger names. A bare name resolves in this profile's own source first, then falls back to the official `core` source; an explicit `sourcekey.name` forces that source and never searches elsewhere.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "refs"
+      ],
+      "title": "ProfileRuleTriggers",
+      "type": "object"
+    },
+    "RegexTrigger": {
+      "additionalProperties": false,
+      "description": "Matches a regular expression anywhere in the command line.",
+      "properties": {
+        "regex": {
+          "$ref": "#/$defs/RegexTriggerOptions"
+        }
+      },
+      "required": [
+        "regex"
+      ],
+      "title": "RegexTrigger",
+      "type": "object"
+    },
+    "RegexTriggerOptions": {
+      "additionalProperties": false,
+      "description": "Options of a `regex` trigger.",
+      "properties": {
+        "pattern": {
+          "description": "Python regular expression, SEARCHED against the command line rather than anchored to it \u2014 no `.*` padding is needed at either end. Quote it in YAML: a bare pattern containing ':', '#' or a leading '*' is not the string it looks like. Both the command as typed and its alias-resolved, variable-expanded spelling are tested, and a match on either one fires.",
+          "title": "Pattern",
+          "type": "string"
+        },
+        "ignore_case": {
+          "default": false,
+          "description": "Apply the case-insensitive flag to the search.",
+          "title": "Ignore Case",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "title": "RegexTriggerOptions",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A Sentinel profile file: the triggers, actions and profiles one source declares.\n\nEach of the three blocks maps a NAME to a definition. Names may contain letters,\ndigits, '_' and '-' only, because '.' is the source separator in a `sourcekey.name`\nreference.\n\nOne invalid file takes its ENTIRE source namespace down with it: every profile,\ntrigger and action declared by that source disappears and `-S` reports the profile as\nnot found, even though the file is visible on disk.",
+  "properties": {
+    "triggers": {
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/CommandTrigger"
+          },
+          {
+            "$ref": "#/$defs/RegexTrigger"
+          },
+          {
+            "$ref": "#/$defs/ParameterTrigger"
+          },
+          {
+            "$ref": "#/$defs/EnvVarTrigger"
+          },
+          {
+            "$ref": "#/$defs/CompositeTrigger"
+          }
+        ]
+      },
+      "description": "Named conditions. The single key under a trigger's name IS its type: `command`, `regex`, `parameter`, `env_var`, or `trigger` for a composite.",
+      "title": "Triggers",
+      "type": "object"
+    },
+    "actions": {
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/DumpEnvAction"
+          },
+          {
+            "$ref": "#/$defs/NetworkCaptureAction"
+          },
+          {
+            "$ref": "#/$defs/DumpKerberosAction"
+          },
+          {
+            "$ref": "#/$defs/ExecCommandAction"
+          },
+          {
+            "$ref": "#/$defs/OutputCaptureAction"
+          }
+        ]
+      },
+      "description": "Named collectors. The single key under an action's name IS its type: `dump_env`, `network_capture`, `dump_kerberos`, or `exec_command`.",
+      "title": "Actions",
+      "type": "object"
+    },
+    "profiles": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Profile"
+      },
+      "description": "Named profiles, each selectable with `exegol start -S <name>`.",
+      "title": "Profiles",
+      "type": "object"
+    }
+  },
+  "title": "SentinelConfig",
+  "type": "object"
+}

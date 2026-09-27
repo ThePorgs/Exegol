@@ -1,6 +1,20 @@
+import sys
+
 import rich.prompt
 
 from exegol.utils.ExeLog import ConsoleLock, ExeLog
+
+
+def stdinCanAnswer() -> bool:
+    """True when stdin is a TTY that can answer a confirmation prompt.
+
+    ``Confirm.ask`` returns its default on an empty line, so a piped stdin must not get a
+    Yes default for a network fetch. Any error (no stdin, closed file) answers False.
+    """
+    try:
+        return bool(sys.stdin is not None and sys.stdin.isatty())
+    except (AttributeError, ValueError, OSError):
+        return False
 
 
 class ExegolRich:

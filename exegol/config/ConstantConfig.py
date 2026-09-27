@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-__version__ = "5.1.13"
+__version__ = "6.0.0"
 
 
 class ConstantConfig:
@@ -18,8 +18,15 @@ class ConstantConfig:
     entrypoint_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/entrypoint.sh"
     # Path of the spawn.sh
     spawn_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/spawn.sh"
+    # Path of sentinel logging scripts
+    sentinel_zsh_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/shell_script/zsh_hooks.sh"
+    sentinel_bash_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/shell_script/bash_hooks.sh"
+    sentinel_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/sentinel"
     # Path to the EULA docs
     eula_path: Path = src_root_path_obj / "exegol/utils/docs/eula.md"
+    # True when the current process has been spawned by the shell completion system (argcomplete).
+    # In this mode, everything not strictly required to supply completion options must be skipped.
+    completion_mode: bool = bool(os.getenv("_ARGCOMPLETE"))
     # Exegol config directory
     exegol_config_path: Path = Path().home() / ".exegol"
     __sudo_home = os.getenv("SUDO_HOME")
@@ -46,6 +53,14 @@ class ConstantConfig:
     # Resources repository
     EXEGOL_IMAGES_REPO: str = "https://github.com/ThePorgs/Exegol-images.git"
     EXEGOL_RESOURCES_REPO: str = "https://github.com/ThePorgs/Exegol-resources.git"
+    # Official Sentinel 'core' profile source.
+    EXEGOL_SENTINEL_CORE_REPO: str = "https://github.com/ThePorgs/sentinel-core-library.git"
     # Supabase
     SUPABASE_URL: str = "https://piysvuvahfkfxnlxqpdd.supabase.co"
     SUPABASE_KEY: str = "sb_publishable_pvQaN5IZryBn5a2kdkQxVw_TbxfM6Wq"
+
+    # Zero-configuration source: the 'local' directory under a component_path.
+    DEFAULT_LOCAL_SOURCE_KEY = "local"
+    # Reserved key of the official Sentinel source: fallback namespace for bare references,
+    # cannot be redefined by a user source.
+    SENTINEL_CORE_SOURCE_KEY = "core"

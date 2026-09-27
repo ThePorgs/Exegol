@@ -7,6 +7,9 @@ function exegol_init() {
   [ -f /etc/hosts.backup ] && cp -a /etc/hosts.backup /etc/hosts && rm /etc/hosts.backup
   # Setup default user shell to startup script
   usermod -s "/.exegol/spawn.sh" root > /dev/null
+  # Patch zsh.d directory for older images (before 3.1.12) // TODO remove in 2027
+  grep 'test -d /etc/zsh.d' /etc/zsh/zshrc > /dev/null || echo "test -d /etc/zsh.d && source /etc/zsh.d/*" >> /etc/zsh/zshrc
+  grep 'test -d /etc/bash.d' /etc/bash.bashrc > /dev/null || echo "test -d /etc/bash.d && source /etc/bash.d/*" >> /etc/bash.bashrc
 }
 
 # Function specific
@@ -50,19 +53,46 @@ function shutdown() {
   command -v wg-quick &> /dev/null && [ "$(find "/etc/wireguard/" -type f -name '*.conf' | wc -l)" -gt 0 ] && wg-quick down /etc/wireguard/* 2>/dev/null
   # shellcheck disable=SC2046
   kill $(pgrep -f -- openvpn | grep -vE '^1$') 2>/dev/null
+  # These four lines matched NOTHING. `-x` with `-f` demands the FULL COMMAND
+  # LINE be exactly "zsh"; the interactive Exegol shell's is "/usr/bin/zsh", so
+  # no interactive shell was ever asked to exit. It went unnoticed while the wait
+  # below fell through immediately -- tearing down the PID namespace killed the
+  # shell anyway -- and became visible when Sentinel's recorder made that wait
+  # block: the container then only stopped on Docker's SIGKILL timeout.
+  #
+  # ONE PATTERN FOR BOTH SHELLS, AND THE OPTIONAL PREFIX FORBIDS SPACES.
+  # `[^ ]*/` is what keeps this to interactive shells: a shell given ARGUMENTS
+  # has spaces in its command
+  # line and cannot match, so this one call reaches `zsh`, `-zsh`, `/usr/bin/zsh`,
+  # `bash`, `-bash` and `/bin/bash`, while leaving alone every shell that is running
+  # something -- `bash /root/.pyenv/libexec/pyenv exec python3 …
+  # sentinel_runner.py` (the runners have their own line below and must not be
+  # killed twice, still less mid-copy), `/bin/bash /.exegol/spawn.sh`, and this
+  # entrypoint itself. A `.*/` prefix would match across the spaces and take all
+  # three with it.
+  #
+  # PID 1 is excluded anyway: this entrypoint IS bash, and one grep is cheaper
+  # than trusting that it will always be started with an argument.
   # shellcheck disable=SC2046
-  kill $(pgrep -x -f -- zsh) 2>/dev/null
+  kill $(pgrep -x -f -- '(-|[^ ]*/)?(bash|zsh)' | grep -vE '^1$') 2>/dev/null
   # shellcheck disable=SC2046
-  kill $(pgrep -x -f -- -zsh) 2>/dev/null
-  # shellcheck disable=SC2046
-  kill $(pgrep -x -f -- bash) 2>/dev/null
-  # shellcheck disable=SC2046
-  kill $(pgrep -x -f -- -bash) 2>/dev/null
+  kill $(pgrep -f -- /.exegol/sentinel/sentinel_runner.py) 2>/dev/null
   # Wait for every active process to exit (e.g: shell logging compression, VPN closing, WebUI)
-  WAIT_LIST="$(pgrep -f "(.log|spawn.sh|vnc)" | grep -vE '^1$')"
+  #
+  # NOT ".log", which also matches Sentinel's session recorder --
+  #   script -qef -c /bin/zsh /tmp/.sentinel/session_<name>_<pid>.log
+  # -- a process present in EVERY Sentinel container, with or without --log. PID
+  # 1 blocked on `tail --pid=<recorder>` and never reached `exit 0`. The recorder
+  # needs no waiting on: it exits with the shell killed above, and spawn.sh --
+  # which IS waited on here -- owns the session file through its EXIT trap.
+  # Scoped to the shell-logging recordings this wait was written for.
+  WAIT_LIST="$(pgrep -f "(/workspace/logs|spawn.sh|vnc)" | grep -vE '^1$')"
   for i in $WAIT_LIST; do
-    # Waiting for: $i PID process to exit
-    tail --pid="$i" -f /dev/null
+    # Waiting for: $i PID process to exit.
+    # BOUNDED: one process that never exits must not hold the whole shutdown for
+    # the operator's entire `--time`. spawn.sh's own cleanup already waits up to
+    # 60s for an in-flight capture, so this sits just above it.
+    timeout 60 tail --pid="$i" -f /dev/null
   done
   exit 0
 }

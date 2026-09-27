@@ -3,21 +3,25 @@ import errno
 import os
 import shlex
 import shutil
+import signal
 import subprocess
+import sys
 import tempfile
 from datetime import datetime
 from enum import IntFlag, auto as enum_auto
 from pathlib import Path
-from typing import Optional, Dict, Sequence, Tuple, Union, List
+from typing import Any, Optional, Dict, Sequence, Tuple, Union, List
 
 from docker.errors import NotFound, ImageNotFound, APIError
 from docker.models.containers import Container
 
+from exegol.config.DataCache import DataCache
 from exegol.config.EnvInfo import EnvInfo
 from exegol.console import ConsoleFormat
+from exegol.config.StaticContainerPath import StaticContainerPath, StaticFileName
+from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation, ObjectNotFound
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
@@ -25,6 +29,7 @@ from exegol.model.ExegolImage import ExegolImage
 from exegol.model.SelectableInterface import SelectableInterface
 from exegol.utils.ContainerLogStream import ContainerLogStream
 from exegol.utils.ExeLog import logger
+from exegol.utils.FsUtils import secure_remove
 from exegol.utils.GuiUtils import GuiUtils
 from exegol.utils.SessionHandler import SessionHandler
 from exegol.utils.imgsync.ImageScriptSync import ImageScriptSync
@@ -130,20 +135,30 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """Container's short id getter"""
         return self.__container.short_id
 
-    def hasContainerSize(self) -> bool:
-        """Check if the container's writable layer size has been fetched from docker"""
-        return self.__container_size is not None
+    def getContainerStorageSize(self, verbose: bool = False) -> str:
+        """Get the size of the container's writable layer and workspace.
+        In normal mode, returns total size. In verbose mode, returns tree breakdown.
+        This excludes the base image size which is shared across containers."""
+        try:
+            # Get workspace size in bytes
+            workspace_size = self.__getWorkspaceSize()
 
-    def getContainerStorageSize(self, include_workspace: bool = False) -> str:
-        """Get the size of the container's writable layer (excludes the base image size which is shared across containers).
-        With include_workspace, the size of the host workspace directory is also calculated (can be slow)."""
-        if self.__container_size is None:
+            size_rw = self.__container_size if self.__container_size is not None else 0
+
+            # Calculate total
+            total_size = size_rw + workspace_size
+
+            if verbose and (size_rw > 0 or workspace_size > 0):
+                # Verbose mode: show breakdown
+                container_str = ConsoleFormat.process_size(size_rw)
+                workspace_str = ConsoleFormat.process_size(workspace_size)
+                return f"Container: {container_str}{os.linesep}Workspace: {workspace_str}"
+
+            # Normal mode: show total only
+            return ConsoleFormat.process_size(total_size)
+        except Exception as e:
+            logger.debug(f"Failed to get container storage size for {self.name}: {e}")
             return "[bright_black]N/A[/bright_black]"
-        container_str = ConsoleFormat.process_size(self.__container_size)
-        if not include_workspace:
-            return container_str
-        workspace_str = ConsoleFormat.process_size(self.__getWorkspaceSize())
-        return f"Container: {container_str}{os.linesep}Workspace: {workspace_str}"
 
     def __getWorkspaceSize(self) -> int:
         """Calculate workspace directory size.
@@ -240,27 +255,55 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             async with ExegolStatus(f"Waiting to stop ({timeout}s timeout)", spinner_style="blue"):
                 self.__container.stop(timeout=timeout)
 
+    @staticmethod
+    def __run_attached(cmd: str, env: Optional[Dict[str, str]] = None) -> None:
+        """Run a shell command attached to the user terminal, like os.system() but with the given environment"""
+        if env is None:
+            env = EnvInfo.get_env_overlay(EnvInfo.docker_env_names)
+        process = subprocess.Popen(cmd, shell=True, env=env)
+        saved: List[Tuple[int, Any]] = []
+        try:
+            # Like system(), only the child reacts to Ctrl+C / Ctrl+\ while it owns the terminal.
+            # Ignored after spawning, since an ignored disposition would survive exec
+            if sys.platform != "win32":
+                try:
+                    for signum in (signal.SIGINT, signal.SIGQUIT):
+                        saved.append((signum, signal.signal(signum, signal.SIG_IGN)))
+                except ValueError:
+                    # Not the main thread
+                    pass
+            process.wait()
+        finally:
+            for saved_signum, handler in saved:
+                if handler is not None:
+                    signal.signal(saved_signum, handler)
+
     async def spawnShell(self) -> None:
         """Spawn a shell on the docker container"""
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         for device in self.config.getDevices():
             logger.info(f"Shared host device: {device.split(':')[0]}")
+        # CLI tier only (always a list): these checks target what the user explicitly asked for.
+        # The merged list would make any profile declaring a capability abort
+        # `exegol start <existing>` or silently add `--privileged` to the exec below.
+        # Profile capabilities are applied at creation by `configFromUser()`.
+        user_capabilities = OptionResolver().cliValue(OptionKey.CAPABILITIES)
         spawn_all_capabilities = (not self.config.getPrivileged() and
                                   "ALL" not in self.config.getCapabilities() and
-                                  ParametersManager().capabilities and
-                                  "ALL" in ParametersManager().capabilities)
-        if not self.__new_container and not spawn_all_capabilities and ParametersManager().capabilities and len(ParametersManager().capabilities) > 0:
-            if set(ParametersManager().capabilities).issubset(self.config.getCapabilities()):
+                                  "ALL" in user_capabilities)
+        if not self.__new_container and not spawn_all_capabilities and len(user_capabilities) > 0:
+            if set(user_capabilities).issubset(self.config.getCapabilities()):
                 if not self.config.getPrivileged() and "ALL" not in self.config.getCapabilities():
                     logger.warning("Can't set specific capability on existing containers, ignoring. Use [green]--cap ALL[/green] instead if needed.")
             else:
                 logger.critical("Can't set specific capability on existing containers. Use [green]--cap ALL[/green] instead if needed.")
-        logger.success(f"Opening [blue]{ParametersManager().shell}[/blue] shell in Exegol [green]{self.name}[/green]"
+        logger.success(f"Opening [blue]{OptionResolver().get(OptionKey.SHELL)}[/blue] shell in Exegol [green]{self.name}[/green]"
                        f"{' with [orange3]all capabilities[/orange3]' if spawn_all_capabilities or self.config.getPrivileged() or 'ALL' in self.config.getCapabilities() else ''}")
         # In case of multi-user environment, xhost must be set before opening each session to be sure
         await self.__applyX11ACLs()
-        # Using system command to attach the shell to the user terminal (stdin / stdout / stderr)
+        # Attach the shell to the user terminal (stdin / stdout / stderr), with the same docker settings as the SDK
+        # so both reach the same daemon
         envs = self.config.getShellEnvs()
         options = ""
         if len(envs) > 0:
@@ -272,9 +315,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         if EnvInfo.isDockerDesktop() and (EnvInfo.is_windows_shell or EnvInfo.is_mac_shell):
             # Disable "What's next?" Docker Desktop spam exit message
             os.environ['DOCKER_CLI_HINTS'] = "false"
-        os.system(cmd)
+        self.__run_attached(cmd)
         # Docker SDK doesn't support (yet) stdin properly
-        # result = self.__container.exec_run(ParametersManager().shell, stdout=True, stderr=True, stdin=True, tty=True,
+        # result = self.__container.exec_run(OptionResolver().get(OptionKey.SHELL), stdout=True, stderr=True, stdin=True, tty=True,
         #                                    environment=self.config.getShellEnvs())
         # logger.debug(result)
 
@@ -299,7 +342,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             await self.start()
         if not quiet:
             logger.info("Executing command on Exegol")
-            if logger.getEffectiveLevel() > logger.VERBOSE and not ParametersManager().daemon:
+            if logger.getEffectiveLevel() > logger.VERBOSE and not OptionResolver().get(OptionKey.DAEMON):
                 logger.info("Hint: use verbose mode to see command output (-v).")
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet)
         stream = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=as_daemon, stream=not as_daemon and not quiet)
@@ -361,6 +404,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         """
         if not container_only:
             await self.__removeVolume()
+        # Stop after workspace removal to support in-container backup removal
         await self.stop(timeout=2)
         have_backup = backup_history is not None and len(backup_history) > 0
         backup_text = f" and {len(backup_history)} backup containers" if have_backup and backup_history is not None else ""
@@ -370,6 +414,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.success(f"Container {self.name} successfully removed.")
         except NotFound:
             logger.error(f"The container {self.name} has already been removed (probably created as a temporary container).")
+        DataCache().remove_container_cache(self.name)
         if not container_only:
             # Must be imported locally to avoid circular importation
             from exegol.utils.DockerUtils import DockerUtils
@@ -402,8 +447,78 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     result.append((container_id, bak_container[7:]))
         return result
 
+    @staticmethod
+    def hasSentinelHistory(sentinel_dir: Path) -> bool:
+        """Return True if a Sentinel instance directory holds audit data: a non-empty live log,
+        a non-empty artifacts directory, or a rotated generation ('logs.*', same predicate as
+        sentinel_logger). Symlinks and non-regular files never count, as the directory is
+        container-writable. Errors propagate to __removeVolume's handler, which deletes nothing."""
+        live_log_name = StaticFileName.SENTINEL_LIVE_LOG.value
+        live_log_file = sentinel_dir / live_log_name
+        if live_log_file.is_file() and live_log_file.stat().st_size > 0:
+            return True
+        artifacts_dir = sentinel_dir / 'artifacts'
+        # Non-empty, not merely present: the runner creates artifacts/ early, so existence alone
+        # would prompt on nearly every container. Symlinks are refused as is_dir() follows them.
+        if not artifacts_dir.is_symlink() and artifacts_dir.is_dir() and any(artifacts_dir.iterdir()):
+            return True
+        for p in sentinel_dir.iterdir():
+            if not p.name.startswith('logs.') or p.name == live_log_name:
+                continue
+            if p.is_symlink() or not p.is_file():
+                # Rotated generations are always regular files: anything else was not written
+                # by sentinel_logger and must not lead secure_remove() out of the directory.
+                logger.warning(f"Unexpected non-regular entry in the Sentinel directory, ignoring: {p.name}")
+                continue
+            return True
+        return False
+
     async def __removeVolume(self) -> None:
-        """Remove private workspace volume directory if exist"""
+        """Remove logs and private workspace volume directory if exist"""
+        if self.config.isSentinelEnable():
+            sentinel_dir = self.config.getSentinelPath()
+            try:
+                if sentinel_dir and sentinel_dir.is_dir():
+                    sentinel_log_file = sentinel_dir / StaticFileName.SENTINEL_LIVE_LOG.value
+                    if not self.hasSentinelHistory(sentinel_dir) or await ExegolRich.Confirm(f"Do you want to remove your Sentinel logging history?", default=False):
+                        try:
+                            if sentinel_log_file.is_file():
+                                # Rename logs file to avoid garbage logging by SIEM agent
+                                sentinel_log_file.rename(sentinel_dir / '.logs.removing')
+                            async with ExegolStatus(f"Removing Sentinel history securely", spinner_style="blue"):
+                                await secure_remove(sentinel_dir)
+                            logger.success("Sentinel logging history removed successfully")
+                        except PermissionError as e:
+                            logger.debug(f"Error during workspace logs removal from the host: {e}")
+                            logger.info(f"Deleting the Sentinel logging history file from the [green]{self.name}[/green] container as root")
+                            if not self.isRunning():
+                                logger.verbose("Starting the container to remove sentinel history")
+                                await self.__start_container()
+                            # Host lacks permission: shred and remove the whole Sentinel directory from
+                            # inside the container as root. -type f and rm -rf never follow symlinks.
+                            sentinel_container_dir = StaticContainerPath.SENTINEL_DIRECTORY.value
+                            async with ExegolStatus(f"Removing Sentinel history securely", spinner_style="blue"):
+                                exit_code = await self.exec(f"find {sentinel_container_dir} -type f -exec shred -fzu {{}} +; "
+                                                            f"find {sentinel_container_dir} -mindepth 1 -maxdepth 1 -type d -exec rm -rf -- {{}} +;",
+                                                            as_daemon=False, quiet=True)
+                            if exit_code == 0:
+                                logger.success("Sentinel logging history removed successfully")
+                                try:
+                                    # The container can't remove the root directory because of the docker volume
+                                    sentinel_dir.rmdir()
+                                except (OSError, PermissionError):
+                                    logger.error(f"Exegol cannot remove the Sentinel logging root directory [magenta]{sentinel_dir}[/magenta], please remove it manually.")
+                            else:
+                                logger.error(f"Exegol cannot remove the Sentinel logging history [magenta]{sentinel_dir}[/magenta], please remove it manually.")
+                        except (OSError, NotImplementedError) as e:
+                            # Tree changed during removal, or a planted socket/FIFO/device node: report
+                            # and continue so the container, volume and networks are still removed.
+                            logger.debug(f"Error during workspace logs removal: {e}")
+                            logger.error(f"Exegol cannot remove the Sentinel logging history [magenta]{sentinel_dir}[/magenta], please remove it manually.")
+            except OSError as e:
+                # Includes PermissionError, and iterdir() errors if the directory is swapped out.
+                logger.debug(f"Error during Sentinel history check: {e}")
+                logger.error(f"Exegol cannot access the Sentinel logging history [magenta]{sentinel_dir}[/magenta], please remove it manually.")
         volume_path = self.config.getPrivateVolumePath()
         # TODO add backup
         if volume_path != '':
@@ -452,6 +567,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                         return
                     logger.verbose(f"Removing workspace volume")
                     # Try to remove files from the host with user permission (work only without sub-directory)
+                    # TODO improve workspace removal with shred
                     shutil.rmtree(volume_path)
             except PermissionError:
                 logger.info(f"Deleting the workspace files from the [green]{self.name}[/green] container as root")
@@ -462,7 +578,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 try:
                     shutil.rmtree(volume_path)
                 except PermissionError:
-                    logger.warning(f"I don't have the rights to remove [magenta]{volume_path}[/magenta] (do it yourself)")
+                    logger.warning(f"Exegol don't have the rights to remove [magenta]{volume_path}[/magenta] (do it yourself)")
                     return
             logger.success("Private workspace volume removed successfully")
         else:
@@ -548,6 +664,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                              f"Exegol was unable to allow your container to access your graphical environment ({debug_msg}).")
                 return
 
+            x11_env = EnvInfo.get_x11_client_env()
             logger.debug(f"DISPLAY variable: {GuiUtils.getDisplayEnv()}")
             # Extracts the left part of the display variable to determine if remote access is used
             display_host = GuiUtils.getDisplayEnv().split(':')[0]
@@ -559,11 +676,11 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                     logger.debug(f"Adding xhost ACL to localhost")
                     # add xquartz inet ACL
                     async with ExegolStatus(f"Starting XQuartz...", spinner_style="blue"):
-                        os.system(f"xhost + localhost > /dev/null")
+                        GuiUtils.run_x11_command(["xhost", "+", "localhost"], x11_env)
                 elif not EnvInfo.isWindowsHost():
                     logger.debug(f"Adding xhost ACL to local:{self.config.getUsername()}")
                     # add linux local ACL
-                    os.system(f"xhost +local:{self.config.getUsername()} > /dev/null")
+                    GuiUtils.run_x11_command(["xhost", f"+local:{self.config.getUsername()}"], x11_env)
                 return
 
             if shutil.which("xauth") is None:
@@ -586,8 +703,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             # Extracting the xauth cookie corresponding to the current display to a temporary file and reading it from there (grep cannot be used because display names are not accurate enough)
             _, tmpXauthority = tempfile.mkstemp()
             logger.debug(f"Extracting xauth entries to {tmpXauthority}")
-            os.system(f"xauth extract {tmpXauthority} $DISPLAY > /dev/null 2>&1")
-            xauthEntry = subprocess.check_output(f"xauth -f {tmpXauthority} list 2>/dev/null", shell=True).decode()
+            GuiUtils.run_x11_command(["xauth", "extract", tmpXauthority, GuiUtils.getDisplayEnv()], x11_env, hide_stderr=True)
+            xauthEntry = subprocess.check_output(["xauth", "-f", tmpXauthority, "list"], env=x11_env,
+                                                 stderr=subprocess.DEVNULL).decode()
             logger.debug(f"xauthEntry to propagate: {xauthEntry}")
 
             # Replacing the hostname with localhost to support loopback exposed x11 socket and container in host mode (loopback is the same)
@@ -629,6 +747,9 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.debug(f"Renaming container {self.getContainerName()} as {new_name}")
             try:
                 self.__container.rename(new_name)
+                # Reflect the rename on the container names used by the CLI autocompletion
+                DataCache().remove_container_cache(self.name)
+                DataCache().add_container_cache(new_name.removeprefix("exegol-"))
                 logger.success(f"Your previous container [orange3]{self.name}[/orange3] has been renamed to [green]{new_name[7:]}[/green] as a backup. You will need to delete it manually when it is no longer needed.")
                 return
             except APIError as e:
@@ -646,7 +767,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         :return:
         """
         if not SessionHandler().pro_feature_access():
-            logger.critical("Exegol backup is only available for Pro or Enterprise users.")
+            logger.critical(SessionHandler.pro_access_message("backup"))
         async with ExegolStatus(f"Ongoing backup of container [green]{self.name}[/green]", spinner_style="blue"):
             result = await self.exec(f"mkdir {self.BACKUP_DIRECTORY}", quiet=True, as_daemon=False)
             if result != 0:
@@ -696,7 +817,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         :return:
         """
         if not SessionHandler().pro_feature_access():
-            logger.critical("Exegol restore is only available for Pro or Enterprise users.")
+            logger.critical(SessionHandler.pro_access_message("restore"))
 
         async with ExegolStatus(f"Restoring backup of container [green]{self.name}[/green]", spinner_style="blue"):
             results = await asyncio.gather(

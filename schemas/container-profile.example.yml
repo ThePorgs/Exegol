@@ -1,0 +1,330 @@
+# yaml-language-server: $schema=./container-profile.schema.json
+#
+# ===========================================================================
+#  Exegol container profile — annotated template
+# ===========================================================================
+#
+# A container profile is a named set of container defaults: the answers you
+# would otherwise retype as `exegol start` flags on every engagement.
+#
+# WHERE IT LIVES
+#   ~/.exegol/components/profiles/<source>/<name>.yml
+#
+#   The file name is the profile name: copy this file to
+#   `~/.exegol/components/profiles/local/redteam.yml` to define `redteam`.
+#   `local` is created on first run. List profiles with `exegol info --profile`
+#   and inspect one with `exegol info --profile <name>`. The root directory can
+#   be changed with `config.profile.component_path` in `~/.exegol/config.yml`.
+#
+#   This is a CONTAINER configuration profile, not a Docker build profile
+#   (`exegol build`) nor a Sentinel audit profile (`-SP`).
+#
+# EVERY KEY IS OPTIONAL
+#   An omitted key lets the CLI flag or `~/.exegol/config.yml` decide; delete
+#   the keys you do not care about. An explicit `null` is not the same as
+#   omitting the key: it pins the value to nothing.
+#
+#   Commented-out keys below are valid fields this template leaves unset,
+#   either because the value is machine-specific or because it widens what the
+#   container is allowed to do.
+#
+# NEVER PUT A CREDENTIAL IN THIS FILE
+#   Profiles are meant to be shared. No field accepts credential contents; the
+#   VPN fields only reference files by path.
+#
+# ===========================================================================
+
+
+# Schema format version, reserved for future structural changes. Omitted means 1.
+version: 1
+
+
+# ---------------------------------------------------------------------------
+# image — mirrors the `Image selection options` group of `exegol start --help`
+# ---------------------------------------------------------------------------
+image:
+  # Image the container is created from (IMAGE in `exegol start <CONTAINER> <IMAGE>`).
+  tag: full
+
+  # Extra image names listed alongside the official ones. Overrides
+  # `custom_images` in `~/.exegol/config.yml`.
+  # custom_images:
+  #   - my-org/exegol-custom
+
+
+# ---------------------------------------------------------------------------
+# network — mirrors `Container options at creation only` (networking)
+# ---------------------------------------------------------------------------
+network:
+  # Network mode (`--network`): `nat`, `docker`, `disabled`, `host`, or the name
+  # of an existing Docker network. `host` offers no isolation, hence `nat` here.
+  mode: nat
+
+  # Published ports (`-p` / `--port`), one entry per mapping:
+  #   [<host_ipv4>:]<host_port>[-<end_port>][:<container_port>[-<end_port>]][:<proto>]
+  # Bind to 127.0.0.1 unless the port must be exposed on every host interface.
+  ports:
+    - "127.0.0.1:8080:8080"
+    - "127.0.0.1:4444:4444"
+
+  # Container hostname (`--hostname`). Default: `exegol-<container name>`.
+  hostname: exegol-redteam
+
+  # Set to true to make container creation ASK for the hostname, offering the value
+  # above as the prompt default (`--hostname` answers it and no prompt appears).
+  # hostname_ask_user: true
+
+  # Host file in `IP HOSTNAME` format imported into the container (`--hosts-file`).
+  # hosts_file: /home/user/engagements/acme/hosts.txt
+
+  # Extra host entries, hostname -> IP, merged with `hosts_file` (these win on
+  # conflict). A list of "hostname=ip" strings is also accepted:
+  #   hosts:
+  #     - dc01.acme.corp=10.10.0.10
+  # hosts:
+  #   dc01.acme.corp: 10.10.0.10
+
+  # There is no `fallback_mode` field: when `mode` cannot be used on a machine,
+  # that machine's `network.fallback_mode` in `~/.exegol/config.yml` decides.
+
+  # Range dedicated container networks are allocated from. Overrides
+  # `network.exegol_dedicated_range` in `~/.exegol/config.yml`.
+  # dedicated_range: 172.16.0.0/12
+
+  # Netmask of each dedicated container network, 1-32. Overrides
+  # `network.exegol_default_netmask` in `~/.exegol/config.yml`.
+  default_netmask: 28
+
+
+# ---------------------------------------------------------------------------
+# volumes — mirrors `Container options at creation only` (workspace & mounts)
+# ---------------------------------------------------------------------------
+#
+# There is deliberately no field for `-cwd` / `--cwd-mount`: a shared profile
+# could otherwise mount whatever directory exegol was launched from. Use
+# `workspace_path` instead.
+volumes:
+  # Extra host volumes (`-V` / `--volume`), one per entry:
+  #   /path/on/host/:/path/in/container/[:ro|rw]
+  # mounts:
+  #   - /home/user/engagements/acme/loot/:/opt/loot/:rw
+  #   - /home/user/wordlists/:/opt/wordlists/:ro
+
+  # Host folder linked to /workspace inside the container (`-w`/`--workspace`).
+  # workspace_path: /home/user/engagements/acme
+
+  # Mount the Exegol resources volume at /opt/resources
+  # (`--exegol-resources` / `--no-exegol-resources`).
+  share_exegol_resources: true
+
+  # Update workspace permissions so files created in the container stay usable
+  # by your host user (`-fs` / `--update-fs`). This changes host permissions.
+  update_fs_perms: false
+
+  # Host path of the Exegol resources volume. Overrides
+  # `volumes.exegol_resources_path` in `~/.exegol/config.yml`.
+  # exegol_resources_path: /home/user/.exegol/exegol-resources
+
+  # Where per-container workspaces are created when none is given. Overrides
+  # `volumes.private_workspace_path` in `~/.exegol/config.yml`.
+  # private_workspace_path: /home/user/.exegol/workspaces
+
+
+# ---------------------------------------------------------------------------
+# customization — your personal my-resources customisation layer
+# ---------------------------------------------------------------------------
+customization:
+  # Mount the my-resources volume at /opt/my-resources
+  # (`--my-resources` / `--no-my-resources`).
+  share_my_resources: true
+
+  # Host path of the my-resources volume. Overrides
+  # `customization.my_resources_path` in `~/.exegol/config.yml`.
+  # my_resources_path: /home/user/.exegol/my-resources
+
+
+# ---------------------------------------------------------------------------
+# display — mirrors `Container options at creation only` (GUI sharing) and the
+#           `Desktop options (at creation only)` group
+# ---------------------------------------------------------------------------
+display:
+  # Share the host GUI, X11 or Wayland (`--gui` / `--no-gui`).
+  share_x11: true
+
+  desktop:
+    # Enable the Exegol desktop (`--desktop`). It publishes a remote-desktop port.
+    enabled: false
+
+    # Desktop protocol: `http` or `vnc`.
+    proto: http
+
+    # Bind address. 0.0.0.0 exposes the desktop on every host interface.
+    listen_ip: 127.0.0.1
+
+    # Published port. Unset uses the protocol default (6080 http, 5900 vnc).
+    # port: 6080
+
+
+# ---------------------------------------------------------------------------
+# vpn — mirrors the `VPN options (at creation only)` group
+# ---------------------------------------------------------------------------
+#
+# Both fields are PATHS to files on your own disk, never credential contents.
+# The whole section is commented out because the paths are machine-specific
+# (an empty `vpn:` key would be a declared null).
+# vpn:
+#   # OpenVPN (.ovpn) or WireGuard (.conf) configuration (`--vpn`).
+#   config: /home/user/vpn/client.ovpn
+#
+#   # OpenVPN credentials file, username then password on two lines (`--vpn-auth`).
+#   auth_file: /home/user/vpn/auth.txt
+
+
+# ---------------------------------------------------------------------------
+# shell — mirrors `Start specific options` and `Container options at creation
+#         or start`
+# ---------------------------------------------------------------------------
+shell:
+  # Shell started on entry: `zsh`, `bash` or `tmux` (`-s` / `--shell`).
+  # Overrides `config.default_start_shell`.
+  default: zsh
+
+  # Environment variables (`-e` / `--env`), one `KEY=value` per entry. Visible in
+  # every shell of the container: never put a secret here. A mapping also works:
+  #   env:
+  #     HTTP_PROXY: http://127.0.0.1:8080
+  #     TARGET_DOMAIN: corp.example.com
+  env:
+    - "HTTP_PROXY=http://127.0.0.1:8080"
+    - "TARGET_DOMAIN=corp.example.com"
+
+
+# ---------------------------------------------------------------------------
+# logging — mirrors the `Shell logging options` group
+# ---------------------------------------------------------------------------
+logging:
+  # Record commands and outputs to /workspace/logs/ (`-l` / `--log`).
+  # Overrides `config.shell_logging.always_enable`.
+  enabled: true
+
+  # Recording method: `asciinema` or `script` (`--log-method`).
+  # Overrides `config.shell_logging.logging_method`.
+  method: asciinema
+
+  # Gzip each log file at the end of the session (`--log-compress`).
+  # Overrides `config.shell_logging.enable_log_compression`.
+  compress: true
+
+
+# ---------------------------------------------------------------------------
+# system — mirrors `Container options at creation only` (host sharing and
+#          privileges) and `--cap` from `Container options at creation or start`
+# ---------------------------------------------------------------------------
+#
+# The commented-out fields below WIDEN the container and are left out on
+# purpose. Uncomment one only for an identified need, and prefer a single
+# capability over `privileged`.
+system:
+  # Share the host's time and timezone (`--share-timezone` / `--no-share-timezone`).
+  share_timezone: true
+
+  # DANGEROUS (`--privileged`): grants ALL admin privileges, effectively removing
+  # the container boundary. Prefer a specific capability.
+  # privileged: true
+
+  # Host devices exposed in the container (`-d` / `--device`), one per entry.
+  # devices:
+  #   - /dev/ttyACM0
+  #   - /dev/bus/usb/
+
+  # DANGEROUS (`--cap`): extra Linux capabilities among NET_ADMIN, NET_BROADCAST,
+  # SYS_MODULE, SYS_PTRACE, SYS_RAWIO, SYS_ADMIN, LINUX_IMMUTABLE, MAC_ADMIN,
+  # SYSLOG, ALL. `ALL` is equivalent to privileged.
+  # capabilities:
+  #   - NET_ADMIN
+
+
+# ---------------------------------------------------------------------------
+# sentinel — mirrors `Container options at creation only` (audit logging).
+#            Optional Enterprise feature.
+# ---------------------------------------------------------------------------
+#
+# `profile` below names a SENTINEL AUDIT profile, not a container profile.
+sentinel:
+  # Enable Sentinel audit logging (`-S` / `--sentinel` / `--no-sentinel`).
+  # Omitted or `null` decides nothing: a `profile` named below still enables
+  # Sentinel, otherwise `sentinel_enabled_by_default` from `~/.exegol/config.yml`
+  # applies.
+  # enabled: true
+
+  # Sentinel audit profile (`-SP` / `--sentinel-profile`). Naming one with
+  # `enabled` unset enables Sentinel, like `-SP NAME` without `-S`.
+  # Omitted, `null` and `""` all mean no name: `sentinel_default_profile` from
+  # `~/.exegol/config.yml` is used. To get "Sentinel on, no audit profile" when
+  # that default is set, use `-SP ""` on the command line.
+  # profile: engagement-audit
+
+  # When the container's Sentinel config is refreshed from the host sources:
+  # `on_restart` or `disabled` (`--sentinel-strategy`). Overrides
+  # `config.sentinel.update_strategy`.
+  update_strategy: on_restart
+
+  # Host group ID allowed to read the audit logs (e.g. for a log shipper).
+  # -1 means your own group. Overrides `config.sentinel.log_group_gid`.
+  gid: -1
+
+  # Host directory receiving the Sentinel audit logs. Overrides
+  # `config.sentinel.component_path` in `~/.exegol/config.yml`.
+  # sentinel_logs_host_path: /home/user/.exegol/sentinel
+
+  # Rotation of the Sentinel JSONL logs. Overrides
+  # `config.sentinel.log_rotation` in `~/.exegol/config.yml`.
+  log_rotation:
+    # Rotate the audit log automatically.
+    enabled: true
+
+    # Rotate at this size: bytes, or a unit suffix such as "100MB" / "512KB".
+    max_size: "100MB"
+
+    # How many rotated files to keep. 0 keeps all of them.
+    max_files: 0
+
+    # Gzip rotated files.
+    compress: true
+
+  # Inline terminal-output capture in each audit event. Overrides
+  # `config.sentinel.log_output` in `~/.exegol/config.yml`.
+  #
+  # These are DEFAULTS: a Sentinel audit profile that declares its own `log_output` block
+  # replaces them wholesale, so the values here apply only when it declares none.
+  log_output:
+    # Capture each command's terminal output into its audit event. An unreadable or
+    # unrecognised value resolves to OFF rather than to this default.
+    enabled: true
+
+    # Keep at most this much cleaned output per command: bytes, or a unit suffix such as
+    # "4KB" / "64KB". Must be strictly positive. Values at or above 10000 bytes exceed a
+    # stock Splunk's default TRUNCATE, which cuts the event mid-JSON rather than shortening
+    # it, so a warning is raised when this reaches that size.
+    max_size: "4KB"
+
+    # Which end of an oversized capture to keep: head, tail, or both (half the budget on
+    # each end, with the dropped byte count named in between).
+    truncation: both
+
+
+# ---------------------------------------------------------------------------
+# metadata — mirrors `Container options at creation only` (annotation)
+# ---------------------------------------------------------------------------
+metadata:
+  # Free-form description of THIS PROFILE, shown by `exegol info --profile` and by the
+  # interactive profile picker. Tied to no CLI option: it never reaches the container.
+  description: "Red team engagement profile - NAT network, session logging on."
+
+  # The CONTAINER's own comment (`--comment`), applied to every container this profile
+  # creates and shown in the container summary recap.
+  comment: "Created from the redteam profile."
+
+  # Set to true to make container creation ASK for the comment, offering the value above
+  # as the prompt default (`--comment` answers it and no prompt appears).
+  # comment_ask_user: true

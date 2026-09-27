@@ -7,7 +7,6 @@ import jwt
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.console.ExegolPrompt import ExegolRich
-from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation, UnavailableService
 from exegol.manager.TaskManager import TaskManager
 from exegol.model.LicensesTypes import LicenseType, LicenseFeature, SessionData, SessionOfflineData
@@ -17,6 +16,9 @@ from exegol.utils.LocalDatastore import LocalDatastore
 from exegol.utils.MUID import MUID
 from exegol.utils.MetaSingleton import MetaSingleton
 from exegol.utils.SupabaseUtils import SupabaseUtils
+
+# `OptionResolver` is imported function-locally: OptionResolver -> UserConfig -> SessionHandler
+# would otherwise be a circular import.
 
 
 class SessionHandler(metaclass=MetaSingleton):
@@ -69,14 +71,26 @@ class SessionHandler(metaclass=MetaSingleton):
         """Return True if the wrapper is enrolled to an Exegol license expired or not"""
         return self.__is_enrolled
 
+    @classmethod
+    def pro_access_message(cls, feature: str) -> str:
+        return f"Exegol {feature} is only available for Pro, Team or Enterprise users. Purchase at https://exegol.com/pricing"
+
     def pro_feature_access(self) -> bool:
         return self.get_license_type().value >= LicenseType.Professional.value
+
+    @classmethod
+    def enterprise_access_message(cls, feature: str) -> str:
+        return f"Exegol {feature} is only available for Team or Enterprise users. Purchase at https://exegol.com/pricing"
 
     def enterprise_feature_access(self) -> bool:
         return self.get_license_type().value >= LicenseType.Team.value
 
+    @classmethod
+    def feature_access_message(cls, feature: str, tier: str = "Enterprise") -> str:
+        return f"Exegol {feature} is an optional [gold3]{tier}[/gold3] feature as [gold3]optional add-on[/gold3] currently not included in your subscription. Contact support to enable it."
+
     def has_feature(self, feature: LicenseFeature) -> bool:
-        return feature in self.__features
+        return feature in self.__features or LicenseFeature.All in self.__features or LicenseFeature.AllWrapper in self.__features
 
     def __is_online_session_valid(self) -> bool:
         if self.__license == LicenseType.Community:
@@ -378,7 +392,8 @@ class SessionHandler(metaclass=MetaSingleton):
             await self.__key_handler.refresh_certificate()  # Refresh cert if not yet ready
             # Check when session need to be reloaded from server (because session is missing but token is here, or because it's time to refresh)
             if not force_offline and self.__token is not None and (not self.__session or force_refresh):
-                if ParametersManager().offline_mode or not self.__session_can_refresh():
+                from exegol.config.OptionResolver import OptionKey, OptionResolver  # deferred: see module header
+                if OptionResolver().get(OptionKey.OFFLINE_MODE) or not self.__session_can_refresh():
                     # Too early to use the token
                     raise LicenseToleration
                 refresh_queue: Queue[Tuple[Optional[str], Optional[Union[Exception, Type[Exception]]]]] = Queue()

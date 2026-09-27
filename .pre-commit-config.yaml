@@ -11,8 +11,11 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-shebang-scripts-are-executable
+        exclude: 'exegol/utils/imgsync/shell_script/'  # Hooks dont need to be executable
       - id: check-case-conflict
       - id: name-tests-test
+        args:
+          - --pytest-test-first  # Enforce test_*.py naming (project convention, matches pytest python_files)
       - id: check-illegal-windows-names
       - id: mixed-line-ending
         args:
@@ -29,13 +32,14 @@ repos:
     rev: v0.10.0.1
     hooks:
       - id: shellcheck
+        exclude: 'exegol/utils/imgsync/shell_script/zsh_hooks.sh'  # Shellcheck doesn't support zsh
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.15.0'
     hooks:
       - id: mypy
         stages: [pre-push]
         additional_dependencies: ["types-PyYAML", "types-requests", "types-tzlocal", "types-python-dateutil"]
-        exclude: "exegol.py"
+        exclude: ^exegol\.py$
         args:
           - --ignore-missing-imports
           - --check-untyped-defs
