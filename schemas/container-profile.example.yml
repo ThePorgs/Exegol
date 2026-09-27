@@ -176,7 +176,8 @@ display:
 #   # OpenVPN (.ovpn) or WireGuard (.conf) configuration (`--vpn`).
 #   config: /home/user/vpn/client.ovpn
 #
-#   # OpenVPN credentials file, username then password on two lines (`--vpn-auth`).
+#   # OpenVPN credentials file: username then password on two lines, plus an
+#   # optional third line with the private key decryption password (`--vpn-auth`).
 #   auth_file: /home/user/vpn/auth.txt
 
 

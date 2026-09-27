@@ -338,7 +338,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                dest="vpn_auth",
                                default=None,
                                action="store",
-                               help="Enter the credentials with a file (first line: username, second line: password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)",
+                               help="Enter the credentials with a file (line 1: username, line 2: password, optional line 3: private key decryption password) to establish the OpenVPN connection automatically (example: --vpn-auth /home/user/vpn/auth.txt)",
                                completer=FilesCompleter())
 
         groupArgs.append(GroupArg({"arg": self.vpn, "required": False},

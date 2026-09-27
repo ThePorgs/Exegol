@@ -114,6 +114,19 @@ function ovpn() {
   then
       echo '[ERROR]Your exegol image does not support the VPN feature'
   else
+    # If the creds file's optional 3rd line holds the encrypted private key's
+    # passphrase, OpenVPN can't read it from --auth-user-pass (that only reads
+    # the first two lines), so it's split into its own --askpass file.
+    CREDS_FILE="/.exegol/vpn/auth/creds.txt"
+    if [[ -f "$CREDS_FILE" ]]; then
+      KEY_PASS="$(sed -n '3p' "$CREDS_FILE" | tr -d '\r')"
+      if [[ -n "$KEY_PASS" ]]; then
+        ASKPASS_FILE="/.exegol/vpn/auth/askpass.txt"
+        printf '%s\n' "$KEY_PASS" > "$ASKPASS_FILE"
+        chmod 600 "$ASKPASS_FILE"
+        set -- "$@" --askpass "$ASKPASS_FILE"
+      fi
+    fi
     # Starting openvpn as a job with '&' to be able to receive SIGTERM signal and close everything properly
     echo "[PROGRESS]Starting [green]OpenVPN[/green]"
     # shellcheck disable=SC2164
