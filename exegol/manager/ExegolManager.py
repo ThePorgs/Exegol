@@ -207,7 +207,10 @@ class ExegolManager:
                 await container.stop(timeout=2)
             else:
                 # Command is passed at container creation in __createTmpContainer()
-                logger.success(f"Command executed as entrypoint of the container {container.getDisplayName()}")
+                if container.config.isTorEnabled():
+                    logger.success(f"Container {container.getDisplayName()} launched. Its command will run after Tor bootstrap succeeds.")
+                else:
+                    logger.success(f"Command executed as entrypoint of the container {container.getDisplayName()}")
         else:
             container = cast(ExegolContainer, await cls.__loadOrCreateContainer(override_container=selector))
             await container.exec(command=command, as_daemon=as_daemon)
@@ -939,7 +942,7 @@ class ExegolManager:
                 if image is not None:
                     model.image = image
                     await ExegolTUI.printContainerRecap(model)
-            command_options = []
+            command_options = ["--tor"] if model.config.isTorEnabled() else []
             while not await ExegolRich.Confirm("Is the container configuration [green]correct[/green]?", default=True):
                 command_options = await model.config.interactiveConfig(model.name, cls.__resolved_profile_name)
                 await ExegolTUI.printContainerRecap(model)
@@ -979,6 +982,9 @@ class ExegolManager:
         # Mount entrypoint as a volume (because in tmp mode the container is created with run instead of create method)
         model.config.addVolume(ConstantConfig.entrypoint_context_path_obj, StaticContainerPath.EXEGOL_ENTRYPOINT.value, must_exist=True, read_only=True)
 
+        if model.config.isTorEnabled():
+            model.config.addVolume(ConstantConfig.tor_context_path_obj, StaticContainerPath.EXEGOL_TOR.value, must_exist=True, read_only=True)
+
         container = DockerUtils().createContainer(model, temporary=True)
         await container.postCreateSetup(is_temporary=True)
         return container
@@ -992,7 +998,7 @@ class ExegolManager:
         detected = []
         for param, display_override in CREATION_ONLY_WARNING_SURFACE:
             # Skip parameters useful in a start context
-            if param in ('containertag',):
+            if param in ('containertag', 'tor'):
                 continue
             # An OptionKey names a registered option, a bare string an unregistered one. The
             # membership test also keeps non-CREATION_ONLY options out.

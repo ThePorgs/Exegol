@@ -5,6 +5,7 @@ class StaticContainerPath(Enum):
     # Exegol
     EXEGOL_SPAWN = '/.exegol/spawn.sh'
     EXEGOL_ENTRYPOINT = '/.exegol/entrypoint.sh'
+    EXEGOL_TOR = '/.exegol/tor.sh'
 
     # Ressources
     EXEGOL_RESOURCES = '/opt/resources'

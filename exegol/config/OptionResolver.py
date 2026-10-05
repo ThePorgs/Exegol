@@ -1073,6 +1073,7 @@ _REGISTRY: Dict[OptionKey, OptionSpec] = {
 #   * the four positionals, which select targets rather than configure one.
 # ---------------------------------------------------------------------------
 RESOLVER_EXCLUDED: Dict[str, str] = {
+    "tor": "Explicit CLI-only opt-in; Tor routing is persisted on the container, not enabled by a profile or ambient default.",
     # -- positionals: explicit-set detection differs -------------------------
     "containertag": "Positional, not a flag: argparse gives it no `dest` kwarg and "
                     "'the user typed it' cannot be detected the same way as for an "
