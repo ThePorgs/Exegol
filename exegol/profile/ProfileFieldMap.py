@@ -380,6 +380,7 @@ PROFILE_TIER_DEAD: Dict[OptionKey, str] = {
 # A reason (prose > 10 characters) is mandatory.
 # ---------------------------------------------------------------------------
 PROFILE_EXCLUDED: Dict[str, str] = {
+    "tor": "Tor routing requires an explicit --tor at creation; profiles may configure compatible network options but cannot enable it.",
     # -- security boundary: never profilable, under any refactor --------------
     "mount_current_dir": "A security boundary, not an oversight. `-cwd` / `--cwd-mount` "
                          "expands to the PROCESS WORKING DIRECTORY, so a shareable "

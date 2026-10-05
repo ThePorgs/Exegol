@@ -22,6 +22,8 @@ class ConstantConfig:
     sentinel_zsh_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/shell_script/zsh_hooks.sh"
     sentinel_bash_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/shell_script/bash_hooks.sh"
     sentinel_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/sentinel"
+    # Path of the tor.sh
+    tor_context_path_obj: Path = src_root_path_obj / "exegol/utils/imgsync/tor.sh"
     # Path to the EULA docs
     eula_path: Path = src_root_path_obj / "exegol/utils/docs/eula.md"
     # True when the current process has been spawned by the shell completion system (argcomplete).

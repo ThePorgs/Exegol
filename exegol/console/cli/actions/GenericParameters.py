@@ -308,6 +308,13 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                         help=f"Set the Sentinel profile update strategy for this container (default: [blue]{_help_literal(OptionResolver().defaultFor(OptionKey.SENTINEL_STRATEGY))}[/blue]). "
                                              f"'on_restart' regenerates the config from host sources at every restart; 'disabled' freezes it until forced.")
 
+        self.tor = Option("--tor",
+                          dest="tor",
+                          action="store_true",
+                          default=False,
+                          help="Route TCP and DNS through Tor; block other outbound traffic. "
+                               "Incompatible with VPN, host networking, privileged mode, ALL/NET_RAW capabilities, "
+                               "published ports and desktop.")
         groupArgs.append(GroupArg({"arg": self.workspace_path, "required": False},
                                   {"arg": self.mount_current_dir, "required": False},
                                   {"arg": self.update_fs_perms, "required": False},
@@ -323,6 +330,7 @@ class ContainerCreation(ContainerSelector, ImageSelector):
                                   {"arg": self.my_resources, "required": False},
                                   {"arg": self.exegol_resources, "required": False},
                                   {"arg": self.network, "required": False},
+                                  {"arg": self.tor, "required": False},
                                   {"arg": self.share_timezone, "required": False},
                                   {"arg": self.comment, "required": False},
                                   {"arg": self.hosts_file, "required": False},

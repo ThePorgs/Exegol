@@ -7,6 +7,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime
 from enum import IntFlag, auto as enum_auto
 from pathlib import Path
@@ -22,6 +23,7 @@ from exegol.config.StaticContainerPath import StaticContainerPath, StaticFileNam
 from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.console.ExegolStatus import ExegolStatus
+from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import CancelOperation, ObjectNotFound
 from exegol.model.ContainerConfig import ContainerConfig
 from exegol.model.ExegolContainerTemplate import ExegolContainerTemplate
@@ -185,12 +187,45 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             logger.info(f"Starting container {self.name}")
             await self.__start_container()
             await self.__postStartSetup()
+        else:
+            await self.__waitForTor()
+
+    async def __waitForTor(self) -> None:
+        """Wait for Tor before opening a shell or executing a command."""
+        # resolver-exempt: Tor is an explicit, CLI-only creation opt-in.
+        if ParametersManager().tor and not self.config.isTorEnabled():
+            logger.critical("This container was created without Tor. Use --tor with a new container.")
+        if not self.config.isTorEnabled():
+            return
+        self.config.validateTor()
+        if "ALL" in OptionResolver().cliValue(OptionKey.CAPABILITIES):
+            logger.critical("Tor cannot be combined with --cap ALL.")
+        deadline = time.monotonic() + 330
+        while time.monotonic() < deadline:
+            try:
+                self.__container.reload()
+                if self.__container.status != "running":
+                    logger.critical("Tor startup failed. Check the container logs and /var/log/exegol/tor.log.")
+                result = self.__container.exec_run(["/bin/bash", StaticContainerPath.EXEGOL_TOR.value, "check"])
+            except APIError as error:
+                logger.debug(error)
+                logger.critical("Tor startup failed or the container was removed. Cannot check Tor status.")
+            if result.exit_code == 0:
+                return
+            if result.exit_code != 1:
+                logger.critical("Tor is unavailable. Check the container logs and restart the container.")
+            await asyncio.sleep(1)
+        logger.critical("Tor startup timed out. Check /var/log/exegol/tor.log.")
 
     async def __start_container(self) -> None:
         """
         This method starts the container and displays startup status updates to the user.
         :return:
         """
+        # resolver-exempt: Tor is an explicit, CLI-only creation opt-in.
+        if ParametersManager().tor and not self.config.isTorEnabled():
+            logger.critical("This container was created without Tor. Use --tor with a new container.")
+        self.config.validateTor()
         async with ExegolStatus(f"Waiting to start {self.name}", spinner_style="blue") as progress:
             start_date = datetime.now()
             try:
@@ -198,6 +233,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
             except APIError as e:
                 logger.debug(e)
                 logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
+            await self.__waitForTor()
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
                     # Try to find log / startup messages. Will time out after 2 seconds if the image don't support status update through container logs.
@@ -270,6 +306,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
 
     async def spawnShell(self) -> None:
         """Spawn a shell on the docker container"""
+        await self.__waitForTor()
         self.__check_start_version()
         logger.info(f"Location of the exegol workspace on the host : {self.config.getHostWorkspacePath()}")
         for device in self.config.getDevices():
@@ -316,6 +353,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Return the exit code and the logs."""
         if not self.isRunning():
             await self.start()
+        await self.__waitForTor()
         exec_payload, str_cmd = ExegolContainer.formatShellCommand(command, quiet=True)
         result = self.__container.exec_run(exec_payload, environment={"CMD": str_cmd, "DISABLE_AUTO_UPDATE": "true"}, detach=False, stream=False)
         stdout = result.output.decode("utf-8") if type(result.output) is bytes else result.output
@@ -330,6 +368,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
         Set is_tmp if the container will automatically be removed after execution"""
         if not self.isRunning():
             await self.start()
+        await self.__waitForTor()
         if not quiet:
             logger.info("Executing command on Exegol")
             if logger.getEffectiveLevel() > logger.VERBOSE and not OptionResolver().get(OptionKey.DAEMON):
