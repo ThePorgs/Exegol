@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
 from exegol.config.DataCache import DataCache
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.config.UserConfig import UserConfig
 from exegol.utils.NetworkUtils import NetworkUtils
@@ -79,7 +79,7 @@ def BuildProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tupl
     try:
         # Handle custom build path
         if parsed_args is not None and parsed_args.build_path is not None:
-            custom_build_path = EnvInfo.expand_user(parsed_args.build_path).absolute()
+            custom_build_path = SudoInfo.expandUser(parsed_args.build_path).absolute()
             # Check if we have a directory or a file to select the project directory
             if not custom_build_path.is_dir():
                 custom_build_path = custom_build_path.parent
@@ -155,7 +155,7 @@ def ProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> Tuple[str
             # Subscript rather than `spec.get(...)`: the tier-safety test flags any `.get` call
             # here as a potential `OptionResolver().get`. An empty `path` falls back like a missing one.
             local_path = spec["path"] if "path" in spec else None
-            source_dir = EnvInfo.expand_user(local_path) if local_path else component_path / source_key
+            source_dir = SudoInfo.expandUser(local_path) if local_path else component_path / source_key
             # A git source has no directory before its first `exegol update`; skip missing roots.
             if not source_dir.is_dir():
                 continue

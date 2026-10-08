@@ -20,6 +20,7 @@ from docker.types import Mount
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, OptionResolver, OptionSource
 from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.OptionsEnum import SentinelUpdateStrategy
@@ -483,7 +484,7 @@ class ContainerConfig:
                 default=False):
             while True:
                 workspace_path = await ExegolRich.Ask("Enter the path of your workspace")
-                if EnvInfo.expand_user(workspace_path).is_dir():
+                if SudoInfo.expandUser(workspace_path).is_dir():
                     break
                 else:
                     logger.error("The provided path is not a folder or does not exist.")
@@ -510,7 +511,7 @@ class ContainerConfig:
         if self.__vpn_path is None and await ExegolRich.Confirm(
                 "Do you want to [green]enable[/green] a [blue]VPN[/blue] in this container", False):
             while True:
-                vpn_path = EnvInfo.expand_user(await ExegolRich.Ask('Enter the [green]path[/green] to the [blue]VPN config file[/blue]'))
+                vpn_path = SudoInfo.expandUser(await ExegolRich.Ask('Enter the [green]path[/green] to the [blue]VPN config file[/blue]'))
                 if vpn_path.is_file():
                     try:
                         await self.enableVPN(vpn_path)
@@ -1112,7 +1113,7 @@ class ContainerConfig:
         resolved_vpn = config_path if config_path is not None else OptionResolver().get(OptionKey.VPN)
         if resolved_vpn:
             # VPN config path
-            vpn_path = resolved_vpn if isinstance(resolved_vpn, Path) else EnvInfo.expand_user(resolved_vpn)
+            vpn_path = resolved_vpn if isinstance(resolved_vpn, Path) else SudoInfo.expandUser(resolved_vpn)
 
             logger.debug(f"Adding VPN from: {str(vpn_path.absolute())}")
             # Sharing VPN configuration with the container
@@ -1213,7 +1214,7 @@ class ContainerConfig:
         input_vpn_auth = auth_path if auth_path is not None else OptionResolver().get(OptionKey.VPN_AUTH)
         vpn_auth = None
         if input_vpn_auth is not None:
-            vpn_auth = EnvInfo.expand_user(input_vpn_auth)
+            vpn_auth = SudoInfo.expandUser(input_vpn_auth)
 
         if vpn_auth is not None:
             if vpn_auth.is_file():
@@ -1348,7 +1349,7 @@ class ContainerConfig:
 
     def setWorkspaceShare(self, host_directory: str) -> None:
         """Procedure to share a specific directory with the /workspace of the container"""
-        path = EnvInfo.expand_user(host_directory).absolute()
+        path = SudoInfo.expandUser(host_directory).absolute()
         try:
             if not path.is_dir() and path.exists():
                 logger.critical("The specified workspace is not a directory!")
@@ -1948,7 +1949,7 @@ class ContainerConfig:
             else:
                 logger.error(f"Error on volume config, mode: {mode} not recognized.")
                 readonly = False
-            full_host_path = EnvInfo.expand_user(host_path)
+            full_host_path = SudoInfo.expandUser(host_path)
             logger.debug(
                 f"Adding a volume from '{full_host_path.as_posix()}' to '{container_path}' as {'readonly' if readonly else 'read/write'}")
             try:

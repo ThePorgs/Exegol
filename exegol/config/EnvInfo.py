@@ -6,9 +6,10 @@ import sys
 from enum import Enum
 from json import JSONDecodeError
 from pathlib import Path
-from typing import Optional, List, Dict, Iterable, Tuple, Union, overload
+from typing import Optional, List, Dict, Iterable, Tuple, overload
 
 from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.SudoInfo import SudoInfo
 from exegol.utils.ExeLog import logger
 
 
@@ -46,17 +47,6 @@ def _read_proc_exe(pid: int) -> str:
 
 def _is_dir(path: str) -> bool:
     return os.path.isdir(path)
-
-
-def _passwd_home(uid: int) -> Optional[str]:
-    """Return the home directory of a user from the passwd database"""
-    if sys.platform == "win32":
-        return None
-    import pwd
-    try:
-        return pwd.getpwuid(uid).pw_dir or None
-    except KeyError:
-        return None
 
 
 def _parse_environ(raw: bytes) -> Dict[str, str]:
@@ -158,19 +148,6 @@ class EnvInfo:
         # Fallback to default AMD64 arch
         arch = "amd64"
 
-    @staticmethod
-    def __sudoUserUid() -> Optional[int]:
-        """Return the uid of the user who invoked sudo when running as root through sudo on Linux"""
-        if sys.platform != "linux":
-            return None
-        if os.geteuid() != 0:
-            return None
-        try:
-            uid = int(os.environ.get("SUDO_UID", ""))
-        except ValueError:
-            return None
-        return uid if uid > 0 else None
-
     @classmethod
     def __loadParentEnv(cls, sudo_uid: int) -> Optional[Dict[str, str]]:
         """Load the environment of the process launched by the invoking user's shell (typically sudo), once per process"""
@@ -253,7 +230,7 @@ class EnvInfo:
     @classmethod
     def __resolveEnv(cls, name: str, default: Optional[str]) -> Optional[str]:
         """Resolve an environment variable through the sudo user env, without the protected name check"""
-        sudo_uid = cls.__sudoUserUid()
+        sudo_uid = SudoInfo.getSudoUserUid()
         if sudo_uid is None:
             return os.environ.get(name, default)
         parent_env = cls.__loadParentEnv(sudo_uid)
@@ -297,10 +274,10 @@ class EnvInfo:
     def get_x11_client_env(cls) -> Dict[str, str]:
         """Return the environment for the host X11 clients (xhost, xauth)"""
         env = cls.get_env_overlay(("DISPLAY", "XAUTHORITY"))
-        if cls.is_sudo_context() and not env.get("XAUTHORITY"):
+        if SudoInfo.isSudoContext() and not env.get("XAUTHORITY"):
             # sudo keeps HOME=/root, so the X clients would miss the user's default cookie file
             try:
-                xauthority = cls.get_user_home() / ".Xauthority"
+                xauthority = SudoInfo.getUserHome() / ".Xauthority"
             except RuntimeError:
                 return env
             try:
@@ -310,34 +287,6 @@ class EnvInfo:
             except OSError:
                 pass
         return env
-
-    @classmethod
-    def is_sudo_context(cls) -> bool:
-        """Tell whether exegol runs as root through sudo on Linux"""
-        return cls.__sudoUserUid() is not None
-
-    @classmethod
-    def get_user_home(cls) -> Path:
-        """Return the home directory of the user running exegol, the invoking user's one under sudo"""
-        sudo_uid = cls.__sudoUserUid()
-        if sudo_uid is not None:
-            sudo_home = os.environ.get("SUDO_HOME")
-            if sudo_home:
-                return Path(sudo_home)
-            passwd_home = _passwd_home(sudo_uid)
-            if passwd_home:
-                return Path(passwd_home)
-        return Path.home()
-
-    @classmethod
-    def expand_user(cls, path: Union[str, "os.PathLike[str]"]) -> Path:
-        """Expand a leading '~' like Path.expanduser, to the invoking user's home under sudo"""
-        text = os.fspath(path)
-        # sudo keeps HOME=/root, so a plain expansion would name root's home
-        if cls.is_sudo_context() and (text == "~" or text.startswith("~" + os.sep)):
-            home = str(cls.get_user_home()).rstrip(os.sep)
-            return Path((home + text[1:]) or os.sep)
-        return Path(path).expanduser()
 
     @classmethod
     def initData(cls, docker_info: Dict[str, str]) -> None:

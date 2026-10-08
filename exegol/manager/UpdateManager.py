@@ -8,7 +8,7 @@ from rich.markup import escape
 
 from exegol.config.ConstantConfig import ConstantConfig
 from exegol.config.DataCache import DataCache
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.ExegolPrompt import ExegolRich, stdinCanAnswer
 from exegol.console.ExegolStatus import ExegolStatus
@@ -296,7 +296,7 @@ class UpdateManager:
         # (written into config.yml by default; removing it there disables it).
         local_spec = sources.get(ConstantConfig.DEFAULT_LOCAL_SOURCE_KEY)
         if local_spec and local_spec.get("path"):
-            local_dir = EnvInfo.expand_user(local_spec["path"])
+            local_dir = SudoInfo.expandUser(local_spec["path"])
             try:
                 FsUtils.mkdir(local_dir)
             except OSError as e:
@@ -383,7 +383,7 @@ class UpdateManager:
                 declared_path = spec.get("path")
                 if declared_path:
                     try:
-                        declared_dirs.add(EnvInfo.expand_user(declared_path).resolve())
+                        declared_dirs.add(SudoInfo.expandUser(declared_path).resolve())
                     except OSError as e:  # pragma: no cover - defensive (unresolvable path)
                         logger.debug(f"Could not resolve declared {log_label} source path {declared_path}: {e}")
             for stale in [d for d in component_path.iterdir() if d.is_dir() and d.name not in keep]:
@@ -668,7 +668,7 @@ class UpdateManager:
                 # Catch None git object assertions (from isUpToDate method)
                 logger.warning("Git update is [orange3]not available[/orange3]. Skipping.")
         else:
-            build_path = EnvInfo.expand_user(requested_build_path).absolute()
+            build_path = SudoInfo.expandUser(requested_build_path).absolute()
             # Check if we have a directory or a file to select the project directory
             if not build_path.is_dir():
                 build_path = build_path.parent

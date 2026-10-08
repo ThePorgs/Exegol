@@ -18,7 +18,7 @@ from typing import Any, Dict, List
 
 from rich.markup import escape
 
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, _REGISTRY
 from exegol.config.UserConfig import UserConfig
 from exegol.profile.ContainerProfile import ContainerProfile
@@ -72,7 +72,7 @@ def _resolve_host_path(config: UserConfig, dotted: str, raw: Any, config_name: s
     # Under sudo the process home is root's, so the invoking user's home needs its own check
     homes: List[Path] = []
     try:
-        homes.append(EnvInfo.get_user_home())
+        homes.append(SudoInfo.getUserHome())
     except RuntimeError:  # pragma: no cover - unresolvable home directory
         pass
     try:

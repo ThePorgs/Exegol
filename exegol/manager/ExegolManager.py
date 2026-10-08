@@ -19,6 +19,7 @@ from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
+from exegol.manager.ConfigDirManager import ConfigDirManager
 from exegol.manager.LicenseManager import LicenseManager
 from exegol.manager.TaskManager import TaskManager
 from exegol.manager.UpdateManager import UpdateManager
@@ -32,6 +33,7 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.profile.ProfileAskUser import ask_user_for_value
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.LocalDatastore import LocalDatastore
 from exegol.utils.SessionHandler import SessionHandler
 
 if TYPE_CHECKING:
@@ -357,11 +359,14 @@ class ExegolManager:
     async def activate(cls) -> None:
         """Activate an exegol license"""
         licence_manager = await LicenseManager.get()
+        if ConfigDirManager.checkLicenseLocation(licensed=LocalDatastore().get_license()[1] is not None):
+            return
         if OptionResolver().get(OptionKey.REVOKE):
             await licence_manager.revoke_exegol()
         elif licence_manager.is_activated():
             licence_manager.display_license()
             logger.success("Exegol is activated")
+            await ConfigDirManager.checkConfigLocation()
         else:
             await licence_manager.activate_exegol(skip_prompt=True)
 
@@ -403,6 +408,12 @@ class ExegolManager:
     @classmethod
     async def print_debug_banner(cls) -> None:
         """Print header debug info"""
+        # UserConfig is loaded at import time (ContainerConfig class body), before the verbosity is applied,
+        # and loads the LocalDatastore through SessionHandler/KeyHandler: their own load-time debug lines
+        # are never shown, so the paths are reported here instead.
+        logger.debug(f"Exegol config directory: {ConstantConfig.exegol_config_path}")
+        logger.debug(f"Config file: {UserConfig().getFilePath()}")
+        logger.debug(f"Datastore file: {LocalDatastore.getDbPath()}")
         package_engine = "pip"
         if ConstantConfig.pipx_installed:
             package_engine = "pipx"

@@ -528,6 +528,7 @@ class SessionHandler(metaclass=MetaSingleton):
         logger.verbose("Support information:")
         logger.verbose(f"- User ID: {self.__user_id}")
         logger.verbose(f"- Licence ID: {self.__license_id}")
+        logger.verbose(f"- License folder: {LocalDatastore.getDbPath().parent}")
         if self.__features is not None and len(self.__features) > 0:
             logger.verbose(f"- Features: {','.join([x.name for x in self.__features])}")
         logger.verbose(f"- Machine ID: {self.__machine_id}")

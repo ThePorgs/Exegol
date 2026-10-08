@@ -3,6 +3,7 @@ import sqlite3
 import sys
 import threading
 from enum import IntEnum
+from pathlib import Path
 from typing import Tuple, Optional, Union, cast
 
 from exegol.config.ConstantConfig import ConstantConfig
@@ -25,6 +26,11 @@ class LocalDatastore(metaclass=MetaSingleton):
 
         self.__db_lock = threading.Lock()
 
+        logger.debug(f"Loading datastore from {self.__DB_PATH}")
+        self.__connect()
+        self.__apply_schema()
+
+    def __connect(self) -> None:
         self.__is_init = self.__DB_PATH.is_file()
         self.__db = sqlite3.connect(self.__DB_PATH,
                                     check_same_thread=False,
@@ -47,7 +53,22 @@ class LocalDatastore(metaclass=MetaSingleton):
             # Python < 3.12 (Legacy mode)
             self.__db.isolation_level = "IMMEDIATE"
 
-        self.__apply_schema()
+    def close(self) -> None:
+        """Close the database connection (e.g. before moving the file).
+        As the last connection, SQLite checkpoints the WAL and removes the -wal/-shm files."""
+        with self.__db_lock:
+            self.__db.commit()
+            self.__db.close()
+
+    def reopen(self) -> None:
+        """Open again the database connection after close()"""
+        with self.__db_lock:
+            self.__connect()
+
+    @classmethod
+    def getDbPath(cls) -> Path:
+        """Full path of the datastore file"""
+        return cls.__DB_PATH
 
     def __apply_schema(self) -> None:
         with self.__db_lock:

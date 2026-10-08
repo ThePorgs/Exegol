@@ -1,7 +1,34 @@
 import os
 from pathlib import Path
+from typing import Optional
+
+from exegol.config.SudoInfo import SudoInfo
 
 __version__ = "6.0.1"
+
+
+def resolve_exegol_config_path(home: Path, invoker_home: Optional[Path], sudo_home: Optional[str]) -> Path:
+    """Resolve the exegol config directory.
+
+    :param home: home of the current process (/root under sudo).
+    :param invoker_home: home of the sudo invoking user, None outside a sudo context.
+    :param sudo_home: the SUDO_HOME environment variable.
+    """
+    config = home / ".exegol"
+    # A /root/.exegol migrated by 'sudo exegol activate' is a symlink to the invoking user's directory:
+    # use the user's real path. A real /root/.exegol directory is never redirected (legacy location kept
+    # active on purpose): that is the state the activate migration detects and proposes to fix.
+    if invoker_home is not None and config.is_symlink() and \
+            os.path.realpath(config) == os.path.realpath(invoker_home / ".exegol"):
+        return invoker_home / ".exegol"
+    if not config.is_dir():
+        # Use legacy path or use sudo home env by default for new config
+        if sudo_home:
+            return Path(sudo_home) / ".exegol"
+        # sudo < 1.9.16 does not export SUDO_HOME: fall back on the invoking user's passwd home
+        if invoker_home is not None:
+            return invoker_home / ".exegol"
+    return config
 
 
 class ConstantConfig:
@@ -28,11 +55,8 @@ class ConstantConfig:
     # In this mode, everything not strictly required to supply completion options must be skipped.
     completion_mode: bool = bool(os.getenv("_ARGCOMPLETE"))
     # Exegol config directory
-    exegol_config_path: Path = Path().home() / ".exegol"
     __sudo_home = os.getenv("SUDO_HOME")
-    if not exegol_config_path.is_dir() and __sudo_home:
-        # Use legacy path or use sudo home env by default for new config
-        exegol_config_path = Path(__sudo_home) / ".exegol"
+    exegol_config_path: Path = resolve_exegol_config_path(Path.home(), SudoInfo.getInvokerHome(), __sudo_home)
     # Docker Desktop for mac config file
     docker_desktop_mac_config_path = (Path(__sudo_home) if __sudo_home else Path().home()) / "Library/Group Containers/group.com.docker"
     docker_desktop_windows_config_short_path = "AppData/Roaming/Docker"

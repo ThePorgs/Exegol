@@ -25,6 +25,8 @@ class SignalHandler:
     __protection_depth: int = 0
     # Number of SIGINT received while the outermost critical section was running
     __deferred_signals: int = 0
+    # What the outermost critical section is waiting for, shown on the first deferred SIGINT
+    __deferred_reason: str = ""
 
     @classmethod
     def install(cls) -> None:
@@ -48,7 +50,7 @@ class SignalHandler:
             cls.__deferred_signals += 1
             if cls.__deferred_signals == 1:
                 # Let the critical section finish, protect() will re-raise the interruption once done
-                cls.__warn_forced_exit("Waiting for critical background tasks to complete.")
+                cls.__warn_forced_exit(cls.__deferred_reason)
                 return
             cls.__warn_forced_exit()
             raise KeyboardInterrupt
@@ -86,15 +88,17 @@ class SignalHandler:
 
     @classmethod
     @contextmanager
-    def protect(cls) -> Generator[None, None, None]:
+    def protect(cls, reason: str = "Waiting for critical background tasks to complete.") -> Generator[None, None, None]:
         """Defer any user interruption until the end of the critical section.
 
         A single Ctrl+C received while protected is held back and re-raised once the section is
         over, so that critical background tasks (e.g. license session refresh holding a
-        cross-process lock) always complete. A second Ctrl+C forces the interruption."""
+        cross-process lock) always complete. A second Ctrl+C forces the interruption.
+        The reason of the outermost section is shown to the user on the first Ctrl+C."""
         cls.__protection_depth += 1
         if cls.__protection_depth == 1:
             cls.__deferred_signals = 0
+            cls.__deferred_reason = reason
         try:
             yield
         except BaseException:

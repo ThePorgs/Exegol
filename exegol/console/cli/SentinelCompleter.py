@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple
 import yaml
 
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.console.cli.ExegolCompleter import profileCompletionCandidates
 
@@ -69,7 +69,7 @@ def SentinelProfileCompleter(prefix: str, parsed_args: Namespace, **kwargs) -> T
         if not isinstance(spec, dict):
             continue
         local_path = spec["path"] if "path" in spec else None
-        roots[source_key] = EnvInfo.expand_user(local_path) if local_path else component_path / source_key
+        roots[source_key] = SudoInfo.expandUser(local_path) if local_path else component_path / source_key
 
     discovered: List[Tuple[str, str]] = []
     for source_key, source_dir in roots.items():
