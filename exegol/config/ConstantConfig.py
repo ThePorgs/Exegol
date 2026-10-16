@@ -4,7 +4,7 @@ from typing import Optional
 
 from exegol.config.SudoInfo import SudoInfo
 
-__version__ = "6.0.1"
+__version__ = "6.0.2"
 
 
 def resolve_exegol_config_path(home: Path, invoker_home: Optional[Path], sudo_home: Optional[str]) -> Path:
