@@ -248,7 +248,7 @@ class ConfigDirManager:
         running = cls.__runningUsers(containers, used_dirs)
         if running:
             logger.error(f"These containers are running and use a configuration folder: {', '.join(running)}. "
-                         f"Stop them ([green]exegol stop NAME[/green]) then run [green]sudo exegol activate[/green] again.")
+                         f"Stop them ([green]exegol stop --all[/green]) then run [green]sudo exegol activate[/green] again.")
             return
 
         if not await ExegolRich.Confirm(f"Migrate [magenta]{root_dir}[/magenta] to [magenta]{user_dir}[/magenta] ? Close any other exegol "
@@ -298,7 +298,7 @@ class ConfigDirManager:
             return
         if running:
             logger.error(f"These containers have been started and use a configuration folder: {', '.join(running)}. "
-                         f"Stop them ([green]exegol stop NAME[/green]) then run [green]sudo exegol activate[/green] again.")
+                         f"Stop them ([green]exegol stop --all[/green]) then run [green]sudo exegol activate[/green] again.")
             return
 
         backup_dir = SudoInfo.getUserHome() / f".exegol-migration-backup-{datetime.now():%Y%m%d-%H%M%S}"

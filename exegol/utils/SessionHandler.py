@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import Optional, Tuple, Type, Union, Set, cast
 
 import jwt
+from rich.markup import escape
 
-from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig, EXEGOL_HOME_ENV
 from exegol.console.ExegolPrompt import ExegolRich
 from exegol.exceptions.ExegolExceptions import CancelOperation, LicenseToleration, LicenseRevocation, UnavailableService
 from exegol.manager.TaskManager import TaskManager
@@ -528,7 +529,8 @@ class SessionHandler(metaclass=MetaSingleton):
         logger.verbose("Support information:")
         logger.verbose(f"- User ID: {self.__user_id}")
         logger.verbose(f"- Licence ID: {self.__license_id}")
-        logger.verbose(f"- License folder: {LocalDatastore.getDbPath().parent}")
+        license_folder_origin = f" (from {EXEGOL_HOME_ENV})" if ConstantConfig.exegol_config_forced else ""
+        logger.verbose(f"- License folder: {escape(str(LocalDatastore.getDbPath().parent))}{license_folder_origin}")
         if self.__features is not None and len(self.__features) > 0:
             logger.verbose(f"- Features: {','.join([x.name for x in self.__features])}")
         logger.verbose(f"- Machine ID: {self.__machine_id}")
