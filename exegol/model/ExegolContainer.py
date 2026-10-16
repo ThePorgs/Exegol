@@ -200,7 +200,7 @@ class ExegolContainer(ExegolContainerTemplate, SelectableInterface):
                 logger.debug(e)
                 logger.critical(f"Docker raised a critical error when starting the container [green]{self.name}[/green], error message is: {e.explanation}")
             except ReadTimeout:
-                logger.critical("Received a timeout error fom docker... Unable to start the container, retry later.")
+                logger.critical("Received a timeout error from docker... Unable to start the container, retry later.")
                 raise
             if not self.config.legacy_entrypoint:  # TODO improve startup compatibility check
                 try:
