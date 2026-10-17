@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, Any, Callable, Union, List, NamedTuple, Tuple,
 
 from rich.markup import escape
 
-from exegol.config.ConstantConfig import ConstantConfig
+from exegol.config.ConstantConfig import ConstantConfig, EXEGOL_HOME_ENV
 from exegol.config.EnvInfo import EnvInfo
 from exegol.config.OptionResolver import CREATION_ONLY_WARNING_SURFACE, OptionKey, OptionResolver, OptionScope
 from exegol.config.UserConfig import UserConfig
 from exegol.console.cli.OptionsEnum import SentinelUpdateStrategy
 from exegol.config.StaticContainerPath import StaticContainerPath
+from exegol.config.SudoInfo import SudoInfo
 from exegol.console import ConsoleFormat
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.ExegolPrompt import ExegolRich, stdinCanAnswer
@@ -19,6 +20,7 @@ from exegol.console.ExegolStatus import ExegolStatus
 from exegol.console.TUI import ExegolTUI
 from exegol.console.cli.ParametersManager import ParametersManager
 from exegol.exceptions.ExegolExceptions import ObjectNotFound, CancelOperation
+from exegol.manager.ConfigDirManager import ConfigDirManager
 from exegol.manager.LicenseManager import LicenseManager
 from exegol.manager.TaskManager import TaskManager
 from exegol.manager.UpdateManager import UpdateManager
@@ -32,6 +34,7 @@ from exegol.model.SelectableInterface import SelectableInterface
 from exegol.profile.ProfileAskUser import ask_user_for_value
 from exegol.utils.DockerUtils import DockerUtils
 from exegol.utils.ExeLog import logger, ExeLog
+from exegol.utils.LocalDatastore import LocalDatastore
 from exegol.utils.SessionHandler import SessionHandler
 
 if TYPE_CHECKING:
@@ -357,11 +360,17 @@ class ExegolManager:
     async def activate(cls) -> None:
         """Activate an exegol license"""
         licence_manager = await LicenseManager.get()
+        # EXEGOL_HOME forces the config directory: no location check, migration proposal or ownership fix runs
+        if not ConstantConfig.exegol_config_forced and \
+                ConfigDirManager.checkLicenseLocation(licensed=LocalDatastore().get_license()[1] is not None):
+            return
         if OptionResolver().get(OptionKey.REVOKE):
             await licence_manager.revoke_exegol()
         elif licence_manager.is_activated():
             licence_manager.display_license()
             logger.success("Exegol is activated")
+            if not ConstantConfig.exegol_config_forced:
+                await ConfigDirManager.checkConfigLocation()
         else:
             await licence_manager.activate_exegol(skip_prompt=True)
 
@@ -403,6 +412,17 @@ class ExegolManager:
     @classmethod
     async def print_debug_banner(cls) -> None:
         """Print header debug info"""
+        # UserConfig is loaded at import time (ContainerConfig class body), before the verbosity is applied,
+        # and loads the LocalDatastore through SessionHandler/KeyHandler: their own load-time debug lines
+        # are never shown, so the paths are reported here instead. The same goes for the outcome of the
+        # sudo user's parent env load (first EnvInfo.get_env / EXEGOL_HOME read, at import time).
+        config_origin = f" [bright_black](from {EXEGOL_HOME_ENV})[/bright_black]" if ConstantConfig.exegol_config_forced else ""
+        logger.debug(f"Exegol config directory: {escape(str(ConstantConfig.exegol_config_path))}{config_origin}")
+        parent_env_report = SudoInfo.getParentEnvReport()
+        if parent_env_report is not None:
+            logger.debug(parent_env_report)
+        logger.debug(f"Config file: {UserConfig().getFilePath()}")
+        logger.debug(f"Datastore file: {LocalDatastore.getDbPath()}")
         package_engine = "pip"
         if ConstantConfig.pipx_installed:
             package_engine = "pipx"

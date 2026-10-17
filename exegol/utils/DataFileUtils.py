@@ -13,7 +13,7 @@ import yaml.parser
 import yaml.scanner
 
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.utils.ExeLog import logger
 from exegol.utils.FsUtils import SCRATCH_SUFFIX, mkdir, get_user_id, scratch_prefix, sweep_stale_scratch
 
@@ -79,13 +79,34 @@ class DataFileUtils:
         # Process
         self.__load_file()
 
+    def getFilePath(self) -> Path:
+        """Full path of the config file backing this datastore"""
+        return self._file_path
+
     def _get_dynamic_default(self, attr_name: str) -> Union[str, int, bool]:
         if attr_name in self.__dynamic_default.keys():
             return self.__dynamic_default[attr_name]()
         raise NotImplementedError(f"The dynamic default value is not define for attribute '{attr_name}'")
 
     def __load_file(self) -> None:
-        """Load the file and the parameters it declares."""
+        """Load the file and the parameters it declares.
+
+        In shell completion mode the method never writes: no folder, no default file, no upgrade.
+        """
+        if ConstantConfig.completion_mode and not self._file_path.is_file():
+            # argcomplete runs exegol as the plain user on every Tab press, and the parser build
+            # loads UserConfig / DataCache: anything written here would leave a ~/.exegol behind
+            # that the root-to-user config migration then treats as an existing user directory.
+            # Only completion is covered: any other exegol run as the plain user (exegol -h, a
+            # command typed without sudo) still creates its config folder, by design for rootless
+            # setups; the migration merges such a folder and backs up the discarded copies.
+            # The defaults the subclass __init__ set stay in memory. Unlike the create branch, no
+            # dynamic default is computed (e.g. UserConfig.network_dedicated_range stays empty),
+            # which no completer reads. The component `local` directories are seeded only by
+            # _create_config_file, so this return covers them.
+            logger.debug(f"The file {self._file_path} does not exist, using the default values "
+                         f"without creating it (shell completion)")
+            return
         if not self._file_path.parent.is_dir():
             logger.verbose(f"Creating config folder: {self._file_path.parent}")
             mkdir(self._file_path.parent)
@@ -93,9 +114,18 @@ class DataFileUtils:
             logger.verbose(f"Creating default file: {self._file_path}")
             self._create_config_file()
         else:
+            logger.debug(f"Loading config file {self._file_path}")
             self._parse_config()
             if self.__config_upgrade:
-                if self._config_declares_no_keys:
+                if ConstantConfig.completion_mode:
+                    # Same reason as the early return above: a Tab press must not rewrite (nor
+                    # back up) the operator's file. The values already parsed stay in memory;
+                    # the accepted cost is that keys a rewrite would seed (e.g. the `local`
+                    # entry of `sentinel.sources` / `profile.sources`) stay absent from what the
+                    # completers read until a regular exegol run upgrades the file.
+                    logger.debug("Skipping the config file upgrade: shell completion never writes to the "
+                                 "config directory; the next regular exegol run upgrades it.")
+                elif self._config_declares_no_keys:
                     # A document that declares no key is a complete statement ("use the
                     # defaults"), not an out-of-date file, and rewriting it would destroy
                     # the comments that are its entire content.
@@ -767,7 +797,7 @@ class DataFileUtils:
                 logger.debug(f"Config {config_name} has not been found in Exegol '{self._file_path.name}' config file. The file will be upgrade.")
                 self.__config_upgrade = True
                 return default if default is not None else cast(Path, self._get_dynamic_default(config_name))
-            return EnvInfo.expand_user(result)
+            return SudoInfo.expandUser(result)
         except TypeError:
             logger.error(f"Error while loading {config_name}! Using default config.")
         return default if default is not None else cast(Path, self._get_dynamic_default(config_name))

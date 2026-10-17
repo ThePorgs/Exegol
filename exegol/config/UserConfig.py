@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Pattern, Set, Tuple, cast
 import yaml
 
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.console.ConsoleFormat import boolFormatter
 from exegol.console.cli.OptionsEnum import SentinelUpdateStrategy
 from exegol.model.ExegolNetwork import ExegolNetworkMode
@@ -728,7 +728,10 @@ config:
         # Network section
         network_data, network_refused = self.__load_section(config_data, "network")
         self.network_default_mode = self._load_config_str(network_data, 'default_network', self.network_default_mode, choices=NetworkUtils.get_options())
-        self.network_dedicated_range = self._load_config_str(network_data, 'exegol_dedicated_range')  # Dynamic default
+        # Dynamic default, except in completion mode: finding a free range probes the host adapters and can prompt the
+        # user, and a completion never writes the result back, so the probe would run again on every Tab press
+        self.network_dedicated_range = self._load_config_str(network_data, 'exegol_dedicated_range',
+                                                             "" if ConstantConfig.completion_mode else None)
         self.network_default_netmask = NetworkUtils.parse_netmask(self._load_config_str(network_data, 'exegol_default_netmask', str(self.network_default_netmask)), default=self.network_default_netmask)
         if ConstantConfig.completion_mode:
             # The licensed features are never needed to supply completion options,
@@ -838,7 +841,7 @@ config:
                     logger.critical(f"{section_label}[{source_key!r}].path is empty.")
                     continue
                 try:
-                    expanded_path = EnvInfo.expand_user(raw_path)
+                    expanded_path = SudoInfo.expandUser(raw_path)
                 except RuntimeError as e:  # pragma: no cover - unresolvable '~' (no home dir)
                     logger.critical(f"{section_label}[{source_key!r}].path cannot be resolved: {e}")
                     continue

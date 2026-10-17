@@ -14,7 +14,7 @@ from rich.markup import escape
 from rich.tree import Tree
 
 from exegol.config.ConstantConfig import ConstantConfig
-from exegol.config.EnvInfo import EnvInfo
+from exegol.config.SudoInfo import SudoInfo
 from exegol.config.OptionResolver import OptionKey, OptionResolver
 from exegol.config.YamlConfigLoader import load_yaml_file
 from exegol.profile.ContainerProfile import ContainerProfile
@@ -48,7 +48,7 @@ class ContainerProfileManager(ProfileManagerBase[ContainerProfile], metaclass=Me
             # so removing the entry actually disables it.
             local_spec = self._configured_sources.get(ConstantConfig.DEFAULT_LOCAL_SOURCE_KEY)
             if local_spec and local_spec.get("path"):
-                local_dir = EnvInfo.expand_user(local_spec["path"])
+                local_dir = SudoInfo.expandUser(local_spec["path"])
                 if not local_dir.is_dir():
                     FsUtils.mkdir(local_dir)
         else:
@@ -155,7 +155,7 @@ class ContainerProfileManager(ProfileManagerBase[ContainerProfile], metaclass=Me
                 continue
             local_path = spec.get("path")
             if local_path:
-                roots[key] = EnvInfo.expand_user(local_path)
+                roots[key] = SudoInfo.expandUser(local_path)
             else:
                 roots[key] = self._component_path / key
         return roots
